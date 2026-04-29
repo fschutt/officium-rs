@@ -15,3 +15,4 @@ pub mod date;
 pub mod sancti;
 pub mod kalendaria;
 pub mod precedence;
+pub mod missa;

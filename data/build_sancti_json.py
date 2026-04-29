@@ -80,24 +80,28 @@ def classify_rubric(label: str | None) -> str:
 def parse_rank_block(body: list[str]) -> dict | None:
     """Pull the first non-comment-looking entry line out of a [Rank] body.
 
-    Format (from the Sancti corpus):
-        Name;;Rank-class;;Rank-num;;CommuneRef
-    Lines starting with `(` are alt-rubric markers and skipped here —
-    they introduce the next [Rank] block above us instead.
+    Two formats:
+      * Legacy: `Name;;Rank-class;;Rank-num;;CommuneRef`
+      * New:    `;;Rank-class;;Rank-num;;CommuneRef`  (name in [Officium])
+
+    The (sed rubrica 1617) / (sed rubrica cisterciensis) markers between
+    body lines flag alt-rubric variants we don't track here.
     """
     for raw in body:
         line = raw.strip()
         if not line:
             continue
-        # Old-style alt-rubric markers like "(sed rubrica 1617)" appear
-        # as their own lines and signal the *next* [Rank] block; ignore.
         if line.startswith("(") and line.endswith(")"):
             continue
         parts = [p.strip() for p in line.split(";;")]
-        if not parts or not parts[0]:
+        # Accept the line if it has at least one separator AND something
+        # in either the name column OR the rank-class column.
+        if len(parts) < 2:
             continue
-        name = parts[0]
-        rank_class = parts[1] if len(parts) > 1 else ""
+        name = parts[0]  # may be empty in the new format
+        rank_class = parts[1]
+        if not name and not rank_class:
+            continue
         rank_num: float | None = None
         if len(parts) > 2 and parts[2]:
             try:
@@ -116,38 +120,71 @@ def parse_rank_block(body: list[str]) -> dict | None:
 
 def parse_sancti_file(text: str) -> list[dict]:
     """Walk the file, splitting on `[Section]` headers, and emit one
-    entry per [Rank] variant block found."""
+    entry per [Rank] variant block found.
+
+    Handles both data conventions:
+      * Legacy: name lives in column 0 of the [Rank] body line
+        (e.g. `S. Petri Martyris;;Duplex;;3;;vide C2`).
+      * Newer:  name lives in a separate `[Officium]` section, and
+        [Rank] body has an empty first column (e.g. `;;Duplex;;3;;vide C2a-1`).
+    """
     entries: list[dict] = []
     current_label: str | None = None
     current_body: list[str] | None = None
     in_rank = False
+    officium_name: str | None = None
+    in_officium = False
+    officium_body: list[str] = []
 
-    def flush():
+    def flush_rank():
         nonlocal current_label, current_body, in_rank
         if in_rank and current_body is not None:
             parsed = parse_rank_block(current_body)
             if parsed is not None:
+                if not parsed.get("name") and officium_name:
+                    parsed["name"] = officium_name
                 parsed["rubric"] = classify_rubric(current_label)
                 entries.append(parsed)
         current_label = None
         current_body = None
         in_rank = False
 
+    def flush_officium():
+        nonlocal officium_name, in_officium, officium_body
+        if in_officium:
+            joined = " ".join(line.strip() for line in officium_body if line.strip())
+            officium_name = joined.strip() or None
+        in_officium = False
+        officium_body = []
+
     for line in text.splitlines():
         m = RANK_HEADER_RE.match(line)
         if m is not None:
-            flush()
+            flush_officium()
+            flush_rank()
             current_label = m.group(1)
             current_body = []
             in_rank = True
             continue
-        if line.startswith("[") and "]" in line and in_rank:
-            # next section, stop accumulating Rank
-            flush()
+        # [Officium] block: just collect the body until the next section.
+        if line.strip() == "[Officium]":
+            flush_officium()
+            flush_rank()
+            in_officium = True
+            officium_body = []
+            continue
+        if line.startswith("[") and "]" in line:
+            if in_rank:
+                flush_rank()
+            if in_officium:
+                flush_officium()
             continue
         if in_rank and current_body is not None:
             current_body.append(line)
-    flush()
+        elif in_officium:
+            officium_body.append(line)
+    flush_officium()
+    flush_rank()
     return entries
 
 

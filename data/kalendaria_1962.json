@@ -1,0 +1,444 @@
+{
+"01-02":null,
+"01-03":null,
+"01-04":null,
+"01-05":{
+"main":{
+"name":"S. Telesphori Papae et Martyris",
+"rank_num":1.0,
+"sancti_key":"01-05cc"
+},
+"commemorations":[]
+},
+"01-25":{
+"main":{
+"name":"In Conversione S. Pauli Apostoli",
+"rank_num":4.0,
+"sancti_key":"01-25r"
+},
+"commemorations":[]
+},
+"02-23":{
+"main":{
+"name":"S. Petri Damiani",
+"rank_num":3.0,
+"sancti_key":"02-23r"
+},
+"commemorations":[]
+},
+"02-29":null,
+"04-28":{
+"main":{
+"name":"S. Pauli a Cruce Confessoris",
+"rank_num":3.0,
+"sancti_key":"04-28"
+},
+"commemorations":[]
+},
+"05-01":{
+"main":{
+"name":"S. Joseph Opificis",
+"rank_num":6.0,
+"sancti_key":"05-01r"
+},
+"commemorations":[]
+},
+"05-11":{
+"main":{
+"name":"Ss. Philippi et Jacobi Apostolorum",
+"rank_num":5.0,
+"sancti_key":"05-11r"
+},
+"commemorations":[]
+},
+"06-25":{
+"main":{
+"name":"S. Gulielmi Abbatis",
+"rank_num":3.0,
+"sancti_key":"06-25"
+},
+"commemorations":[]
+},
+"06-26":{
+"main":{
+"name":"Ss. Joannis et Pauli Martyrum",
+"rank_num":3.0,
+"sancti_key":"06-26"
+},
+"commemorations":[]
+},
+"06-27":null,
+"06-28":{
+"main":{
+"name":"Vigilia Ss. Petri et Pauli Apostolorum",
+"rank_num":5.0,
+"sancti_key":"06-28r"
+},
+"commemorations":[]
+},
+"06-30":{
+"main":{
+"name":"In Commemoratione Sancti Pauli Apostoli",
+"rank_num":4.0,
+"sancti_key":"06-30"
+},
+"commemorations":[]
+},
+"07-01":{
+"main":{
+"name":"Pretiosissimi Sanguinis Domini Nostri Jesu Christi",
+"rank_num":6.0,
+"sancti_key":"07-01"
+},
+"commemorations":[]
+},
+"07-02":{
+"main":{
+"name":"In Visitatione B Mariae Virginis",
+"rank_num":5.0,
+"sancti_key":"07-02"
+},
+"commemorations":[
+{
+"name":"Ss. Processi et Martiniani Martyrum",
+"rank_num":1.0,
+"sancti_key":"07-02cc"
+}
+]
+},
+"07-03":{
+"main":{
+"name":"S. Irenaei Episcopi et Martyris",
+"rank_num":3.0,
+"sancti_key":"07-03r"
+},
+"commemorations":[]
+},
+"07-04":null,
+"07-05":{
+"main":{
+"name":"S. Antonii Mariae Zacharia Confessor",
+"rank_num":3.0,
+"sancti_key":"07-05"
+},
+"commemorations":[]
+},
+"07-06":null,
+"07-24":{
+"main":{
+"name":"S. Christinae Virginis Martyris",
+"rank_num":1.0,
+"sancti_key":"07-24r"
+},
+"commemorations":[]
+},
+"08-16":{
+"main":{
+"name":"S. Joachim Confessoris",
+"rank_num":5.0,
+"sancti_key":"08-16"
+},
+"commemorations":[]
+},
+"08-17":{
+"main":{
+"name":"S. Hyacinthi Confessoris",
+"rank_num":3.0,
+"sancti_key":"08-17"
+},
+"commemorations":[]
+},
+"08-18":{
+"main":{
+"name":"S. Agapiti Martyris",
+"rank_num":1.0,
+"sancti_key":"08-18r"
+},
+"commemorations":[]
+},
+"08-19":{
+"main":{
+"name":"S. Joannis Eudes Confessoris",
+"rank_num":3.0,
+"sancti_key":"08-19"
+},
+"commemorations":[]
+},
+"08-20":{
+"main":{
+"name":"S. Bernardi Abbatis et Ecclesiae Doctoris",
+"rank_num":3.0,
+"sancti_key":"08-20"
+},
+"commemorations":[]
+},
+"08-21":{
+"main":{
+"name":"S. Joanne Franciscae Fremiot de Chantal Viduae",
+"rank_num":3.0,
+"sancti_key":"08-21"
+},
+"commemorations":[]
+},
+"08-23":{
+"main":{
+"name":"S. Philippi Beniti Confessoris",
+"rank_num":3.0,
+"sancti_key":"08-23"
+},
+"commemorations":[]
+},
+"09-20":{
+"main":{
+"name":"S. Eustachii et Sociorum Martyrum",
+"rank_num":3.0,
+"sancti_key":"09-20"
+},
+"commemorations":[]
+},
+"10-27":null,
+"10-31":null,
+"11-03":null,
+"11-04":{
+"main":{
+"name":"S. Caroli Episcopi et Confessoris",
+"rank_num":3.0,
+"sancti_key":"11-04"
+},
+"commemorations":[
+{
+"name":"Ss. Mart Vitalis et Agricolae",
+"rank_num":1.0,
+"sancti_key":"11-04cc"
+}
+]
+},
+"11-05":null,
+"11-06":null,
+"11-07":null,
+"11-08":{
+"main":{
+"name":"Ss. Quatuor Coronatorum Martyrum",
+"rank_num":1.0,
+"sancti_key":"11-08r"
+},
+"commemorations":[]
+},
+"11-29":{
+"main":{
+"name":"S. Saturnini Martyris",
+"rank_num":1.0,
+"sancti_key":"11-29r"
+},
+"commemorations":[]
+},
+"12-07":{
+"main":{
+"name":"S. Ambrosii Episcopi Confesoris et Ecclesiae Doctoris",
+"rank_num":3.0,
+"sancti_key":"12-07"
+},
+"commemorations":[]
+},
+"12-09":null,
+"12-10":{
+"main":{
+"name":"S. Melchiadis Papae et Mart",
+"rank_num":1.0,
+"sancti_key":"12-10r"
+},
+"commemorations":[]
+},
+"12-11":{
+"main":{
+"name":"S. Damasi Papae et confessoris",
+"rank_num":2.0,
+"sancti_key":"12-11"
+},
+"commemorations":[]
+},
+"12-12":null,
+"12-13":{
+"main":{
+"name":"S. Luciae Virginis et Martyris",
+"rank_num":3.0,
+"sancti_key":"12-13r"
+},
+"commemorations":[]
+},
+"12-14":null,
+"12-15":null,
+"12-20":null,
+"01-18":{
+"main":{
+"name":"S Priscae Virginis",
+"rank_num":1.0,
+"sancti_key":"01-18r"
+},
+"commemorations":[]
+},
+"05-03":{
+"main":{
+"name":"Ss. Alexandri et sociorum Martyrum",
+"rank_num":1.0,
+"sancti_key":"05-03r"
+},
+"commemorations":[]
+},
+"05-06":null,
+"05-08":null,
+"06-17":{
+"main":{
+"name":"S. Gregorii Barbadici Ep. Conf",
+"rank_num":3.0,
+"sancti_key":"06-17r"
+},
+"commemorations":[]
+},
+"07-13":null,
+"07-21":{
+"main":{
+"name":"S. Laurentii de Brundusio Confessoris et Ecclesiae Doctoris",
+"rank_num":3.0,
+"sancti_key":"07-21r"
+},
+"commemorations":[
+{
+"name":"S. Praxedis Virginis",
+"rank_num":1.0,
+"sancti_key":"07-21"
+}
+]
+},
+"08-01":{
+"main":{
+"name":"Ss. Martyrum Machabaeorum",
+"rank_num":1.0,
+"sancti_key":"08-01r"
+},
+"commemorations":[]
+},
+"08-03":null,
+"08-08":{
+"main":{
+"name":"S. Joannis Vianney Confessoris",
+"rank_num":3.0,
+"sancti_key":"08-09"
+},
+"commemorations":[
+{
+"name":"Ss. Cyriacii et socii maryres",
+"rank_num":1.0,
+"sancti_key":"08-08"
+}
+]
+},
+"08-09":{
+"main":{
+"name":"Vigilia S. Laurentii Martyris",
+"rank_num":3.0,
+"sancti_key":"08-09t"
+},
+"commemorations":[
+{
+"name":"S. Romanae Maryris",
+"rank_num":1.0,
+"sancti_key":"08-09cc"
+}
+]
+},
+"09-30":{
+"main":{
+"name":"S. Hieronomy Presbitery Confessorie et Ecclesiae Doctoris",
+"rank_num":3.0,
+"sancti_key":"09-30"
+},
+"commemorations":[]
+},
+"10-07":{
+"main":{
+"name":"Festum Beatae Mariae Virginis a Rosario",
+"rank_num":5.0,
+"sancti_key":"10-07"
+},
+"commemorations":[
+{
+"name":"S. Marci Papae Confessoris",
+"rank_num":null,
+"sancti_key":"10-07t"
+}
+]
+},
+"10-08":{
+"main":{
+"name":"S. Brigittae Viduae",
+"rank_num":3.0,
+"sancti_key":"10-08"
+},
+"commemorations":[
+{
+"name":"Ss. Martyrum Sergii, Bacchi, Marcelli et Apuleji",
+"rank_num":1.0,
+"sancti_key":"10-07cc"
+}
+]
+},
+"10-23":{
+"main":{
+"name":"S. Antonii Mariae Claret Episcopi Confessoris",
+"rank_num":3.0,
+"sancti_key":"10-23r"
+},
+"commemorations":[]
+},
+"11-18":{
+"main":{
+"name":"In Dedicatione Basilicarum Ss. Apostolorum Petri et Pauli",
+"rank_num":3.0,
+"sancti_key":"11-18r"
+},
+"commemorations":[]
+},
+"12-28":{
+"main":{
+"name":"Die quarta infra octavam Nativitatis",
+"rank_num":5.0,
+"sancti_key":"12-28r"
+},
+"commemorations":[
+{
+"name":"Commemoratio Ss. Innocentium",
+"rank_num":null,
+"sancti_key":null
+}
+]
+},
+"12-29":{
+"main":{
+"name":"Die quinta infra octavam Nativitatis",
+"rank_num":5.0,
+"sancti_key":"12-29r"
+},
+"commemorations":[
+{
+"name":"Commemoratio S. Thomae Episcopi et Martyris",
+"rank_num":null,
+"sancti_key":null
+}
+]
+},
+"12-31":{
+"main":{
+"name":"Die septima infra octavam Nativitatis",
+"rank_num":5.0,
+"sancti_key":"12-31r"
+},
+"commemorations":[
+{
+"name":"Commemoratio S. Silvestri Papae et Conf",
+"rank_num":null,
+"sancti_key":null
+}
+]
+}
+}

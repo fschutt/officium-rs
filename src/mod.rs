@@ -13,3 +13,4 @@
 
 pub mod date;
 pub mod sancti;
+pub mod kalendaria;

@@ -12,3 +12,4 @@
 //! proper `path = "../divinum-officium-rs"` dependency.
 
 pub mod date;
+pub mod sancti;

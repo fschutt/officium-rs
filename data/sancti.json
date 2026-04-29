@@ -1,0 +1,3522 @@
+{
+"01-00":[
+{
+"name":"Sanctissimi Nominis Jesu",
+"rank_class":"Duplex 2 class",
+"rank_num":5.91,
+"commune":"",
+"rubric":"1888_aut_rubrica_1906"
+}
+],
+"01-01":[
+{
+"name":"In Circumcisione Domini",
+"rank_class":"Duplex II classis",
+"rank_num":5.09,
+"commune":"ex Sancti/12-25",
+"rubric":"default"
+},
+{
+"name":"Die Octavæ Nativitatis Domini",
+"rank_class":"Duplex I classis",
+"rank_num":6.0,
+"commune":"ex Sancti/12-25",
+"rubric":"196"
+}
+],
+"01-02":[
+{
+"name":"In Octava S. Stephani Protomartyris",
+"rank_class":"Simplex",
+"rank_num":1.4,
+"commune":"vide Sancti/12-26",
+"rubric":"default"
+}
+],
+"01-03":[
+{
+"name":"In Octava S. Joannis Apostoli et Evangelistæ",
+"rank_class":"Simplex",
+"rank_num":1.4,
+"commune":"vide Sancti/12-27",
+"rubric":"default"
+}
+],
+"01-04":[
+{
+"name":"In Octava Ss. Innocentium",
+"rank_class":"Simplex",
+"rank_num":1.4,
+"commune":"vide Sancti/12-28",
+"rubric":"default"
+}
+],
+"01-05":[
+{
+"name":"In Vigilia Epiphaniæ",
+"rank_class":"Semiduplex",
+"rank_num":4.9,
+"commune":"ex Sancti/01-01",
+"rubric":"default"
+}
+],
+"01-06":[
+{
+"name":"In Epiphania Domini",
+"rank_class":"Duplex I classis",
+"rank_num":6.5,
+"commune":"",
+"rubric":"default"
+}
+],
+"01-07":[
+{
+"name":"Secunda die infra Octavam Epiphaniæ",
+"rank_class":"Semiduplex",
+"rank_num":5.6,
+"commune":"ex Sancti/01-06",
+"rubric":"default"
+},
+{
+"name":"Die Septima Januarii",
+"rank_class":"Feria",
+"rank_num":1.2,
+"commune":"vide Sancti/01-06",
+"rubric":"196"
+}
+],
+"01-08":[
+{
+"name":"Tertia die infra Octavam Epiphaniæ",
+"rank_class":"Semiduplex",
+"rank_num":5.6,
+"commune":"ex Sancti/01-06",
+"rubric":"default"
+},
+{
+"name":"Die Octava Januarii",
+"rank_class":"Feria",
+"rank_num":1.2,
+"commune":"vide Sancti/01-06",
+"rubric":"196"
+}
+],
+"01-09":[
+{
+"name":"Quarta die infra Octavam Epiphaniæ",
+"rank_class":"Semiduplex",
+"rank_num":5.6,
+"commune":"ex Sancti/01-06",
+"rubric":"default"
+},
+{
+"name":"Die Nona Januarii",
+"rank_class":"Feria",
+"rank_num":1.2,
+"commune":"vide Sancti/01-06",
+"rubric":"196"
+}
+],
+"01-10":[
+{
+"name":"Quinta die infra Octavam Epiphaniæ",
+"rank_class":"Semiduplex",
+"rank_num":5.6,
+"commune":"ex Sancti/01-06",
+"rubric":"default"
+},
+{
+"name":"Die Decima Januarii",
+"rank_class":"Feria",
+"rank_num":1.2,
+"commune":"vide Sancti/01-06",
+"rubric":"196"
+}
+],
+"01-11":[
+{
+"name":"Sexta die infra Octavam Epiphaniæ",
+"rank_class":"Semiduplex",
+"rank_num":5.6,
+"commune":"ex Sancti/01-06",
+"rubric":"default"
+},
+{
+"name":"Die Undecima Januarii",
+"rank_class":"Feria",
+"rank_num":1.2,
+"commune":"vide Sancti/01-06",
+"rubric":"196"
+}
+],
+"01-12":[
+{
+"name":"Septima die infra Octavam Epiphaniæ",
+"rank_class":"Semiduplex",
+"rank_num":5.6,
+"commune":"ex Sancti/01-06",
+"rubric":"default"
+},
+{
+"name":"Die Duodecima Januarii",
+"rank_class":"Feria",
+"rank_num":1.8,
+"commune":"vide Sancti/01-06",
+"rubric":"196"
+}
+],
+"01-13":[
+{
+"name":"In Octava Epiphaniæ",
+"rank_class":"Duplex majus",
+"rank_num":5.9,
+"commune":"ex Sancti/01-06",
+"rubric":"default"
+},
+{
+"name":"Commemoratio Baptismatis Domini Nostri Jesu Christi",
+"rank_class":"Duplex II. classis",
+"rank_num":5.0,
+"commune":"ex Sancti/01-06",
+"rubric":"196"
+}
+],
+"01-14":[
+{
+"name":"S. Hilarii Episcopi Confessoris Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+},
+{
+"name":"S. Hilarii Episcopi Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C4a",
+"rubric":"1570_aut_rubrica_1617"
+},
+{
+"name":"S. Hilarii Episcopi Confessoris et Ecclesiae Doctoris",
+"rank_class":"Duplex optional",
+"rank_num":2.0,
+"commune":"vide C4a",
+"rubric":"1960_aut_innovata"
+}
+],
+"01-15":[
+{
+"name":"S. Pauli Primi Eremitæ et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+},
+{
+"name":"S. Pauli Primi Eremitæ et Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C5",
+"rubric":"1570_aut_rubrica_1617"
+},
+{
+"name":"S. Pauli Primi Eremitæ et Confessoris",
+"rank_class":"Memoria",
+"rank_num":1.1,
+"commune":"vide C5",
+"rubric":"monastica"
+}
+],
+"01-16":[
+{
+"name":"S. Marcelli Papæ et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"01-17":[
+{
+"name":"S. Antonii Abbatis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"01-18":[
+{
+"name":"Cathedræ S. Petri Romæ",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C4",
+"rubric":"default"
+}
+],
+"01-19":[
+{
+"name":"Ss. Marii, Marthæ, Audifacis, et Abachum Martyrum",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"01-20":[
+{
+"name":"Ss. Fabiani et Sebastiani Martyrum",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C3",
+"rubric":"default"
+},
+{
+"name":"Ss. Fabiani et Sebastiani Martyrum",
+"rank_class":"Duplex optional",
+"rank_num":2.0,
+"commune":"vide C3",
+"rubric":"1960_aut_innovata"
+}
+],
+"01-21":[
+{
+"name":"S. Agnetis Virginis et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C6",
+"rubric":"default"
+}
+],
+"01-22":[
+{
+"name":"Ss. Vincentii et Anastasii Martyrum",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C3",
+"rubric":"default"
+},
+{
+"name":"S. Vincentii Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"1930_aut_rubrica_1963"
+}
+],
+"01-23":[
+{
+"name":"S. Raymundi de Peñafort Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"01-24":[
+{
+"name":"S. Timothei Episcopi et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"default"
+},
+{
+"name":"S. Timothei Episcopi et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"1570_aut_rubrica_monastica_aut_rubrica_1962"
+},
+{
+"name":"S. Timothei Episcopi et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C2",
+"rubric":"1617"
+}
+],
+"01-25":[
+{
+"name":"In Conversione S. Pauli Apostoli",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex Sancti/06-30",
+"rubric":"default"
+},
+{
+"name":"In Conversione S. Pauli Apostoli",
+"rank_class":"Duplex Fest",
+"rank_num":5.0,
+"commune":"ex Sancti/06-30",
+"rubric":"1960_aut_innovata"
+}
+],
+"01-26":[
+{
+"name":"S. Polycarpi Episcopi et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"default"
+},
+{
+"name":"S. Polycarpi Episcopi et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"1570_aut_rubrica_monastica_aut_rubrica_1962"
+},
+{
+"name":"S. Polycarpi Episcopi et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C2",
+"rubric":"1617"
+}
+],
+"01-27":[
+{
+"name":"S. Joannis Chrysostomi Episcopi Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+}
+],
+"01-28":[
+{
+"name":"S. Petri Nolasci Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"01-29":[
+{
+"name":"S. Francisci Salesii Episcopi Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+},
+{
+"name":"S. Francisci Salesii Episcopi Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C4",
+"rubric":"1963"
+}
+],
+"01-30":[
+{
+"name":"S. Martinæ Virginis et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C6",
+"rubric":"default"
+},
+{
+"name":"S. Martinæ Virginis et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":1.1,
+"commune":"vide C6",
+"rubric":"sed_rubrica_1962"
+}
+],
+"01-31":[
+{
+"name":"S. Joannis Bosco Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+},
+{
+"name":"S. Joannis Bosco Confessoris",
+"rank_class":"Memoria",
+"rank_num":1.1,
+"commune":"vide C5",
+"rubric":"1963"
+}
+],
+"02-01":[
+{
+"name":"S. Ignatii Episcopi et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.01,
+"commune":"vide C2",
+"rubric":"default"
+},
+{
+"name":"S. Ignatii Episcopi et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C2",
+"rubric":"1570"
+},
+{
+"name":"S. Ignatii Episcopi et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"1960"
+}
+],
+"02-02":[
+{
+"name":"In Purificatione Beatæ Mariæ Virginis",
+"rank_class":"Duplex 2 class",
+"rank_num":5.1,
+"commune":"ex C11",
+"rubric":"default"
+}
+],
+"02-03":[
+{
+"name":"S. Blasii Episcopi et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"default"
+},
+{
+"name":"S. Blasii Episcopi et Martyris",
+"rank_class":"Duplex optional",
+"rank_num":2.0,
+"commune":"vide C2",
+"rubric":"1960_aut_innovata"
+}
+],
+"02-04":[
+{
+"name":"S. Andreæ Corsini Episcopi et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+},
+{
+"name":"S. Andreæ Corsini Episcopi et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"1960"
+}
+],
+"02-05":[
+{
+"name":"S. Agathæ Virginis et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.01,
+"commune":"vide C6",
+"rubric":"default"
+},
+{
+"name":"S. Agathæ Virginis et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C6",
+"rubric":"1570_aut_rubrica_1617"
+},
+{
+"name":"S. Agathæ Virginis et Martyris",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C6",
+"rubric":"1930"
+},
+{
+"name":"S. Agathæ Virginis et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C6",
+"rubric":"196"
+}
+],
+"02-06":[
+{
+"name":"S. Titi Episcopi et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"02-07":[
+{
+"name":"S. Romualdi Abbatis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"02-08":[
+{
+"name":"S. Joannis de Matha Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+},
+{
+"name":"S. Joannis de Matha Confessoris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C5",
+"rubric":"monastica"
+}
+],
+"02-09":[
+{
+"name":"S. Cyrilli Episc. Alexandrini Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+},
+{
+"name":"S. Cyrilli Episc. Alexandrini Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C4",
+"rubric":"1963"
+},
+{
+"name":"S. Cyrilli Episc. Alexandrini Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex optional",
+"rank_num":2.0,
+"commune":"vide C4a",
+"rubric":"1960_aut_innovata"
+}
+],
+"02-10":[
+{
+"name":"S. Scholasticæ Virginis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C6b",
+"rubric":"default"
+}
+],
+"02-11":[
+{
+"name":"In Apparitione Beatæ Mariæ Virginis Immaculatæ",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C11",
+"rubric":"default"
+},
+{
+"name":"In Apparitione Beatæ Mariæ Virginis Immaculatæ",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"ex C11",
+"rubric":"196"
+},
+{
+"name":"In apparitione Beatae Mariae Virginis",
+"rank_class":"Duplex optional",
+"rank_num":2.0,
+"commune":"ex C11",
+"rubric":"1960_aut_innovata"
+}
+],
+"02-12":[
+{
+"name":"Ss. Septem Fundatorum Ordinis Servorum B. M. V.",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+},
+{
+"name":"Ss. Septem Fundatorum Ordinis Servorum B. M. V. Confessores",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C5",
+"rubric":"1930"
+}
+],
+"02-14":[
+{
+"name":"S. Valentini Presbyteri et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"02-15":[
+{
+"name":"SS. Faustini et Jovitæ Martyrum",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"02-18":[
+{
+"name":"S. Simeonis Episcopi et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"02-22":[
+{
+"name":"In Cathedra S. Petri Apostoli Antiochiæ",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C4",
+"rubric":"default"
+},
+{
+"name":"In Cathedra S. Petri Apostoli",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex C4",
+"rubric":"196"
+}
+],
+"02-24":[
+{
+"name":"S. Matthiæ Apostoli",
+"rank_class":"Duplex II classis",
+"rank_num":5.1,
+"commune":"ex C1",
+"rubric":"default"
+},
+{
+"name":"S. Matthiæ Apostoli",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex C1",
+"rubric":"196"
+}
+],
+"02-27":[
+{
+"name":"S. Gabrielis a Virgine Perdolente Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"03-04":[
+{
+"name":"S. Casimiri Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C5",
+"rubric":"default"
+},
+{
+"name":"S. Casimiri Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"196"
+}
+],
+"03-06":[
+{
+"name":"Ss. Perpetuæ et Felicitatis Martyrum",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C7b",
+"rubric":"default"
+},
+{
+"name":"Ss. Perpetuæ et Felicitatis Martyrum",
+"rank_class":"Duplex",
+"rank_num":3.91,
+"commune":"vide C7b",
+"rubric":"1960_aut_innovata"
+}
+],
+"03-07":[
+{
+"name":"S. Thomæ de Aquino Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5a",
+"rubric":"default"
+},
+{
+"name":"S. Thomæ de Aquino Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.91,
+"commune":"vide C5a",
+"rubric":"1960_aut_innovata"
+}
+],
+"03-08":[
+{
+"name":"S. Joannis de Deo Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"03-09":[
+{
+"name":"S. Franciscæ Romanæ Viduæ",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C7a",
+"rubric":"default"
+}
+],
+"03-10":[
+{
+"name":"Ss. Quadraginta Martyrum",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"03-12":[
+{
+"name":"S. Gregorii Papæ Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+},
+{
+"name":"S. Gregorii Papæ Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.91,
+"commune":"vide C4a",
+"rubric":"1960_aut_innovata"
+}
+],
+"03-17":[
+{
+"name":"S. Patricii Episcopi et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"03-18":[
+{
+"name":"S. Cyrilli Episcopi Hierosolymitani Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+}
+],
+"03-19":[
+{
+"name":"S. Joseph Sponsi B.M.V. Confessoris",
+"rank_class":"Duplex I classis",
+"rank_num":6.1,
+"commune":"",
+"rubric":"default"
+},
+{
+"name":"S. Joseph Sponsi B.M.V. Confessoris",
+"rank_class":"Duplex I classis",
+"rank_num":6.0,
+"commune":"",
+"rubric":"1960_aut_innovata"
+}
+],
+"03-21":[
+{
+"name":"S. Benedicti Abbatis",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"vide C5",
+"rubric":"default"
+},
+{
+"name":"S. Benedicti Abbatis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"196"
+},
+{
+"name":"S. Benedicti Abbatis",
+"rank_class":"Duplex",
+"rank_num":3.91,
+"commune":"vide C5",
+"rubric":"1960_aut_innovata"
+}
+],
+"03-24":[
+{
+"name":"S. Gabrielis Archangeli",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex Sancti/05-08",
+"rubric":"default"
+},
+{
+"name":"S. Gabrielis Archangeli",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"ex Sancti/05-08",
+"rubric":"196"
+},
+{
+"name":"S. Gabrielis Archangeli",
+"rank_class":"Duplex",
+"rank_num":3.91,
+"commune":"ex Sancti/05-08",
+"rubric":"1960_aut_innovata"
+}
+],
+"03-25":[
+{
+"name":"In Annuntiatione Beatæ Mariæ Virginis",
+"rank_class":"Duplex I classis",
+"rank_num":6.92,
+"commune":"ex C11",
+"rubric":"default"
+},
+{
+"name":"In Annuntiatione Beatæ Mariæ Virginis",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex C11",
+"rubric":"1570_aut_rubrica_1617_aut_rubrica_1888"
+},
+{
+"name":"In Annuntiatione Beatæ Mariæ Virginis",
+"rank_class":"Duplex I classis",
+"rank_num":6.0,
+"commune":"ex C11",
+"rubric":"196"
+}
+],
+"03-27":[
+{
+"name":"S. Joannis Damasceni Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5a",
+"rubric":"default"
+}
+],
+"03-28":[
+{
+"name":"S. Joannis a Capistrano Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"04-02":[
+{
+"name":"S. Francisci de Paula Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"04-04":[
+{
+"name":"S. Isidori Episcopi Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+}
+],
+"04-05":[
+{
+"name":"S. Vincentii Ferrerii Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"04-11":[
+{
+"name":"S. Leonis I Papæ Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+},
+{
+"name":"S. Leonis I Papæ Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.91,
+"commune":"vide C4a",
+"rubric":"1960_aut_innovata"
+}
+],
+"04-13":[
+{
+"name":"S. Hermenegildi Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"04-14":[
+{
+"name":"S. Justini Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"default"
+},
+{
+"name":"S. Justini Martyris",
+"rank_class":"Duplex",
+"rank_num":3.91,
+"commune":"vide C2",
+"rubric":"1960_aut_innovata"
+}
+],
+"04-17":[
+{
+"name":"S. Aniceti Papæ et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.9,
+"commune":"vide C2",
+"rubric":"default"
+},
+{
+"name":"S. Aniceti Papæ et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"1960"
+}
+],
+"04-21":[
+{
+"name":"S. Anselmi Episcopi Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+},
+{
+"name":"S. Anselmi Episcopi Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"1960"
+}
+],
+"04-22":[
+{
+"name":"SS. Soteris et Caji Summorum Pontificum et Martyrum",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"04-23":[
+{
+"name":"S. Georgii Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C2",
+"rubric":"default"
+},
+{
+"name":"S. Georgii Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"196"
+}
+],
+"04-24":[
+{
+"name":"S. Fidelis de Sigmaringa Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"04-25":[
+{
+"name":"S. Marci Evangelistæ",
+"rank_class":"Duplex II classis",
+"rank_num":5.1,
+"commune":"ex C1ap",
+"rubric":"default"
+},
+{
+"name":"S. Marci Evangelistæ",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex C1ap",
+"rubric":"196"
+}
+],
+"04-26":[
+{
+"name":"SS. Cleti et Marcellini Paparum et Martyrum",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C3",
+"rubric":"default"
+},
+{
+"name":"SS. Cleti et Marcellini Summorum Pontificum et Martyrum",
+"rank_class":"Semiduplex",
+"rank_num":2.5,
+"commune":"vide C3",
+"rubric":"1960"
+}
+],
+"04-27":[
+{
+"name":"S. Petri Canisii Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5a",
+"rubric":"default"
+}
+],
+"04-28":[
+{
+"name":"S. Pauli a Cruce Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"04-29":[
+{
+"name":"S. Petri Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"04-30":[
+{
+"name":"S. Catharinæ Senensis Virginis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C6b",
+"rubric":"default"
+}
+],
+"05-01":[
+{
+"name":"Ss. Philippi et Jacobi Apostolorum",
+"rank_class":"Duplex II classis",
+"rank_num":5.1,
+"commune":"ex C1",
+"rubric":"default"
+}
+],
+"05-02":[
+{
+"name":"S. Athanasii Episcopi Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+}
+],
+"05-03":[
+{
+"name":"Inventione Sanctæ Crucis",
+"rank_class":"Duplex II classis",
+"rank_num":5.2,
+"commune":"",
+"rubric":"default"
+}
+],
+"05-04":[
+{
+"name":"S. Monicæ Viduæ",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C7a",
+"rubric":"default"
+},
+{
+"name":"S. Monicæ Viduæ",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C7a",
+"rubric":"1570"
+}
+],
+"05-05":[
+{
+"name":"S. Pii V Papæ et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+},
+{
+"name":"S. Pii V Papae et Confessoris",
+"rank_class":"Duplex optional",
+"rank_num":2.0,
+"commune":"vide C4",
+"rubric":"1960_aut_innovata"
+}
+],
+"05-06":[
+{
+"name":"S. Joannis Apostoli ante Portam Latinam",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C1",
+"rubric":"default"
+}
+],
+"05-07":[
+{
+"name":"S. Stanislai Episcopi et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"05-08":[
+{
+"name":"In Apparitione S. Michaëlis Archangeli",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"",
+"rubric":"default"
+}
+],
+"05-09":[
+{
+"name":"S. Gregorii Nazianzeni Episcopi Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+},
+{
+"name":"S. Gregorii Nazianzeni Episcopi et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"tridentina"
+}
+],
+"05-10":[
+{
+"name":"S. Antonini Episcopi et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"05-12":[
+{
+"name":"Ss. Nerei, Achillei et Domitillæ Virg. atque Pancratii Martyrum",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C3",
+"rubric":"default"
+},
+{
+"name":"Ss. Nerei, Achillei et Pancratii Martyrum",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C3",
+"rubric":"1570_aut_rubrica_1930_aut_rubrica_1963"
+}
+],
+"05-13":[
+{
+"name":"S. Roberti Bellarmino Episcopi Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+},
+{
+"name":"S. Roberti Bellarmino Episcopi Confessoris et Ecclesiae Doctoris",
+"rank_class":"Duplex optional",
+"rank_num":1.1,
+"commune":"vide C4a",
+"rubric":"1960_aut_innovata"
+}
+],
+"05-14":[
+{
+"name":"S. Bonifatii Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"05-15":[
+{
+"name":"S. Joannis Baptistæ de la Salle Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"05-16":[
+{
+"name":"S. Ubaldi Episcopi et Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"05-17":[
+{
+"name":"S. Paschalis Baylon Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"05-18":[
+{
+"name":"S. Venantii Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"05-19":[
+{
+"name":"S. Petri Celestini Papæ et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"05-20":[
+{
+"name":"S. Bernardini Senensis Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"05-23":[
+{
+"name":"S. Joannis Baptistæ de Rossi Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"05-25":[
+{
+"name":"S. Gregorii VII Papæ et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"05-26":[
+{
+"name":"S. Philippi Neri Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"05-27":[
+{
+"name":"S. Bedæ Venerabilis Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5a",
+"rubric":"default"
+},
+{
+"name":"S. Bedae Venerabilis Confessoris et Ecclesiae Doctoris",
+"rank_class":"Duplex optional",
+"rank_num":2.0,
+"commune":"vide C5a",
+"rubric":"1960_aut_innovata"
+}
+],
+"05-28":[
+{
+"name":"S. Augustini Episcopi et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"05-29":[
+{
+"name":"S. Mariæ Magdalenæ de Pazzis Virginis",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C6b",
+"rubric":"default"
+}
+],
+"05-30":[
+{
+"name":"S. Felicis I Papæ et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"05-31":[
+{
+"name":"Beatæ Mariæ Virginis Reginæ",
+"rank_class":"Duplex II classis",
+"rank_num":5.1,
+"commune":"ex C11",
+"rubric":"default"
+},
+{
+"name":"Beatæ Mariæ Virginis Reginæ",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex C11",
+"rubric":"196"
+}
+],
+"06-01":[
+{
+"name":"S. Angelæ Mericiæ Virginis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C6b",
+"rubric":"default"
+},
+{
+"name":"S. Angelæ Mericiæ Virginis",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C6b",
+"rubric":"1962"
+}
+],
+"06-02":[
+{
+"name":"Ss. Marcellini, Petri, atque Erasmi Martyrum",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"06-04":[
+{
+"name":"S. Francisci Caracciolo Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"06-05":[
+{
+"name":"S. Bonifatii Episcopi et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"06-06":[
+{
+"name":"S. Norberti Episcopi et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"06-09":[
+{
+"name":"Ss. Primi et Feliciani Martyrum",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"06-10":[
+{
+"name":"S. Margaritæ Reginæ Viduæ",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C7a",
+"rubric":"default"
+}
+],
+"06-11":[
+{
+"name":"S. Barnabæ Apostoli",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C1",
+"rubric":"default"
+},
+{
+"name":"S. Barnabæ Apostoli",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C1",
+"rubric":"196"
+}
+],
+"06-12":[
+{
+"name":"S. Joannis a S. Facundo Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"06-13":[
+{
+"name":"S. Antonii de Padua Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"06-14":[
+{
+"name":"S. Basilii Magni Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+}
+],
+"06-15":[
+{
+"name":"Ss. Viti, Modesti atque Crescentiæ Martyrum",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"06-18":[
+{
+"name":"S. Ephræm Syri Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5a",
+"rubric":"default"
+}
+],
+"06-19":[
+{
+"name":"S. Julianæ de Falconeriis Virginis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C6b",
+"rubric":"default"
+}
+],
+"06-20":[
+{
+"name":"S. Silverii Papæ et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"06-21":[
+{
+"name":"S. Aloisii Gonzagæ Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"06-22":[
+{
+"name":"S. Paulini Episcopi et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"06-23":[
+{
+"name":"In Vigilia S. Joannis Baptistæ",
+"rank_class":"Simplex",
+"rank_num":1.5,
+"commune":"",
+"rubric":"default"
+},
+{
+"name":"In Vigilia S. Joannis Baptistæ",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"",
+"rubric":"196"
+}
+],
+"06-24":[
+{
+"name":"In Nativitate S. Joannis Baptistæ",
+"rank_class":"Duplex I classis cum Octava communi",
+"rank_num":6.5,
+"commune":"",
+"rubric":"default"
+},
+{
+"name":"In Nativitate S. Joannis Baptistæ",
+"rank_class":"Duplex I classis",
+"rank_num":6.0,
+"commune":"",
+"rubric":"196"
+}
+],
+"06-25":[
+{
+"name":"S. Gulielmi Abbatis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"06-26":[
+{
+"name":"Ss. Joannis et Pauli Martyrum",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C3",
+"rubric":"default"
+},
+{
+"name":"Ss. Joannis et Pauli Martyrum",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C3",
+"rubric":"1570_aut_rubrica_1617"
+}
+],
+"06-28":[
+{
+"name":"S. Irenæi Episcopi et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"06-29":[
+{
+"name":"SS. Apostolorum Petri et Pauli",
+"rank_class":"Duplex I classis cum octava communi",
+"rank_num":6.5,
+"commune":"ex C1",
+"rubric":"default"
+},
+{
+"name":"SS. Apostolorum Petri et Pauli",
+"rank_class":"Duplex I classis",
+"rank_num":6.0,
+"commune":"ex C1",
+"rubric":"196"
+}
+],
+"06-30":[
+{
+"name":"In Commemoratione S. Pauli Apostoli",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C1",
+"rubric":"default"
+},
+{
+"name":"In Commemoratione S. Pauli Apostoli",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C1",
+"rubric":"196"
+}
+],
+"07-01":[
+{
+"name":"Pretiosissimi Sanguinis Domini Nostri Jesu Christi",
+"rank_class":"Duplex I classis",
+"rank_num":6.0,
+"commune":"",
+"rubric":"default"
+}
+],
+"07-02":[
+{
+"name":"In Visitatione Beatæ Mariæ Virginis",
+"rank_class":"Duplex II classis",
+"rank_num":5.1,
+"commune":"ex C11",
+"rubric":"default"
+},
+{
+"name":"In Visitatione Beatæ Mariæ Virginis",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex C11",
+"rubric":"196"
+}
+],
+"07-03":[
+{
+"name":"S. Leonis Papæ et Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"07-05":[
+{
+"name":"S. Antonii Mariæ Zaccaria Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"07-06":[
+{
+"name":"In Octava Ss. Apostolorum Petri et Pauli",
+"rank_class":"Duplex majus",
+"rank_num":4.1,
+"commune":"vide C1",
+"rubric":"divino"
+},
+{
+"name":"In Octava Ss. Apostolorum Petri et Pauli",
+"rank_class":"Duplex",
+"rank_num":3.1,
+"commune":"vide C1",
+"rubric":"tridentina"
+}
+],
+"07-07":[
+{
+"name":"Ss. Cyrilli et Methodii Pont. et Conf.",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"07-08":[
+{
+"name":"S. Elisabeth Reg. Portugaliæ Viduæ",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C7a",
+"rubric":"default"
+}
+],
+"07-10":[
+{
+"name":"Ss. Septem Fratrum Martyrum, ac Rufinæ et Secundæ Virginum et Martyrum",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"07-11":[
+{
+"name":"S. Pii I Papæ et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"07-12":[
+{
+"name":"S. Joannis Gualberti Abbatis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"07-13":[
+{
+"name":"S. Anacleti Papæ et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"07-14":[
+{
+"name":"S. Bonaventuræ Episcopi Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+},
+{
+"name":"S. Bonaventuræ Episcopi Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C4",
+"rubric":"1570"
+}
+],
+"07-15":[
+{
+"name":"S. Henrici Imperatoris Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"07-16":[
+{
+"name":"Beatæ Mariæ Virginis de Monte Carmelo",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C11",
+"rubric":"default"
+},
+{
+"name":"Beatæ Mariæ Virginis de Monte Carmelo",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C11",
+"rubric":"196"
+}
+],
+"07-17":[
+{
+"name":"S. Alexii Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C5",
+"rubric":"default"
+},
+{
+"name":"S. Alexii Confessoris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C5",
+"rubric":"1960"
+}
+],
+"07-18":[
+{
+"name":"S. Camilli de Lellis Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+},
+{
+"name":"S. Camilli de Lellis Confessoris",
+"rank_class":"Duplex optional",
+"rank_num":2.0,
+"commune":"vide C5",
+"rubric":"1960_aut_innovata"
+}
+],
+"07-19":[
+{
+"name":"S. Vincentii a Paulo Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"07-20":[
+{
+"name":"S. Hieronymi Æmiliani Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"07-21":[
+{
+"name":"S. Praxedis Virginis",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C6b",
+"rubric":"default"
+}
+],
+"07-22":[
+{
+"name":"S. Mariæ Magdalenæ Pœnitentis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C7a",
+"rubric":"default"
+}
+],
+"07-23":[
+{
+"name":"S. Apollinaris Episcopi et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"default"
+},
+{
+"name":"S. Apollinaris Episcopi et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"1962"
+}
+],
+"07-25":[
+{
+"name":"S. Jacobi Apostoli",
+"rank_class":"Duplex II classis",
+"rank_num":5.2,
+"commune":"ex C1",
+"rubric":"default"
+},
+{
+"name":"S. Jacobi Apostoli",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex C1",
+"rubric":"196"
+}
+],
+"07-26":[
+{
+"name":"S. Annæ Matris B.M.V.",
+"rank_class":"Duplex II classis",
+"rank_num":5.1,
+"commune":"ex C7a",
+"rubric":"default"
+},
+{
+"name":"S. Annæ Matris B.M.V.",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex C7a",
+"rubric":"196"
+},
+{
+"name":"S. Annae et Joachim Parentes B.M.V.",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"ex C7a",
+"rubric":"1960_aut_innovata"
+}
+],
+"07-27":[
+{
+"name":"S. Pantaleonis Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"07-28":[
+{
+"name":"Ss. Nazarii et Celsi Martyrum, Victoris I Papæ et Martyris ac Innocentii I Papæ et Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C3",
+"rubric":"default"
+},
+{
+"name":"Ss. Nazarii et Celsi Martyrum, Victoris I Papæ et Martyris ac Innocentii I Papæ et Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":3.0,
+"commune":"vide C3",
+"rubric":"1960"
+},
+{
+"name":"Ss. Nazarii et Celsi Martyrum, Victoris I Papæ et Martyris ac Innocentii I Papæ et Confessoris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C3",
+"rubric":"1962"
+}
+],
+"07-29":[
+{
+"name":"S. Marthæ Virginis",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C6b",
+"rubric":"default"
+},
+{
+"name":"S. Marthæ Virginis",
+"rank_class":"Semiduplex",
+"rank_num":3.0,
+"commune":"vide C6b",
+"rubric":"1960"
+}
+],
+"07-30":[
+{
+"name":"S. Abdon et Sennen Martyrum",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"07-31":[
+{
+"name":"S. Ignatii Confessoris",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"08-01":[
+{
+"name":"S. Petri ad Vincula",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C1",
+"rubric":"default"
+}
+],
+"08-02":[
+{
+"name":"S. Alfonsi Mariæ de Ligorio Episc. Conf. et Eccles. Doct.",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+}
+],
+"08-03":[
+{
+"name":"De Inventione S. Stephani Protomartyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"08-04":[
+{
+"name":"S. Dominici Confessoris",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"08-05":[
+{
+"name":"Sanctæ Mariæ Virginis ad Nives",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C11",
+"rubric":"default"
+},
+{
+"name":"Sanctæ Mariæ Virginis ad Nives",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C11",
+"rubric":"196"
+}
+],
+"08-06":[
+{
+"name":"In Transfiguratione Domini Nostri Jesu Christi",
+"rank_class":"Duplex II classis",
+"rank_num":5.1,
+"commune":"",
+"rubric":"default"
+},
+{
+"name":"In Transfiguratione Domini Nostri Jesu Christi",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"",
+"rubric":"196"
+},
+{
+"name":"In Transfiguratione Domini Nostri Jesu Christi",
+"rank_class":"Duplex majus",
+"rank_num":4.1,
+"commune":"",
+"rubric":"tridentina"
+}
+],
+"08-07":[
+{
+"name":"S. Cajetani Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"08-08":[
+{
+"name":"Ss. Cyriaci, Largi et Smaragdi Martyrum",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"08-09":[
+{
+"name":"S. Joannis Mariæ Vianney Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"08-10":[
+{
+"name":"S. Laurentii Martyris",
+"rank_class":"Duplex II classis cum octava simplici",
+"rank_num":5.0,
+"commune":"ex C2",
+"rubric":"default"
+},
+{
+"name":"S. Laurentii Martyris",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex C2",
+"rubric":"196"
+}
+],
+"08-11":[
+{
+"name":"Ss. Tiburtii et Susannæ Virginis, Martyrum",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"08-12":[
+{
+"name":"S. Claræ Virginis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C6b",
+"rubric":"default"
+},
+{
+"name":"S. Claræ Virginis",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C6b",
+"rubric":"1570"
+}
+],
+"08-13":[
+{
+"name":"Ss. Hippolyti et Cassiani Martyrum",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"08-14":[
+{
+"name":"In Vigilia Assumptionis B.M.V.",
+"rank_class":"Simplex",
+"rank_num":1.5,
+"commune":"",
+"rubric":"default"
+},
+{
+"name":"In Vigilia Assumptionis B.M.V.",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"",
+"rubric":"196"
+}
+],
+"08-15":[
+{
+"name":"In Assumptione Beatæ Mariæ Virginis",
+"rank_class":"Duplex I classis cum Octava Communi",
+"rank_num":7.0,
+"commune":"ex C11",
+"rubric":"default"
+}
+],
+"08-16":[
+{
+"name":"S. Joachim Confessoris, Patris B. M. V.",
+"rank_class":"Duplex II classis",
+"rank_num":5.1,
+"commune":"ex C5",
+"rubric":"default"
+},
+{
+"name":"S. Joachim Confessoris, Patris B. M. V.",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex C5",
+"rubric":"196"
+}
+],
+"08-17":[
+{
+"name":"S. Hyacinthi Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"08-19":[
+{
+"name":"S. Joannis Eudes Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"08-20":[
+{
+"name":"S. Bernardi Abbatis et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5a",
+"rubric":"default"
+}
+],
+"08-21":[
+{
+"name":"S. Joannæ Franciscæ Frémiot de Chantal Viduæ",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C7a",
+"rubric":"default"
+}
+],
+"08-22":[
+{
+"name":"Immaculati Cordis Beatæ Mariæ Virginis",
+"rank_class":"Duplex II classis",
+"rank_num":5.1,
+"commune":"ex C11",
+"rubric":"default"
+},
+{
+"name":"Immaculati Cordis Beatæ Mariæ Virginis",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex C11",
+"rubric":"196"
+}
+],
+"08-23":[
+{
+"name":"S. Philippi Benitii Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"08-24":[
+{
+"name":"S. Bartholomæi Apostoli",
+"rank_class":"Duplex II classis",
+"rank_num":5.5,
+"commune":"ex C1",
+"rubric":"default"
+},
+{
+"name":"S. Bartholomæi Apostoli",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex C1",
+"rubric":"196"
+}
+],
+"08-25":[
+{
+"name":"S. Ludovici Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C5",
+"rubric":"default"
+},
+{
+"name":"S. Ludovici Confessoris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C5",
+"rubric":"1570"
+},
+{
+"name":"S. Ludovici Regis Franciæ Confessoris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C5",
+"rubric":"1617"
+},
+{
+"name":"S. Ludovici Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"196"
+}
+],
+"08-26":[
+{
+"name":"S. Zephyrini Papæ et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"08-27":[
+{
+"name":"S. Josephi Calasanctii Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"08-28":[
+{
+"name":"S. Augustini Episcopi et Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+}
+],
+"08-29":[
+{
+"name":"In Decollatione S. Joannis Baptistæ",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C2",
+"rubric":"default"
+},
+{
+"name":"In Decollatione S. Joannis Baptistæ",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"196"
+}
+],
+"08-30":[
+{
+"name":"S. Rosæ a Sancta Maria Limanæ Virginis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C6b",
+"rubric":"default"
+}
+],
+"08-31":[
+{
+"name":"S. Raymundi Nonnati Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"09-01":[
+{
+"name":"S. Ægidii Abbatis",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"09-02":[
+{
+"name":"S. Stephani Hungariæ Regis Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"09-03":[
+{
+"name":"S. Pii X Papæ Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"09-05":[
+{
+"name":"S. Laurentii Justiniani Episcopi et Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"09-08":[
+{
+"name":"In Nativitate Beatæ Mariæ Virginis",
+"rank_class":"Duplex II classis cum Octava simplici",
+"rank_num":5.1,
+"commune":"ex C11",
+"rubric":"default"
+},
+{
+"name":"In Nativitate Beatæ Mariæ Virginis",
+"rank_class":"Duplex II classis cum Octava simplici",
+"rank_num":5.0,
+"commune":"ex C11",
+"rubric":"196"
+}
+],
+"09-09":[
+{
+"name":"S. Gorgonii Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"09-10":[
+{
+"name":"S. Nicolai de Tolentino Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"09-11":[
+{
+"name":"Ss. Proti et Hyacinthi Martyrum",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"09-12":[
+{
+"name":"S. Nominis Beatæ Mariæ Virginis",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C11",
+"rubric":"default"
+},
+{
+"name":"S. Nominis Beatæ Mariæ Virginis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C11",
+"rubric":"196"
+},
+{
+"name":"S. Nominis Beatae Mariae Virginis",
+"rank_class":"Duplex optional",
+"rank_num":2.0,
+"commune":"vide C11",
+"rubric":"1960_aut_innovata"
+}
+],
+"09-14":[
+{
+"name":"In Exaltatione Sanctæ Crucis",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex Sancti/05-03",
+"rubric":"default"
+},
+{
+"name":"In Exaltatione Sanctæ Crucis",
+"rank_class":"Duplex II classis",
+"rank_num":5.5,
+"commune":"ex Sancti/05-03",
+"rubric":"196"
+}
+],
+"09-15":[
+{
+"name":"Septem Dolorum Beatæ Mariæ Virginis",
+"rank_class":"Duplex 2nd class",
+"rank_num":5.1,
+"commune":"ex C11",
+"rubric":"default"
+},
+{
+"name":"Septem Dolorum Beatæ Mariæ Virginis",
+"rank_class":"Duplex 2nd class",
+"rank_num":5.0,
+"commune":"ex C11",
+"rubric":"196"
+}
+],
+"09-16":[
+{
+"name":"Ss. Cornelii Papæ et Cypriani Episcopi, Martyrum",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"09-17":[
+{
+"name":"Impressionis Stigmatum S. Francisci",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+},
+{
+"name":"Impressionis Stigmatum S. Francisci",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C5",
+"rubric":"196"
+}
+],
+"09-18":[
+{
+"name":"S. Josephi de Cupertino Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"09-19":[
+{
+"name":"S. Januarii Episcopi et Sociorum Martyrum",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"09-20":[
+{
+"name":"Ss. Eustachii et Sociorum Martyrum",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C3",
+"rubric":"default"
+},
+{
+"name":"Ss. Eustachii et Sociorum Martyrum",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C3",
+"rubric":"1960_aut_innovata"
+}
+],
+"09-21":[
+{
+"name":"S. Matthæi Apostoli et Evangelistæ",
+"rank_class":"Duplex II classis",
+"rank_num":5.1,
+"commune":"ex C1a",
+"rubric":"default"
+},
+{
+"name":"S. Matthæi Apostoli et Evangelistæ",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex C1a",
+"rubric":"196"
+}
+],
+"09-22":[
+{
+"name":"S. Thomæ de Villanova Episcopi et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"09-23":[
+{
+"name":"S. Lini Papæ et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"09-24":[
+{
+"name":"Beatæ Mariæ Virginis de Mercede",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C11",
+"rubric":"default"
+},
+{
+"name":"Beatæ Mariæ Virginis de Mercede",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C11",
+"rubric":"196"
+}
+],
+"09-26":[
+{
+"name":"Ss. Cypriani et Justinæ Virginis, Martyrum",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"09-27":[
+{
+"name":"Ss. Cosmæ et Damiani Martyrum",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"09-28":[
+{
+"name":"S. Wenceslai Ducis et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"09-29":[
+{
+"name":"In Dedicatione S. Michaëlis Archangelis",
+"rank_class":"Duplex I classis",
+"rank_num":6.0,
+"commune":"ex Sancti/05-08",
+"rubric":"default"
+},
+{
+"name":"In Dedicatione S. Michaëlis Archangelis",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex Sancti/05-08",
+"rubric":"tridentina"
+}
+],
+"09-30":[
+{
+"name":"S. Hieronymi Presbyteris Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5a",
+"rubric":"default"
+}
+],
+"10-01":[
+{
+"name":"S. Remigii Episcopi et Confessoris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"10-02":[
+{
+"name":"Ss. Angelorum Custodum",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"10-03":[
+{
+"name":"S. Theresiæ a Jesu Infante Virginis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C6b",
+"rubric":"default"
+}
+],
+"10-04":[
+{
+"name":"S. Francisci Confessoris",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"10-05":[
+{
+"name":"Ss. Placidi et Sociorum Martyrum",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"10-06":[
+{
+"name":"S. Brunonis Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"10-07":[
+{
+"name":"Sacratissimi Rosarii Beatæ Mariæ Virginis",
+"rank_class":"Duplex 2 classis",
+"rank_num":5.1,
+"commune":"ex C11",
+"rubric":"default"
+},
+{
+"name":"Beatæ Mariæ Virginis a Rosario",
+"rank_class":"Duplex 2 classis",
+"rank_num":5.0,
+"commune":"ex C11",
+"rubric":"196"
+},
+{
+"name":"Sanctissimi Rosarii Beatæ Mariæ Virginis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"ex C11",
+"rubric":"1960_aut_innovata"
+}
+],
+"10-08":[
+{
+"name":"S. Birgittæ Viduæ",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C7a",
+"rubric":"default"
+}
+],
+"10-09":[
+{
+"name":"S. Joannis Leonardi Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"10-10":[
+{
+"name":"S. Francisci Borgiæ Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"10-11":[
+{
+"name":"Maternitatis Beatæ Mariæ Virginis",
+"rank_class":"Duplex 2 classis",
+"rank_num":5.1,
+"commune":"ex C11",
+"rubric":"default"
+},
+{
+"name":"Maternitatis Beatæ Mariæ Virginis",
+"rank_class":"Duplex 2 classis",
+"rank_num":5.0,
+"commune":"ex C11",
+"rubric":"1960"
+}
+],
+"10-13":[
+{
+"name":"S. Eduardi Regis Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"10-14":[
+{
+"name":"S. Callisti Papæ et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"default"
+},
+{
+"name":"S. Callisti Papæ et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C2",
+"rubric":"1570"
+}
+],
+"10-15":[
+{
+"name":"S. Teresiæ Virginis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C6b",
+"rubric":"default"
+}
+],
+"10-16":[
+{
+"name":"S. Hedwigis Viduæ",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C7a",
+"rubric":"default"
+}
+],
+"10-17":[
+{
+"name":"S. Margaritæ Mariæ Alacoque Virginis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C6b",
+"rubric":"default"
+}
+],
+"10-18":[
+{
+"name":"S. Lucæ Evangelistæ",
+"rank_class":"Duplex 2 classis",
+"rank_num":5.1,
+"commune":"ex C1a",
+"rubric":"default"
+},
+{
+"name":"S. Lucæ Evangelistæ",
+"rank_class":"Duplex 2 classis",
+"rank_num":5.0,
+"commune":"ex C1a",
+"rubric":"196"
+}
+],
+"10-19":[
+{
+"name":"S. Petri de Alcantara Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"10-20":[
+{
+"name":"S. Joannis Cantii Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"10-21":[
+{
+"name":"S. Hilarionis Abbatis",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"10-24":[
+{
+"name":"S. Raphaëlis Archangeli",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex Sancti/05-08",
+"rubric":"default"
+}
+],
+"10-25":[
+{
+"name":"Ss. Chrysanthi et Dariæ Martyrum",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"10-26":[
+{
+"name":"S. Evaristi Papæ et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.2,
+"commune":"vide C2",
+"rubric":"default"
+},
+{
+"name":"S. Evaristi Papæ et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"1960"
+}
+],
+"10-28":[
+{
+"name":"Ss. Simonis et Judæ Apostolorum",
+"rank_class":"Duplex 2 classis",
+"rank_num":5.1,
+"commune":"ex C1",
+"rubric":"default"
+},
+{
+"name":"Ss. Simonis et Judæ Apostolorum",
+"rank_class":"Duplex 2 classis",
+"rank_num":5.0,
+"commune":"ex C1",
+"rubric":"196"
+}
+],
+"10-31":[
+{
+"name":"In Vigilia Omnium Sanctorum",
+"rank_class":"Vigilia",
+"rank_num":1.5,
+"commune":"",
+"rubric":"default"
+}
+],
+"11-01":[
+{
+"name":"Omnium Sanctorum",
+"rank_class":"Duplex I classis cum octava communi",
+"rank_num":6.4,
+"commune":"vide C3",
+"rubric":"default"
+}
+],
+"11-02":[
+{
+"name":"In Commemoratione Omnium Fidelium Defunctorum",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"ex C9",
+"rubric":"default"
+},
+{
+"name":"In Commemoratione Omnium Fidelium Defunctorum",
+"rank_class":"I. classis",
+"rank_num":6.0,
+"commune":"ex C9",
+"rubric":"196"
+}
+],
+"11-04":[
+{
+"name":"S. Caroli Episcopi et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"11-08":[
+{
+"name":"In Octava Omnium Sanctorum",
+"rank_class":"Duplex majus",
+"rank_num":4.1,
+"commune":"vide Sancti/11-01",
+"rubric":"default"
+},
+{
+"name":"In Octava Omnium Sanctorum",
+"rank_class":"Duplex",
+"rank_num":3.1,
+"commune":"vide Sancti/11-01",
+"rubric":"tridentina"
+}
+],
+"11-09":[
+{
+"name":"In Dedicatione Archibasilicæ Ss. Salvatoris",
+"rank_class":"Duplex II. classis",
+"rank_num":5.0,
+"commune":"ex C8",
+"rubric":"default"
+},
+{
+"name":"In Dedicatione Basilicæ Ss. Salvatoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"ex C8",
+"rubric":"tridentina"
+}
+],
+"11-10":[
+{
+"name":"S. Andreæ Avellini Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"11-11":[
+{
+"name":"S. Martini Episcopi et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+}
+],
+"11-12":[
+{
+"name":"S. Martini Papæ et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"11-13":[
+{
+"name":"S. Didaci Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C5",
+"rubric":"default"
+},
+{
+"name":"S. Didaci Confessoris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C5",
+"rubric":"1960_aut_innovata"
+}
+],
+"11-14":[
+{
+"name":"S. Josaphat Episcopi et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"11-15":[
+{
+"name":"S. Alberti Magni Episcopi Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+}
+],
+"11-16":[
+{
+"name":"S. Gertrudis Virginis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C6b",
+"rubric":"default"
+}
+],
+"11-17":[
+{
+"name":"S. Gregorii Thaumaturgi Episcopi et Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C4",
+"rubric":"default"
+},
+{
+"name":"S. Gregorii Thaumaturgi Episcopi et Confessoris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C4",
+"rubric":"1570"
+},
+{
+"name":"S. Gregorii Thaumaturgi Episcopi et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"196"
+}
+],
+"11-18":[
+{
+"name":"In Dedicatione Basilicarum Ss. Apostolorum Petri et Pauli",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C8",
+"rubric":"default"
+}
+],
+"11-19":[
+{
+"name":"S. Elisabeth Viduæ",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C7a",
+"rubric":"default"
+}
+],
+"11-20":[
+{
+"name":"S. Felicis de Valois Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"11-21":[
+{
+"name":"In Præsentatione Beatæ Mariæ Virginis",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C11",
+"rubric":"default"
+},
+{
+"name":"In Præsentatione Beatæ Mariæ Virginis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C11",
+"rubric":"196"
+}
+],
+"11-22":[
+{
+"name":"S. Cæciliæ Virginis et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C6",
+"rubric":"default"
+},
+{
+"name":"S. Cæciliæ Virginis et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C6",
+"rubric":"1570_aut_rubrica_1617"
+}
+],
+"11-23":[
+{
+"name":"S. Clementis I Papæ et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"default"
+},
+{
+"name":"S. Clementis Papæ et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C2",
+"rubric":"1570_aut_rubrica_1617"
+}
+],
+"11-24":[
+{
+"name":"S. Joannis a Cruce Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5a",
+"rubric":"default"
+}
+],
+"11-25":[
+{
+"name":"S. Catharinæ Virginis et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C6",
+"rubric":"default"
+}
+],
+"11-26":[
+{
+"name":"S. Silvestri Abbatis",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"11-30":[
+{
+"name":"S. Andreæ Apostoli",
+"rank_class":"Duplex 2 classis",
+"rank_num":5.1,
+"commune":"ex C1",
+"rubric":"default"
+},
+{
+"name":"S. Andreæ Apostoli",
+"rank_class":"Duplex 2 classis",
+"rank_num":5.0,
+"commune":"ex C1",
+"rubric":"196"
+},
+{
+"name":"S. Andreæ Apostoli",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"ex C1",
+"rubric":"cisterciensis"
+}
+],
+"12-02":[
+{
+"name":"S. Bibianæ Virginis et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C6",
+"rubric":"default"
+},
+{
+"name":"S. Bibianæ Virginis et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C6",
+"rubric":"1570"
+}
+],
+"12-03":[
+{
+"name":"S. Francisci Xaverii Confessoris",
+"rank_class":"Duplex majus",
+"rank_num":4.0,
+"commune":"vide C5",
+"rubric":"default"
+},
+{
+"name":"S. Francisci Xaverii Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C5",
+"rubric":"1888"
+}
+],
+"12-04":[
+{
+"name":"S. Petri Chrysologi Episcopi Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+}
+],
+"12-05":[
+{
+"name":"S. Sabbæ Abbatis",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C5",
+"rubric":"default"
+}
+],
+"12-06":[
+{
+"name":"S. Nicolai Episcopi et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+},
+{
+"name":"S. Nicolai Episcopi et Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C4",
+"rubric":"1570_aut_rubrica_1617"
+}
+],
+"12-07":[
+{
+"name":"S. Ambrosii Episcopi Confessoris et Ecclesiæ Doctoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4a",
+"rubric":"default"
+}
+],
+"12-08":[
+{
+"name":"In Conceptione Immaculata Beatæ Mariæ Virginis",
+"rank_class":"Duplex I classis cum octava communi",
+"rank_num":6.5,
+"commune":"ex C11",
+"rubric":"default"
+},
+{
+"name":"In Conceptione Immaculata Beatæ Mariæ Virginis",
+"rank_class":"Duplex I classis",
+"rank_num":6.01,
+"commune":"ex C11",
+"rubric":"196"
+}
+],
+"12-11":[
+{
+"name":"S. Damasi Papæ et Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C4",
+"rubric":"default"
+},
+{
+"name":"S. Damasi Papæ et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"196"
+},
+{
+"name":"S. Damasi Papae et Confessoris",
+"rank_class":"Semiduplex",
+"rank_num":2.5,
+"commune":"vide C4",
+"rubric":"1960_aut_innovata"
+}
+],
+"12-13":[
+{
+"name":"S. Luciæ Virginis et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C6",
+"rubric":"default"
+}
+],
+"12-15":[
+{
+"name":"In Octava Concept. Immac. Beatæ Mariæ Virginis",
+"rank_class":"Duplex majus",
+"rank_num":4.1,
+"commune":"vide Sancti/12-08",
+"rubric":"divino"
+},
+{
+"name":"In Octava Concept. Immac. Beatæ Mariæ Virginis",
+"rank_class":"Duplex",
+"rank_num":3.1,
+"commune":"vide Sancti/12-08",
+"rubric":"tridentina"
+}
+],
+"12-16":[
+{
+"name":"S. Eusebii Episcopi et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.5,
+"commune":"vide C2",
+"rubric":"default"
+}
+],
+"12-21":[
+{
+"name":"S. Thomæ Apostoli",
+"rank_class":"Duplex II classis",
+"rank_num":5.1,
+"commune":"ex C1",
+"rubric":"default"
+},
+{
+"name":"S. Thomæ Apostoli",
+"rank_class":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex C1",
+"rubric":"196"
+}
+],
+"12-24":[
+{
+"name":"In Vigilia Nativitatis Domini",
+"rank_class":"Duplex I classis",
+"rank_num":6.9,
+"commune":"",
+"rubric":"default"
+}
+],
+"12-25":[
+{
+"name":"In Nativitate Domini",
+"rank_class":"Duplex I Classis",
+"rank_num":6.9,
+"commune":"",
+"rubric":"default"
+},
+{
+"name":"In Nativitate Domini",
+"rank_class":"Duplex I Classis",
+"rank_num":7.0,
+"commune":"",
+"rubric":"1960"
+}
+],
+"12-26":[
+{
+"name":"S. Stephani Protomartyris",
+"rank_class":"Duplex II class cum octava simplici",
+"rank_num":5.4,
+"commune":"ex C2",
+"rubric":"default"
+},
+{
+"name":"S. Stephani Protomartyris",
+"rank_class":"Duplex II class",
+"rank_num":5.4,
+"commune":"ex C2",
+"rubric":"196"
+}
+],
+"12-27":[
+{
+"name":"S. Joannis Apostoli et Evangelistæ",
+"rank_class":"Duplex II Class cum octava simplici",
+"rank_num":5.3,
+"commune":"ex C1",
+"rubric":"default"
+},
+{
+"name":"S. Joannis Apostoli et Evangelistæ",
+"rank_class":"Duplex II class",
+"rank_num":5.3,
+"commune":"ex C1",
+"rubric":"196"
+}
+],
+"12-28":[
+{
+"name":"Ss. Innocentium",
+"rank_class":"Duplex II class cum octava simplici",
+"rank_num":5.2,
+"commune":"ex C3",
+"rubric":"default"
+},
+{
+"name":"Ss. Innocentium",
+"rank_class":"Duplex II class",
+"rank_num":5.2,
+"commune":"ex C3",
+"rubric":"196"
+},
+{
+"name":"Ss. Innocentium",
+"rank_class":"Duplex II class cum octava",
+"rank_num":5.2,
+"commune":"ex C3",
+"rubric":"tridentina"
+}
+],
+"12-29":[
+{
+"name":"S. Thomæ Cantuariensis Episcopi et Martyris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C2",
+"rubric":"default"
+},
+{
+"name":"S. Thomæ Cantuariensis Episcopi et Martyris",
+"rank_class":"Semiduplex",
+"rank_num":2.2,
+"commune":"vide C2",
+"rubric":"1570_aut_rubrica_1888_aut_rubrica_1617"
+},
+{
+"name":"S. Thomæ Cantuariensis Episcopi et Martyris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C2",
+"rubric":"1960"
+}
+],
+"12-31":[
+{
+"name":"S. Silvestri Papæ et Confessoris",
+"rank_class":"Duplex",
+"rank_num":3.0,
+"commune":"vide C4",
+"rubric":"default"
+},
+{
+"name":"S. Silvestri Papæ et Confessoris",
+"rank_class":"Simplex",
+"rank_num":1.1,
+"commune":"vide C4",
+"rubric":"196"
+}
+]
+}

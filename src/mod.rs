@@ -26,3 +26,8 @@ pub mod translation;
 pub mod core;
 pub mod corpus;
 pub mod reform;
+
+// Phase 3 — occurrence(): given a (date, rubric), pick the winner
+// between the temporal and sanctoral cycles, plus any commemoration.
+// Tridentine 1570 only at present; other rubrics panic with a marker.
+pub mod occurrence;

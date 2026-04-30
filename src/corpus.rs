@@ -18,8 +18,8 @@
 
 use crate::divinum_officium::core::{FileKey, Rubric};
 use crate::divinum_officium::kalendaria::KalendariaEntry;
-use crate::divinum_officium::missa::MassFile;
-use crate::divinum_officium::sancti::SanctiEntry;
+use crate::divinum_officium::missa::{self, MassFile};
+use crate::divinum_officium::sancti::{self, SanctiEntry};
 
 /// What the kalendaria diff says about `(month, day, rubric)`.
 /// Distinct from `kalendaria::Resolution` (which already folds in
@@ -58,16 +58,20 @@ pub trait Corpus {
 pub struct BundledCorpus;
 
 impl Corpus for BundledCorpus {
-    fn sancti_entries(&self, _month: u32, _day: u32) -> &[SanctiEntry] {
-        todo!("Phase 4 — wire to data/sancti.json via a pub accessor in sancti.rs")
+    fn sancti_entries(&self, month: u32, day: u32) -> &[SanctiEntry] {
+        sancti::raw_entries(month, day).unwrap_or(&[])
     }
 
     fn kalendaria(&self, _month: u32, _day: u32, _rubric: Rubric) -> KalendariaResolution<'_> {
-        todo!("Phase 4 — wire to data/kalendaria_*.json (one per reform layer)")
+        // Phase 7+: wire per-reform kalendar diffs from
+        // vendor/divinum-officium/web/www/Tabulae/Kalendaria/{1570,1955,1960,…}.txt.
+        // Phase 3 consumers fall through to `sancti_entries` which
+        // returns the un-diffed corpus.
+        KalendariaResolution::NoOverride
     }
 
-    fn mass_file(&self, _key: &FileKey) -> Option<&MassFile> {
-        todo!("Phase 4 — wire to data/missa_latin.json")
+    fn mass_file(&self, key: &FileKey) -> Option<&MassFile> {
+        missa::lookup(&key.render())
     }
 }
 

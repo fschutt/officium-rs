@@ -45,6 +45,30 @@ fn parsed() -> &'static HashMap<String, Vec<SanctiEntry>> {
     PARSED.get_or_init(|| serde_json::from_str(SANCTI_JSON).unwrap_or_default())
 }
 
+/// Raw entries for `(month, day)` — all rubric variants. Empty
+/// when no Sancti file ships for the date (i.e. a ferial).
+/// Phase 3+ consumers (occurrence) pick the variant that matches the
+/// active rubric layer.
+pub fn raw_entries(month: u32, day: u32) -> Option<&'static [SanctiEntry]> {
+    let key = format!("{month:02}-{day:02}");
+    parsed().get(&key).map(Vec::as_slice)
+}
+
+/// Pick the entry whose `rubric` field matches `preferred`, falling
+/// back to the requested chain. Phase 3 uses this to select the
+/// pre-1955 / pre-1960 variant for Tridentine rubrics.
+pub fn pick_by_rubric<'a>(
+    entries: &'a [SanctiEntry],
+    preference: &[&str],
+) -> Option<&'a SanctiEntry> {
+    for &want in preference {
+        if let Some(e) = entries.iter().find(|e| e.rubric == want) {
+            return Some(e);
+        }
+    }
+    entries.first()
+}
+
 /// Pick the entry that best matches the 1962 typical edition. Priority:
 /// `1960` → `1960_aut_innovata` → `196` → `default`. Returns `None` if
 /// no Sancti file ships for that fixed date (e.g. ferias).

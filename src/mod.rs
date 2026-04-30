@@ -47,3 +47,9 @@ pub mod precedence;
 // Pure string assembly over the corpus, no HTML, no globals.
 // Public entry point: `mass::mass_propers(office, corpus)`.
 pub mod mass;
+
+// Phase 6 — Rust↔Perl regression machinery. Pure-functional HTML
+// extractor + diacritic/punctuation normaliser + per-section
+// comparator. Used by the `year-sweep` binary to produce green/
+// yellow/red boards under `target/regression/`.
+pub mod regression;

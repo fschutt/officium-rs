@@ -656,10 +656,10 @@ This is a long journey. Each completed phase appends a one-line
 entry below with date, commit, and headline number (e.g. "%
 green on the year sweep").
 
-| Phase | Status      | Date       | Commit | Notes |
-|------:|-------------|------------|--------|-------|
-|   0   | not started |            |        |       |
-|   1   | not started |            |        |       |
+| Phase | Status      | Date       | Commit  | Notes |
+|------:|-------------|------------|---------|-------|
+|   0   | complete    | 2026-04-30 | (next)  | Vendor pinned at `b0c1c71714`. `scripts/{setup-divinum-officium,do_render,rebuild}.sh`. `cargo run --bin year-sweep -- --smoke` returns 3/3. All five standard rubrics render Mass HTML for 04-30-2026 in ~100 ms/date. One pre-existing sancti test marked `#[ignore = "Phase 2 corpus audit"]`. |
+|   1   | not started |            |         |       |
 |   2   | not started |            |        |       |
 |   3   | not started |            |        |       |
 |   4   | not started |            |        |       |

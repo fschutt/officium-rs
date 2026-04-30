@@ -14,7 +14,9 @@
 pub mod date;
 pub mod sancti;
 pub mod kalendaria;
-pub mod precedence;
+// TODO Phase 11: delete precedence_legacy when /wip/calendar and /wip/missal
+// switch to the canonical precedence::compute_office pipeline.
+pub mod precedence_legacy;
 pub mod missa;
 pub mod translation;
 
@@ -31,3 +33,10 @@ pub mod reform;
 // between the temporal and sanctoral cycles, plus any commemoration.
 // Tridentine 1570 only at present; other rubrics panic with a marker.
 pub mod occurrence;
+
+// Phase 4 — precedence(): high-level orchestrator that calls
+// `occurrence::compute_occurrence`, applies post-processing rules
+// (rank parsing, season detection, color resolution, scriptura
+// chaining), and produces the canonical `core::OfficeOutput`. Public
+// entry point: `precedence::compute_office(input, corpus)`.
+pub mod precedence;

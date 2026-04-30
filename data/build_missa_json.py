@@ -48,7 +48,13 @@ import re
 import sys
 from pathlib import Path
 
-SECTION_RE = re.compile(r"^\[([^\]]+)\]\s*$")
+# Match `[SectionName]` and ignore anything after the closing bracket
+# (upstream files routinely add `(communi Summorum Pontificum)`,
+# `(rubrica 1960)` etc. as conditional / informational annotations).
+# When the same section name appears more than once in the file the
+# FIRST occurrence wins — that's the default (the conditioned variants
+# come later and are deferred to Phase 7+ rubric layers).
+SECTION_RE = re.compile(r"^\[([^\]]+)\]")
 BASE_FILE_RE = re.compile(r"\.txt$")
 
 
@@ -56,16 +62,26 @@ def parse_mass_file(text: str) -> dict:
     """Split a Mass file into a dict-of-sections plus a parsed [Rank]
     summary. The [Rank] body is stored separately because it isn't a
     proper section — it carries metadata (rank class / numeric rank /
-    Commune ref) rather than printable Mass text."""
+    Commune ref) rather than printable Mass text.
+
+    First-occurrence wins for repeated section names — the upstream
+    files use `[Section] (rubrica 1960)` etc. to override the default
+    body for specific rubrics; until Phase 7+ implements full
+    conditional parsing we keep the unannotated default."""
     sections: dict[str, list[str]] = {}
     current = None
+    collecting = False
     for raw in text.splitlines():
         m = SECTION_RE.match(raw.rstrip())
         if m is not None:
             current = m.group(1).strip()
-            sections.setdefault(current, [])
+            if current not in sections:
+                sections[current] = []
+                collecting = True
+            else:
+                collecting = False  # later occurrence — drop body
             continue
-        if current is not None:
+        if current is not None and collecting:
             sections[current].append(raw)
 
     out: dict = {}

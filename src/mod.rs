@@ -40,3 +40,10 @@ pub mod occurrence;
 // chaining), and produces the canonical `core::OfficeOutput`. Public
 // entry point: `precedence::compute_office(input, corpus)`.
 pub mod precedence;
+
+// Phase 5 — Mass-propers resolver: takes an `OfficeOutput` and
+// produces `MassPropers` (Introitus, Oratio, Lectio, Graduale,
+// Evangelium, Offertorium, Secreta, Communio, Postcommunio, …).
+// Pure string assembly over the corpus, no HTML, no globals.
+// Public entry point: `mass::mass_propers(office, corpus)`.
+pub mod mass;

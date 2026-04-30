@@ -17,3 +17,12 @@ pub mod kalendaria;
 pub mod precedence;
 pub mod missa;
 pub mod translation;
+
+// Phase 1 — pure-core types + corpus boundary + reform-layer model.
+// These are the new boundary; Phases 3-5 plant the actual occurrence /
+// precedence / mass_propers logic on top. Existing modules above stay
+// in place (and feed the simplified `precedence::decide()` callsite in
+// calendar.rs / missal.rs) until Phase 11 cuts the wire-in.
+pub mod core;
+pub mod corpus;
+pub mod reform;

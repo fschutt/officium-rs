@@ -1,0 +1,443 @@
+//! Pure-core types for the Divinum Officium port. Inputs, outputs,
+//! and the value types they carry. No I/O, no logic — just the
+//! boundary.
+//!
+//! Every Perl `our $foo` global from `horascommon.pl::precedence()`
+//! and `missa/propers.pl` ends up as a field on `OfficeOutput` or
+//! `MassPropers`. See `DIVINUM_OFFICIUM_PORT_PLAN.md` "Architecture"
+//! for the full reasoning.
+
+use std::fmt;
+
+// ─── Date ────────────────────────────────────────────────────────────
+
+/// Gregorian date. Plain value type; `date.rs` carries the math.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Date {
+    pub year: i32,
+    pub month: u32,
+    pub day: u32,
+}
+
+impl Date {
+    pub const fn new(year: i32, month: u32, day: u32) -> Self {
+        Self { year, month, day }
+    }
+}
+
+impl fmt::Display for Date {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:04}-{:02}-{:02}", self.year, self.month, self.day)
+    }
+}
+
+// ─── Rubric ──────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Rubric {
+    Tridentine1570,
+    Tridentine1910,
+    DivinoAfflatu1911,
+    Reduced1955,
+    Rubrics1960,
+    Monastic,
+}
+
+impl Rubric {
+    /// The version-string the upstream Perl `missa.pl` /
+    /// `officium.pl` expect via `version=…` on the command line.
+    /// Used by the regression harness; do not alter without
+    /// confirming against
+    /// `vendor/divinum-officium/web/cgi-bin/DivinumOfficium/RunTimeOptions.pm`.
+    pub const fn as_perl_version(self) -> &'static str {
+        match self {
+            Rubric::Tridentine1570    => "Tridentine - 1570",
+            Rubric::Tridentine1910    => "Tridentine - 1910",
+            Rubric::DivinoAfflatu1911 => "Divino Afflatu",
+            Rubric::Reduced1955       => "Reduced - 1955",
+            Rubric::Rubrics1960       => "Rubrics 1960 - 1960",
+            Rubric::Monastic          => "pre-Trident Monastic",
+        }
+    }
+
+    /// Filesystem-safe slug.
+    pub const fn slug(self) -> &'static str {
+        match self {
+            Rubric::Tridentine1570    => "trid-1570",
+            Rubric::Tridentine1910    => "trid-1910",
+            Rubric::DivinoAfflatu1911 => "divino-afflatu",
+            Rubric::Reduced1955       => "reduced-1955",
+            Rubric::Rubrics1960       => "rubrics-1960",
+            Rubric::Monastic          => "monastic",
+        }
+    }
+
+    pub const ALL_ROMAN: &'static [Rubric] = &[
+        Rubric::Tridentine1570,
+        Rubric::Tridentine1910,
+        Rubric::DivinoAfflatu1911,
+        Rubric::Reduced1955,
+        Rubric::Rubrics1960,
+    ];
+}
+
+// ─── Locale ──────────────────────────────────────────────────────────
+
+/// The rubric core operates in Latin; vernacular text is assembled
+/// downstream by the translation layer. Held as an enum (not unit)
+/// so that adding vernacular routing later is non-breaking.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Locale {
+    Latin,
+}
+
+// ─── OfficeInput ─────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct OfficeInput {
+    pub date: Date,
+    pub rubric: Rubric,
+    pub locale: Locale,
+}
+
+// ─── OfficeOutput ────────────────────────────────────────────────────
+
+/// Everything `precedence()` writes to Perl globals, captured as a
+/// single immutable value. Phase 3-4 functions return this; Phase 5
+/// `mass_propers()` consumes it.
+#[derive(Debug, Clone)]
+pub struct OfficeOutput {
+    pub winner: FileKey,
+    pub commemoratio: Option<FileKey>,
+    pub scriptura: Option<FileKey>,
+    pub commune: Option<FileKey>,
+    pub commune_type: CommuneType,
+    pub rank: Rank,
+    pub rule: Vec<RuleLine>,
+    pub day_kind: DayKind,
+    pub season: Season,
+    pub color: Color,
+    /// Office-only: first-vespers concurrence with tomorrow. Mass
+    /// resolution always sees `None`.
+    pub vespers_split: Option<VespersSplit>,
+    /// Provenance — which reform layers fired and what each did.
+    pub reform_trace: Vec<ReformAction>,
+}
+
+// ─── Mass propers ────────────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+pub struct MassPropers {
+    pub introitus:    Option<ProperBlock>,
+    pub oratio:       Option<ProperBlock>,
+    pub lectio:       Option<ProperBlock>,
+    pub graduale:     Option<ProperBlock>,
+    pub tractus:      Option<ProperBlock>,
+    pub sequentia:    Option<ProperBlock>,
+    pub evangelium:   Option<ProperBlock>,
+    pub offertorium:  Option<ProperBlock>,
+    pub secreta:      Option<ProperBlock>,
+    pub prefatio:     Option<ProperBlock>,
+    pub communio:     Option<ProperBlock>,
+    pub postcommunio: Option<ProperBlock>,
+    pub commemorations: Vec<MassCommemoration>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ProperBlock {
+    pub latin: String,
+    pub source: FileKey,
+    /// True when the body was pulled via `@Commune/<key>` fallback
+    /// rather than being proper to the winning office.
+    pub via_commune: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct MassCommemoration {
+    pub source: FileKey,
+    pub oratio: Option<ProperBlock>,
+    pub secreta: Option<ProperBlock>,
+    pub postcommunio: Option<ProperBlock>,
+}
+
+// ─── Rank ────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Rank {
+    pub class: RankClass,
+    pub kind: RankKind,
+    /// As printed in the rubrics (e.g. "Duplex II classis",
+    /// "Semiduplex").
+    pub raw_label: String,
+    /// Numeric precedence — Perl Sancti convention (1=Simplex,
+    /// 2=Semiduplex, 3=Duplex, 5=II classis, 6=I classis, …). Float
+    /// because some pre-1960 entries carry .5 increments.
+    pub rank_num: f32,
+}
+
+/// Coarse precedence class. Lower = higher rank (Class I beats II).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum RankClass {
+    First = 1,
+    Second = 2,
+    Third = 3,
+    Fourth = 4,
+}
+
+impl RankClass {
+    pub const fn label(self) -> &'static str {
+        match self {
+            RankClass::First  => "I classis",
+            RankClass::Second => "II classis",
+            RankClass::Third  => "III classis",
+            RankClass::Fourth => "IV classis",
+        }
+    }
+}
+
+/// Mirrors the Perl `$duplex` enumeration plus a few Phase 4
+/// additions (Feria, Commemoration) for cases the Perl globals
+/// implicitly handled with absence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum RankKind {
+    Above,            // 7 — above I classis (Easter Triduum, Christmas Day vigils)
+    DuplexIClassis,   // 6
+    DuplexIIClassis,  // 5
+    DuplexMajus,      // 4
+    Duplex,           // 3
+    Semiduplex,       // 2
+    Simplex,          // 1
+    Feria,
+    Commemoration,
+}
+
+// ─── DayKind / Season / Color / CommuneType ──────────────────────────
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum DayKind {
+    Sunday,
+    Feria,
+    Feast,
+    OctaveDay,
+    Vigil,
+    EmberDay,
+    RogationDay,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Season {
+    Advent,
+    Christmas,
+    Septuagesima,
+    Lent,
+    Passiontide,
+    Easter,
+    PentecostOctave,
+    PostPentecost,
+    PostEpiphany,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Color {
+    White,
+    Red,
+    Green,
+    Purple,
+    Black,
+    Rose,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CommuneType {
+    None,
+    /// `vide C2a-1` — see-also reference; some sections proper, some
+    /// drawn from the Common.
+    Vide,
+    /// `ex C2a-1` — drawn directly from the Common.
+    Ex,
+}
+
+// ─── FileKey ─────────────────────────────────────────────────────────
+
+/// Typed handle for a Mass / Office data-file key. Mirrors upstream
+/// path shape: `Sancti/04-29`, `Tempora/Pasc3-0`, `Commune/C2a-1`.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct FileKey {
+    pub category: FileCategory,
+    pub stem: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum FileCategory {
+    Sancti,
+    Tempora,
+    Commune,
+    SanctiM,
+    SanctiOP,
+    SanctiCist,
+    Other(String),
+}
+
+impl FileKey {
+    /// Parse `"Sancti/04-29"` → `FileKey { Sancti, "04-29" }`.
+    /// Inputs without a `/` map to `Other("")`.
+    pub fn parse(s: &str) -> Self {
+        let (cat, stem) = match s.split_once('/') {
+            Some(("Sancti", s))     => (FileCategory::Sancti, s),
+            Some(("Tempora", s))    => (FileCategory::Tempora, s),
+            Some(("Commune", s))    => (FileCategory::Commune, s),
+            Some(("SanctiM", s))    => (FileCategory::SanctiM, s),
+            Some(("SanctiOP", s))   => (FileCategory::SanctiOP, s),
+            Some(("SanctiCist", s)) => (FileCategory::SanctiCist, s),
+            Some((other, s))        => (FileCategory::Other(other.to_string()), s),
+            None                    => (FileCategory::Other(String::new()), s),
+        };
+        Self { category: cat, stem: stem.to_string() }
+    }
+
+    pub fn render(&self) -> String {
+        let prefix = match &self.category {
+            FileCategory::Sancti     => "Sancti",
+            FileCategory::Tempora    => "Tempora",
+            FileCategory::Commune    => "Commune",
+            FileCategory::SanctiM    => "SanctiM",
+            FileCategory::SanctiOP   => "SanctiOP",
+            FileCategory::SanctiCist => "SanctiCist",
+            FileCategory::Other(s)   => s.as_str(),
+        };
+        if prefix.is_empty() {
+            self.stem.clone()
+        } else {
+            format!("{prefix}/{}", self.stem)
+        }
+    }
+}
+
+impl fmt::Display for FileKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.render())
+    }
+}
+
+// ─── RuleLine ────────────────────────────────────────────────────────
+
+/// A line from the `[Rank]` section's tail. Examples:
+/// `"no Gloria"`, `"Credo"`, `"Preface=Communis"`. Phase 1 keeps the
+/// raw string; Phases 3–5 parse selectively as the regression harness
+/// exposes which switches actually drive output.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct RuleLine(pub String);
+
+// ─── ReformAction ────────────────────────────────────────────────────
+
+/// One step in `OfficeOutput.reform_trace`. Records that a layer made
+/// a decision — which one, what kind, why. Drives the "compare under
+/// each rubric" UI proposed in Phase 12.
+#[derive(Debug, Clone)]
+pub struct ReformAction {
+    pub layer: &'static str,
+    pub kind: ReformActionKind,
+    pub note: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ReformActionKind {
+    KalendarSuppressed,
+    KalendarDemoted,
+    KalendarAdded,
+    KalendarTransferred,
+    RubricOverride,
+    CorpusOverride,
+}
+
+// ─── VespersSplit (Office only) ──────────────────────────────────────
+
+/// First-vespers concurrence: today's evening office switches to
+/// tomorrow's office at the configured break-point. Always `None`
+/// for Mass; populated only when Phase 12+ ships the Diurnal page.
+#[derive(Debug, Clone)]
+pub struct VespersSplit {
+    pub split_at: VespersSplitPoint,
+    pub from: FileKey,
+    pub to: FileKey,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum VespersSplitPoint {
+    AfterCapitulum,
+    AtMagnificat,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn date_format() {
+        assert_eq!(Date::new(2026, 4, 30).to_string(), "2026-04-30");
+        assert_eq!(Date::new(2026, 12, 25).to_string(), "2026-12-25");
+    }
+
+    #[test]
+    fn rubric_perl_version_strings() {
+        // The exact strings the upstream Perl accepts. Pinned tests —
+        // changing these breaks the regression harness wiring.
+        assert_eq!(Rubric::Tridentine1570.as_perl_version(),    "Tridentine - 1570");
+        assert_eq!(Rubric::Tridentine1910.as_perl_version(),    "Tridentine - 1910");
+        assert_eq!(Rubric::DivinoAfflatu1911.as_perl_version(), "Divino Afflatu");
+        assert_eq!(Rubric::Reduced1955.as_perl_version(),       "Reduced - 1955");
+        assert_eq!(Rubric::Rubrics1960.as_perl_version(),       "Rubrics 1960 - 1960");
+        assert_eq!(Rubric::Monastic.as_perl_version(),          "pre-Trident Monastic");
+    }
+
+    #[test]
+    fn rank_class_ordering() {
+        // Class I beats Class II (lower numeric = higher rank).
+        assert!(RankClass::First < RankClass::Second);
+        assert!(RankClass::Second < RankClass::Third);
+        assert!(RankClass::Third < RankClass::Fourth);
+    }
+
+    #[test]
+    fn file_key_roundtrip() {
+        for s in [
+            "Sancti/04-29",
+            "Tempora/Pasc3-0",
+            "Commune/C2a-1",
+            "SanctiM/01-01",
+            "SanctiOP/04-30",
+            "SanctiCist/06-06AV",
+            "OtherCategory/foo",
+        ] {
+            let k = FileKey::parse(s);
+            assert_eq!(k.render(), s, "roundtrip mismatch on {s:?}");
+            assert_eq!(k.to_string(), s);
+        }
+    }
+
+    #[test]
+    fn file_key_no_slash() {
+        let k = FileKey::parse("bare");
+        assert_eq!(k.render(), "bare");
+        assert!(matches!(k.category, FileCategory::Other(ref s) if s.is_empty()));
+    }
+
+    #[test]
+    fn office_input_is_copy() {
+        // OfficeInput is a hashable input key — needed for memoizing
+        // year-sweep results across rubric enumerations.
+        let i = OfficeInput {
+            date: Date::new(2026, 4, 30),
+            rubric: Rubric::Tridentine1570,
+            locale: Locale::Latin,
+        };
+        let j = i;       // Copy
+        let _set: std::collections::HashSet<OfficeInput> = [i, j].into_iter().collect();
+    }
+
+    #[test]
+    fn all_roman_excludes_monastic() {
+        assert_eq!(Rubric::ALL_ROMAN.len(), 5);
+        assert!(!Rubric::ALL_ROMAN.contains(&Rubric::Monastic));
+    }
+}

@@ -658,8 +658,8 @@ green on the year sweep").
 
 | Phase | Status      | Date       | Commit  | Notes |
 |------:|-------------|------------|---------|-------|
-|   0   | complete    | 2026-04-30 | (next)  | Vendor pinned at `b0c1c71714`. `scripts/{setup-divinum-officium,do_render,rebuild}.sh`. `cargo run --bin year-sweep -- --smoke` returns 3/3. All five standard rubrics render Mass HTML for 04-30-2026 in ~100 ms/date. One pre-existing sancti test marked `#[ignore = "Phase 2 corpus audit"]`. |
-|   1   | not started |            |         |       |
+|   0   | complete    | 2026-04-30 | `1fb4ebd` | Vendor pinned at `b0c1c71714`. `scripts/{setup-divinum-officium,do_render,rebuild}.sh`. `cargo run --bin year-sweep -- --smoke` returns 3/3. All five standard rubrics render Mass HTML for 04-30-2026 in ~100 ms/date. One pre-existing sancti test marked `#[ignore = "Phase 2 corpus audit"]`. |
+|   1   | complete    | 2026-04-30 | (next)    | `core.rs` (~370 LOC), `corpus.rs` (~80 LOC), `reform.rs` (~180 LOC). Types: `OfficeInput`, `OfficeOutput`, `MassPropers`, `ProperBlock`, `MassCommemoration`, `Rubric`, `Locale`, `Rank`, `RankClass`, `RankKind`, `DayKind`, `Season`, `Color`, `FileKey`, `FileCategory`, `CommuneType`, `RuleLine`, `ReformAction`, `ReformActionKind`, `VespersSplit`, `VespersSplitPoint`, `Date`. `trait Corpus` + `BundledCorpus` (bodies `todo!()` until Phase 4). `ReformLayer` + chain constants for 1570 → 1960 + Monastic. 12 new unit tests; total now 30 pass / 1 ignored. |
 |   2   | not started |            |        |       |
 |   3   | not started |            |        |       |
 |   4   | not started |            |        |       |

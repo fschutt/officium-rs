@@ -98,16 +98,15 @@ pub fn geteaster(year: i32) -> (u32, u32, i32) {
 /// assert_eq!(getadvent(2023), 337);
 /// ```
 pub fn getadvent(year: i32) -> u32 {
-    // Start from Christmas (Dec 25) in the given year.
     let christmas_ydays = date_to_ydays(25, 12, year);
     let christmas_dow = day_of_week(25, 12, year);
-    // The day_of_week returns 0=Sunday, 1=Monday, etc. We want
-    // the Sunday prior to Christmas, minus an additional 21 days:
-    //   advent1 = Christmas - christmas_dow - 21
-    // Because if christmas_dow = 0 => Christmas is Sunday => Advent starts 28 days earlier.
-    // If christmas_dow=1 => Monday => Advent starts 22 days earlier, and so on.
-    // This matches the original code logic: 1st Sunday of Advent is 3 Sundays before Christmas Sunday.
-    let advent1 = christmas_ydays as i32 - christmas_dow as i32 - 21;
+    // Perl `Date.pm::getadvent` uses `day_of_week(...) || 7` — the
+    // Perl truthy-or trick that converts dow=0 (Christmas-on-Sunday)
+    // to 7 so we walk a full extra week back. Without it, years
+    // like 2022 (Christmas on Sunday) place Advent-1 on Dec 4
+    // instead of Nov 27, off-by-7 across the entire Advent cycle.
+    let dow_for_offset = if christmas_dow == 0 { 7 } else { christmas_dow };
+    let advent1 = christmas_ydays as i32 - dow_for_offset as i32 - 21;
     advent1 as u32
 }
 
@@ -159,7 +158,7 @@ pub fn day_of_week(day: u32, month: u32, year: i32) -> u32 {
 pub fn date_to_ydays(day: u32, month: u32, year: i32) -> u32 {
     // We'll sum the days in the months prior to `month`, plus `day`.
     // 1-based index, so Jan 1 = 1.
-    let mut months_cum = [0_u32, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+    let months_cum = [0_u32, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
     let mut days = months_cum[(month - 1) as usize] + day;
     if month > 2 && leap_year(year) {
         days += 1;
@@ -226,22 +225,32 @@ pub fn getweek(
     let christmas = date_to_ydays(25, 12, year) as i32;
     let t_day = if tomorrow { day + 1 } else { day } as i32;
 
-    // If t >= advent1 but < Christmas, it's Advent
-    if t >= advent1 && t < christmas {
-        let n = 1 + (t - advent1) / 7;
-        if month == 11 || day < 25 {
-            return format!("Adv{}", n);
+    // Once past the first Sunday of Advent, we're in Adv → Nat. The
+    // sub-branches mirror Perl `Date.pm::getweek` lines 33-39 exactly:
+    //
+    //   Adv1..Adv4         from Advent-1 through Dec 24
+    //   Nat25..Nat31       Dec 25-31, unpadded (file names Nat29.txt etc.)
+    //
+    // The Perl outer is `if ($t >= $advent1)`; the inner `< christmas`
+    // gates *just* the Adv-week computation, not the whole branch.
+    // An earlier port had the outer as `t >= advent1 && t < christmas`,
+    // which silently fell through Dec 25-31 to the Pent24 branch.
+    if t >= advent1 {
+        if t < christmas {
+            let n = 1 + (t - advent1) / 7;
+            if month == 11 || day < 25 {
+                return format!("Adv{}", n);
+            }
         }
         return format!("Nat{}", t_day);
     }
 
-    // If within the days close to Jan 6: handle Christmas/Epiphany boundary
-    // The "ordtime" logic (the “6 + 7 - day_of_week(6, 1, year)” portion).
+    // Christmas Octave / pre-Epiphany days in January. Perl `sprintf("Nat%02i", $tDay)`
+    // — zero-padded to 2 digits, matching the upstream file shape
+    // (Nat02.txt, Nat05.txt, etc. — see vendor/divinum-officium/web/www/missa/Latin/Tempora/).
     let ordtime = 6 + 7 - day_of_week(6, 1, year) as i32;
-
     if month == 1 && (day as i32) < (ordtime - (tomorrow as i32)) {
-        // still Christmas time
-        return format!("Nat{}", t_day);
+        return format!("Nat{:02}", t_day);
     }
 
     // Easter
@@ -342,7 +351,6 @@ pub fn monthday(
     // detect the first Sunday for each month from Aug=8..Dec=12
     // store those in an array for day-of-year, see how far we got.
     // If base < first_sunday, no result. If base >= that sunday => lit_month = that month
-    let leap = leap_year(year);
     let mut lit_month = 0;
     let mut first_sunday_day_of_year = Vec::new();
     for m in 8..=12 {
@@ -453,7 +461,7 @@ pub fn get_sday(month: u32, day: u32, year: i32) -> String {
 /// let next_sl = nextday(2, 28, 2024); // => "02-30" due to leap day logic in DO
 /// ```
 pub fn nextday(month: u32, day: u32, year: i32) -> String {
-    let mut total = date_to_ydays(day, month, year) as i32 + 1;
+    let total = date_to_ydays(day, month, year) as i32 + 1;
     let max = if leap_year(year) { 366 } else { 365 };
     if total > max {
         // if we pass end of the year, jump to 1 Jan next year
@@ -537,25 +545,16 @@ pub fn days_to_date(days: i32) -> (i32, i32, i32, i32, i32, i32, i32, i32, i32) 
     }
 
     // We'll initialize a local result akin to "6:00:00"
-    let mut sec = 0;
-    let mut min = 0;
-    let mut hour = 6;
+    let sec = 0;
+    let min = 0;
+    let hour = 6;
     let mut wday = (days + 4) % 7; // attempt to keep Sunday=0 offset
     if wday < 0 {
         wday += 7;
     }
-    let mut isdst = 0;
-    // We'll move from epoch=1970-01-01 => day=0. Then we adjust by centuries, etc.
-    // The original code does a large chunk approach.
+    let isdst = 0;
 
-    // The “date_to_days(1,1,1970)=0” approach:
-    // We reconstruct year & day-of-year. Then break down month, day.
-
-    // We'll do an offset approach manually:
-    let base = date_to_days(1, 1, 1970);
-    let offset = days - base;
-
-    // We can reuse `date_to_ydays` logic in reverse if we carefully pick year. Let's do a simpler approach:
+    // Reconstruct year & day-of-year, then break down month, day.
     let (day, month, year) = days_to_date_fallback(days);
 
     // final
@@ -583,9 +582,6 @@ pub fn days_to_date(days: i32) -> (i32, i32, i32, i32, i32, i32, i32, i32, i32) 
 fn days_to_date_fallback(days: i32) -> (u32, u32, i32) {
     // This is a direct adaptation of the original big chunk of Perl code in `days_to_date`.
     // We'll keep the same structure for fidelity.
-    let mut sec = 0;
-    let mut min = 0;
-    let mut hour = 6;
 
     // let d[6] = ...
     // We'll skip some steps about negative years. Just replicate carefully.
@@ -593,7 +589,6 @@ fn days_to_date_fallback(days: i32) -> (u32, u32, i32) {
     // Start from year=2000 offset=10957 at c=20 in the original logic. We'll do the same.
     let mut count = 10957;
     let mut c = 20;
-    let mut ret = 0_i32;
     let mut add: i32;
 
     if days < count {
@@ -761,4 +756,167 @@ fn date_to_days_fallback(day: u32, month: u32, year: i32) -> i32 {
 
     // done
     ret
+}
+
+#[cfg(test)]
+mod phase2_tests {
+    //! Phase 2 calibration tests pinning the Rust `getweek` /
+    //! `getadvent` / `geteaster` / `day_of_week` outputs against
+    //! the upstream Perl `Date.pm`. Each assertion was emitted by
+    //! `scripts/perl_getweek_year.pl` and cross-checked with the
+    //! `getweek-check` binary across years 1900-2100 × 4 flag
+    //! combinations (no divergences).
+    //!
+    //! Categories covered (per DIVINUM_OFFICIUM_PORT_PLAN.md Phase 2):
+    //!   * Easter and Easter Octave
+    //!   * Pentecost-Sunday transition (Pasc7 → Pent01)
+    //!   * Pre-Lent (Quadp1..3) and Lent (Quad1..6)
+    //!   * Eastertide (Pasc0..7)
+    //!   * Post-Pentecost (Pent01..23) and the Pent24 cap
+    //!   * PentEpi vs Epi switch on the `missa` flag
+    //!   * Advent (Adv1..4)
+    //!   * Christmas Octave Dec (Nat25..31, unpadded)
+    //!   * Pre-Epiphany Jan (Nat01..09, zero-padded)
+    //!   * Christmas-on-Sunday Advent shift (regression for 2022)
+    use super::*;
+
+    fn wk(d: u32, m: u32, y: i32) -> String {
+        getweek(d, m, y, false, true)
+    }
+
+    fn wk_office(d: u32, m: u32, y: i32) -> String {
+        getweek(d, m, y, false, false)
+    }
+
+    #[test]
+    fn easter_dates_across_decade() {
+        // Source: any Computus table; cross-checked with Perl harness.
+        assert_eq!(geteaster(2024), (31, 3, 2024));
+        assert_eq!(geteaster(2025), (20, 4, 2025));
+        assert_eq!(geteaster(2026), (5,  4, 2026));
+        assert_eq!(geteaster(2027), (28, 3, 2027));
+        assert_eq!(geteaster(2028), (16, 4, 2028));
+    }
+
+    #[test]
+    fn easter_sunday_emits_pasc0() {
+        for (d, m, y) in [(31, 3, 2024), (20, 4, 2025), (5, 4, 2026),
+                          (28, 3, 2027), (16, 4, 2028)] {
+            assert_eq!(wk(d, m, y), "Pasc0", "Easter {y}-{m:02}-{d:02}");
+        }
+    }
+
+    #[test]
+    fn eastertide_progression_2026() {
+        // Easter 2026 = April 5. Successive Sundays:
+        assert_eq!(wk( 5, 4, 2026), "Pasc0"); // Easter Sunday
+        assert_eq!(wk(12, 4, 2026), "Pasc1");
+        assert_eq!(wk(19, 4, 2026), "Pasc2");
+        assert_eq!(wk(26, 4, 2026), "Pasc3");
+        assert_eq!(wk( 3, 5, 2026), "Pasc4");
+        assert_eq!(wk(10, 5, 2026), "Pasc5");
+        assert_eq!(wk(17, 5, 2026), "Pasc6");
+        assert_eq!(wk(24, 5, 2026), "Pasc7"); // Pentecost Sunday
+        assert_eq!(wk(31, 5, 2026), "Pent01"); // Trinity Sunday
+    }
+
+    #[test]
+    fn pre_lent_and_lent_2026() {
+        // 2026: Septuagesima Sunday = Feb 1 (9 weeks before Easter).
+        assert_eq!(wk(25, 1, 2026), "Epi3");
+        assert_eq!(wk( 1, 2, 2026), "Quadp1"); // Septuagesima
+        assert_eq!(wk( 8, 2, 2026), "Quadp2"); // Sexagesima
+        assert_eq!(wk(15, 2, 2026), "Quadp3"); // Quinquagesima
+        assert_eq!(wk(22, 2, 2026), "Quad1"); // 1st Sun of Lent
+        assert_eq!(wk( 1, 3, 2026), "Quad2");
+        assert_eq!(wk(29, 3, 2026), "Quad6"); // Palm Sunday
+    }
+
+    #[test]
+    fn advent_progression_2026() {
+        assert_eq!(wk(29, 11, 2026), "Adv1");
+        assert_eq!(wk( 6, 12, 2026), "Adv2");
+        assert_eq!(wk(13, 12, 2026), "Adv3");
+        assert_eq!(wk(20, 12, 2026), "Adv4");
+        assert_eq!(wk(24, 12, 2026), "Adv4"); // last day before Christmas
+    }
+
+    #[test]
+    fn christmas_octave_unpadded() {
+        // Dec 25-31 → Nat25..Nat31 with no leading zero (file names
+        // are Nat29.txt etc.).
+        assert_eq!(wk(25, 12, 2026), "Nat25");
+        assert_eq!(wk(26, 12, 2026), "Nat26");
+        assert_eq!(wk(27, 12, 2026), "Nat27");
+        assert_eq!(wk(28, 12, 2026), "Nat28");
+        assert_eq!(wk(29, 12, 2026), "Nat29");
+        assert_eq!(wk(30, 12, 2026), "Nat30");
+        assert_eq!(wk(31, 12, 2026), "Nat31");
+    }
+
+    #[test]
+    fn pre_epiphany_jan_zero_padded() {
+        // Jan 1-? → Nat01..Nat0X zero-padded (file names Nat02.txt
+        // through Nat05.txt confirm the convention).
+        assert_eq!(wk(1, 1, 2026), "Nat01");
+        assert_eq!(wk(2, 1, 2026), "Nat02");
+        assert_eq!(wk(3, 1, 2026), "Nat03");
+        assert_eq!(wk(4, 1, 2026), "Nat04");
+        assert_eq!(wk(5, 1, 2026), "Nat05");
+        assert_eq!(wk(6, 1, 2026), "Nat06");
+    }
+
+    #[test]
+    fn christmas_on_sunday_advent_shift_2022() {
+        // 2022: Christmas falls on Sunday → 1st Sunday of Advent
+        // is Nov 27 (4 Sundays back, *not* Dec 4). Pre-Phase-2 port
+        // dropped the `dow || 7` Perl trick and shifted Advent by 7
+        // days for years like 2017/2022/2033/2039.
+        assert_eq!(wk(27, 11, 2022), "Adv1");
+        assert_eq!(wk( 4, 12, 2022), "Adv2");
+        assert_eq!(wk(11, 12, 2022), "Adv3");
+        assert_eq!(wk(18, 12, 2022), "Adv4");
+        assert_eq!(wk(25, 12, 2022), "Nat25");
+    }
+
+    #[test]
+    fn pent_epi_vs_epi_split_on_missa_flag() {
+        // 2027: Easter very early (Mar 28), so post-Pentecost weeks
+        // overflow Pent24 by November. The `missa` flag selects:
+        //   true  → "PentEpi{n}"
+        //   false → "Epi{n}"
+        // (file `web/www/missa/Latin/Tempora/PentEpi6.txt` exists.)
+        assert_eq!(wk       ( 1, 11, 2027), "PentEpi4");
+        assert_eq!(wk_office( 1, 11, 2027), "Epi4");
+        assert_eq!(wk       ( 7, 11, 2027), "PentEpi5");
+        assert_eq!(wk_office( 7, 11, 2027), "Epi5");
+        assert_eq!(wk       (14, 11, 2027), "PentEpi6");
+        assert_eq!(wk_office(14, 11, 2027), "Epi6");
+        // Pent24 cap kicks in on the last week before Advent.
+        assert_eq!(wk       (21, 11, 2027), "Pent24");
+        assert_eq!(wk_office(21, 11, 2027), "Pent24");
+    }
+
+    #[test]
+    fn day_of_week_pinned_anchors() {
+        // 0 = Sun, 6 = Sat
+        assert_eq!(day_of_week( 5, 4, 2026), 0); // Easter Sunday 2026
+        assert_eq!(day_of_week(25, 12, 2022), 0); // Christmas Sunday
+        assert_eq!(day_of_week(25, 12, 2026), 5); // Christmas Friday
+        assert_eq!(day_of_week(29, 4, 2026), 3); // Wed (Pasc3)
+        assert_eq!(day_of_week( 1, 1, 2000), 6); // Sat
+    }
+
+    #[test]
+    fn getadvent_year_shape() {
+        // 1st Sunday of Advent as a day-of-year. Hand-checked
+        // against a calendar for the Christmas-on-Sunday case (2022)
+        // and the Christmas-on-Friday case (2026).
+        // 2022: Advent-1 = Nov 27 = day-of-year 331.
+        assert_eq!(getadvent(2022), 331);
+        // 2026: Advent-1 = Nov 29 = day-of-year 333 (non-leap).
+        assert_eq!(getadvent(2026), 333);
+        // 2024: Christmas Wed → Advent-1 = Dec 1 = day-of-year 336 (leap).
+        assert_eq!(getadvent(2024), 336);
+    }
 }

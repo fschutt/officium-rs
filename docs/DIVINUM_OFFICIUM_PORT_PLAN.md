@@ -957,18 +957,51 @@ the upstream corpus ships, regardless of canonisation date). Phase
 7 will introduce the canonisation gate and prove it on the years
 1700, 1800, 1900 (canonisation-gating different saint sets).
 
-### Canonisation-date table
+### Canonisation-date table — derive from upstream Tabulae
 
-A `data/canonization_dates.json` mapping `Sancti/MM-DD[suffix]` →
-`{year, elevated, suppressed, source}` covers the 250+ saints
-added or shifted between 1570 and 1962. Sources:
-  * Wikipedia "List of saints canonized by..." per pontiff
-  * Acta SS. + Acta Apostolicae Sedis (per-feast bull)
-  * DiPippo's *Compendium Romani Breviarii* (1962-aligned)
+The upstream repo already ships per-rubric kalendar files at
+`vendor/divinum-officium/web/www/Tabulae/Kalendaria/<year>.txt`:
 
-Per-saint entries that don't fit this fixed structure (e.g. local
-patrons, transferred Eastertide vigils) get a sentinel year of
-`1570` (= "always present from baseline").
+| File         | Year | Reform owner    | What changed                       |
+|--------------|------|-----------------|------------------------------------|
+| `1570.txt`   | 1570 | Pius V baseline | Tridentine missal & breviary       |
+| `1888.txt`   | 1888 | Pius IX / Leo XIII | Joseph elevation, new feast days  |
+| `1906.txt`   | 1906 | Pius X early    | Pre-Divino-Afflatu adjustments     |
+| `1939.txt`   | 1939 | Pius XI         | Christ the King 1925, Therese 1927  |
+| `1954.txt`   | 1954 | Pius XII inter.  | Pre-Reduced (Common of Sovereign Pontiffs) |
+| `1955.txt`   | 1955 | Pius XII / *Cum nostra hac aetate* | Octaves abolished, Holy Week reformed |
+| `1960.txt`   | 1960 | John XXIII / *Rubricarum instructum* | Rubric simplification |
+| `M1617.txt`  | 1617 | Monastic 1617   | Monastic Tridentine                |
+| `M1930.txt`  | 1930 | Monastic 1930   | Monastic post-1930                 |
+| `M1963.txt`  | 1963 | Monastic 1963   | Monastic post-Reduced              |
+| `M1963B.txt` | 1963B| Monastic 1963B  | Monastic post-Reduced (variant)    |
+| `C1951.txt`  | 1951 | Cistercian 1951 | Cistercian Trappist 1951           |
+| `OP1962.txt` | 1962 | Dominican 1962  | Order of Preachers 1962            |
+| `NC.txt`     | post | Newcal          | Post-Vatican II calendar           |
+| `CAV.txt`    | ~1962 | Vincentian      | Congregation of the Mission        |
+
+These are **SUPERSEDING** layers — each file lists the differences
+from the previous canonical state. Format:
+
+```
+MM-DD=stem[~comm-stem]=Officium[=rank][=Comm-Officium=comm-rank]
+```
+
+Where `rank ∈ {1..7}` (1=Simplex, 2=Semiduplex, 3=Duplex, 4=Duplex
+majus, 5=Duplex II classis, 6=Duplex I classis, 7=Duplex I
+privilegiata). Multiple `~`-joined entries are commemorations on
+the same date.
+
+**Phase 7's first deliverable** is to parse these files in
+chronological order and build a `(year, MM-DD) → KalendarEntry`
+index. The canonisation gate then becomes a derived view over the
+index: a saint is "added" in the year when their first kalendar
+entry appears.
+
+`data/canonization_dates.json` (already scaffolded in this repo)
+captures the high-impact additions for documentation; Phase 7's
+parser will populate it programmatically by diffing consecutive
+Tabulae files.
 
 ### Test plan for Phase 7
 

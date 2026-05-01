@@ -22,6 +22,7 @@ use crate::divinum_officium::core::{
 use crate::divinum_officium::corpus::Corpus;
 use crate::divinum_officium::missa::MassFile;
 use crate::divinum_officium::prayers;
+use unicode_normalization::UnicodeNormalization;
 
 /// Maximum `@`-chain hops. Three is enough for every multi-hop case
 /// in the upstream corpus (Sancti → Commune → another Commune).
@@ -46,6 +47,16 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         office.season,
         crate::divinum_officium::core::Season::Easter
     );
+    // `(sed post Septuagesimam dicitur)` conditional flips a
+    // trailing "alleluja" → alternative form on or after
+    // Septuagesima. Outside Septuagesima the conditional + alt
+    // form drop, leaving the alleluja form.
+    let in_post_septuagesima = matches!(
+        office.season,
+        crate::divinum_officium::core::Season::Septuagesima
+            | crate::divinum_officium::core::Season::Lent
+            | crate::divinum_officium::core::Season::Passiontide
+    );
     // [GradualeF] swap (mirror Perl `getitem` ll. 866): Sunday Mass
     // files (Adv1-0, Pent06-0, …) ship two Graduales —
     //   * `[Graduale]`  with the Alleluja verse (Sunday Mass).
@@ -60,7 +71,10 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         if sect == "Graduale" && prefer_graduale_f {
             if let Some(block) = proper_block(&resolved, "GradualeF", corpus) {
                 let block = substitute_name_with_corpus(block, sect, winner_file, Some(corpus));
-                let latin = spell_var_pre1960(&expand_macros(&block.latin));
+                let latin = apply_post_septuagesima_conditional(
+                    &block.latin, in_post_septuagesima,
+                );
+                let latin = spell_var_pre1960(&expand_macros(&latin));
                 let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
                 return Some(ProperBlock {
                     latin,
@@ -70,7 +84,10 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         }
         let block = proper_block(&resolved, sect, corpus)?;
         let block = substitute_name_with_corpus(block, sect, winner_file, Some(corpus));
-        let latin = spell_var_pre1960(&expand_macros(&block.latin));
+        let latin = apply_post_septuagesima_conditional(
+            &block.latin, in_post_septuagesima,
+        );
+        let latin = spell_var_pre1960(&expand_macros(&latin));
         let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
         Some(ProperBlock {
             latin,
@@ -131,6 +148,101 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         // Postcommunio.
         commemorations: vec![],
     }
+}
+
+/// Apply the inline `(sed post Septuagesimam dicitur)` body
+/// conditional. Body files in the BVM commune (Common of Apostles,
+/// Sat-BVM Mass) carry an optional "alleluja" form gated by season:
+///
+/// ```text
+/// Justorum animae … in pace, alleluja.
+/// (sed post Septuagesimam dicitur)
+/// pace.
+/// ```
+///
+/// Outside Septuagesima/Lent/Passiontide we keep the "alleluja"
+/// line and drop both the conditional marker and the `pace.`
+/// alternate. Inside Septuagesima we drop the alleluja form and
+/// substitute the alternate (the `pace.` line replaces the trailing
+/// "in pace, alleluja." → "in pace.").
+fn apply_post_septuagesima_conditional(text: &str, post_septuagesima: bool) -> String {
+    let lines: Vec<&str> = text.split('\n').collect();
+    let mut out: Vec<String> = Vec::with_capacity(lines.len());
+    let mut i = 0;
+    while i < lines.len() {
+        let line = lines[i];
+        let trimmed = line.trim();
+        let lc_no_diacritics: String = trimmed
+            .nfd()
+            .filter(|c| !unicode_normalization::char::is_combining_mark(*c))
+            .flat_map(char::to_lowercase)
+            .collect();
+        let is_conditional = lc_no_diacritics.starts_with('(')
+            && lc_no_diacritics.ends_with(')')
+            && lc_no_diacritics.contains("post septuage");
+        if !is_conditional {
+            out.push(line.to_string());
+            i += 1;
+            continue;
+        }
+        // Found the conditional. The IMMEDIATELY next non-blank line
+        // is the alternate body (typically a single word like
+        // `pace.` that REPLACES the trailing "alleluja." in the
+        // preceding line).
+        let alt_idx = (i + 1..lines.len()).find(|&j| !lines[j].trim().is_empty());
+        let alt = alt_idx.map(|j| lines[j].trim().to_string()).unwrap_or_default();
+        if post_septuagesima {
+            // Apply the alternate. Replace the preceding line's
+            // trailing word "alleluja[.,?!]?" with `alt`.
+            if let Some(prev) = out.last_mut() {
+                *prev = swap_trailing_alleluja(prev, &alt);
+            }
+        }
+        // Skip the conditional marker line and the alternate line.
+        i = alt_idx.map(|j| j + 1).unwrap_or(i + 1);
+    }
+    out.join("\n")
+}
+
+/// Replace a trailing "Allelúja[.,]?" or "alleluja[.,]?" with `alt`,
+/// keeping any leading punctuation. If no Alleluja is found, the
+/// alternate is appended.
+fn swap_trailing_alleluja(line: &str, alt: &str) -> String {
+    use unicode_normalization::UnicodeNormalization;
+    let folded: String = line
+        .nfd()
+        .filter(|c| !unicode_normalization::char::is_combining_mark(*c))
+        .collect();
+    let lc = folded.to_lowercase();
+    if let Some(pos) = lc.rfind("alleluja") {
+        // Find the byte position in the ORIGINAL string of the
+        // matching "alleluja". Since folding is char-by-char NFD,
+        // the byte length differs from the original; rather than
+        // mapping back, just match on the lowercased original. The
+        // body bodies are ASCII-with-Latin-diacritics; an
+        // approximate strategy is to walk the original looking for
+        // the fold-matching span.
+        let _ = pos;
+        // Simpler: split by whitespace, look for the trailing token
+        // that diacritic-folds to "alleluja[.,!?]?", replace.
+        let mut tokens: Vec<&str> = line.split(' ').collect();
+        for tok in tokens.iter_mut().rev() {
+            let stripped = tok.trim_end_matches(['.', ',', '!', '?', ':', ';', ')']);
+            let folded: String = stripped
+                .nfd()
+                .filter(|c| !unicode_normalization::char::is_combining_mark(*c))
+                .flat_map(char::to_lowercase)
+                .collect();
+            if folded == "alleluja" {
+                let trailing = &tok[stripped.len()..];
+                let alt_owned = format!("{}{}", alt.trim_end_matches(['.', ',']), trailing);
+                *tok = Box::leak(alt_owned.into_boxed_str());
+                return tokens.join(" ");
+            }
+        }
+    }
+    // No alleluja found — append the alternate.
+    format!("{} {}", line, alt)
 }
 
 /// True when the stem looks like a Tempora ferial (Adv1-2, Pent06-3,
@@ -1324,6 +1436,35 @@ mod tests {
 
     fn propers(year: i32, month: u32, day: u32) -> MassPropers {
         mass_propers(&office(year, month, day), &BundledCorpus)
+    }
+
+    #[test]
+    fn nov_02oct_offertorium_drops_septuagesimam_conditional() {
+        let p = propers(2026, 11, 2);
+        let off = p.offertorium.expect("offertorium present");
+        assert!(!off.latin.contains("(sed post"), "off: {}", off.latin);
+        assert!(off.latin.contains("alleluja") || off.latin.contains("allelúja"),
+                "off: {}", off.latin);
+        assert!(!off.latin.ends_with("pace."), "off: {}", off.latin);
+    }
+
+
+    #[test]
+    fn post_septuagesima_strips_conditional_outside_lent() {
+        let body = "!Sap 3:1-3\nJustórum ánimæ in pace, allelúja.\n(sed post Septuagesimam dicitur)\npace.";
+        let out = apply_post_septuagesima_conditional(body, false);
+        assert!(!out.contains("(sed post"), "out: {out:?}");
+        assert!(out.contains("allelúja"), "out: {out:?}");
+        assert!(!out.ends_with("pace."), "out: {out:?}");
+    }
+
+    #[test]
+    fn post_septuagesima_swaps_to_alt_in_lent() {
+        let body = "!Sap 3:1-3\nJustórum ánimæ in pace, allelúja.\n(sed post Septuagesimam dicitur)\npace.";
+        let out = apply_post_septuagesima_conditional(body, true);
+        assert!(!out.contains("(sed post"), "out: {out:?}");
+        assert!(!out.contains("allelúja"), "out: {out:?}");
+        assert!(out.contains("pace"), "out: {out:?}");
     }
 
     // ─── Christmas — proper-rich Mass; almost everything in-file ─────

@@ -415,6 +415,14 @@ fn is_conditional_rubric(inside: &str) -> bool {
     {
         return true;
     }
+    // `(sed post Septuagesimam dicitur)` — the conditional that
+    // toggles the trailing "alleluja" off in Septuagesima/Lent.
+    // Outside Septuagesima the body keeps "in pace, alleluja" and
+    // the literal `(sed post Septuagesimam dicitur) pace.` shouldn't
+    // contribute to the body comparison.
+    if folded.contains("post septuage") {
+        return true;
+    }
     false
 }
 

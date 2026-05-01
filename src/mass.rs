@@ -64,9 +64,21 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
     // emits each segment as a labelled `<I>HeaderName</I>` block,
     // with the regression extractor's "first header wins" picking
     // up the first segment.
+    // For "Full text" days the [Prelude] block carries the Mass,
+    // but Triduum files split content across additional sections —
+    // Quad6-6 Holy Saturday's Cantemus Tractus lives in
+    // `[Proph_Exodi14]`, referenced from [Prelude] via `@:Proph_Exodi14`.
+    // Pre-resolve same-file `@:Section` references inside [Prelude]
+    // by inlining the target body, so the Prelude reads as a flat
+    // sequence with sub-sections in source order. This lets
+    // `extract_prelude_subsections`'s "first wins"/multi-block
+    // accumulator pick up the right Tractus.
     let prelude_overrides = winner_file
         .and_then(|f| f.sections.get("Prelude"))
-        .map(|p| extract_prelude_subsections(p))
+        .map(|p| {
+            let inlined = inline_section_refs(p, winner_file.unwrap(), corpus);
+            extract_prelude_subsections(&inlined)
+        })
         .unwrap_or_default();
     if winner_rule.contains("Full text") {
         return mass_propers_from_prelude_only(&prelude_overrides);
@@ -280,13 +292,18 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         oratio:       go("Oratio"),
         lectio:       go("Lectio"),
         graduale,
-        // Standalone Tractus column suppressed — Perl folds the
-        // Tractus body into the Graduale slot and only emits a
-        // separate `<I>Tractus</I>` header on Holy Saturday and the
-        // Vigil of Pentecost. Both of those land here as `None`
-        // anyway because their files use indexed `[TractusL1..]`
-        // sections rather than a plain `[Tractus]`.
-        tractus:      None,
+        // Tractus column: usually folded into Graduale, but Pent
+        // Vigil (Pasc6-6) and Holy Saturday emit a separate
+        // `<I>Tractus</I>` header — Pent Vigil takes the Tractus from
+        // a `!!Tractus` sub-section inside [Prelude] (Cantemus from
+        // Proph_Exodi14 once @-refs are inlined). Pull it from
+        // `prelude_overrides` when the regular Mass propers don't
+        // supply one.
+        tractus:      prelude_overrides.get("Tractus").map(|body| ProperBlock {
+            latin: body.clone(),
+            source: resolved.winner.clone(),
+            via_commune: false,
+        }),
         sequentia:    go("Sequentia"),
         evangelium:   go("Evangelium"),
         offertorium:  go("Offertorium"),
@@ -1335,6 +1352,68 @@ fn is_inline_latin_rubric(line: &str) -> bool {
     }
 }
 
+/// Replace standalone `@Path:Section` and `@:Section` lines in
+/// `body` with the corresponding target section's text. Used by the
+/// "Full text" path so Triduum prelude bodies inline their prophecy
+/// sections in source order — Holy Saturday's Cantemus Tractus
+/// (`@:Proph_Exodi14`) and Pent Vigil's Cantemus Tractus
+/// (`@Tempora/Quad6-6:Proph_Exodi14`) end up at the right position
+/// in the Prelude flow so the Tractus accumulator picks them up.
+fn inline_section_refs(body: &str, file: &MassFile, corpus: &dyn Corpus) -> String {
+    let mut out = String::with_capacity(body.len());
+    for line in body.split('\n') {
+        let trimmed = line.trim();
+        if let Some(rest) = trimmed.strip_prefix('@') {
+            // Same-file form `@:Section`.
+            if let Some(section) = rest.strip_prefix(':') {
+                let section = section.trim();
+                if let Some(target_body) = file.sections.get(section) {
+                    push_with_newline(&mut out, target_body);
+                    continue;
+                }
+            } else if let Some((path, section)) = rest.split_once(':') {
+                // Cross-file form `@Path:Section` — only fire when
+                // `path` looks like a category-prefixed key
+                // (`Tempora/Quad6-6`, `Sancti/01-01`, …) and the
+                // section name has no whitespace (a single token).
+                let path = path.trim();
+                let section = section.trim();
+                if !section.is_empty()
+                    && !section.contains(' ')
+                    && (path.starts_with("Tempora/")
+                        || path.starts_with("Sancti/")
+                        || path.starts_with("Commune/")
+                        || path.starts_with("Ordo/"))
+                {
+                    let key = FileKey::parse(path);
+                    if let Some(target_file) = corpus.mass_file(&key) {
+                        if let Some(target_body) = target_file.sections.get(section) {
+                            push_with_newline(&mut out, target_body);
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+        out.push_str(line);
+        out.push('\n');
+    }
+    out
+}
+
+fn push_with_newline(out: &mut String, body: &str) {
+    out.push_str(body);
+    if !body.ends_with('\n') {
+        out.push('\n');
+    }
+    // The inlined body might leave a `!!Section` accumulator open
+    // (Proph_Exodi14 ends mid-`!!Tractus`). The two-underscore
+    // separator closes the section so subsequent Prelude content
+    // (the `!Oratio` for the prophecy that the @-ref appears in)
+    // doesn't bleed into the Tractus body.
+    out.push_str("_\n_\n");
+}
+
 /// Walk a body and extract `!!<Section>` sub-blocks. Each
 /// `!!Header` line starts a new sub-block; everything until the next
 /// `!!Header` (or end-of-body) belongs to that header. Used for
@@ -1375,17 +1454,13 @@ fn extract_prelude_subsections(body: &str) -> std::collections::HashMap<&'static
                     .trim()
                     .trim_matches(|c: char| c == '_' || c.is_whitespace())
                     .to_string();
-                if !trimmed.is_empty() {
-                    // Holy Saturday + Pent Vigil have multiple
-                    // `!!Tractus` blocks (one per prophecy), and Perl
-                    // renders all of them concatenated. Append rather
-                    // than first-wins so the Mass body matches.
-                    out.entry(name)
-                        .and_modify(|existing| {
-                            existing.push('\n');
-                            existing.push_str(&trimmed);
-                        })
-                        .or_insert(trimmed);
+                if !trimmed.is_empty() && !out.contains_key(name) {
+                    // First `!!Section` wins. Holy Saturday's Mass
+                    // Tractus is the FIRST one in source order
+                    // (Cantemus from Proph_Exodi14 once @-refs are
+                    // inlined); subsequent Tracts belong to other
+                    // prophecies and aren't part of the Mass propers.
+                    out.insert(name, trimmed);
                 }
             }
             current_body.clear();
@@ -1463,7 +1538,7 @@ fn mass_propers_from_prelude_only(
         oratio: mk("Oratio"),
         lectio: mk("Lectio"),
         graduale: mk("Graduale"),
-        tractus: None, // Triduum file Tractus blocks live in @-referenced sub-sections; Perl's selection isn't a simple first-wins
+        tractus: mk("Tractus"),
         sequentia: mk("Sequentia"),
         evangelium: mk("Evangelium"),
         offertorium: mk("Offertorium"),

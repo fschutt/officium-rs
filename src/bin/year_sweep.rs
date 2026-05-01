@@ -192,6 +192,9 @@ struct Stats {
     /// Differ-cell breakdown by divergence category.
     cat_macro_not_expanded: usize,
     cat_rubric_injection: usize,
+    cat_ortho_variant: usize,
+    cat_trailing_extra: usize,
+    cat_leading_extra: usize,
     cat_other: usize,
     /// Per-section pass rates (Match + Empty / total).
     per_section_pass: [usize; 12],
@@ -381,6 +384,9 @@ fn main() {
             match s.category {
                 DivergenceCategory::MacroNotExpanded => stats.cat_macro_not_expanded += 1,
                 DivergenceCategory::RubricInjection => stats.cat_rubric_injection += 1,
+                DivergenceCategory::OrthoVariant => stats.cat_ortho_variant += 1,
+                DivergenceCategory::TrailingExtra => stats.cat_trailing_extra += 1,
+                DivergenceCategory::LeadingExtra => stats.cat_leading_extra += 1,
                 DivergenceCategory::Other => stats.cat_other += 1,
                 DivergenceCategory::Match
                 | DivergenceCategory::RustBlank
@@ -511,6 +517,9 @@ fn main() {
             "section_total":       total_section_cells,
             "cat_macro_not_expanded": stats.cat_macro_not_expanded,
             "cat_rubric_injection":   stats.cat_rubric_injection,
+            "cat_ortho_variant":      stats.cat_ortho_variant,
+            "cat_trailing_extra":     stats.cat_trailing_extra,
+            "cat_leading_extra":      stats.cat_leading_extra,
             "cat_other":              stats.cat_other,
             "per_section":         per_section,
             "panics":              stats.panics.len(),
@@ -552,6 +561,9 @@ fn main() {
     println!("  section differ:    {}", stats.section_differ);
     println!("    └ macro-not-expanded: {}", stats.cat_macro_not_expanded);
     println!("    └ rubric-injection:   {}", stats.cat_rubric_injection);
+    println!("    └ ortho-variant:      {}", stats.cat_ortho_variant);
+    println!("    └ trailing-extra:     {}", stats.cat_trailing_extra);
+    println!("    └ leading-extra:      {}", stats.cat_leading_extra);
     println!("    └ other:              {}", stats.cat_other);
     println!("  rust blank:        {}", stats.section_rust_blank);
     println!("  perl blank:        {}", stats.section_perl_blank);

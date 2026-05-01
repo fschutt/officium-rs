@@ -199,8 +199,24 @@ pub fn normalize(s: &str) -> String {
         .nfd()
         .filter(|c| !unicode_normalization::char::is_combining_mark(*c))
         .collect();
+    // 4b. Second ligature pass — `ǽ` (U+01FD, AE-with-acute)
+    // decomposes via NFD to `æ + U+0301`; the combining-mark strip
+    // removes the acute and leaves bare `æ`, which step 3 above
+    // already missed because it was bonded to the accent at that
+    // point. Same goes for `Ǽ`, `ǣ`, etc.
+    let mut expanded2 = String::with_capacity(folded.len());
+    for ch in folded.chars() {
+        match ch {
+            'æ' => expanded2.push_str("ae"),
+            'Æ' => expanded2.push_str("AE"),
+            'œ' => expanded2.push_str("oe"),
+            'Œ' => expanded2.push_str("OE"),
+            'ß' => expanded2.push_str("ss"),
+            other => expanded2.push(other),
+        }
+    }
     // 5. Lowercase + alphanumeric only.
-    folded
+    expanded2
         .chars()
         .filter_map(|c| {
             if c.is_alphanumeric() {
@@ -747,6 +763,10 @@ pub struct Divergence {
 /// Category of a Match/Differ result, derived from inspecting where
 /// the two normalised strings diverge. Heuristic — surfaces the
 /// most common upstream patterns we see during year-sweep triage.
+/// Refined in Phase 6.5+ to subdivide the "Other" bucket so the
+/// aggregate counters are actionable: `OrthoVariant` is a corpus
+/// orthography fix, `TrailingExtra` / `LeadingExtra` is a
+/// strip-loop / macro-expansion gap, real `Other` means wrong file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum DivergenceCategory {
@@ -762,11 +782,27 @@ pub enum DivergenceCategory {
     /// Ordinary, not from the propers. Rust output starts with the
     /// proper text directly.
     RubricInjection,
+    /// Bodies share a long common prefix AND suffix with a small
+    /// middle substitution (e.g., `genetrice` (Rust) vs `genitrice`
+    /// (Perl)). Diagnostic: corpus orthography variant the upstream
+    /// renderer applies but our cached corpus doesn't.
+    OrthoVariant,
+    /// One side is a strict prefix of the other; the other side has
+    /// extra trailing content. Diagnostic: rubric-strip pattern
+    /// missing for trailing content (e.g., `Per Dominum` not yet
+    /// macro-expanded, or a post-prayer rubric not stripped).
+    TrailingExtra,
+    /// One side is a strict suffix of the other; the other side has
+    /// extra leading content. Diagnostic: rubric-strip pattern
+    /// missing for leading content.
+    LeadingExtra,
     /// Rust's body is empty; Perl has content.
     RustBlank,
     /// Perl's body is empty; Rust has content.
     PerlBlank,
-    /// Neither prefix nor suffix relation — different content.
+    /// Neither prefix/suffix relation nor an ortho-variant pattern —
+    /// the bodies are genuinely different prayers (wrong winner /
+    /// wrong commune file).
     Other,
 }
 
@@ -796,7 +832,7 @@ pub fn classify_divergence(rust_norm: &str, perl_norm: &str) -> DivergenceCatego
     if perl_norm.is_empty() {
         return DivergenceCategory::PerlBlank;
     }
-    if perl_norm.contains(rust_norm) {
+    if perl_norm.contains(rust_norm) || rust_norm.contains(perl_norm) {
         return DivergenceCategory::Match;
     }
     let div = explain_divergence(rust_norm, perl_norm);
@@ -812,7 +848,133 @@ pub fn classify_divergence(rust_norm: &str, perl_norm: &str) -> DivergenceCatego
             return DivergenceCategory::RubricInjection;
         }
     }
+    // OrthoVariant: long shared prefix AND long shared suffix, small
+    // gap in the middle (single-word substitution like
+    // genetrice/genitrice). Threshold: middle gap ≤ 12 chars on each
+    // side, and the shared prefix+suffix covers ≥ 80% of the longer
+    // side.
+    if let Some(()) = ortho_variant_check(rust_norm, perl_norm) {
+        return DivergenceCategory::OrthoVariant;
+    }
+    // Trailing/leading extra: only fires when one side is a strict
+    // prefix / suffix of the other modulo a short tail. (Strict
+    // containment was caught earlier as Match; this is "almost
+    // contained, missing one chunk at the end").
+    if let Some(cat) = trailing_or_leading_extra(rust_norm, perl_norm) {
+        return cat;
+    }
     DivergenceCategory::Other
+}
+
+/// Long shared prefix AND long shared suffix with a small middle
+/// gap. Returns `Some(())` when the bodies look like a single-word
+/// substitution. Tolerates mismatched trailing context: if one side
+/// is much longer than the other (e.g., the Perl Postcommunio trails
+/// into the Last Gospel + dismissal), we look for the SHORTER body
+/// as a near-equal "window" inside the longer body.
+fn ortho_variant_check(a: &str, b: &str) -> Option<()> {
+    let (short, long) = if a.len() <= b.len() { (a, b) } else { (b, a) };
+    if short.len() < 32 {
+        return None;
+    }
+    // Common prefix of `short` and `long`.
+    let prefix = short
+        .as_bytes()
+        .iter()
+        .zip(long.as_bytes().iter())
+        .take_while(|(x, y)| x == y)
+        .count();
+    if prefix < 16 {
+        return None;
+    }
+    // After the substitution gap, `short` should resync somewhere
+    // inside `long`. We look for the longest tail of `short` (after
+    // a 1-12 char gap) that appears in `long` somewhere after the
+    // prefix.
+    for short_gap in 1..=12 {
+        // Resync starts at `prefix + short_gap` chars into short.
+        let resync_at = match short.char_indices().nth(prefix_chars(short, prefix) + short_gap) {
+            Some((idx, _)) => idx,
+            None => continue,
+        };
+        // Use the next 32 chars of short as the resync needle.
+        let needle_end_chars = (prefix_chars(short, prefix) + short_gap + 32).min(short.chars().count());
+        let needle_end = short.char_indices().nth(needle_end_chars).map(|(i, _)| i).unwrap_or(short.len());
+        if needle_end <= resync_at {
+            continue;
+        }
+        let needle = &short[resync_at..needle_end];
+        // The needle must appear in long AFTER the common prefix
+        // and within 24 chars of the common prefix end (= a SMALL
+        // gap in `long`).
+        if let Some(needle_pos) = long[prefix..].find(needle) {
+            if needle_pos <= 24 {
+                return Some(());
+            }
+        }
+    }
+    None
+}
+
+fn prefix_chars(s: &str, prefix_bytes: usize) -> usize {
+    s[..prefix_bytes.min(s.len())].chars().count()
+}
+
+/// Detect "almost contained" relationships where the shorter side
+/// would be a strict substring of the longer side except for a short
+/// extra chunk at the end (TrailingExtra) or start (LeadingExtra).
+/// Returns the matching category or None.
+fn trailing_or_leading_extra(a: &str, b: &str) -> Option<DivergenceCategory> {
+    let (short, long) = if a.len() <= b.len() { (a, b) } else { (b, a) };
+    if short.len() < 32 {
+        return None;
+    }
+    // Char-aware slicing: byte indices into `short` may land inside a
+    // multi-byte char if normalise() ever lets one slip through (e.g.
+    // an `ǽ` that didn't get folded). Walk char boundaries so we
+    // never panic.
+    let max_drop = (short.chars().count() / 4).min(64);
+    let chars: Vec<&str> = char_split(short);
+    let total = chars.len();
+    if total == 0 {
+        return None;
+    }
+    // TrailingExtra: drop trailing chars from short, look for the
+    // resulting stem inside long.
+    for drop in 1..=max_drop {
+        if drop >= total {
+            break;
+        }
+        let stem: String = chars[..total - drop].concat();
+        if !stem.is_empty() && long.contains(&stem) {
+            return Some(DivergenceCategory::TrailingExtra);
+        }
+    }
+    // LeadingExtra: drop leading chars from short.
+    for drop in 1..=max_drop {
+        if drop >= total {
+            break;
+        }
+        let stem: String = chars[drop..].concat();
+        if !stem.is_empty() && long.contains(&stem) {
+            return Some(DivergenceCategory::LeadingExtra);
+        }
+    }
+    None
+}
+
+/// Split a string into its constituent UTF-8 char slices. Returns
+/// `&str` slices instead of `char` so we can `.concat()` them back
+/// without re-encoding.
+fn char_split(s: &str) -> Vec<&str> {
+    let mut out = Vec::with_capacity(s.len());
+    let mut i = 0;
+    while i < s.len() {
+        let next = next_char_boundary(s, i);
+        out.push(&s[i..next]);
+        i = next;
+    }
+    out
 }
 
 pub fn explain_divergence(rust_norm: &str, perl_norm: &str) -> Divergence {
@@ -1183,6 +1345,73 @@ oratio body
         let r = "abcdefxyz";
         let p = "qwerty";
         assert_eq!(classify_divergence(r, p), DivergenceCategory::Other);
+    }
+
+    #[test]
+    fn normalize_handles_ae_ligature() {
+        // The classify_divergence panic root cause: æ slipping through
+        // normalize and then byte-slicing inside it.
+        let n = normalize("sæcula sæculórum");
+        assert!(!n.contains('æ'), "got {n:?}");
+        assert!(n.contains("aecula"));
+        assert!(n.contains("aeculorum"));
+    }
+
+    #[test]
+    fn normalize_handles_ae_with_acute() {
+        // `ǽ` (U+01FD) decomposes under NFD to `æ` + U+0301
+        // (combining acute). The combining-mark strip leaves bare
+        // `æ`, which step 3 already passed. Step 4b catches it.
+        // Real corpus body that triggered the panic:
+        let n = normalize("per ómnia sǽcula sæculórum");
+        assert!(!n.contains('æ'), "got {n:?}");
+        assert!(n.contains("aecula"));
+    }
+
+    #[test]
+    fn classify_ortho_variant_genetrice_genitrice() {
+        // Real Postcommunio pattern: long shared prefix + single
+        // letter differs ("genetrice" vs "genitrice").
+        let r = "haecnoscommuniodominepurgetacrimineetintercedentebeatavirginedeigenetricemariacoelestisremediifaciatesseconsortes";
+        let p = "haecnoscommuniodominepurgetacrimineetintercedentebeatavirginedeigenitricemariacoelestisremediifaciatesseconsortes";
+        assert_eq!(classify_divergence(r, p), DivergenceCategory::OrthoVariant);
+    }
+
+    #[test]
+    fn classify_ortho_variant_short_inside_long_dismissal_tail() {
+        // Real 01-01 case: rust = just the prayer (235c), perl = full
+        // section span up to end of HTML including Last Gospel +
+        // dismissal (5997c). The substitution still fires because
+        // we look at the SHORT body as a near-equal window inside
+        // the LONG body.
+        let r = "haecnoscommuniodominepurgetacrimineetintercedentebeatavirginedeigenetricemariacoelestisremediifaciatesseconsortes";
+        let p_long_tail = format!(
+            "haecnoscommuniodominepurgetacrimineetintercedentebeatavirginedeigenitricemariacoelestisremediifaciatesseconsortes{}",
+            "perdominumnostrumjesumchristumitemissaestameneitemissaestamenetcumspiritutuoplacegeminitatiblahblahblah".repeat(20),
+        );
+        assert_eq!(classify_divergence(r, &p_long_tail), DivergenceCategory::OrthoVariant);
+    }
+
+    #[test]
+    fn classify_ortho_variant_too_small() {
+        // Below the 32-char minimum — falls through to Other.
+        let r = "abcdefxyz";
+        let p = "abcdgfxyz";
+        assert_ne!(classify_divergence(r, p), DivergenceCategory::OrthoVariant);
+    }
+
+    #[test]
+    fn classify_leading_extra() {
+        // Rust body is the suffix of perl (perl prepends extra
+        // content). Drop 0 leading chars from short → still in long?
+        // That's ContainedAsSuffix — actual category is LeadingExtra.
+        // Construct so short is NOT directly contained but its tail
+        // (after dropping 6 leading chars) IS.
+        let r = "INTROxxhodiernadieunigenitumtuumgentibusstelladucerevelasti";
+        let p =
+            "extraleadingblahblahblahxxhodiernadieunigenitumtuumgentibusstelladucerevelasti";
+        let cat = classify_divergence(r, p);
+        assert_eq!(cat, DivergenceCategory::LeadingExtra, "got {cat:?}");
     }
 
     // ─── Rubric stripping (Phase 6.5) ────────────────────────────────

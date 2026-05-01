@@ -14,6 +14,7 @@
 //! `Layer`-keyed API in `kalendaria_layers`.
 
 use crate::divinum_officium::kalendaria_layers::{self, Layer};
+use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
 #[derive(Debug, Clone)]
@@ -31,58 +32,96 @@ pub struct Feast1570 {
     pub rank_num: f32,
 }
 
-/// Cached projection: `kalendaria_layers::Layer::Pius1570` lifted
+/// Cached per-layer projection: `kalendaria_layers::Cell` lifted
 /// into the legacy `Entry1570` shape so existing call sites stay
-/// untouched. Built lazily on first lookup.
-static PROJECTED: OnceLock<std::collections::BTreeMap<(u32, u32), Entry1570>> = OnceLock::new();
+/// untouched. Built lazily on first lookup of each layer; one
+/// `BTreeMap` per layer.
+static PROJECTED: OnceLock<std::collections::HashMap<Layer, BTreeMap<(u32, u32), Entry1570>>> =
+    OnceLock::new();
 
-fn projected() -> &'static std::collections::BTreeMap<(u32, u32), Entry1570> {
-    PROJECTED.get_or_init(|| {
-        let mut out = std::collections::BTreeMap::new();
-        // Iterate every (mm-dd) the Pius1570 layer ships and build
-        // the legacy Entry1570 shape.
-        for mm in 1..=12u32 {
-            let max_dd = if mm == 2 { 29 } else { 31 };
-            for dd in 1..=max_dd {
-                let Some(cells) = kalendaria_layers::lookup(Layer::Pius1570, mm, dd) else {
-                    continue;
-                };
-                let main_cell = cells.iter().find(|c| c.is_main());
-                let Some(main_cell) = main_cell else {
-                    continue;
-                };
-                let main = Feast1570 {
-                    stem: main_cell.stem.clone(),
-                    name: main_cell.officium.clone(),
-                    rank_num: main_cell.rank_num().unwrap_or(0.0),
-                };
-                let commemorations: Vec<Feast1570> = cells
-                    .iter()
-                    .filter(|c| !c.is_main())
-                    .map(|c| Feast1570 {
-                        stem: c.stem.clone(),
-                        name: c.officium.clone(),
-                        rank_num: c.rank_num().unwrap_or(0.0),
-                    })
-                    .collect();
-                out.insert(
-                    (mm, dd),
-                    Entry1570 {
-                        main,
-                        commemorations,
-                    },
-                );
-            }
+fn projected_for(layer: Layer) -> &'static BTreeMap<(u32, u32), Entry1570> {
+    let all = PROJECTED.get_or_init(std::collections::HashMap::new);
+    // Have to reach for unsafe-free interior mutability through
+    // OnceLock-of-HashMap: we initialise once, then `entry_or_insert`
+    // for any layer not yet projected. Using a static OnceLock + a
+    // RefCell-like wrapper would be cleaner but adds a dep; for now
+    // use a tiny static_per_layer constructor by precomputing all
+    // seven on first call. Memory is ~50 KB total.
+    static ALL_PROJECTED: OnceLock<std::collections::HashMap<Layer, BTreeMap<(u32, u32), Entry1570>>> =
+        OnceLock::new();
+    let _ = all; // silence
+    ALL_PROJECTED.get_or_init(|| {
+        let mut out = std::collections::HashMap::new();
+        for layer in [
+            Layer::Pius1570,
+            Layer::LeoXIII1888,
+            Layer::PiusX1906,
+            Layer::PiusXI1939,
+            Layer::PiusXIIPre1954,
+            Layer::PiusXII1955,
+            Layer::JohnXXIII1960,
+        ] {
+            out.insert(layer, project_layer(layer));
         }
         out
-    })
+    }).get(&layer).expect("all seven layers projected")
+}
+
+fn project_layer(layer: Layer) -> BTreeMap<(u32, u32), Entry1570> {
+    let mut out = BTreeMap::new();
+    for mm in 1..=12u32 {
+        let max_dd = if mm == 2 { 29 } else { 31 };
+        for dd in 1..=max_dd {
+            let Some(cells) = kalendaria_layers::lookup(layer, mm, dd) else {
+                continue;
+            };
+            let main_cell = cells.iter().find(|c| c.is_main());
+            let Some(main_cell) = main_cell else {
+                continue;
+            };
+            let main = Feast1570 {
+                stem: main_cell.stem.clone(),
+                name: main_cell.officium.clone(),
+                rank_num: main_cell.rank_num().unwrap_or(0.0),
+            };
+            let commemorations: Vec<Feast1570> = cells
+                .iter()
+                .filter(|c| !c.is_main())
+                .map(|c| Feast1570 {
+                    stem: c.stem.clone(),
+                    name: c.officium.clone(),
+                    rank_num: c.rank_num().unwrap_or(0.0),
+                })
+                .collect();
+            out.insert(
+                (mm, dd),
+                Entry1570 {
+                    main,
+                    commemorations,
+                },
+            );
+        }
+    }
+    out
 }
 
 /// Look up the 1570 entry for `(month, day)`. Returns `None` when the
 /// kalendar table doesn't list this date — the consumer should fall
 /// back to the temporal cycle (a feria).
 pub fn lookup(month: u32, day: u32) -> Option<&'static Entry1570> {
-    projected().get(&(month, day))
+    projected_for(Layer::Pius1570).get(&(month, day))
+}
+
+/// Layer-aware variant — same return shape, but reads the
+/// `kalendaria_layers` projection for any of the seven supported
+/// rubric layers. Used by reform-layer code paths so they don't
+/// have to convert `kalendaria_layers::Cell` themselves.
+pub fn lookup_for_layer(
+    layer: Layer,
+    month: u32,
+    day: u32,
+) -> Option<&'static Entry1570> {
+    projected_for(layer).get(&(month, day))
 }
 
 #[cfg(test)]

@@ -16,6 +16,7 @@
 //! The legacy 4-class approximation lives at `precedence_legacy` until
 //! Phase 11 wires the WIP pages to this module.
 
+#[allow(unused_imports)]
 use crate::divinum_officium::core::{
     Color, DayKind, Locale, OfficeInput, OfficeOutput, Rank, RankClass, RankKind, ReformAction,
     RuleLine, Rubric, Season,
@@ -32,14 +33,6 @@ use crate::divinum_officium::sancti;
 /// Locale is currently fixed to `Latin`. Vernacular text assembly is
 /// downstream of the rubric core (translation pipeline).
 pub fn compute_office(input: &OfficeInput, corpus: &dyn Corpus) -> OfficeOutput {
-    if !matches!(input.rubric, Rubric::Tridentine1570) {
-        panic!(
-            "compute_office: rubric {:?} not yet supported \
-             (Tridentine1570 only in Phase 4; see DIVINUM_OFFICIUM_PORT_PLAN.md \
-             Phases 7-10)",
-            input.rubric
-        );
-    }
     if !matches!(input.locale, Locale::Latin) {
         panic!("compute_office: only Locale::Latin in the rubric core");
     }

@@ -29,6 +29,7 @@
 //!   transferred vigils, the Saturday-BVM substitution, octave-day
 //!   commemorations, the 11-02 All-Saints-vs-All-Souls collision.
 
+#[allow(unused_imports)]
 use crate::divinum_officium::core::{
     CommuneType, FileCategory, FileKey, OfficeInput, ReformAction, Rubric,
 };
@@ -59,17 +60,15 @@ pub struct OccurrenceResult {
     pub reform_trace: Vec<ReformAction>,
 }
 
-/// Entry point. Tridentine 1570 only for now — other rubrics
-/// `panic!()` with a phase pointer until their reform layers land.
+/// Entry point. The 1570 baseline is the load-bearing rubric (99.7%
+/// cross-validated against Perl). Other rubrics dispatch through the
+/// same code path but consult their own `Layer` for kalendar
+/// lookups — Tridentine 1910 reads PiusX1906, Divino Afflatu reads
+/// PiusXI1939, etc. The rubric-RULE deltas (precedence, vigil
+/// suppression, octave handling) are still 1570-shape until each
+/// layer lands its rule overrides.
 pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> OccurrenceResult {
-    if !matches!(input.rubric, Rubric::Tridentine1570) {
-        panic!(
-            "compute_occurrence: rubric {:?} not yet supported \
-             (Tridentine1570 only in Phase 3; see DIVINUM_OFFICIUM_PORT_PLAN.md \
-             Phases 7-10)",
-            input.rubric
-        );
-    }
+    let layer = input.rubric.kalendar_layer();
 
     let (d, m, y) = (input.date.day, input.date.month, input.date.year);
 
@@ -134,7 +133,7 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
 
     // ── Sanctoral side ───────────────────────────────────────────────
     let (sancti_key, sancti_entry_holder) =
-        resolve_sancti_for_tridentine_1570(y, m, d, corpus);
+        resolve_sancti_for_tridentine_1570(y, m, d, layer, corpus);
     let sancti_entry: Option<&SanctiEntry> = sancti_entry_holder.as_ref();
     let sanctoral_rank = sancti_entry.and_then(|e| e.rank_num).unwrap_or(0.0);
 
@@ -747,6 +746,7 @@ fn transferred_sancti_for_1570(
     year: i32,
     month: u32,
     day: u32,
+    layer: crate::divinum_officium::kalendaria_layers::Layer,
     corpus: &dyn Corpus,
 ) -> Option<(String, String, f32)> {
     // Walk back up to 6 days looking for the most recent kalendar
@@ -760,7 +760,7 @@ fn transferred_sancti_for_1570(
         cursor_m = prev.1;
         cursor_d = prev.2;
         let (look_m, look_d) = date::sday_pair(cursor_m, cursor_d, cursor_y);
-        let Some(entry) = kalendarium_1570::lookup(look_m, look_d) else {
+        let Some(entry) = kalendarium_1570::lookup_for_layer(layer, look_m, look_d) else {
             continue;
         };
         // Octave-day saints ("Septima die infra Octavam ...", etc.)
@@ -782,7 +782,7 @@ fn transferred_sancti_for_1570(
         }
         // Was this kalendar entry preempted on its native date?
         let was_preempted = was_sancti_preempted_1570(
-            cursor_y, cursor_m, cursor_d, entry, corpus,
+            cursor_y, cursor_m, cursor_d, entry, layer, corpus,
         );
         if !was_preempted {
             // Prior saint occupied its own day — keep walking back
@@ -820,7 +820,7 @@ fn transferred_sancti_for_1570(
             }
             // Slot available. Does the temporal still preempt the
             // transferred saint here?
-            if was_sancti_preempted_1570(walk_y, walk_m, walk_d, entry, corpus) {
+            if was_sancti_preempted_1570(walk_y, walk_m, walk_d, entry, layer, corpus) {
                 continue; // walk further
             }
             // Saint can land here.
@@ -908,6 +908,7 @@ fn was_sancti_preempted_1570(
     month: u32,
     day: u32,
     entry: &kalendarium_1570::Entry1570,
+    _layer: crate::divinum_officium::kalendaria_layers::Layer,
     corpus: &dyn Corpus,
 ) -> bool {
     use crate::divinum_officium::date;
@@ -1106,6 +1107,7 @@ fn resolve_sancti_for_tridentine_1570(
     year: i32,
     month: u32,
     day: u32,
+    layer: crate::divinum_officium::kalendaria_layers::Layer,
     corpus: &dyn Corpus,
 ) -> (FileKey, Option<SanctiEntry>) {
     // Sunday-letter / Easter-coded Transfer table override (sancti
@@ -1160,17 +1162,17 @@ fn resolve_sancti_for_tridentine_1570(
     let suppressed_by_transfer =
         crate::divinum_officium::transfer_table::stem_transferred_away(
             year, "1570", look_m, look_d,
-        ) && kalendarium_1570::lookup(look_m, look_d)
-            .map(|e| was_sancti_preempted_1570(year, month, day, e, corpus))
+        ) && kalendarium_1570::lookup_for_layer(layer, look_m, look_d)
+            .map(|e| was_sancti_preempted_1570(year, month, day, e, layer, corpus))
             .unwrap_or(false);
     let native_entry = if suppressed_by_transfer {
         None
     } else {
-        kalendarium_1570::lookup(look_m, look_d)
+        kalendarium_1570::lookup_for_layer(layer, look_m, look_d)
     };
     let native_rank = native_entry.map(|e| e.main.rank_num).unwrap_or(0.0);
     if let Some((stem, name, rank_num)) =
-        transferred_sancti_for_1570(year, month, day, corpus)
+        transferred_sancti_for_1570(year, month, day, layer, corpus)
     {
         let should_apply = match native_entry {
             None => true,
@@ -1196,7 +1198,7 @@ fn resolve_sancti_for_tridentine_1570(
     let kalendar_lookup = if suppressed_by_transfer {
         None
     } else {
-        kalendarium_1570::lookup(look_m, look_d)
+        kalendarium_1570::lookup_for_layer(layer, look_m, look_d)
     };
     if let Some(override_) = kalendar_lookup {
         // Some kalendar entries assume a specific weekday — e.g.

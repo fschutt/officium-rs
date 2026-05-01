@@ -65,8 +65,18 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             | crate::divinum_officium::core::Season::Lent
             | crate::divinum_officium::core::Season::Passiontide
     );
+    let in_paschal_season = matches!(
+        office.season,
+        crate::divinum_officium::core::Season::Easter
+    );
     let graduale = if in_tractus_season {
         go("Tractus").or_else(|| go("Graduale"))
+    } else if in_paschal_season {
+        // Perl `getitem`: in Pasc, Graduale slot reads `GradualeP`
+        // when present (Marian commune in Pasc weeks 1-5). Fall back
+        // to `Graduale` for the Pasc6 / Pasc7 weeks where some
+        // files only carry the bare form.
+        go("GradualeP").or_else(|| go("Graduale"))
     } else {
         go("Graduale")
     };

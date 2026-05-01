@@ -504,8 +504,15 @@ fn is_latin_proper(name: &str) -> bool {
 }
 
 fn is_known_section_header(name: &str) -> bool {
+    let trimmed = name.trim();
+    let trimmed_no_dot = trimmed.trim_end_matches('.');
+    if trimmed_no_dot.eq_ignore_ascii_case("Alleluia")
+        || trimmed_no_dot.eq_ignore_ascii_case("Alleluja")
+    {
+        return true;
+    }
     PROPER_SECTIONS.iter().chain(ENGLISH_SECTION_NAMES.iter()).chain(ORDINARY_HEADERS.iter())
-        .any(|s| s.eq_ignore_ascii_case(name.trim()))
+        .any(|s| s.eq_ignore_ascii_case(trimmed))
 }
 
 /// Locate every `<FONT SIZE='+1' COLOR="red"><B><I>NAME</I></B></FONT>`
@@ -540,6 +547,17 @@ fn section_marker_positions(html: &str) -> Vec<(&str, usize, usize)> {
 
 fn canonical_section_name(name: &str) -> Option<&'static str> {
     let trimmed = name.trim();
+    // Easter-cycle alias: Perl renders the Graduale slot under the
+    // header "Alleluia." (or "Alleluja.") during Pasc1..Pasc5 — see
+    // `propers.pl::translate_label`. Map either alias to the
+    // canonical "Graduale" section so the regression compares the
+    // same body on both sides.
+    let trimmed_no_dot = trimmed.trim_end_matches('.');
+    if trimmed_no_dot.eq_ignore_ascii_case("Alleluia")
+        || trimmed_no_dot.eq_ignore_ascii_case("Alleluja")
+    {
+        return Some("Graduale");
+    }
     for canonical in PROPER_SECTIONS {
         if canonical.eq_ignore_ascii_case(trimmed) {
             return Some(*canonical);

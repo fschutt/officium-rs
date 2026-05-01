@@ -46,7 +46,7 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         let block = proper_block(&resolved, sect, corpus)?;
         let block = substitute_name(block, sect, winner_file);
         Some(ProperBlock {
-            latin: expand_macros(&block.latin),
+            latin: spell_var_pre1960(&expand_macros(&block.latin)),
             ..block
         })
     };
@@ -68,6 +68,31 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         // Postcommunio.
         commemorations: vec![],
     }
+}
+
+/// Pre-1960 Latin-orthography normalisation. Mirrors upstream
+/// `horascommon.pl:2156-2168` (`spell_var` else-branch). For all
+/// non-1960 rubrics (including Tridentine 1570) the rendered Latin
+/// applies these substitutions before output:
+///
+///     Génetrix → Génitrix
+///     Genetrí  → Genitrí
+///     cot[íi]d[íi] → quot[íi]d[íi]   (whole-word)
+///
+/// We don't apply the cisterciensis-only substitutions here.
+pub fn spell_var_pre1960(text: &str) -> String {
+    let mut out = text
+        .replace("Génetrix", "Génitrix")
+        .replace("Genetrí", "Genitrí");
+    // `\bco(t[ií]d[ií])` → quo$1 — limited Latin word-boundary case;
+    // only the bare-word "cot..." form. Hand-coded rather than regex
+    // since we don't import `regex` for this helper alone.
+    let needles = ["cotidi", "cotídi", "cotidí", "cotídí"];
+    for n in needles {
+        let replacement = n.replacen("co", "quo", 1);
+        out = out.replace(n, &replacement);
+    }
+    out
 }
 
 /// Substitute the saint's name into commune-template `N.` placeholders.

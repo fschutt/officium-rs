@@ -46,7 +46,28 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         office.season,
         crate::divinum_officium::core::Season::Easter
     );
+    // [GradualeF] swap (mirror Perl `getitem` ll. 866): Sunday Mass
+    // files (Adv1-0, Pent06-0, …) ship two Graduales —
+    //   * `[Graduale]`  with the Alleluja verse (Sunday Mass).
+    //   * `[GradualeF]` without it (used on ferials of the week when
+    //                              the ferial reads the Sunday Mass).
+    // Apply when our winner is a Tempora ferial (stem ends with a
+    // non-zero day-of-week digit, e.g. `Adv1-2o`, `Pent06-3`). Don't
+    // touch sancti winners (they have no GradualeF) or Sunday winners
+    // (we want the Sunday Graduale with its Alleluja verse).
+    let prefer_graduale_f = is_tempora_ferial_stem(&office.winner.stem);
     let go = |sect: &str| -> Option<ProperBlock> {
+        if sect == "Graduale" && prefer_graduale_f {
+            if let Some(block) = proper_block(&resolved, "GradualeF", corpus) {
+                let block = substitute_name_with_corpus(block, sect, winner_file, Some(corpus));
+                let latin = spell_var_pre1960(&expand_macros(&block.latin));
+                let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
+                return Some(ProperBlock {
+                    latin,
+                    ..block
+                });
+            }
+        }
         let block = proper_block(&resolved, sect, corpus)?;
         let block = substitute_name_with_corpus(block, sect, winner_file, Some(corpus));
         let latin = spell_var_pre1960(&expand_macros(&block.latin));
@@ -110,6 +131,23 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         // Postcommunio.
         commemorations: vec![],
     }
+}
+
+/// True when the stem looks like a Tempora ferial (Adv1-2, Pent06-3,
+/// Adv1-2o, …) — i.e. ends with `-N` for N != 0, optionally followed
+/// by a one-letter rubric variant (`o`, `t`, `r`).
+fn is_tempora_ferial_stem(stem: &str) -> bool {
+    let core = stem.trim_end_matches(|c: char| c.is_ascii_alphabetic());
+    let dash = match core.rfind('-') {
+        Some(i) => i,
+        None => return false,
+    };
+    let dow_str = &core[dash + 1..];
+    let dow: u32 = match dow_str.parse() {
+        Ok(d) => d,
+        Err(_) => return false,
+    };
+    dow > 0
 }
 
 /// Mirror Perl `getitem` ll. 870-879: parenthesised `(Alleluja, …)`

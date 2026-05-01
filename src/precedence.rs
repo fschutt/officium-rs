@@ -47,6 +47,7 @@ pub fn compute_office(input: &OfficeInput, corpus: &dyn Corpus) -> OfficeOutput 
 
     OfficeOutput {
         date: input.date,
+        rubric: input.rubric,
         winner: occ.winner.clone(),
         commemoratio: occ.commemoratio.clone(),
         scriptura: occ.scriptura.clone(),

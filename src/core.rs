@@ -142,6 +142,10 @@ pub struct OfficeOutput {
     /// date-keyed special cases like the Pope-coronation
     /// anniversary (Commune/Coronatio fires on May 18).
     pub date: Date,
+    /// Active rubric (carried through from `OfficeInput`). Drives
+    /// layer-aware Mass-side rendering (which `(sed rubrica X)`
+    /// conditional applies, era-specific rank/commune lookup, etc.).
+    pub rubric: Rubric,
     pub winner: FileKey,
     pub commemoratio: Option<FileKey>,
     pub scriptura: Option<FileKey>,

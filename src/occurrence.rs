@@ -94,7 +94,11 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
         category: FileCategory::Tempora,
         stem: tempora_stem,
     };
-    let tempora_file = corpus.mass_file(&tempora_key);
+    // For body-less redirect files (Tempora/Adv1-0o is just a single
+    // `@Tempora/Adv1-0` parent-inherit line), follow the parent chain
+    // to find the file that actually carries the rank/officium.
+    let effective_tempora_key = effective_tempora_key(&tempora_key, corpus);
+    let tempora_file = corpus.mass_file(&effective_tempora_key);
     let temporal_rank = tempora_file
         .and_then(|f| f.rank_num)
         .map(|r| downgrade_post_1570_octave(r, tempora_file.unwrap()))
@@ -430,6 +434,21 @@ fn saturday_bvm_winner_1570(
 /// `-a` chase candidates rather than a blanket "always chase if
 /// `-a` exists" rule (which would mis-direct Trinity).
 fn pick_tempora_variant_for_1570(stem: &str, corpus: &dyn Corpus) -> String {
+    // Authoritative: upstream `Tabulae/Tempora/Generale.txt` filtered
+    // to 1570 entries (vendored as `data/tempora_redirects_1570.txt`).
+    // Covers Adv*-* → Adv*-*o, Nat29..Nat31 → *o, Epi1-0 → Epi1-0a,
+    // Quad{2..5}-* → *t, Pasc*-* → various, Pent*-* → various.
+    if let Some(target) = crate::divinum_officium::tempora_table::redirect_1570(stem) {
+        let key = FileKey {
+            category: FileCategory::Tempora,
+            stem: target.to_string(),
+        };
+        if corpus.mass_file(&key).is_some() {
+            return target.to_string();
+        }
+    }
+    // Below: legacy ad-hoc fallbacks. Most overlap with the table now,
+    // but kept as a safety net while we audit the table coverage.
     if TRIDENTINE_1570_TEMPORA_A_CHASE.contains(&stem) {
         let candidate = format!("{stem}a");
         let key = FileKey {
@@ -450,12 +469,6 @@ fn pick_tempora_variant_for_1570(stem: &str, corpus: &dyn Corpus) -> String {
             return candidate;
         }
     }
-    // `Feria`-suffixed variants exist whenever the bare stem carries a
-    // post-1570 feast (Septem Dolorum on Quad5-5, Patrocinii Octave on
-    // Pasc2-3..Pasc3-3, Sacred Heart Octave on Pent02-5..Pent03-5).
-    // The mere existence of `<stem>Feria` in the corpus is the upstream
-    // signal that the bare stem is post-1570; for 1570 we always prefer
-    // the `Feria` variant.
     let feria_stem = format!("{stem}Feria");
     let feria_key = FileKey {
         category: FileCategory::Tempora,
@@ -485,6 +498,29 @@ const TRIDENTINE_1570_TEMPORA_R_CHASE: &[&str] = &[
     "Pent05-0",
     "Pent06-0",
 ];
+
+/// Walk a file's `parent` chain, returning the first key whose
+/// file actually carries `[Rank]` data. Lets the occurrence layer
+/// see-through redirect-only files like `Tempora/Adv1-0o` (a single
+/// `@Tempora/Adv1-0` line) or `Sancti/05-09t` (a single
+/// `@Sancti/05-09` line) and pick up the rank from the parent.
+/// Stops after 4 hops as a defensive cycle break.
+fn effective_tempora_key(key: &FileKey, corpus: &dyn Corpus) -> FileKey {
+    let mut k = key.clone();
+    for _ in 0..4 {
+        let Some(file) = corpus.mass_file(&k) else {
+            return k;
+        };
+        if file.rank_num.is_some() || file.officium.is_some() {
+            return k;
+        }
+        match file.parent.as_deref() {
+            Some(p) => k = FileKey::parse(p),
+            None => return k,
+        }
+    }
+    k
+}
 
 /// Resolve a file's effective Officium, chasing the file-level
 /// `parent` inherit when the local file is body-less (e.g.
@@ -606,7 +642,13 @@ fn resolve_sancti_for_tridentine_1570(
             corpus,
         );
         let key = resolve_sancti_stem(&stem, corpus);
-        let mass = corpus.mass_file(&key);
+        // Many `t`/`o`-suffixed Sancti stems are body-less redirects
+        // (`Sancti/05-09t` = `@Sancti/05-09`); chase the parent chain
+        // to find the file that actually carries [Rank]. The winner
+        // file_key stays the original (`Sancti/05-09t`) so the
+        // resolver still applies the right name-substitution etc.
+        let metadata_key = effective_tempora_key(&key, corpus);
+        let mass = corpus.mass_file(&metadata_key);
         // Pick the right rank for 1570:
         //   1. `rank_num_1570` from corpus when annotated `(sed rubrica
         //      1570)` (Bibiana 12-02: default 2.2 Semiduplex, 1570 1.1

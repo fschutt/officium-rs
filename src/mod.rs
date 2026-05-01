@@ -68,3 +68,8 @@ pub mod prayers;
 // `Sancti/01-23o` Emerentiana instead of post-1570 Raymond) and
 // pre-1911 commemoration pairings.
 pub mod kalendarium_1570;
+
+// Phase 7 — Tridentine 1570 Tempora-redirect table. Loads the
+// upstream `Tabulae/Tempora/Generale.txt` filtered to 1570 entries
+// and exposes a stem-redirect lookup (Adv1-0 → Adv1-0o, etc.).
+pub mod tempora_table;

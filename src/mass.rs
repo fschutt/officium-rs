@@ -381,15 +381,23 @@ fn paschal_commune_swap(
 /// the resulting file exists.
 ///
 /// Also accepts the `Feria`-suffixed Tridentine-1570 form
-/// (`Pasc2-5Feria` → `Pasc2-0`); the `Feria` suffix marks files that
-/// are the 1570-baseline body for a slot whose bare stem now carries
-/// a post-1570 feast.
+/// (`Pasc2-5Feria` → `Pasc2-0`) and single-letter post-fixed
+/// variants (`Adv1-2o` → `Adv1-0`, `Pasc2-2t` → `Pasc2-0`); the
+/// suffix marks files that are the 1570-baseline body for a slot.
 fn tempora_feria_sunday_fallback(key: &FileKey) -> Option<FileKey> {
     let (week, mut dow_str) = key.stem.rsplit_once('-')?;
-    // Strip a trailing `Feria` (Pasc2-5Feria → dow_str="5") so the
-    // 1570 feria-Sunday-fallback fires for the same-week's Sunday.
+    // Strip a trailing `Feria` (Pasc2-5Feria → dow_str="5") OR a
+    // single-letter variant suffix (`o`/`t`/`r`/`a` — Tridentine and
+    // related rubric variants) so the 1570 feria-Sunday-fallback
+    // fires for the same-week's Sunday.
     if let Some(stripped) = dow_str.strip_suffix("Feria") {
         dow_str = stripped;
+    }
+    if dow_str.len() == 2 {
+        let last = dow_str.chars().last().unwrap_or('?');
+        if matches!(last, 'o' | 't' | 'r' | 'a') {
+            dow_str = &dow_str[..dow_str.len() - 1];
+        }
     }
     if dow_str.len() != 1 {
         return None;

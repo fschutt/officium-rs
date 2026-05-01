@@ -161,7 +161,13 @@ def parse_mass_file(text: str) -> dict:
             parts = [p.strip() for p in line.split(";;")]
             if current_label is None and default_parts is None:
                 default_parts = parts
-            elif current_label and "1570" in current_label and variant_1570_parts is None:
+            elif (
+                current_label
+                and ("1570" in current_label or "tridentina" in current_label)
+                and variant_1570_parts is None
+            ):
+                # Both "(sed rubrica 1570)" and "(sed rubrica
+                # tridentina)" describe the Tridentine 1570 baseline.
                 variant_1570_parts = parts
             current_label = None
         if default_parts:

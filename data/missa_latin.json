@@ -29,6 +29,8 @@
 "rank":"Simplex",
 "rank_num":1.4,
 "commune":"vide Sancti/12-26",
+"rank_num_1570":3.1,
+"commune_1570":"ex Sancti/12-26",
 "sections":{
 "Rule":"vide Sancti/12-26;\nFeria Te Deum\nComkey=70\nLectio1 TempNat\nGloria\nPrefatio=Nat",
 "Oratio":"@Sancti/12-26:Oratio1",
@@ -45,6 +47,8 @@
 "rank":"Simplex",
 "rank_num":1.4,
 "commune":"vide Sancti/12-27",
+"rank_num_1570":3.1,
+"commune_1570":"ex Sancti/12-27",
 "sections":{
 "Rule":"vide Sancti/12-27;\nFeria Te Deum\nComkey=70\n9 lectiones\nno secunda Vespera\nLectio1 TempNat\nGloria\nPrefatio=Apostolis",
 "Commemoratio Oratio":"!Pro Ss. Innocentibus\n@Sancti/12-28:Oratio",
@@ -77,6 +81,8 @@
 "rank":"Simplex",
 "rank_num":1.4,
 "commune":"vide Sancti/12-28",
+"rank_num_1570":3.1,
+"commune_1570":"ex Sancti/12-28",
 "sections":{
 "Rule":"ex Sancti/12-28;\nGloria\nPrefatio=Nat"
 }
@@ -86,6 +92,8 @@
 "rank":"Semiduplex",
 "rank_num":4.9,
 "commune":"ex Sancti/01-01",
+"rank_num_1570":2.9,
+"commune_1570":"ex Sancti/01-01",
 "sections":{
 "Rule":"ex Sancti/01-01;\nGloria\nCredoDA\nPrefatio=Nat\nSuffragium=Maria2;;",
 "Introitus":"!Sap 18:14-15\n@Tempora/Nat1-0",
@@ -356,6 +364,8 @@
 "rank":"Simplex",
 "rank_num":1.1,
 "commune":"vide C2a-1",
+"rank_num_1570":2.2,
+"commune_1570":"vide C2a-1",
 "sections":{
 "Rule":"vide C2a-1;\nGloria",
 "Name":"Postcommunio=Canúto",
@@ -1717,6 +1727,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C4a",
+"rank_num_1570":3.0,
+"commune_1570":"vide C4",
 "sections":{
 "Rule":"vide C4a;\nGloria\nCredoDA",
 "Name":"Gregórium\nSecreta=Gregórii\nPostcommunio=Gregórius",
@@ -2927,6 +2939,8 @@
 "rank":"Duplex majus",
 "rank_num":4.1,
 "commune":"vide C1",
+"rank_num_1570":3.1,
+"commune_1570":"vide C1",
 "sections":{
 "Rule":"Gloria\nCredoDA\nPrefatio=Apostolis",
 "Introitus":"@Commune/C3a",
@@ -4913,6 +4927,8 @@
 "rank":"Duplex I classis",
 "rank_num":6.0,
 "commune":"ex Sancti/05-08",
+"rank_num_1570":5.0,
+"commune_1570":"ex Sancti/05-08",
 "sections":{
 "Rule":"ex Sancti/05-08\nGloria\nCredo",
 "Introitus":"!Ps 102:20\nv. Benedícite Dóminum, omnes Angeli ejus: poténtes virtúte, qui fácitis verbum ejus, ad audiéndam vocem sermónum ejus.\n!Ps 102:1\nBenedic, ánima mea, Dómino: et ómnia, quæ intra me sunt, nómini sancto ejus.\n&Gloria\nv. Benedícite Dóminum, omnes Angeli ejus: poténtes virtúte, qui fácitis verbum ejus, ad audiéndam vocem sermónum ejus.",
@@ -5692,6 +5708,8 @@
 "rank":"Duplex majus",
 "rank_num":4.1,
 "commune":"vide Sancti/11-01",
+"rank_num_1570":3.1,
+"commune_1570":"vide Sancti/11-01",
 "sections":{
 "Rule":"vide Sancti/11-01;\n9 lectiones"
 }
@@ -6031,6 +6049,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C5a",
+"rank_num_1570":3.0,
+"commune_1570":"vide C5",
 "sections":{
 "Rule":"vide C5a;\n(sed rubrica tridentina)\nvide C5;\nGloria\nCredoDA",
 "Name":"Joánnem\nSecreta=Joánnis\nPostcommunio=Joánnes",
@@ -6653,6 +6673,8 @@
 "rank":"Duplex II class cum octava simplici",
 "rank_num":5.2,
 "commune":"ex C3",
+"rank_num_1570":5.2,
+"commune_1570":"ex C3",
 "sections":{
 "Rule":"no Gloria\nCredo\nPrefatio=Nat",
 "Introitus":"!Ps 8:3\nv. Ex ore infántium, Deus, et lacténtium perfecísti laudem propter inimicos tuos.\n!Ps 8:2\nDómine, Dóminus noster: quam admirábile est nomen tuum in univérsa terra!\n&Gloria\nv. Ex ore infántium, Deus, et lacténtium perfecísti laudem propter inimicos tuos.",
@@ -8714,6 +8736,8 @@
 "rank":"Semiduplex",
 "rank_num":2.1,
 "commune":"ex Tempora/Pasc5-4",
+"rank_num_1570":2.0,
+"commune_1570":"ex Tempora/Pasc5-4",
 "sections":{
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-4::s/\\!(?!M).*//"
@@ -8725,6 +8749,8 @@
 "rank":"Semiduplex",
 "rank_num":2.1,
 "commune":"ex Tempora/Pasc5-4",
+"rank_num_1570":2.0,
+"commune_1570":"ex Tempora/Pasc5-4",
 "sections":{
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-5"
@@ -8766,6 +8792,8 @@
 "rank":"Semiduplex",
 "rank_num":2.1,
 "commune":"ex Tempora/Pasc5-4",
+"rank_num_1570":2.0,
+"commune_1570":"ex Tempora/Pasc5-4",
 "sections":{
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-5"
@@ -8777,6 +8805,8 @@
 "rank":"Semiduplex",
 "rank_num":2.1,
 "commune":"ex Tempora/Pasc5-4",
+"rank_num_1570":2.0,
+"commune_1570":"ex Tempora/Pasc5-4",
 "sections":{
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-5"
@@ -8797,6 +8827,8 @@
 "rank":"Semiduplex",
 "rank_num":2.1,
 "commune":"ex Tempora/Pasc5-4",
+"rank_num_1570":2.0,
+"commune_1570":"ex Tempora/Pasc5-4",
 "sections":{
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-5"
@@ -9238,6 +9270,8 @@
 "rank":"Semiduplex II class",
 "rank_num":5.6,
 "commune":"ex Tempora/Pent01-4",
+"rank_num_1570":2.9,
+"commune_1570":"ex Tempora/Pent01-4",
 "sections":{
 "Rule":"Suffragium=Maria3;Ecclesiæ,Papa;;\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis",
 "Oratio":"@Tempora/Pent01-1:Oratio",
@@ -9255,6 +9289,8 @@
 "rank":"Semiduplex II class",
 "rank_num":5.6,
 "commune":"ex Tempora/Pent01-4",
+"rank_num_1570":2.9,
+"commune_1570":"ex Tempora/Pent01-4",
 "sections":{
 "Rule":"Suffragium=Maria3;Ecclesiæ,Papa;;\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis",
 "Oratio":"@Tempora/Pent01-1:Oratio",
@@ -9272,6 +9308,8 @@
 "rank":"Semiduplex II class",
 "rank_num":5.6,
 "commune":"ex Tempora/Pent01-4",
+"rank_num_1570":2.9,
+"commune_1570":"ex Tempora/Pent01-4",
 "sections":{
 "Rule":"Suffr=Sanctorum;Maria3,Ecclesiæ,Papa;;"
 }
@@ -9310,6 +9348,8 @@
 "rank":"Semiduplex II class",
 "rank_num":5.6,
 "commune":"ex Tempora/Pent01-4",
+"rank_num_1570":2.9,
+"commune_1570":"ex Tempora/Pent01-4",
 "sections":{
 "Rule":"ex Tempora/Pent01-4;\nOratio Dominica\nSuffragium=Maria3;Ecclesiæ,Papa;;\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis"
 }
@@ -9319,6 +9359,8 @@
 "rank":"Semiduplex II class",
 "rank_num":5.6,
 "commune":"ex Tempora/Pent01-4",
+"rank_num_1570":2.9,
+"commune_1570":"ex Tempora/Pent01-4",
 "sections":{
 "Rule":"ex Tempora/Pent01-4;\nOratio Dominica\nSuffragium=Maria3;Ecclesiæ,Papa;;\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis"
 }
@@ -9328,6 +9370,8 @@
 "rank":"Semiduplex II class",
 "rank_num":5.6,
 "commune":"ex Tempora/Pent01-4",
+"rank_num_1570":2.9,
+"commune_1570":"ex Tempora/Pent01-4",
 "sections":{
 "Rule":"ex Tempora/Pent01-4;\nOratio Dominica\nSuffragium=Maria3;Ecclesiæ,Papa;;\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis"
 }

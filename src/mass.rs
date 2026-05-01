@@ -82,6 +82,14 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
     } else {
         &expand_macros
     };
+    // Suffragium parse — `Suffr=Maria3;Ecclesiæ,Papa;;` form. Each
+    // semi-separated group is a slot of one rotated commemoration;
+    // for slot N (0-indexed) the entry chosen is `dayofweek %
+    // group_size`. Mirrors Perl `propers.pl::oratio` ll. 352-369.
+    let suffr_groups = winner_file
+        .and_then(|f| f.sections.get("Rule"))
+        .and_then(|r| parse_suffragium_rule(r));
+    let dayofweek_winner = dayofweek_from_winner_stem(&resolved.winner.stem);
     // [GradualeF] is handled INSIDE `proper_block` — only the
     // feria-Sunday-fallback branch swaps to GradualeF (mirroring Perl
     // `getitem` ll. 859-866 where the substitution lives in the third
@@ -141,6 +149,15 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             ..block
         };
         let block = substitute_name_with_corpus(block, sect, winner_file, Some(corpus));
+        // Suffragium concatenation is computed but currently DISABLED:
+        // Perl's first-Oratio-block layout differs by day in ways
+        // that aren't deterministic from `Suffr=...;;` alone (the
+        // first commemoration appears INSIDE the main Oratio block on
+        // Pasc6-1 but in a SEPARATE Oremus block on Sat-BVM Saturdays
+        // — see UPSTREAM_WEIRDNESSES.md #13). Until we can match
+        // Perl exactly, skip the append so we don't regress the
+        // baseline. The plumbing stays so we can re-enable later.
+        let _ = (suffr_groups.as_ref(), dayofweek_winner);
         let latin = apply_post_septuagesima_conditional(
             &block.latin, in_post_septuagesima,
         );
@@ -1223,6 +1240,164 @@ fn winner_rule_lc(winner_file: Option<&MassFile>) -> Option<String> {
     winner_file
         .and_then(|f| f.sections.get("Rule"))
         .map(|s| s.to_lowercase())
+}
+
+/// Parse the `Suffr=...;;` directive from a [Rule] body. Returns
+/// the groups as `Vec<Vec<String>>` — outer split on `;`, inner
+/// split on `,`. Returns None if the rule has no Suffr= line. The
+/// Suffragium directive controls which commemorations get appended
+/// to Oratio/Secreta/Postcommunio. Each group is rotated by
+/// `dayofweek % group_size`.
+fn parse_suffragium_rule(rule: &str) -> Option<Vec<Vec<String>>> {
+    // Match `Suffr=foo;bar,baz;;` or `Suffragium=foo;bar;` etc.
+    // Stop at the trailing `;;` (which marks end of directive).
+    let lc = rule;
+    let suffr_pos = lc.find("Suffr").or_else(|| lc.find("suffr"))?;
+    let after_eq = &lc[suffr_pos..].split_once('=')?.1;
+    // Take up to the trailing `;;` or end-of-line.
+    let (body, _rest) = after_eq.split_once(";;").unwrap_or((after_eq, ""));
+    // The body might span a line — drop anything after the first newline.
+    let body = body.lines().next().unwrap_or("");
+    let groups: Vec<Vec<String>> = body
+        .split(';')
+        .filter(|s| !s.trim().is_empty())
+        .map(|grp| {
+            grp.split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect()
+        })
+        .filter(|g: &Vec<String>| !g.is_empty())
+        .collect();
+    if groups.is_empty() {
+        None
+    } else {
+        Some(groups)
+    }
+}
+
+/// Extract day-of-week (0..6 with Sunday=0) from a Tempora winner
+/// stem. Returns 0 if not parseable. Used by the Suffragium
+/// rotation. Mirrors Perl `$dayofweek % @sf1` indexing where Sunday
+/// = 0, Monday = 1, ..., Saturday = 6.
+fn dayofweek_from_winner_stem(stem: &str) -> u32 {
+    // Stems like "Pasc6-1", "Pent06-3", "Quadp3-3o" — last digit
+    // before optional letter suffix is the day-of-week.
+    let core = stem.trim_end_matches(|c: char| c.is_ascii_alphabetic());
+    let dash_idx = match core.rfind('-') {
+        Some(i) => i,
+        None => return 0,
+    };
+    core[dash_idx + 1..].parse::<u32>().unwrap_or(0)
+}
+
+/// Apply Suffragium concatenation: append rotated commemoration
+/// bodies (with conclusio stripped) to the main `body`. Mirrors Perl
+/// `propers.pl::oratio` ll. 352-371.
+///
+/// Each `groups[i]` is rotated by `dayofweek % len`. The chosen
+/// element looks up `<sect> <element>` in `Ordo/Suffragium`. The
+/// looked-up body has its trailing `$Per Dominum` etc. stripped
+/// (delconclusio), then is appended after `_\n`.
+///
+/// The main body's own trailing `$Per <conclusio>` stays in the
+/// output — Perl ALSO emits it (in macro-expanded form) before the
+/// suffragium prayers. Mirrors the rendered HTML where the main
+/// Oratio body's Per Dominum appears before `Pro Papa` rubric
+/// label and Papa body... actually the rendered HTML strips main's
+/// Per Dominum. Need to delconclusio the main body too. See
+/// UPSTREAM_WEIRDNESSES.md #13.
+fn apply_suffragium(
+    body: &str,
+    sect: &str,
+    groups: Option<&Vec<Vec<String>>>,
+    dayofweek: u32,
+    corpus: &dyn Corpus,
+) -> String {
+    let groups = match groups {
+        Some(g) if !g.is_empty() => g,
+        _ => return body.to_string(),
+    };
+    let suffr_key = FileKey {
+        category: FileCategory::Other("Ordo".to_string()),
+        stem: "Suffragium".to_string(),
+    };
+    let suffr_file = match corpus.mass_file(&suffr_key) {
+        Some(f) => f,
+        None => return body.to_string(),
+    };
+    // Strip the main body's trailing `$Per`/`$Qui` line — Perl
+    // delconclusio's it via the suffragium loop's chained semantics
+    // (the LAST $-line in the concatenated retvalue becomes
+    // $addconclusio and is appended at the very end).
+    let (main_stripped, main_conclusio) = strip_trailing_dollar_line(body);
+    let mut out = String::with_capacity(body.len() * 2);
+    out.push_str(&main_stripped);
+    let mut last_conclusio = main_conclusio;
+    let mut count = 0;
+    for group in groups {
+        if count >= 2 {
+            // Perl: `last if $ctotalnum > 2` — at most 3
+            // commemorations including the main.
+            break;
+        }
+        let len = group.len() as u32;
+        if len == 0 {
+            continue;
+        }
+        let i = (dayofweek % len) as usize;
+        let suffix = &group[i];
+        let key = format!("{} {}", sect, suffix);
+        let suffr_body = match suffr_file.sections.get(&key) {
+            Some(b) => b,
+            None => continue,
+        };
+        out.push_str("\n_\n");
+        let (stripped, conclusio) = strip_trailing_dollar_line(suffr_body);
+        out.push_str(&stripped);
+        if let Some(c) = conclusio {
+            last_conclusio = Some(c);
+        }
+        count += 1;
+    }
+    if let Some(c) = last_conclusio {
+        out.push('\n');
+        out.push_str(&c);
+    }
+    out
+}
+
+/// Strip the trailing `$Per ...` / `$Qui ...` macro line from a
+/// body and return `(body_without_conclusio, conclusio_line)`.
+/// Mirrors a slice of Perl `delconclusio`: walk lines from the end
+/// looking for the last line starting with `$`. The returned
+/// conclusio includes the `$` token (so a later macro pass expands
+/// it).
+fn strip_trailing_dollar_line(body: &str) -> (String, Option<String>) {
+    let mut lines: Vec<&str> = body.lines().collect();
+    while let Some(last) = lines.last() {
+        if last.trim().is_empty() {
+            lines.pop();
+        } else {
+            break;
+        }
+    }
+    if let Some(last) = lines.last() {
+        if last.trim_start().starts_with('$') {
+            let conclusio = last.trim_start().to_string();
+            lines.pop();
+            // also drop trailing blank lines that came before
+            while let Some(l) = lines.last() {
+                if l.trim().is_empty() {
+                    lines.pop();
+                } else {
+                    break;
+                }
+            }
+            return (lines.join("\n"), Some(conclusio));
+        }
+    }
+    (body.to_string(), None)
 }
 
 /// True when the winner file's [Rule] contains the `LectioL<n>`

@@ -175,3 +175,47 @@ things:
 The actual behavior in `getproprium` (propers.pl) treats these
 slightly differently (the `flag` parameter). A port that reads only
 the file format would think they're synonyms.
+
+## 13. Suffragium first-block layout is not deterministic from `Suffr=…`
+
+The `Suffr=Maria3;Ecclesiæ,Papa;;` directive in `[Rule]` controls
+which Suffragium prayers get appended to Oratio / Secreta /
+Postcommunio. Each `;`-group is rotated by `dayofweek % len`, the
+chosen entry looks up `<sect> <name>` in `Ordo/Suffragium.txt`, and
+the body is `delconclusio`'d before being concatenated with `_\n`
+separator. Final `$addconclusio` is appended at the end.
+
+In the rendered HTML the comparator's "first-Oratio-block-wins" rule
+sees different layouts on different days even with the same `Suffr=`
+form:
+
+* **Sat-BVM 2026-06-13** (winner Commune/C10c, [Rule] from C10
+  `Suffr=Spiritu;Ecclesiæ,Papa;;`): the first Oratio block is JUST
+  the main "Concede nos famulos tuos" + Per Dominum. The Suffragium
+  prayers (Spiritu, Ecclesiæ, Papa) are in a SEPARATE second
+  Oremus block.
+
+* **Pasc6-1 2026-05-18** (winner Tempora/Pasc6-1, [Rule]
+  `Suffr=Maria3;Ecclesiæ,Papa;;`): the first Oratio block contains
+  main "Concede quaesumus" + a `Pro Papa` rubric (with capital P,
+  not the lowercase `Pro papa` from Suffragium.txt) + a Pope-Oratio
+  body + Per Dominum. The Suffragium-rotated `Maria3 + Papa` are
+  in a SEPARATE second Oremus block.
+
+The TWO `Pro Papa` blocks rendered for Pasc6-1 (one capitalised in
+the first block, one lowercase in the second) appear to come from
+two different sources:
+1. A `commemoratio1` set somewhere in horascommon.pl that fires for
+   Octave-of-Ascension days specifically (the source of the
+   capitalised "Pro Papa" inside the first block).
+2. The Suffragium loop firing as documented (the lowercase
+   "Pro papa" in the second block).
+
+A port that just implements the documented `Suffr=…` algorithm
+matches Sat-BVM (where there's no extra commemoratio1) but misses
+the Pasc6-1 case. We disable the append in `mass.rs` for now and
+leave it as a known divergence (3 cells out of 4380).
+
+The deeper weirdness: the Perl rendering doubles up "Pro Papa"
+because the same Pope is commemorated by *two* different mechanisms
+that aren't deduplicated.

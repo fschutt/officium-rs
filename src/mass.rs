@@ -244,6 +244,12 @@ pub fn proper_block(
     if commune_eligible(office.commune_type) {
         if let Some(commune_key) = office.commune.as_ref() {
             let resolved_commune = paschal_commune_swap(commune_key, office.season, corpus);
+            // Some Sancti files reference malformed commune stems
+            // (Sancti/08-26 carries `vide C2-1b` but the corpus has no
+            // `Commune/C2-1b`; the rubric resolver falls through to
+            // `Commune/C2-1`). Walk the stem one trailing-letter at a
+            // time when the lookup misses.
+            let resolved_commune = chase_missing_commune(&resolved_commune, corpus);
             if let Some(commune_file) = corpus.mass_file(&resolved_commune) {
                 // Skip commune if its officium is a post-1570 reform
                 // (Sacred Heart Octave, Patrocinii St Joseph, etc.)
@@ -351,6 +357,41 @@ fn is_post_1570_octave_file(file: &MassFile) -> bool {
         || officium.contains("Christi Regis")
         || officium.contains("Patrocinii")
         || officium.contains("Patrocínii")
+}
+
+/// Walk the trailing characters of a Commune stem, dropping one
+/// letter at a time until the resulting key resolves. For e.g.
+/// `Commune/C2-1b` (which the corpus doesn't carry) this returns
+/// `Commune/C2-1` if it does. Stops at the first hit; falls back to
+/// the original key when nothing matches. Only applies to Commune
+/// keys.
+fn chase_missing_commune(key: &FileKey, corpus: &dyn Corpus) -> FileKey {
+    if !matches!(key.category, FileCategory::Commune) {
+        return key.clone();
+    }
+    if corpus.mass_file(key).is_some() {
+        return key.clone();
+    }
+    let mut stem: String = key.stem.clone();
+    while !stem.is_empty() {
+        let last = stem.chars().last().unwrap_or('?');
+        // Stop dropping once we've reached the digit prefix (`C2` etc.).
+        if last.is_ascii_digit() {
+            break;
+        }
+        stem.pop();
+        if stem.is_empty() {
+            break;
+        }
+        let candidate = FileKey {
+            category: key.category.clone(),
+            stem: stem.clone(),
+        };
+        if corpus.mass_file(&candidate).is_some() {
+            return candidate;
+        }
+    }
+    key.clone()
 }
 
 /// Paschal-time commune-variant swap: in `Season::Easter` (the only

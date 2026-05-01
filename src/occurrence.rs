@@ -518,6 +518,168 @@ const TRIDENTINE_1570_TEMPORA_R_CHASE: &[&str] = &[
     "Pent06-0",
 ];
 
+/// Transferred-feast lookup. Walk back up to 6 days. For each day,
+/// check if the kalendar 1570 entry there was preempted by its
+/// own day's temporal cycle (e.g. Sunday outranking a Semiduplex
+/// feast). If yes, AND the days between that one and `day` are all
+/// "free" (no kalendar entry that would itself need a feast slot),
+/// return the bumped feast — it transfers to `day`.
+///
+/// This is a coarse approximation of the Tridentine transfer rules.
+/// We don't track the year-level transfer table; instead we re-derive
+/// transfers per-date by scanning recent kalendar entries. Only
+/// catches the simple "Sunday bumps a Semiduplex" pattern; complex
+/// chains of transfers are not yet handled.
+fn transferred_sancti_for_1570(
+    year: i32,
+    month: u32,
+    day: u32,
+    corpus: &dyn Corpus,
+) -> Option<(String, String, f32)> {
+    // Walk back up to 6 days looking for the most recent kalendar
+    // entry. If found, check if it was preempted on its native date.
+    // If yes, scan FORWARD from that date and apply the transfer to
+    // the FIRST free day — i.e. only fire the transfer once.
+    let (mut cursor_y, mut cursor_m, mut cursor_d) = (year, month, day);
+    for _ in 0..6 {
+        let prev = previous_calendar_day(cursor_y, cursor_m, cursor_d);
+        cursor_y = prev.0;
+        cursor_m = prev.1;
+        cursor_d = prev.2;
+        let Some(entry) = kalendarium_1570::lookup(cursor_m, cursor_d) else {
+            continue;
+        };
+        // Was this kalendar entry preempted on its native date?
+        let was_preempted = was_sancti_preempted_1570(
+            cursor_y, cursor_m, cursor_d, entry, corpus,
+        );
+        if !was_preempted {
+            return None; // The prior feast wasn't bumped.
+        }
+        // Walk forward from the bumped date. The first free day
+        // (no kalendar entry, and the temporal that day is one the
+        // saint can actually displace) gets the transfer.
+        let (mut walk_y, mut walk_m, mut walk_d) = (cursor_y, cursor_m, cursor_d);
+        loop {
+            let next = next_calendar_day(walk_y, walk_m, walk_d);
+            walk_y = next.0;
+            walk_m = next.1;
+            walk_d = next.2;
+            // Stop if we've walked further than `day` — the saint
+            // was claimed by an earlier free day.
+            if (walk_y, walk_m, walk_d) > (year, month, day) {
+                return None;
+            }
+            if kalendarium_1570::lookup(walk_m, walk_d).is_some() {
+                // This day has its own saint. Skip — saint can't land
+                // here unless it outranks. For the simple Semiduplex
+                // case we punt and abandon the transfer.
+                return None;
+            }
+            // This day is free. Does the transferred saint outrank
+            // today's temporal?
+            if !was_sancti_preempted_1570(walk_y, walk_m, walk_d, entry, corpus) {
+                if (walk_y, walk_m, walk_d) == (year, month, day) {
+                    return Some((
+                        entry.main.stem.clone(),
+                        entry.main.name.clone(),
+                        entry.main.rank_num,
+                    ));
+                }
+                // The saint settles on this earlier free day; today
+                // is unaffected.
+                return None;
+            }
+        }
+    }
+    None
+}
+
+fn previous_calendar_day(year: i32, month: u32, day: u32) -> (i32, u32, u32) {
+    if day > 1 {
+        return (year, month, day - 1);
+    }
+    if month > 1 {
+        let prev_month = month - 1;
+        let last_day = match prev_month {
+            1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+            4 | 6 | 9 | 11 => 30,
+            2 => if crate::divinum_officium::date::leap_year(year) { 29 } else { 28 },
+            _ => 30,
+        };
+        return (year, prev_month, last_day);
+    }
+    // Jan 1 → Dec 31 of previous year.
+    (year - 1, 12, 31)
+}
+
+fn next_calendar_day(year: i32, month: u32, day: u32) -> (i32, u32, u32) {
+    let last_day = match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 => if crate::divinum_officium::date::leap_year(year) { 29 } else { 28 },
+        _ => 30,
+    };
+    if day < last_day {
+        return (year, month, day + 1);
+    }
+    if month < 12 {
+        return (year, month + 1, 1);
+    }
+    (year + 1, 1, 1)
+}
+
+/// Did the given kalendar entry get preempted by its own day's
+/// temporal under Tridentine 1570 rules? Coarse: check if the
+/// temporal-side rank for that day exceeds the entry's rank.
+fn was_sancti_preempted_1570(
+    year: i32,
+    month: u32,
+    day: u32,
+    entry: &kalendarium_1570::Entry1570,
+    corpus: &dyn Corpus,
+) -> bool {
+    use crate::divinum_officium::date;
+    let weekname = date::getweek(day, month, year, false, true);
+    let dow = date::day_of_week(day, month, year);
+    let tempora_stem_default = if dow == 0 {
+        format!("{}-0", weekname)
+    } else {
+        format!("{}-{}", weekname, dow)
+    };
+    let tempora_stem = pick_tempora_variant_for_1570(&tempora_stem_default, corpus);
+    let tempora_key = FileKey {
+        category: FileCategory::Tempora,
+        stem: tempora_stem,
+    };
+    let effective_key = effective_tempora_key(&tempora_key, corpus);
+    let tempora_file = corpus.mass_file(&effective_key);
+    let mut trank = tempora_file
+        .and_then(|f| f.rank_num)
+        .map(|r| downgrade_post_1570_octave(r, tempora_file.unwrap()))
+        .unwrap_or(0.0);
+    // Mirror the `decide_sanctoral_wins_1570` precedence model so the
+    // transfer-or-not decision matches what compute_office actually
+    // does on the saint's native date. In particular, "Dominica
+    // minor" Sundays (rank 4.2..5.1) get downgraded to 2.9 — a Duplex
+    // saint (rank 3.0) outranks them and ISN'T preempted.
+    let temporal_name = tempora_file
+        .and_then(|f| f.officium.as_deref())
+        .unwrap_or("");
+    let is_dominica = temporal_name.starts_with("Dominica");
+    if is_dominica && trank > 4.2 && trank < 5.1 {
+        trank = 2.9;
+    }
+    // Octave-of-Corpus-Christi same downgrade.
+    if temporal_name.contains("infra octavam Corp") && trank > 4.2 && trank < 5.1 {
+        trank = 2.9;
+    }
+    // Saint is preempted iff effective trank > srank. (Don't apply
+    // the "Sunday wins ties" rule yet — it's rare enough at the
+    // transfer layer that we skip it for now.)
+    trank > entry.main.rank_num
+}
+
 /// Walk a file's `parent` chain, returning the first key whose
 /// file actually carries `[Rank]` data. Lets the occurrence layer
 /// see-through redirect-only files like `Tempora/Adv1-0o` (a single
@@ -646,6 +808,30 @@ fn resolve_sancti_for_tridentine_1570(
     day: u32,
     corpus: &dyn Corpus,
 ) -> (FileKey, Option<SanctiEntry>) {
+    // Transferred-feast lookup: if today has no native kalendar entry,
+    // scan back up to 6 days for a Sancti that was preempted on its
+    // native date by a higher-ranked Sunday/feast and that hasn't been
+    // consumed by an intervening transfer.
+    if kalendarium_1570::lookup(month, day).is_none() {
+        if let Some((stem, name, rank_num)) =
+            transferred_sancti_for_1570(year, month, day, corpus)
+        {
+            let key = resolve_sancti_stem(&stem, corpus);
+            let metadata_key = effective_tempora_key(&key, corpus);
+            let mass = corpus.mass_file(&metadata_key);
+            let commune = mass
+                .and_then(|m| m.commune_1570.clone().or_else(|| m.commune.clone()))
+                .unwrap_or_default();
+            let entry = SanctiEntry {
+                rubric: "1570-transferred".into(),
+                name,
+                rank_class: mass.and_then(|m| m.rank.clone()).unwrap_or_default(),
+                rank_num: Some(rank_num),
+                commune,
+            };
+            return (key, Some(entry));
+        }
+    }
     if let Some(override_) = kalendarium_1570::lookup(month, day) {
         // Some kalendar entries assume a specific weekday — e.g.
         // 01-12 → 01-12t = "Dominica infra Octavam Epi" assumes

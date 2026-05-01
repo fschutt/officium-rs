@@ -104,6 +104,16 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     // For 1570 only `093-3 / 093-5 / 093-6` ship under missa, so the
     // overlay fires only on Sept Ember Wed/Fri/Sat.
     let tempora_stem = apply_monthday_overlay_1570(&tempora_stem, d, m, y, corpus);
+    // Sunday-letter / Easter-coded Transfer table override
+    // (`Tabulae/Transfer/<letter>.txt` and `<easter-code>.txt`,
+    // filtered to `;;1570`). When the entry's main target starts
+    // with `Tempora/`, it replaces the temporal winner — driving
+    // the "Dominica anticipata" Saturday Mass (e.g. `01-31 →
+    // Tempora/Epi4-0tt` in years where Septuagesima is so early
+    // that Epi4 Sunday never lands on a Sunday). Bare-stem targets
+    // (e.g. `11-28=11-29`) are handled later in the sancti
+    // resolution path.
+    let tempora_stem = apply_transfer_temporal_1570(&tempora_stem, y, m, d);
     let tempora_key = FileKey {
         category: FileCategory::Tempora,
         stem: tempora_stem,
@@ -514,6 +524,81 @@ fn apply_monthday_overlay_1570(
         }
     }
     base_stem.to_string()
+}
+
+/// Sunday-letter / Easter-coded Transfer table — temporal side.
+///
+/// Mirrors the upstream `Directorium::load_transfer` filtered to
+/// `;;1570` entries with a `Tempora/...` main target. Two cases
+/// drive this for our 1570 sweep:
+///
+///   * **Dominica anticipata** in years where Septuagesima falls
+///     before some `Epi{n}-0` Sunday could land on a Sunday — the
+///     Sunday Mass is then anticipated to the previous Saturday
+///     (`01-31 = Tempora/Epi4-0tt` for letter d 2026).
+///   * **Christmas-Sunday redirect** in years where 12-30 needs to
+///     read the Sunday-Within-Octave Mass (`12-30 =
+///     Tempora/Nat1-0` in the d.txt block).
+///
+/// Returns the new stem, or the original if no 1570-applicable
+/// `Tempora/...` transfer fires today.
+fn apply_transfer_temporal_1570(
+    base_stem: &str,
+    year: i32,
+    month: u32,
+    day: u32,
+) -> String {
+    let entries = crate::divinum_officium::transfer_table::transfers_for(
+        year, "1570", month, day,
+    );
+    for entry in entries {
+        // Only follow `Tempora/...` targets here. Sancti targets are
+        // applied in `resolve_sancti_for_tridentine_1570`.
+        if let Some(stem) = entry.main.strip_prefix("Tempora/") {
+            return stem.to_string();
+        }
+    }
+    base_stem.to_string()
+}
+
+/// Sunday-letter / Easter-coded Transfer table — sancti side.
+///
+/// Same source as `apply_transfer_temporal_1570`; this branch fires
+/// for bare-stem targets (e.g. `11-28 = 11-29` → Vigil of Andrew
+/// transferred from Sunday Nov 29 to Saturday Nov 28). Returns the
+/// transferred sancti stem and rank when applicable.
+fn apply_transfer_sancti_1570(
+    year: i32,
+    month: u32,
+    day: u32,
+    corpus: &dyn Corpus,
+) -> Option<(String, f32)> {
+    let entries = crate::divinum_officium::transfer_table::transfers_for(
+        year, "1570", month, day,
+    );
+    for entry in entries {
+        // Skip Tempora-targeted entries (handled by
+        // `apply_transfer_temporal_1570`).
+        if entry.main.starts_with("Tempora/") {
+            continue;
+        }
+        // Skip the no-op marker `X-X` (used for "this date deferred,
+        // nothing happens"; cf. d.txt 08-23 in 1570).
+        if entry.main == "X-X" {
+            continue;
+        }
+        let key = FileKey {
+            category: FileCategory::Sancti,
+            stem: entry.main.clone(),
+        };
+        let metadata_key = effective_tempora_key(&key, corpus);
+        let mass = corpus.mass_file(&metadata_key);
+        let rank = mass
+            .and_then(|m| m.rank_num_1570.or(m.rank_num))
+            .unwrap_or(0.0);
+        return Some((entry.main, rank));
+    }
+    None
 }
 
 /// Pick the Tridentine-1570 variant of a Tempora stem when one
@@ -952,6 +1037,33 @@ fn resolve_sancti_for_tridentine_1570(
     day: u32,
     corpus: &dyn Corpus,
 ) -> (FileKey, Option<SanctiEntry>) {
+    // Sunday-letter / Easter-coded Transfer table override (sancti
+    // side). Highest precedence — entries like `11-28 = 11-29`
+    // (Vigil of Andrew anticipated to Saturday) and `09-19 =
+    // 09-20o` (Vigil of Matthew anticipated when Matthew falls on
+    // Sunday) live here and override both the kalendar and the
+    // walked-back transfer-of-preempted-saints chain.
+    if let Some((stem, rank_num)) =
+        apply_transfer_sancti_1570(year, month, day, corpus)
+    {
+        let key = resolve_sancti_stem(&stem, corpus);
+        let metadata_key = effective_tempora_key(&key, corpus);
+        let mass = corpus.mass_file(&metadata_key);
+        let name = mass
+            .and_then(|m| m.officium.clone())
+            .unwrap_or_else(|| stem.clone());
+        let commune = mass
+            .and_then(|m| m.commune_1570.clone().or_else(|| m.commune.clone()))
+            .unwrap_or_default();
+        let entry = SanctiEntry {
+            rubric: "1570-transfer-table".into(),
+            name,
+            rank_class: mass.and_then(|m| m.rank.clone()).unwrap_or_default(),
+            rank_num: Some(rank_num),
+            commune,
+        };
+        return (key, Some(entry));
+    }
     // Transferred-feast lookup: scan back up to 6 days for a Sancti
     // that was preempted on its native date by a higher-ranked
     // Sunday/feast. Apply when:

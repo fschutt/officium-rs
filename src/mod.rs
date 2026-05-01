@@ -73,3 +73,9 @@ pub mod kalendarium_1570;
 // upstream `Tabulae/Tempora/Generale.txt` filtered to 1570 entries
 // and exposes a stem-redirect lookup (Adv1-0 → Adv1-0o, etc.).
 pub mod tempora_table;
+
+// Phase 7+ — Sunday-letter / Easter-day Transfer table. Vendored
+// from `Tabulae/Transfer/<letter>.txt` and `<easter-code>.txt`.
+// Drives transferred-vigil cases (Andrew Vigil to Sat) and the
+// "Dominica anticipata" Saturday-Mass propers in short Epi cycles.
+pub mod transfer_table;

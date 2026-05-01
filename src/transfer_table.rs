@@ -1,0 +1,190 @@
+//! Sunday-letter and Easter-coded transfer tables.
+//!
+//! Mirrors the upstream `vendor/divinum-officium/web/www/Tabulae/Transfer/`
+//! tree (vendored as `data/transfer_combined.txt`). For each year we
+//! consult two files:
+//!
+//!   * `Transfer/<letter>.txt` — Sunday-letter rule (a..g).
+//!   * `Transfer/<easter>.txt` — Easter-day rule, e.g. `405.txt` for
+//!     Easter on April 5.
+//!
+//! Each line is `MM-DD = TARGET_STEM[~ALT_STEM[~...]] ;; RUBRIC_LIST`,
+//! where the rubric list is whitespace-separated tokens (`1570`,
+//! `1888`, `DA`, `M1617`, …) the entry applies to. We currently
+//! filter to the `1570` rubric only — Phase 8 will broaden this.
+//!
+//! ## Sunday letter for the year
+//!
+//! Per the Perl `Directorium::load_transfers`:
+//! ```text
+//! easter = month*100 + day        // e.g. 5 Apr -> 405
+//! letter_idx = (easter - 319 + (month==4 ? 1 : 0)) % 7
+//! letter     = "abcdefg"[letter_idx]
+//! ```
+
+use std::collections::BTreeMap;
+use std::sync::OnceLock;
+
+use crate::divinum_officium::date::geteaster;
+
+/// One transfer instruction for a date.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TransferTarget {
+    /// Stem to swap in. Leading `Tempora/` is preserved when present
+    /// (e.g. `Tempora/Epi4-0tt`); a bare stem (`11-29`) implies
+    /// `Sancti/11-29`.
+    pub main: String,
+    /// Optional `~`-separated commemorations or alt forms.
+    pub extras: Vec<String>,
+}
+
+/// One file's worth of parsed entries (keyed by `MM-DD`).
+type FileEntries = BTreeMap<String, Vec<(TransferTarget, Vec<String>)>>;
+
+/// Whole-corpus index: `file_name` -> per-date entries.
+type Combined = BTreeMap<String, FileEntries>;
+
+static TRANSFER_DATA: &str = include_str!("../../data/transfer_combined.txt");
+
+fn parsed() -> &'static Combined {
+    static PARSED: OnceLock<Combined> = OnceLock::new();
+    PARSED.get_or_init(|| {
+        let mut out: Combined = BTreeMap::new();
+        let mut current_file: Option<String> = None;
+        for line in TRANSFER_DATA.lines() {
+            if let Some(rest) = line.strip_prefix("# FILE: ") {
+                current_file = Some(rest.trim().to_string());
+                continue;
+            }
+            let Some(file) = current_file.as_ref() else {
+                continue;
+            };
+            let trimmed = line.trim();
+            if trimmed.is_empty() || trimmed.starts_with('#') {
+                continue;
+            }
+            // Split into LHS=RHS;;RUBRICS.
+            let (lhs, after_eq) = match trimmed.split_once('=') {
+                Some(p) => p,
+                None => continue,
+            };
+            let (rhs, rubrics) = match after_eq.split_once(";;") {
+                Some(p) => p,
+                None => (after_eq, ""),
+            };
+            let mm_dd = lhs.trim().to_string();
+            let rubric_list: Vec<String> = rubrics
+                .split_whitespace()
+                .map(|s| s.to_string())
+                .collect();
+            let parts: Vec<&str> = rhs.trim().split('~').collect();
+            let main = parts[0].trim().to_string();
+            let extras: Vec<String> =
+                parts[1..].iter().map(|s| s.trim().to_string()).collect();
+            let target = TransferTarget { main, extras };
+            out.entry(file.clone())
+                .or_default()
+                .entry(mm_dd)
+                .or_default()
+                .push((target, rubric_list));
+        }
+        out
+    })
+}
+
+/// Sunday-letter for a year (`'a'..='g'`). Mirrors
+/// `Directorium.pm:130-134`.
+pub fn sunday_letter(year: i32) -> char {
+    let (day, month, _) = geteaster(year);
+    let easter = (month as i32) * 100 + (day as i32);
+    let plus = if month == 4 { 1 } else { 0 };
+    let idx = (easter - 319 + plus).rem_euclid(7);
+    let letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+    letters[idx as usize]
+}
+
+/// Easter-coded transfer file name for a year (e.g. `"405"` when
+/// Easter is April 5). Range is `322..=331` (March) and `401..=426`
+/// (April).
+pub fn easter_code(year: i32) -> u32 {
+    let (day, month, _) = geteaster(year);
+    month * 100 + day
+}
+
+/// Look up transfers applicable to a given (year, rubric, mm-dd).
+/// Returns the list of targets (main + extras) from both the
+/// Sunday-letter file and the Easter-coded file.
+pub fn transfers_for(
+    year: i32,
+    rubric: &str,
+    month: u32,
+    day: u32,
+) -> Vec<TransferTarget> {
+    let mm_dd = format!("{month:02}-{day:02}");
+    let mut out = Vec::new();
+    let parsed = parsed();
+    let letter_file = format!("{}.txt", sunday_letter(year));
+    let easter_file = format!("{}.txt", easter_code(year));
+    for fname in [letter_file, easter_file] {
+        let Some(entries) = parsed.get(&fname) else {
+            continue;
+        };
+        let Some(targets) = entries.get(&mm_dd) else {
+            continue;
+        };
+        for (target, rubrics) in targets {
+            if rubric_matches(rubrics, rubric) {
+                out.push(target.clone());
+            }
+        }
+    }
+    out
+}
+
+/// True if `rubric` (e.g. `"1570"`, `"DA"`) appears in `rubric_list`.
+/// Empty list means "applies always".
+fn rubric_matches(rubric_list: &[String], rubric: &str) -> bool {
+    if rubric_list.is_empty() {
+        return true;
+    }
+    rubric_list.iter().any(|r| r == rubric)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sunday_letter_2026_is_d() {
+        // 2026 Easter = April 5. (4*100 + 5 - 319 + 1) % 7 = 87 % 7 = 3 → 'd'.
+        assert_eq!(sunday_letter(2026), 'd');
+    }
+
+    #[test]
+    fn easter_code_2026_is_405() {
+        assert_eq!(easter_code(2026), 405);
+    }
+
+    #[test]
+    fn andrew_vigil_transfers_to_saturday_2026() {
+        // d.txt: `11-28=11-29;;1570 1888 1906 DA M1617 M1930`.
+        // For 1570 in 2026 → Vigil of Andrew (11-29) is read on Nov 28.
+        let t = transfers_for(2026, "1570", 11, 28);
+        assert_eq!(t.len(), 1);
+        assert_eq!(t[0].main, "11-29");
+    }
+
+    #[test]
+    fn epi4_anticipata_jan_31_2026() {
+        // 405.txt: `01-31=Tempora/Epi4-0tt;;1570 ...`.
+        let t = transfers_for(2026, "1570", 1, 31);
+        assert!(!t.is_empty());
+        assert_eq!(t[0].main, "Tempora/Epi4-0tt");
+    }
+
+    #[test]
+    fn no_transfer_for_random_date() {
+        let t = transfers_for(2026, "1570", 6, 15);
+        assert!(t.is_empty());
+    }
+}

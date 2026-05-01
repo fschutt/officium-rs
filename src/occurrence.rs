@@ -962,19 +962,32 @@ fn was_sancti_preempted_1570(
     // Wednesday (rank 2.1 from monthday overlay) when in fact the
     // saint outranks the embertide.
     let (look_m, look_d) = date::sday_pair(month, day, year);
-    // Pick the 1570-specific rank when one is supplied — many saints
-    // were promoted post-Tridentine (e.g. Annunciation: 1570 rank
-    // 5.0 Duplex II classis, default 6.92 Duplex I classis), and the
-    // preemption test must use the era's actual rank to match Perl's
-    // behaviour. Falls through to default when no 1570 variant is
-    // present.
+    // Pick the era-specific rank from the Sancti corpus. Many saints
+    // were promoted post-Tridentine (Annunciation: 1570 rank 5.0
+    // Duplex II classis, default 6.92 Duplex I classis), and the
+    // preemption test must use the era's actual rank.
+    //
+    // Layer-aware preference:
+    //   - Pius1570 layer ⇒ prefer the `1570` rubric variant.
+    //   - Any later layer ⇒ prefer `default` (post-Tridentine
+    //     elevations match Pius X / Pius XI / Pius XII reality);
+    //     fall through to `1570` only when no default exists.
     let entries = corpus.sancti_entries(look_m, look_d);
-    let corpus_rank = entries
-        .iter()
-        .find(|e| e.rubric.contains("1570"))
-        .or_else(|| entries.iter().find(|e| e.rubric == "default"))
-        .and_then(|e| e.rank_num)
-        .unwrap_or(0.0);
+    let prefer_1570 =
+        matches!(_layer, crate::divinum_officium::kalendaria_layers::Layer::Pius1570);
+    let corpus_rank = if prefer_1570 {
+        entries
+            .iter()
+            .find(|e| e.rubric.contains("1570"))
+            .or_else(|| entries.iter().find(|e| e.rubric == "default"))
+    } else {
+        entries
+            .iter()
+            .find(|e| e.rubric == "default")
+            .or_else(|| entries.iter().find(|e| e.rubric.contains("1570")))
+    }
+    .and_then(|e| e.rank_num)
+    .unwrap_or(0.0);
     let srank = entry.main.rank_num.max(corpus_rank);
     trank > srank
 }
@@ -1234,11 +1247,30 @@ fn resolve_sancti_for_tridentine_1570(
         // The kalendar's rank is intentionally a *last* resort because
         // it uses an integer 1..7 grading whereas the corpus carries
         // fractional ranks (e.g. Christmas 6.5).
+        // 1570-specific rank/commune fields take precedence ONLY when
+        // the active layer is the 1570 baseline. For Tridentine 1910
+        // and later layers the `(sed rubrica 1570)` annotated values
+        // are the wrong choice — they represent the pre-1570 reading
+        // for an already-post-1570 universe.
+        let prefer_1570_overrides =
+            matches!(layer, crate::divinum_officium::kalendaria_layers::Layer::Pius1570);
         let rank_num = mass
-            .and_then(|m| m.rank_num_1570.or(m.rank_num))
+            .and_then(|m| {
+                if prefer_1570_overrides {
+                    m.rank_num_1570.or(m.rank_num)
+                } else {
+                    m.rank_num.or(m.rank_num_1570)
+                }
+            })
             .unwrap_or(override_.main.rank_num);
         let commune = mass
-            .and_then(|m| m.commune_1570.clone().or_else(|| m.commune.clone()))
+            .and_then(|m| {
+                if prefer_1570_overrides {
+                    m.commune_1570.clone().or_else(|| m.commune.clone())
+                } else {
+                    m.commune.clone().or_else(|| m.commune_1570.clone())
+                }
+            })
             .unwrap_or_default();
         let entry = SanctiEntry {
             rubric: "1570".into(),

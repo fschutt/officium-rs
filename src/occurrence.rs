@@ -248,7 +248,7 @@ fn pick_sancti_for_tridentine_1570(entries: &[SanctiEntry]) -> Option<&SanctiEnt
 fn decide_sanctoral_wins_1570(
     sancti: Option<&SanctiEntry>,
     tempora: Option<&MassFile>,
-    trank: f32,
+    mut trank: f32,
     srank: f32,
 ) -> bool {
     let _sancti = match sancti {
@@ -271,11 +271,30 @@ fn decide_sanctoral_wins_1570(
         return false;
     }
 
+    // "Dominica minor" rule (Tridentine 1570): post-Easter and
+    // post-Pentecost Sundays of rank 4.3..5.0 are outranked by any
+    // Duplex feast. Mirrors `horascommon.pl:422-433`:
+    //   if version =~ /Trid/i && ($trank[2] < 5.1 && $trank[2] > 4.2
+    //   && $trank[0] =~ /Dominica/i) { $trank[2] = 2.9 }
+    // Without this downgrade Inventio Crucis (5.1) wouldn't beat
+    // Dominica IV post Pascha (5.0).
+    let temporal_name = tempora.officium.as_deref().unwrap_or("");
+    let is_dominica = temporal_name.starts_with("Dominica");
+    if is_dominica && trank > 4.2 && trank < 5.1 {
+        trank = 2.9;
+    }
+    // Same rule for "infra octavam Corp[oris Christi]".
+    if temporal_name.contains("infra octavam Corp")
+        && trank > 4.2
+        && trank < 5.1
+    {
+        trank = 2.9;
+    }
+
     // Sunday handling. Detect via the rendered name — pre-1960 Sundays
     // are written as `Dominica …`. (The Perl uses regex on `$trank[0]`
     // and `$dayname[0]`; we approximate with the officium string.)
-    let temporal_name = tempora.officium.as_deref().unwrap_or("");
-    let is_sunday = temporal_name.starts_with("Dominica");
+    let is_sunday = is_dominica && trank >= 5.1;
     if is_sunday {
         // Pre-1960: Class I sanctoral wins over Class II Sundays.
         // reform-PHASE-8: add the "Festum Domini ≥ rank 5" exception.

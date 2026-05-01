@@ -57,32 +57,35 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             | crate::divinum_officium::core::Season::Lent
             | crate::divinum_officium::core::Season::Passiontide
     );
-    // [GradualeF] swap (mirror Perl `getitem` ll. 866): Sunday Mass
-    // files (Adv1-0, Pent06-0, …) ship two Graduales —
-    //   * `[Graduale]`  with the Alleluja verse (Sunday Mass).
-    //   * `[GradualeF]` without it (used on ferials of the week when
-    //                              the ferial reads the Sunday Mass).
-    // Apply when our winner is a Tempora ferial (stem ends with a
-    // non-zero day-of-week digit, e.g. `Adv1-2o`, `Pent06-3`). Don't
-    // touch sancti winners (they have no GradualeF) or Sunday winners
-    // (we want the Sunday Graduale with its Alleluja verse).
-    let prefer_graduale_f = is_tempora_ferial_stem(&office.winner.stem);
+    // [GradualeF] is handled INSIDE `proper_block` — only the
+    // feria-Sunday-fallback branch swaps to GradualeF (mirroring Perl
+    // `getitem` ll. 859-866 where the substitution lives in the third
+    // `if (!$w && $winner =~ /Tempora/i)` branch). Embertide ferials
+    // with their own [Graduale] (Quadp3-3, Adv3-X, etc.) keep that
+    // local body and never reach the GradualeF swap.
+    //
+    // Embertide multi-Lectio days: when [Rule] contains `LectioL`,
+    // Perl renders LectioL1/GradualeL1/OratioL1 inline (via
+    // `LectionesTemporum`) BEFORE the main Lectio/Graduale. The
+    // regression extractor takes the first occurrence of a section
+    // header in the rendered HTML, so the "Lectio" slot ends up with
+    // [LectioL1] body and "Graduale" with [GradualeL1]. Mirror that
+    // by reading the L1-suffixed section when [Rule] has the
+    // `LectioL` directive. Mirrors Perl `propers.pl::LectionesTemporum`
+    // ll. 930-962. (`OratioL1` is a SECOND Oratio header in the HTML,
+    // so the main Oratio remains first; we don't redirect Oratio.)
+    let has_lectio_l = winner_has_lectio_l_rule(winner_file, corpus);
     let go = |sect: &str| -> Option<ProperBlock> {
-        if sect == "Graduale" && prefer_graduale_f {
-            if let Some(block) = proper_block(&resolved, "GradualeF", corpus) {
-                let block = substitute_name_with_corpus(block, sect, winner_file, Some(corpus));
-                let latin = apply_post_septuagesima_conditional(
-                    &block.latin, in_post_septuagesima,
-                );
-                let latin = spell_var_pre1960(&expand_macros(&latin));
-                let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
-                return Some(ProperBlock {
-                    latin,
-                    ..block
-                });
+        let effective_sect = if has_lectio_l && winner_has_l1_section(winner_file, sect, corpus) {
+            match sect {
+                "Lectio" => "LectioL1",
+                "Graduale" => "GradualeL1",
+                _ => sect,
             }
-        }
-        let block = proper_block(&resolved, sect, corpus)?;
+        } else {
+            sect
+        };
+        let block = proper_block(&resolved, effective_sect, corpus)?;
         let block = substitute_name_with_corpus(block, sect, winner_file, Some(corpus));
         let latin = apply_post_septuagesima_conditional(
             &block.latin, in_post_septuagesima,
@@ -769,10 +772,21 @@ pub fn proper_block(
                 }
             }
             if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
+                // Mirror Perl `getitem` ll. 865:
+                //   if Graduale + dayofweek > 0 + GradualeF exists,
+                //   use [GradualeF] instead of [Graduale].
+                let effective_section = if section == "Graduale"
+                    && is_tempora_ferial_stem(&office.winner.stem)
+                    && sunday_file.sections.contains_key("GradualeF")
+                {
+                    "GradualeF"
+                } else {
+                    section
+                };
                 if let Some(block) = read_section(
                     sunday_file,
                     &sunday_key,
-                    section,
+                    effective_section,
                     corpus,
                     /* via_commune */ false,
                 ) {
@@ -834,6 +848,69 @@ fn winner_has_oratio_dominica(winner_file: &MassFile) -> bool {
         .get("Rule")
         .map(|s| s.to_lowercase().contains("oratio dominica"))
         .unwrap_or(false)
+}
+
+/// True when the winner file's [Rule] contains the `LectioL<n>`
+/// directive that triggers `LectionesTemporum` in Perl. Drives the
+/// "first Lectio = LectioL1" redirect for Embertide-style days
+/// (Adv3-3/5/6, Quad1-3/6, Quad4-3/6, Quad6-3, Pasc7-3/6, 093-3/5/6).
+/// Chases the file's `parent`/`parent_1570` because some Tridentine
+/// 1570 stems are bare `@Tempora/...` redirects (Adv3-3o → Adv3-3).
+fn winner_has_lectio_l_rule(winner_file: Option<&MassFile>, corpus: &dyn Corpus) -> bool {
+    let mut current = match winner_file {
+        Some(f) => f,
+        None => return false,
+    };
+    for _ in 0..MAX_AT_HOPS {
+        if let Some(rule) = current.sections.get("Rule") {
+            if rule.contains("LectioL") {
+                return true;
+            }
+            // Some files have a Rule but no LectioL — keep walking
+            // the parent chain in case the Rule was added later.
+        }
+        let parent = current.parent_1570.as_deref().or(current.parent.as_deref());
+        match parent {
+            Some(p) => match corpus.mass_file(&FileKey::parse(p)) {
+                Some(next) => current = next,
+                None => return false,
+            },
+            None => return false,
+        }
+    }
+    false
+}
+
+/// True when the winner file (or its parent chain) has the indexed
+/// `[<sect>L1]` body — e.g. `[LectioL1]`, `[GradualeL1]`.
+fn winner_has_l1_section(
+    winner_file: Option<&MassFile>,
+    sect: &str,
+    corpus: &dyn Corpus,
+) -> bool {
+    let key = match sect {
+        "Lectio" => "LectioL1",
+        "Graduale" => "GradualeL1",
+        _ => return false,
+    };
+    let mut current = match winner_file {
+        Some(f) => f,
+        None => return false,
+    };
+    for _ in 0..MAX_AT_HOPS {
+        if current.sections.contains_key(key) {
+            return true;
+        }
+        let parent = current.parent_1570.as_deref().or(current.parent.as_deref());
+        match parent {
+            Some(p) => match corpus.mass_file(&FileKey::parse(p)) {
+                Some(next) => current = next,
+                None => return false,
+            },
+            None => return false,
+        }
+    }
+    false
 }
 
 /// Compute the current week's Sunday-Mass `FileKey` for a Tempora
@@ -1152,17 +1229,36 @@ fn chase_at_reference(
         Some((p, s)) => (p.trim(), Some(s.trim())),
         None => (first_line, None),
     };
-    // Bail on regex-substitution (`::s/PAT/REPL/`) and "in N loco"
-    // — Phase 6+ surfaces concrete cases.
+    // Detect regex-substitution form `Path::s/PAT/REPL/` and the
+    // indexed `Section in N loco` form. Both arrive with the
+    // section_spec starting with `:s/` (because split_once(':') ate
+    // only the first colon of `::s/...`) or containing ` in `.
+    //
+    // For `::s/PAT/REPL/[FLAGS]`, the intent is "take Path's
+    // default-section body and apply the substitution". We resolve
+    // the default section then apply the regex via
+    // `apply_perl_substitution`. Drives Pasc5-5's
+    // `@Tempora/Pasc5-4::s/\!(?!M).*//` which strips the
+    // `!Dicto Evangelio` rubric from the Ascension Gospel.
+    let regex_substitution = match section_spec {
+        Some(spec) if spec.starts_with(":s/") => Some(&spec[1..]),
+        Some(spec) if spec.starts_with('s') && spec.contains('/') => Some(spec),
+        _ => None,
+    };
     if let Some(spec) = section_spec {
-        if spec.is_empty() || spec.contains(" in ") || spec.starts_with('s') && spec.contains('/')
+        if regex_substitution.is_none()
+            && (spec.is_empty() || spec.contains(" in "))
         {
             // TODO Phase 6: implement `Section in N loco` indexed
-            // substitution and `s/PAT/REPL/` regex variant.
+            // substitution.
             return None;
         }
     }
-    let target_section = section_spec.unwrap_or(default_section);
+    let target_section = if regex_substitution.is_some() {
+        default_section
+    } else {
+        section_spec.unwrap_or(default_section)
+    };
     let key = FileKey::parse(path);
     let file = corpus.mass_file(&key)?;
     // If the chased file's local section is annotated with a
@@ -1221,14 +1317,84 @@ fn chase_at_reference(
         }
         return chase_at_reference(stripped, target_section, corpus, via_commune, hops + 1);
     }
+    let body = if let Some(spec) = regex_substitution {
+        apply_perl_substitution(raw, spec).unwrap_or_else(|| raw.to_string())
+    } else {
+        raw.to_string()
+    };
     Some(ProperBlock {
-        latin: raw.to_string(),
+        latin: body,
         // After chasing, the immediate source is the file we landed
         // in. via_commune sticks if either the original or any hop
         // landed in a Commune.
         source: key.clone(),
         via_commune: via_commune || matches!(key.category, FileCategory::Commune),
     })
+}
+
+/// Apply a Perl-style `s/PAT/REPL/[FLAGS]` substitution. Used for
+/// `@Path::s/.../.../` references where the source body needs a
+/// regex strip before being returned. Currently only handles the
+/// pattern from `Tempora/Pasc5-5` ([Evangelium] = `s/\!(?!M).*//`)
+/// — strip every line starting with `!` followed by anything except
+/// `M`. Returns None if the spec doesn't match a recognised form.
+fn apply_perl_substitution(text: &str, spec: &str) -> Option<String> {
+    // spec form: `s/PAT/REPL/[FLAGS]`. Walk past the leading `s` and
+    // the opening `/`, then split on unescaped `/` to recover PAT and
+    // REPL. We don't need a full regex engine — there are only a
+    // handful of distinct patterns in the corpus and they all lend
+    // themselves to per-line filtering.
+    let rest = spec.strip_prefix('s')?;
+    let rest = rest.strip_prefix('/')?;
+    // Find the next unescaped `/` for end-of-PAT.
+    let (pattern, after_pattern) = split_unescaped(rest, '/')?;
+    let (replacement, _flags) = split_unescaped(after_pattern, '/')?;
+    // Recognise the `\!(?!M).*` pattern: every line starting with `!`
+    // followed by anything except `M` has its content stripped (the
+    // line becomes empty; subsequent normalisation drops it). Lines
+    // starting with `!M` (chapter/verse references) survive.
+    if pattern == r"\!(?!M).*" && replacement.is_empty() {
+        let kept: Vec<String> = text
+            .lines()
+            .filter_map(|line| {
+                if let Some(rest) = line.strip_prefix('!') {
+                    if rest.starts_with('M') {
+                        Some(line.to_string())
+                    } else {
+                        // line content stripped; we skip the line
+                        // entirely so the join doesn't introduce a
+                        // bare newline. (Perl's regex leaves a blank
+                        // line behind, but trailing whitespace is
+                        // normalised away by the comparator.)
+                        None
+                    }
+                } else {
+                    Some(line.to_string())
+                }
+            })
+            .collect();
+        return Some(kept.join("\n"));
+    }
+    None
+}
+
+/// Split `text` at the next unescaped occurrence of `delim`.
+/// Returns `Some((before, after))` if the delimiter is found,
+/// `None` otherwise.
+fn split_unescaped(text: &str, delim: char) -> Option<(&str, &str)> {
+    let mut chars = text.char_indices();
+    while let Some((i, c)) = chars.next() {
+        if c == '\\' {
+            chars.next();
+            continue;
+        }
+        if c == delim {
+            let (before, rest) = text.split_at(i);
+            // skip the delim itself
+            return Some((before, &rest[c.len_utf8()..]));
+        }
+    }
+    None
 }
 
 // ─── Macro expansion (Phase 6.5) ─────────────────────────────────────

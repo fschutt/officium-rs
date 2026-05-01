@@ -358,7 +358,10 @@ fn decide_sanctoral_wins_1570(
     // ADVENT Feria major days. Lenten ferias (Quad*), which encode
     // a higher actual privilege than Advent ferias despite sharing
     // the rank label "Feria major", still preempt the Vigil — Feb 23
-    // (Vigil of Matthias) yields to the Quadragesimae feria.
+    // (Vigil of Matthias) yields to the Quadragesimae feria. Advent
+    // Quattuor Temporum (Ember days, also "Feria major") similarly
+    // outrank the Apostolic Vigil — the Embertide is a privileged
+    // class.
     let sancti_name = _sancti.name.as_str();
     let is_apostolic_vigil = sancti_name.starts_with("Vigilia")
         && (sancti_name.contains("Apostoli")
@@ -368,7 +371,13 @@ fn decide_sanctoral_wins_1570(
         || temporal_name.contains("Advent")
         || temporal_name.contains("Hebdomadam I Adventus")
         || temporal_name.contains("Hebdomadam IV Adventus");
-    if is_apostolic_vigil && is_advent_temporal && srank >= 1.5 && trank < 6.0 {
+    let is_quattuor_temporum = temporal_name.contains("Quattuor Temporum");
+    if is_apostolic_vigil
+        && is_advent_temporal
+        && !is_quattuor_temporum
+        && srank >= 1.5
+        && trank < 6.0
+    {
         return true;
     }
 

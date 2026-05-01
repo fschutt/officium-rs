@@ -1442,7 +1442,20 @@ fn read_section(
         }
         return None;
     }
-    let raw_opt = file.sections.get(section).map(|s| s.trim());
+    // Resolve any inline `(sed PREDICATE)` SCOPE_LINE conditionals
+    // BEFORE chasing `@`-references. Sancti/10-09t [Evangelium]
+    // contains:
+    //     @Commune/C3a-1
+    //     (sed rubrica 1570)
+    //     @Commune/C3a
+    // — the conditional is TRUE under 1570, so the second @-line
+    // replaces the first. Without this preprocess, the chaser would
+    // follow the (post-1570) C3a-1 reference.
+    let raw_owned = file
+        .sections
+        .get(section)
+        .map(|s| apply_body_conditionals_1570(s.trim()));
+    let raw_opt = raw_owned.as_deref().map(|s| s.trim());
     if let Some(raw) = raw_opt.filter(|s| !s.is_empty()) {
         if let Some(stripped) = raw.strip_prefix('@') {
             // `@:Section` — self-reference (different section in the
@@ -1554,11 +1567,18 @@ fn chase_at_reference(
     // `apply_perl_substitution`. Drives Pasc5-5's
     // `@Tempora/Pasc5-4::s/\!(?!M).*//` which strips the
     // `!Dicto Evangelio` rubric from the Ascension Gospel.
-    let regex_substitution = match section_spec {
-        Some(spec) if spec.starts_with(":s/") => Some(&spec[1..]),
-        Some(spec) if spec.starts_with('s') && spec.contains('/') => Some(spec),
-        _ => None,
-    };
+    let regex_substitution: Option<String> = section_spec.and_then(|spec| {
+        // Forms we recognise (after split_once ate one colon):
+        //   `:s/PAT/REPL/`            — `Path::s/PAT/REPL/`
+        //   `: s/PAT/REPL/`           — `Path:: s/PAT/REPL/`
+        //   `s/PAT/REPL/`             — `Path:s/PAT/REPL/` (no double colon)
+        let inner = spec.trim_start_matches(|c: char| c == ':' || c.is_whitespace());
+        if inner.starts_with("s/") {
+            Some(inner.to_string())
+        } else {
+            None
+        }
+    });
     if let Some(spec) = section_spec {
         if regex_substitution.is_none() && spec.is_empty() {
             return None;
@@ -1652,8 +1672,8 @@ fn chase_at_reference(
         }
         return chase_at_reference(stripped, target_section, corpus, via_commune, hops + 1);
     }
-    let body = if let Some(spec) = regex_substitution {
-        apply_perl_substitution(raw, spec).unwrap_or_else(|| raw.to_string())
+    let body = if let Some(spec) = &regex_substitution {
+        apply_perl_substitution(raw, spec.as_str()).unwrap_or_else(|| raw.to_string())
     } else {
         raw.to_string()
     };

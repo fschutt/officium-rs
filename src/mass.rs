@@ -187,6 +187,30 @@ pub fn proper_block(
         return Some(block);
     }
 
+    // Tempora-feria → Sunday fallback. Tridentine ferias within a
+    // Sunday's week (e.g. Tempora/Pent06-2 = "Feria tertia infra
+    // Hebdomadam VI post Octavam Pentecostes") use the same Mass
+    // as that Sunday (Tempora/Pent06-0). The upstream file has
+    // [Rank] = `;;Feria;;1` with no commune column, so the
+    // commune-fallback branch below doesn't fire. Detect by file
+    // shape: Tempora stem `<week>-<dow>` where dow is 1-6 means
+    // a feria; fall back to `<week>-0`.
+    if matches!(office.winner.category, FileCategory::Tempora) {
+        if let Some(sunday_key) = tempora_feria_sunday_fallback(&office.winner) {
+            if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
+                if let Some(block) = read_section(
+                    sunday_file,
+                    &sunday_key,
+                    section,
+                    corpus,
+                    /* via_commune */ false,
+                ) {
+                    return Some(block);
+                }
+            }
+        }
+    }
+
     // Commune fallback. Match the Perl `getproprium`'s second branch:
     //   `if (!$w && $communetype && ($communetype =~ /ex/i || $flag))`
     // The flag in Perl is set per-section by the caller chain; we
@@ -249,6 +273,28 @@ fn read_section_skipping_annotated(
 
 fn commune_eligible(t: CommuneType) -> bool {
     matches!(t, CommuneType::Ex | CommuneType::Vide)
+}
+
+/// For a Tempora feria stem like `Pent06-2`, return the FileKey of
+/// the same week's Sunday (`Pent06-0`). Returns `None` for stems
+/// that don't follow the `<week>-<dow>` convention or where the
+/// dow is already 0 (Sunday). Doesn't validate that the Sunday
+/// file exists; the caller checks.
+fn tempora_feria_sunday_fallback(key: &FileKey) -> Option<FileKey> {
+    let (week, dow_str) = key.stem.rsplit_once('-')?;
+    // dow_str must be a single ASCII digit 1..=6 (skip 0=Sunday and
+    // longer suffixes like `-0a` or `-0r`).
+    if dow_str.len() != 1 {
+        return None;
+    }
+    let dow = dow_str.parse::<u32>().ok()?;
+    if !(1..=6).contains(&dow) {
+        return None;
+    }
+    Some(FileKey {
+        category: key.category.clone(),
+        stem: format!("{week}-0"),
+    })
 }
 
 /// Read `section` from `file`. Inlines plain bodies; chases

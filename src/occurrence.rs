@@ -95,7 +95,10 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
         stem: tempora_stem,
     };
     let tempora_file = corpus.mass_file(&tempora_key);
-    let temporal_rank = tempora_file.and_then(|f| f.rank_num).unwrap_or(0.0);
+    let temporal_rank = tempora_file
+        .and_then(|f| f.rank_num)
+        .map(|r| downgrade_post_1570_octave(r, tempora_file.unwrap()))
+        .unwrap_or(0.0);
 
     // ── Sanctoral side ───────────────────────────────────────────────
     let (sancti_key, sancti_entry_holder) =
@@ -334,6 +337,25 @@ fn commemorate_sanctoral_under_temporal_1570(
     }
     // Otherwise the loser sanctoral commemorates.
     true
+}
+
+/// Downgrade post-1570 Octave-day Tempora ranks to feria for the
+/// 1570 occurrence pipeline. The corpus carries Sacred Heart Octave
+/// (post-1856) and Christ the King Octave (post-1925) entries with
+/// elevated `rank_num` (e.g. 2.1 Semiduplex). Under 1570 those days
+/// were ordinary ferias of the Pentecost cycle. We detect them via
+/// officium-string match: `Cordis Jesu` (Sacred Heart) and `Christi
+/// Regis` (Christ the King) are the recognised post-1570 octaves.
+fn downgrade_post_1570_octave(rank: f32, file: &MassFile) -> f32 {
+    let officium = file.officium.as_deref().unwrap_or("");
+    let has_post_1570_octave = officium.contains("Cordis Jesu")
+        || officium.contains("Cordis Iesu")
+        || officium.contains("Sacratissimi")
+        || officium.contains("Christi Regis");
+    if has_post_1570_octave {
+        return 1.0; // ordinary feria
+    }
+    rank
 }
 
 /// Saturday Mass of the Blessed Virgin Mary (Tridentine 1570).

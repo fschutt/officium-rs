@@ -52,6 +52,12 @@ pub struct MassFile {
     /// `setupstring` does at runtime.
     #[serde(default)]
     pub parent: Option<String>,
+    /// Tridentine 1570 conditional parent inherit. Captured from
+    /// `(rubrica tridentina)@Path` or `(rubrica 1570)@Path` lines at
+    /// the top of upstream Sancti files. When in 1570 mode, this
+    /// takes precedence over `parent` for body-section lookups.
+    #[serde(default)]
+    pub parent_1570: Option<String>,
     /// Sections whose header carried a post-1570 rubric annotation
     /// (`(communi Summorum Pontificum)`, `(rubrica 1960)`, etc.).
     /// In Tridentine 1570 commune-fallback context the consumer

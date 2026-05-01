@@ -2860,7 +2860,8 @@
 "Evangelium":"@Commune/C5b",
 "Secreta":"@Sancti/07-04oct",
 "Postcommunio":"@Sancti/06-29"
-}
+},
+"parent_1570":"Sancti/07-04oct"
 },
 "Sancti/07-03r":{
 "officium":"S. Irenæi Episcopi et Martyris",

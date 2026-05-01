@@ -61,6 +61,11 @@ BASE_FILE_RE = re.compile(r"\.txt$")
 # Commune/C2". Captured as `parent` so the runtime resolver can
 # follow.
 PARENT_RE = re.compile(r"^@(\S+)\s*$")
+# Conditional parent inherit: `(rubrica X)@Path` or `(predicate ...)@Path`.
+# When the predicate matches the runtime version, the file's parent
+# becomes <Path>; otherwise the unconditional parent (or no parent)
+# applies. We capture (predicate, path) and let the runtime decide.
+COND_PARENT_RE = re.compile(r"^\(([^)]+)\)\s*@(\S+)\s*$")
 # Section-rubric annotations the Tridentine 1570 layer must EXCLUDE
 # because they encode post-1570 reforms. Anything else (no annotation,
 # `(rubrica tridentina)`, `(ad missam)`, `(tempore paschali)`, etc.)
@@ -105,6 +110,7 @@ def parse_mass_file(text: str) -> dict:
     current = None
     collecting = False
     parent: str | None = None
+    parent_1570: str | None = None
     seen_section = False
     for raw in text.splitlines():
         m = SECTION_RE.match(raw.rstrip())
@@ -124,10 +130,21 @@ def parse_mass_file(text: str) -> dict:
             sections[current].append(raw)
             continue
         # Pre-section content: capture a leading `@Commune/X` as the
-        # file-level inherit. Stop on first non-blank non-`@` line.
+        # file-level inherit. Also recognise `(predicate)@Path` —
+        # conditional parent inherit. Stop on first non-blank
+        # non-conditional non-`@` line.
         if not seen_section:
             stripped = raw.strip()
             if stripped:
+                cpm = COND_PARENT_RE.match(stripped)
+                if cpm:
+                    pred = cpm.group(1).strip().lower()
+                    target = cpm.group(2)
+                    # Tridentine variant — captured as parent_1570.
+                    if "tridentina" in pred or "1570" in pred:
+                        if parent_1570 is None:
+                            parent_1570 = target
+                    continue
                 pm = PARENT_RE.match(stripped)
                 if pm and parent is None:
                     parent = pm.group(1)
@@ -203,6 +220,8 @@ def parse_mass_file(text: str) -> dict:
     }
     if parent:
         out["parent"] = parent
+    if parent_1570:
+        out["parent_1570"] = parent_1570
     # Sections that carry a post-1570 rubric annotation. Consumers
     # filtering for the Tridentine 1570 baseline should ignore these
     # IN COMMUNE-FALLBACK CONTEXT; explicit `@Commune/X` references

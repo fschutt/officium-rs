@@ -741,7 +741,8 @@ fn effective_tempora_key(key: &FileKey, corpus: &dyn Corpus) -> FileKey {
         if file.rank_num.is_some() || file.officium.is_some() {
             return k;
         }
-        match file.parent.as_deref() {
+        let parent = file.parent_1570.as_deref().or(file.parent.as_deref());
+        match parent {
             Some(p) => k = FileKey::parse(p),
             None => return k,
         }
@@ -760,7 +761,8 @@ fn effective_officium(key: &FileKey, corpus: &dyn Corpus) -> Option<String> {
         if let Some(o) = file.officium.as_deref() {
             return Some(o.to_string());
         }
-        if let Some(p) = file.parent.as_deref() {
+        let parent = file.parent_1570.as_deref().or(file.parent.as_deref());
+        if let Some(p) = parent {
             k = FileKey::parse(p);
             continue;
         }

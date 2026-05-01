@@ -328,7 +328,8 @@ fn read_section_skipping_annotated(
         }
     }
     // Section is annotated OR missing — chase the file-level parent.
-    if let Some(parent_path) = file.parent.as_deref() {
+    let parent_path = file.parent_1570.as_deref().or(file.parent.as_deref());
+    if let Some(parent_path) = parent_path {
         let parent_key = FileKey::parse(parent_path);
         if let Some(parent_file) = corpus.mass_file(&parent_key) {
             return read_section_skipping_annotated(parent_file, &parent_key, section, corpus);
@@ -512,7 +513,38 @@ fn read_section(
     let raw_opt = file.sections.get(section).map(|s| s.trim());
     if let Some(raw) = raw_opt.filter(|s| !s.is_empty()) {
         if let Some(stripped) = raw.strip_prefix('@') {
-            return chase_at_reference(stripped, section, corpus, via_commune, 1);
+            // `@:Section` — self-reference (different section in the
+            // SAME file). Resolve directly here so we keep `file` in
+            // scope; chase_at_reference parses path-prefixed forms.
+            if let Some(self_section) = stripped.strip_prefix(':') {
+                let target = self_section.lines().next()?.trim();
+                // Skip the regex-substitution and `in N loco` forms
+                // (we don't model those yet).
+                let unmodelled = target.is_empty()
+                    || target.contains('/')
+                    || target.contains(" in ");
+                if !unmodelled {
+                    if let Some(body) = file
+                        .sections
+                        .get(target)
+                        .map(|s| s.trim())
+                        .filter(|s| !s.is_empty())
+                    {
+                        if let Some(rest) = body.strip_prefix('@') {
+                            return chase_at_reference(rest, target, corpus, via_commune, 1);
+                        }
+                        return Some(ProperBlock {
+                            latin: body.to_string(),
+                            source: file_key.clone(),
+                            via_commune,
+                        });
+                    }
+                }
+                // self-reference target missing or unrecognised — fall
+                // through to parent inherit
+            } else {
+                return chase_at_reference(stripped, section, corpus, via_commune, 1);
+            }
         }
         return Some(ProperBlock {
             latin: raw.to_string(),
@@ -521,7 +553,10 @@ fn read_section(
         });
     }
     // Section missing locally — try the file's parent inherit.
-    if let Some(parent_path) = file.parent.as_deref() {
+    // 1570 conditional parent takes precedence over the unconditional
+    // one when present (handles `(rubrica tridentina)@Sancti/X` lines).
+    let parent_path = file.parent_1570.as_deref().or(file.parent.as_deref());
+    if let Some(parent_path) = parent_path {
         let parent_key = FileKey::parse(parent_path);
         if let Some(parent_file) = corpus.mass_file(&parent_key) {
             return read_section(
@@ -586,6 +621,33 @@ fn chase_at_reference(
         return None;
     }
     if let Some(stripped) = raw.strip_prefix('@') {
+        // `@:Section` self-reference — resolve within `file` rather
+        // than re-parsing the empty path.
+        if let Some(self_section) = stripped.strip_prefix(':') {
+            let target = self_section.lines().next().unwrap_or("").trim();
+            let unmodelled = target.is_empty()
+                || target.contains('/')
+                || target.contains(" in ");
+            if !unmodelled {
+                if let Some(body) = file
+                    .sections
+                    .get(target)
+                    .map(|s| s.trim())
+                    .filter(|s| !s.is_empty())
+                {
+                    if let Some(rest) = body.strip_prefix('@') {
+                        return chase_at_reference(rest, target, corpus, via_commune, hops + 1);
+                    }
+                    return Some(ProperBlock {
+                        latin: body.to_string(),
+                        source: key.clone(),
+                        via_commune: via_commune
+                            || matches!(key.category, FileCategory::Commune),
+                    });
+                }
+            }
+            return None;
+        }
         return chase_at_reference(stripped, target_section, corpus, via_commune, hops + 1);
     }
     Some(ProperBlock {

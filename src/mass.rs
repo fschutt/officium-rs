@@ -2025,11 +2025,13 @@ fn paschal_commune_swap(
 /// suffix marks files that are the 1570-baseline body for a slot.
 fn tempora_feria_sunday_fallback(key: &FileKey) -> Option<FileKey> {
     let (week, mut dow_str) = key.stem.rsplit_once('-')?;
-    // Strip a trailing `Feria` (Pasc2-5Feria → dow_str="5") OR a
-    // single-letter variant suffix (`o`/`t`/`r`/`a` — Tridentine and
-    // related rubric variants) so the 1570 feria-Sunday-fallback
-    // fires for the same-week's Sunday.
-    if let Some(stripped) = dow_str.strip_suffix("Feria") {
+    // Strip a trailing `Feriat` (Pasc2-3Feriat → dow_str="3") OR
+    // `Feria` (Pasc2-5Feria → "5") OR a single-letter variant suffix
+    // (`o`/`t`/`r`/`a` — Tridentine and related rubric variants) so
+    // the 1570 feria-Sunday-fallback fires for the same-week's Sunday.
+    if let Some(stripped) = dow_str.strip_suffix("Feriat") {
+        dow_str = stripped;
+    } else if let Some(stripped) = dow_str.strip_suffix("Feria") {
         dow_str = stripped;
     }
     if dow_str.len() == 2 {

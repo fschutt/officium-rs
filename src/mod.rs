@@ -61,3 +61,10 @@ pub mod regression;
 // comparator uses it to bring Rust output into shape parity with the
 // rendered Perl HTML.
 pub mod prayers;
+
+// Phase 7 — Tridentine 1570 kalendar override
+// (`Tabulae/Kalendaria/1570.txt`). Date → Sancti-stem map that
+// supplies the right Tridentine variant of feasts (e.g. 01-23 →
+// `Sancti/01-23o` Emerentiana instead of post-1570 Raymond) and
+// pre-1911 commemoration pairings.
+pub mod kalendarium_1570;

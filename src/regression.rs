@@ -354,22 +354,68 @@ fn strip_do_markers(s: &str) -> String {
         }
         i = next;
     }
-    // Strip parenthesised rubric notes: `(rubrica 1960)`, `(quae sequitur)`.
-    let mut final_out = String::with_capacity(out.len());
-    let mut depth = 0i32;
-    for ch in out.chars() {
-        match ch {
-            '(' => depth += 1,
-            ')' => {
-                if depth > 0 {
-                    depth -= 1;
+    // Parenthetical handling — body-level parens carry two semantics:
+    //
+    //   * Conditional rubrics like `(Allelúja, allelúja.)` — only
+    //     emitted by the Perl renderer during Eastertide. Outside
+    //     Eastertide they're invisible. Strip them entirely.
+    //   * Stage directions like `(hic genuflectitur)` in the
+    //     Epiphany Gospel — Perl emits them as italic visible text.
+    //     Drop the brackets but keep the content.
+    //
+    // Heuristic: when the parenthetical contains any of `allelu`,
+    // `tempore paschali`, `extra tempus paschale`, treat as
+    // conditional; otherwise treat as visible stage direction.
+    strip_or_unwrap_parens(&out)
+}
+
+fn strip_or_unwrap_parens(s: &str) -> String {
+    let bytes = s.as_bytes();
+    let mut out = String::with_capacity(s.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'(' {
+            // Find matching `)` (no nesting in the corpus).
+            if let Some(end_rel) = s[i..].find(')') {
+                let inside = &s[i + 1..i + end_rel];
+                if is_conditional_rubric(inside) {
+                    // Drop the entire `(...)` chunk including parens.
+                    i += end_rel + 1;
+                    continue;
                 }
+                // Keep the contents; drop only the parens.
+                out.push_str(inside);
+                i += end_rel + 1;
+                continue;
             }
-            _ if depth == 0 => final_out.push(ch),
-            _ => {}
         }
+        // No paren or unmatched `(` — copy the char (UTF-8-safe).
+        let next = next_char_boundary(s, i);
+        out.push_str(&s[i..next]);
+        i = next;
     }
-    final_out
+    out
+}
+
+fn is_conditional_rubric(inside: &str) -> bool {
+    // Diacritic-fold so "Allelúja" matches against "allelu". NFD
+    // decomposes accented vowels into base+combining; we strip the
+    // combining marks and lowercase.
+    let folded: String = inside
+        .nfd()
+        .filter(|c| !unicode_normalization::char::is_combining_mark(*c))
+        .flat_map(char::to_lowercase)
+        .collect();
+    if folded.contains("allelu") {
+        return true;
+    }
+    if folded.contains("tempore pascha")
+        || folded.contains("extra tempus pascha")
+        || folded.contains("tempus paschal")
+    {
+        return true;
+    }
+    false
 }
 
 // ─── Perl HTML extractor ─────────────────────────────────────────────
@@ -1355,6 +1401,36 @@ oratio body
         assert!(!n.contains('æ'), "got {n:?}");
         assert!(n.contains("aecula"));
         assert!(n.contains("aeculorum"));
+    }
+
+    #[test]
+    fn normalize_strips_allelu_paren() {
+        // `(Alleluia, alleluia.)` is a conditional Eastertide rubric
+        // — strip entirely outside Eastertide, matching Perl's
+        // default behavior.
+        let n = normalize("Beáti immaculáti (Allelúja, allelúja.) in via");
+        // The CONTENT word "allelu*" is gone from inside the paren.
+        assert!(!n.contains("alleluja"), "got {n:?}");
+        assert!(!n.contains("alleluia"), "got {n:?}");
+        assert!(n.contains("immaculati"));
+        assert!(n.contains("invia"));
+    }
+
+    #[test]
+    fn normalize_keeps_genuflectitur_paren() {
+        // Non-conditional parenthetical (stage direction) — drop the
+        // brackets but keep the content.
+        let n = normalize("María Matre ejus, (hic genuflectitur) et procidéntes");
+        assert!(n.contains("hicgenuflectitur"), "got {n:?}");
+        assert!(n.contains("etprocidentes"));
+    }
+
+    #[test]
+    fn normalize_strips_tempus_paschale_paren() {
+        let n = normalize("Body (extra Tempus Paschale: foo bar) tail");
+        assert!(!n.contains("foobar"), "got {n:?}");
+        assert!(n.contains("body"));
+        assert!(n.contains("tail"));
     }
 
     #[test]

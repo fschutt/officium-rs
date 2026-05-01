@@ -34,6 +34,7 @@ use crate::divinum_officium::core::{
 };
 use crate::divinum_officium::corpus::Corpus;
 use crate::divinum_officium::date;
+use crate::divinum_officium::kalendarium_1570;
 use crate::divinum_officium::missa::MassFile;
 use crate::divinum_officium::sancti::SanctiEntry;
 
@@ -78,11 +79,17 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     //   the format is "Tempora/{weekname}" (no -dow suffix).
     let weekname = date::getweek(d, m, y, false, true);
     let dow = date::day_of_week(d, m, y);
-    let tempora_stem = if is_nat_label(&weekname) {
+    let tempora_stem_default = if is_nat_label(&weekname) {
         weekname.clone()
     } else {
         format!("{}-{}", weekname, dow)
     };
+    // Tridentine 1570 prefers `-a` suffix variants for Sunday Tempora
+    // files when they exist (e.g., Tempora/Epi1-0a is the 1570
+    // "Dominica infra Octavam Epiphaniae", whereas Tempora/Epi1-0 is
+    // the post-1911 "Sancta Familia"). The `-tt` and other suffixes
+    // map to other rubric layers; we only chase `-a` for 1570.
+    let tempora_stem = pick_tempora_variant_for_1570(&tempora_stem_default, corpus);
     let tempora_key = FileKey {
         category: FileCategory::Tempora,
         stem: tempora_stem,
@@ -91,17 +98,9 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     let temporal_rank = tempora_file.and_then(|f| f.rank_num).unwrap_or(0.0);
 
     // ── Sanctoral side ───────────────────────────────────────────────
-    let sancti_entries = corpus.sancti_entries(m, d);
-    // reform-PHASE-7-9: the per-rubric kalendar diff would replace
-    // `default` with the rubric-specific entry here. Until then we
-    // pick `default` (≈ Divino Afflatu 1911) as the closest available
-    // proxy for Tridentine 1570.
-    let sancti_entry = pick_sancti_for_tridentine_1570(sancti_entries);
+    let (sancti_key, sancti_entry_holder) = resolve_sancti_for_tridentine_1570(m, d, corpus);
+    let sancti_entry: Option<&SanctiEntry> = sancti_entry_holder.as_ref();
     let sanctoral_rank = sancti_entry.and_then(|e| e.rank_num).unwrap_or(0.0);
-    let sancti_key = FileKey {
-        category: FileCategory::Sancti,
-        stem: format!("{m:02}-{d:02}"),
-    };
 
     // ── Precedence ───────────────────────────────────────────────────
     let sanctoral_office = decide_sanctoral_wins_1570(
@@ -114,7 +113,8 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     // ── Build result ─────────────────────────────────────────────────
     if sanctoral_office {
         let sancti = sancti_entry.expect("sanctoral_office=true ⇒ entry exists");
-        let (commune, commune_type) = parse_commune(&sancti.commune);
+        let (commune, commune_type) =
+            parse_commune_in_context(&sancti.commune, &sancti_key.category);
         let commemoratio = if commemorate_temporal_under_sanctoral_1570(
             sanctoral_rank,
             temporal_rank,
@@ -140,7 +140,10 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
         }
     } else {
         let (commune, commune_type) = match tempora_file {
-            Some(f) => parse_commune(f.commune.as_deref().unwrap_or("")),
+            Some(f) => parse_commune_in_context(
+                f.commune.as_deref().unwrap_or(""),
+                &tempora_key.category,
+            ),
             None => (None, CommuneType::None),
         };
         let commemoratio = if sancti_entry.is_some()
@@ -178,6 +181,9 @@ fn is_nat_label(s: &str) -> bool {
     s.starts_with("Nat") && s.len() > 3 && s[3..].chars().all(|c| c.is_ascii_digit())
 }
 
+#[allow(dead_code)] // Retained as a backstop for non-1570-kalendar
+                    // dates; superseded for in-kalendar dates by
+                    // resolve_sancti_for_tridentine_1570.
 fn pick_sancti_for_tridentine_1570(entries: &[SanctiEntry]) -> Option<&SanctiEntry> {
     // Tridentine 1570 predates every rubric variant in our shipped
     // sancti.json. The "default" rubric is our calibrated baseline
@@ -303,14 +309,147 @@ fn commemorate_sanctoral_under_temporal_1570(
     true
 }
 
-/// Parse a commune indication like `"vide C2a-1"` or `"ex C9"` into a
-/// typed `(FileKey, CommuneType)`.
+/// Pick the Tridentine-1570 variant of a Tempora stem when one
+/// exists. The corpus uses the `-a` suffix to store the 1570 form of
+/// Sundays where a *post-1570* feast has since bumped the original
+/// Sunday Mass off the calendar:
+///
+///   * `Epi1-0`   = post-1911 Holy Family            → 1570: `Epi1-0a`
+///   * `Pent01-0` = post-1334 Trinity Sunday         → 1570: `Pent01-0`
+///                  (Trinity Sunday already existed in 1570; keep
+///                   the bare stem.)
+///
+/// Trinity Sunday is the only `-a` Sunday in the corpus where 1570
+/// uses the BARE form, so we encode a tiny explicit allowlist of
+/// `-a` chase candidates rather than a blanket "always chase if
+/// `-a` exists" rule (which would mis-direct Trinity).
+fn pick_tempora_variant_for_1570(stem: &str, corpus: &dyn Corpus) -> String {
+    if !TRIDENTINE_1570_TEMPORA_A_CHASE.contains(&stem) {
+        return stem.to_string();
+    }
+    let candidate = format!("{stem}a");
+    let key = FileKey {
+        category: FileCategory::Tempora,
+        stem: candidate.clone(),
+    };
+    if corpus.mass_file(&key).is_some() {
+        return candidate;
+    }
+    stem.to_string()
+}
+
+/// Tempora stems where the `-a` variant is the correct 1570 form.
+/// Audit any addition: Trinity Sunday (`Pent01-0`) is *not* in this
+/// list because Trinity already existed in 1570.
+const TRIDENTINE_1570_TEMPORA_A_CHASE: &[&str] = &[
+    "Epi1-0", // post-1911 Holy Family bumps the 1570 Dominica infra Octavam
+];
+
+/// Resolve a Sancti stem to a FileKey backed by an actual MassFile.
+/// When the requested stem points to a body-less file (typically a
+/// single-line `@Sancti/<base>` redirect like `12-24o.txt`), fall
+/// through to the base stem — the redirect target carries the body.
+fn resolve_sancti_stem(stem: &str, corpus: &dyn Corpus) -> FileKey {
+    let key = FileKey {
+        category: FileCategory::Sancti,
+        stem: stem.to_string(),
+    };
+    if corpus.mass_file(&key).is_some() {
+        return key;
+    }
+    // Common `@`-only redirect: stem ends in a one-letter suffix
+    // (`o`/`t`/`r`/`s`) and the bare base file exists.
+    for trim in [1, 2] {
+        if stem.len() > trim {
+            let base = &stem[..stem.len() - trim];
+            let candidate = FileKey {
+                category: FileCategory::Sancti,
+                stem: base.to_string(),
+            };
+            if corpus.mass_file(&candidate).is_some() {
+                return candidate;
+            }
+        }
+    }
+    key
+}
+
+/// Resolve the sanctoral side for Tridentine 1570: applies the
+/// `kalendarium_1570.txt` override if present (selecting the right
+/// Tridentine variant of the Sancti file, e.g. `01-23 → 01-23o`),
+/// otherwise falls through to the post-1570 corpus default.
+///
+/// Returns `(file_key, sancti_entry)` — the entry's `rank_num` and
+/// `commune` are wired downstream by the precedence logic.
+fn resolve_sancti_for_tridentine_1570(
+    month: u32,
+    day: u32,
+    corpus: &dyn Corpus,
+) -> (FileKey, Option<SanctiEntry>) {
+    if let Some(override_) = kalendarium_1570::lookup(month, day) {
+        // The kalendar may point at a stem (`12-24o`) whose upstream
+        // file is just a single-line `@Sancti/12-24` redirect — and
+        // build_missa_json.py drops those because they have no
+        // section bodies. Resolve to the real underlying file when
+        // that happens.
+        let key = resolve_sancti_stem(&override_.main.stem, corpus);
+        let mass = corpus.mass_file(&key);
+        let rank_num = mass
+            .and_then(|m| m.rank_num)
+            .unwrap_or(override_.main.rank_num);
+        let entry = SanctiEntry {
+            rubric: "1570".into(),
+            name: override_.main.name.clone(),
+            rank_class: mass.and_then(|m| m.rank.clone()).unwrap_or_default(),
+            rank_num: Some(rank_num),
+            commune: mass.and_then(|m| m.commune.clone()).unwrap_or_default(),
+        };
+        return (key, Some(entry));
+    }
+    // No 1570 kalendar entry for this date → date is ferial under
+    // Tridentine 1570 (the post-1570 corpus may carry a saint here,
+    // but it didn't exist in 1570). Return a placeholder FileKey
+    // with no entry; the precedence layer treats `sancti_entry =
+    // None` as "no sanctoral office, temporal cycle wins solo".
+    let key = FileKey {
+        category: FileCategory::Sancti,
+        stem: format!("{month:02}-{day:02}"),
+    };
+    (key, None)
+}
+
+/// Parse a commune indication into a typed `(FileKey, CommuneType)`.
+///
+/// Recognised forms (Tridentine corpus survey, Phase 7):
+///
+///   `vide C2a-1`           → `Commune/C2a-1` Vide
+///   `ex C9`                → `Commune/C9`    Ex
+///   `vide Sancti/12-26`    → `Sancti/12-26`  Vide  (Octave-day fallback)
+///   `ex Sancti/12-28`      → `Sancti/12-28`  Ex
+///   `vide Tempora/Epi1-0a` → `Tempora/Epi1-0a` Vide
+///   `vide Epi3-0`          → bare stem; resolved to a `Tempora/`
+///                            FileKey by the caller (context-dependent
+///                            since `vide Epi3-0` only appears in
+///                            Tempora files, but we encode the bare
+///                            form here and let the consumer fix the
+///                            category if needed).
+///
+/// `parse_commune_in_context(s, winner_category)` is the variant that
+/// knows the winner's category and uses it for bare-stem fallbacks.
+#[cfg(test)]
 fn parse_commune(s: &str) -> (Option<FileKey>, CommuneType) {
+    parse_commune_in_context(s, &FileCategory::Commune)
+}
+
+fn parse_commune_in_context(
+    s: &str,
+    winner_category: &FileCategory,
+) -> (Option<FileKey>, CommuneType) {
     let trimmed = s.trim();
     if trimmed.is_empty() {
         return (None, CommuneType::None);
     }
-    let (prefix, rest) = match trimmed.split_once(' ') {
+    let (prefix, rest) = match trimmed.split_once(char::is_whitespace) {
         Some(p) => p,
         None => return (None, CommuneType::None),
     };
@@ -319,15 +458,50 @@ fn parse_commune(s: &str) -> (Option<FileKey>, CommuneType) {
         "ex" => CommuneType::Ex,
         _ => return (None, CommuneType::None),
     };
-    let stem = rest.split_whitespace().next().unwrap_or("").to_string();
-    if stem.is_empty() {
+    let raw_target = rest.split_whitespace().next().unwrap_or("");
+    if raw_target.is_empty() {
         return (None, kind);
     }
-    let key = FileKey {
-        category: FileCategory::Commune,
-        stem,
-    };
+    let key = parse_commune_target(raw_target, winner_category);
     (Some(key), kind)
+}
+
+fn parse_commune_target(target: &str, winner_category: &FileCategory) -> FileKey {
+    if let Some((cat, stem)) = target.split_once('/') {
+        // Explicit `Sancti/12-26`, `Tempora/Epi1-0a`, `Commune/C2a-1`.
+        let category = match cat {
+            "Sancti" => FileCategory::Sancti,
+            "Tempora" => FileCategory::Tempora,
+            "Commune" => FileCategory::Commune,
+            "SanctiM" => FileCategory::SanctiM,
+            "SanctiOP" => FileCategory::SanctiOP,
+            "SanctiCist" => FileCategory::SanctiCist,
+            other => FileCategory::Other(other.to_string()),
+        };
+        return FileKey {
+            category,
+            stem: stem.to_string(),
+        };
+    }
+    // Bare stem.  Distinguish by shape:
+    //   `Cxx`/`Cxx-y` → Commune/<stem>
+    //   anything else → same category as the winner (Tempora seasons,
+    //                   when a Tempora file's [Rank] commune column
+    //                   says e.g. `vide Epi3-0`).
+    let starts_with_c_then_alnum = target
+        .strip_prefix('C')
+        .map(|rest| rest.chars().next().map_or(false, |c| c.is_ascii_digit()))
+        .unwrap_or(false);
+    if starts_with_c_then_alnum {
+        return FileKey {
+            category: FileCategory::Commune,
+            stem: target.to_string(),
+        };
+    }
+    FileKey {
+        category: winner_category.clone(),
+        stem: target.to_string(),
+    }
 }
 
 #[cfg(test)]
@@ -424,14 +598,14 @@ mod tests {
     }
 
     #[test]
-    fn immaculate_conception_outranks_advent_feria() {
-        // 2026-12-08 = Tue, Adv2-2 ferial. Conceptione BMV rank 6.5
-        // (Class I). Sanctoral wins; feria of Advent commemorated.
+    fn conception_bmv_outranks_advent_feria_1570() {
+        // 2026-12-08 = Tue, Adv2-2 ferial. The post-1854 "Immaculata
+        // Conceptio" doesn't exist in 1570; the 1570 kalendar entry
+        // is "Conceptio Beatae Mariae Virginis" rank 3 (Duplex),
+        // file `Sancti/12-08o`. It still outranks the Advent feria.
         let r = run(2026, 12, 8);
-        assert_eq!(winner_path(&r), "Sancti/12-08");
+        assert_eq!(winner_path(&r), "Sancti/12-08o");
         assert!(r.sanctoral_office);
-        // Phase 9+ may tighten which ferias get commemorated under
-        // a Class I sanctoral.
     }
 
     // ─── Cases gated on later phases (ignored with markers) ──────────
@@ -515,6 +689,59 @@ mod tests {
     }
 
     #[test]
+    fn commune_parses_vide_sancti_octave() {
+        // 01-02 Octave of St Stephen redirects to Sancti/12-26 for
+        // every section the Octave file doesn't carry in-line.
+        let (k, t) = parse_commune("vide Sancti/12-26");
+        assert_eq!(t, CommuneType::Vide);
+        let k = k.unwrap();
+        assert!(matches!(k.category, FileCategory::Sancti));
+        assert_eq!(k.stem, "12-26");
+    }
+
+    #[test]
+    fn commune_parses_ex_sancti() {
+        // 01-04 Octave of Holy Innocents.
+        let (k, t) = parse_commune("ex Sancti/12-28");
+        assert_eq!(t, CommuneType::Ex);
+        let k = k.unwrap();
+        assert!(matches!(k.category, FileCategory::Sancti));
+        assert_eq!(k.stem, "12-28");
+    }
+
+    #[test]
+    fn commune_parses_vide_tempora() {
+        let (k, t) = parse_commune("vide Tempora/Epi1-0a");
+        assert_eq!(t, CommuneType::Vide);
+        let k = k.unwrap();
+        assert!(matches!(k.category, FileCategory::Tempora));
+        assert_eq!(k.stem, "Epi1-0a");
+    }
+
+    #[test]
+    fn commune_bare_stem_uses_winner_category() {
+        // Tempora/Epi3-1's [Rank] commune column is `vide Epi3-0`
+        // (no prefix); resolves to Tempora/Epi3-0 because the winner
+        // is a Tempora file.
+        let (k, t) = parse_commune_in_context("vide Epi3-0", &FileCategory::Tempora);
+        assert_eq!(t, CommuneType::Vide);
+        let k = k.unwrap();
+        assert!(matches!(k.category, FileCategory::Tempora));
+        assert_eq!(k.stem, "Epi3-0");
+    }
+
+    #[test]
+    fn commune_bare_c_stem_resolves_to_commune() {
+        // Bare `vide C5` maps to Commune/C5 even when winner is
+        // Sancti — the upstream convention.
+        let (k, t) = parse_commune_in_context("vide C5", &FileCategory::Sancti);
+        assert_eq!(t, CommuneType::Vide);
+        let k = k.unwrap();
+        assert!(matches!(k.category, FileCategory::Commune));
+        assert_eq!(k.stem, "C5");
+    }
+
+    #[test]
     fn commune_empty_yields_none() {
         let (k, t) = parse_commune("");
         assert!(k.is_none());
@@ -534,14 +761,11 @@ mod tests {
 
     #[test]
     fn st_joseph_can_outrank_lent_sunday_when_class_i() {
-        // S. Joseph (March 19) — rank 6.1 (Class I). If it falls on
-        // a Sunday of Lent (rank 6.9 in 1570), the Sunday should
-        // narrowly win because Joseph is rank 6.1 and Sunday-of-Lent
-        // is 6.9. Verifies the Sunday-vs-feast comparison.
-        // 2026-03-19 = Thursday (not Sunday) — pick a generic feria.
+        // S. Joseph (March 19) — under Tridentine 1570 the kalendar
+        // table maps 03-19 to `Sancti/03-19t` (rank 3 Duplex). On a
+        // Lent ferial, the saint still wins.
         let r = run(2026, 3, 19);
-        // On a Lent ferial, St Joseph wins.
-        assert_eq!(winner_path(&r), "Sancti/03-19");
+        assert_eq!(winner_path(&r), "Sancti/03-19t");
         assert!(r.sanctoral_office);
     }
 }

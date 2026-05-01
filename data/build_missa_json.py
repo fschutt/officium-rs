@@ -85,10 +85,18 @@ EXCLUDED_ANNOTATIONS_1570 = (
 
 def is_excluded_annotation(annotation: str) -> bool:
     """True when this annotation marks a post-1570 rubric variant we
-    should drop from the 1570 baseline corpus."""
+    should drop from the 1570 baseline corpus.
+
+    Disjunctive predicates (`rubrica Divino aut rubrica Tridentina aut
+    rubrica Monastica`) include 1570 if any disjunct mentions
+    Tridentina/1570 — keep the section in that case so the consumer
+    can pick up the body under 1570 mode."""
     if not annotation:
         return False
     a = annotation.strip()
+    a_lower = a.lower()
+    if "tridentina" in a_lower or "1570" in a_lower:
+        return False
     return any(a.startswith(needle) for needle in EXCLUDED_ANNOTATIONS_1570)
 
 

@@ -485,6 +485,13 @@ fn resolve_name_for_section(name_body: &str, section: &str) -> String {
                     override_form = Some(name.trim().to_string());
                 }
             }
+            // A section-specific `=` line — even a TRUE conditional
+            // following it can only target that section's override,
+            // not the file-wide default. Clear the back-scope flag
+            // so a later `(sed rubrica 1570 …)` doesn't mistakenly
+            // wipe the default when the line that triggered it was
+            // a different section's override.
+            last_default_set = false;
         } else {
             // Default form — keep the latest from a TRUE conditional.
             if default.is_empty() || matches!(frame, Frame::Conditional(true)) {
@@ -1094,6 +1101,58 @@ fn tempora_feria_sunday_fallback(key: &FileKey) -> Option<FileKey> {
     })
 }
 
+/// Walk a multi-line body and replace any line that's a bare
+/// `@<Path>` reference with the referenced file's same-section
+/// body. Mirrors Perl `setupstring` which resolves inline `@Path`
+/// markers as it loads the body. Surrounding lines (citations,
+/// antiphon labels, etc.) are kept unchanged. Skips lines that
+/// already have section selectors (`@Path:Section` or
+/// `@Path::s/.../...`); the renderer leaves those for downstream
+/// macro expansion (rare; current corpus has no such inline form).
+fn expand_inline_at_lines(
+    body: &str,
+    section: &str,
+    corpus: &dyn Corpus,
+    self_key: &FileKey,
+    via_commune: bool,
+) -> String {
+    if !body.contains("\n@") && !body.starts_with('@') {
+        return body.to_string();
+    }
+    let mut out: Vec<String> = Vec::new();
+    for line in body.split('\n') {
+        if let Some(stripped) = line.strip_prefix('@') {
+            let path = stripped.trim();
+            // Only handle bare `@Path` (no colon, no embedded space)
+            // — section-selectors and regex-substitutions live in
+            // `chase_at_reference`'s grammar.
+            if !path.contains(':') && !path.contains(' ') && path.contains('/') {
+                let key = FileKey::parse(path);
+                if &key != self_key {
+                    if let Some(file) = corpus.mass_file(&key) {
+                        if let Some(referenced) = file.sections.get(section) {
+                            let resolved = referenced.trim();
+                            if !resolved.is_empty() {
+                                // Recursive expansion of any nested
+                                // @Path lines within the referenced
+                                // body, capped by the chase machinery
+                                // upstream of read_section.
+                                let nested = expand_inline_at_lines(
+                                    resolved, section, corpus, &key, via_commune,
+                                );
+                                out.push(nested);
+                                continue;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        out.push(line.to_string());
+    }
+    out.join("\n")
+}
+
 /// Read `section` from `file`. Inlines plain bodies; chases
 /// `@`-references up to `MAX_AT_HOPS` deep. When the section is
 /// missing locally AND the file has a `parent` inherit (a leading
@@ -1172,8 +1231,14 @@ fn read_section(
                 return chase_at_reference(stripped, section, corpus, via_commune, 1);
             }
         }
+        // Inline `@Path` line within a multi-line body: replace each
+        // such line with the referenced file's same-section body.
+        // Drives Sancti/01-05 [Introitus] = `!Sap 18:14-15\n@Tempora/Nat1-0`
+        // — the citation header is local, the antiphon body comes from
+        // the Christmas Sunday-Within-Octave Mass.
+        let body = expand_inline_at_lines(raw, section, corpus, file_key, via_commune);
         return Some(ProperBlock {
-            latin: raw.to_string(),
+            latin: body,
             source: file_key.clone(),
             via_commune,
         });
@@ -1283,10 +1348,30 @@ fn chase_at_reference(
         }
         return None;
     }
-    let raw = file.sections.get(target_section)?.trim();
-    if raw.is_empty() {
-        return None;
-    }
+    // Section missing in the chased file → walk its parent chain.
+    // C2ap has no [Communio]; its parent is C2p which carries the
+    // paschal Communio. Without this walk, references like
+    // `@Commune/C2ap` only resolve sections the leaf file ships.
+    let raw_opt = file.sections.get(target_section).map(|s| s.trim());
+    let raw = match raw_opt.filter(|s| !s.is_empty()) {
+        Some(s) => s,
+        None => {
+            if let Some(parent_path) = file
+                .parent_1570
+                .as_deref()
+                .or(file.parent.as_deref())
+            {
+                return chase_at_reference(
+                    parent_path,
+                    target_section,
+                    corpus,
+                    via_commune || matches!(key.category, FileCategory::Commune),
+                    hops + 1,
+                );
+            }
+            return None;
+        }
+    };
     if let Some(stripped) = raw.strip_prefix('@') {
         // `@:Section` self-reference — resolve within `file` rather
         // than re-parsing the empty path.

@@ -1011,6 +1011,48 @@ the upstream corpus ships, regardless of canonisation date). Phase
 7 will introduce the canonisation gate and prove it on the years
 1700, 1800, 1900 (canonisation-gating different saint sets).
 
+### Phase 7 progress: data-driven kalendar layers
+
+The first slice of the year-aware architecture is in place:
+
+  * `data/kalendaria_by_rubric.json` — built by
+    `data/build_canonization.py`. Walks the upstream
+    `Tabulae/Kalendaria/<year>.txt` chain and resolves diffs into
+    seven cumulative tables (1570, 1888, 1906, 1939, 1954, 1955,
+    1960). 1934 (rubric, mmdd) pairs total.
+  * `data/canonization_dates.json` — same script. 431 Sancti-stem
+    entries with `added_in_rubric`, `rank_history`,
+    `suppressed_in_rubric`, `last_live_rubric`, `kind`.
+  * `kalendaria_layers.rs` (Rust) — typed wrapper. `Layer` enum +
+    `lookup(layer, m, d)` + `layer_for_year(year)`.
+  * `Rubric::kalendar_layer()` — bridge from rubric (rule set) to
+    layer (saint table). Tridentine 1570 → Pius1570, 1910 →
+    PiusX1906, Divino Afflatu → PiusXI1939, …
+  * `kalendarium_1570::lookup_for_layer(layer, m, d)` —
+    `Entry1570`-shaped projection over any layer, lazily cached.
+  * `cargo run --bin year-kalendar` — CLI demo. Shows historical
+    Sancti table, layer-to-layer diff, canonization-date search.
+
+Adding a new reform layer is a *config-only* change: drop the
+`Tabulae/Kalendaria/<NAME>.txt`, re-run the build script, extend
+the `Layer` enum. No saint or year breakpoint is hard-coded in
+the business logic.
+
+### Phase 7 todo: rubric-rule wiring
+
+Kalendar layers (saint tables) are data; **rubric rules**
+(precedence, vigil suppression, octave handling) are still 1570-
+specific Rust. Phase 7 wraps up by:
+
+  * Threading `layer: Layer` (or `rubric: Rubric`) through the
+    occurrence/precedence helpers so a single function body can
+    serve every layer.
+  * Layer-specific override hooks for the few real rule deltas
+    (Apostolic-vigil precedence, octave handling, etc.).
+  * Wiring `compute_occurrence` for `Tridentine1910`,
+    `DivinoAfflatu1911`, `Reduced1955`, `Rubrics1960` so the
+    year-sweep harness can validate each rubric against Perl.
+
 ### Canonisation-date table — derive from upstream Tabulae
 
 The upstream repo already ships per-rubric kalendar files at

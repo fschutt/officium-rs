@@ -231,6 +231,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C4a",
+"rank_num_1570":2.2,
+"commune_1570":"vide C4",
 "sections":{
 "Rule":"vide C4a;\nGloria\nCredoDA",
 "Name":"Hilárium\n(sed rubrica 1570 aut rubrica 1617)\nHilárii\nSecreta=Hilárii\nPostcommunio=Hilárius\n(sed rubrica 1570 aut rubrica 1617)\nPostcommunio=Hilário"
@@ -253,6 +255,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C5",
+"rank_num_1570":2.2,
+"commune_1570":"vide C5",
 "sections":{
 "Rule":"vide C5;\nGloria",
 "Name":"Pauli",
@@ -432,6 +436,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C2",
+"rank_num_1570":1.1,
+"commune_1570":"vide C2",
 "sections":{
 "Rule":"vide C2;\nGloria",
 "Name":"Timothei\nPostcommunio=Timotheo",
@@ -487,6 +493,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C2-1",
+"rank_num_1570":1.1,
+"commune_1570":"vide C2-1",
 "sections":{
 "Rule":"vide C2-1;\nGloria",
 "Name":"Polycárpi\nSecreta=Polycárpo\nPostcommunio=Polycárpo",
@@ -593,6 +601,8 @@
 "rank":"Duplex",
 "rank_num":3.01,
 "commune":"vide C2",
+"rank_num_1570":2.2,
+"commune_1570":"vide C2",
 "sections":{
 "Rule":"vide C2;\nGloria",
 "Name":"Ignátii\nPostcommunio=Ignátio",
@@ -656,6 +666,8 @@
 "rank":"Duplex",
 "rank_num":3.01,
 "commune":"vide C6",
+"rank_num_1570":2.2,
+"commune_1570":"vide C6",
 "sections":{
 "Rule":"vide C6;\nGloria",
 "Name":"Agathæ\nPostcommunio=Agatha",
@@ -1051,6 +1063,7 @@
 "rank":"Duplex I classis",
 "rank_num":6.1,
 "commune":"",
+"rank_num_1570":3.0,
 "sections":{
 "Rule":"Gloria\nCredo\nPrefatio=Joseph=Festivitáte;",
 "Introitus":"@Commune/C5-1",
@@ -1220,6 +1233,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C4b-2",
+"rank_num_1570":3.0,
+"commune_1570":"vide C4-1",
 "sections":{
 "Rule":"vide C4b-2;mtv\n(sed rubrica 1570 aut rubrica 1617)\nvide C4;mtv\nGloria\nCredoDA",
 "Name":"Leónem\n(sed nisi communi Summorum Pontificum)\nLeónis\nSecreta=Leónis\nPostcommunio=Leo\n(sed rubrica 1570 but rubrica 1617)\nPostcommunio=Leónis",
@@ -1603,6 +1618,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C7a",
+"rank_num_1570":1.1,
+"commune_1570":"vide C7a",
 "sections":{
 "Rule":"Gloria\nEvangelium non appropriatum",
 "Name":"Mónicæ",
@@ -1746,6 +1763,8 @@
 "rank":"Semiduplex",
 "rank_num":2.2,
 "commune":"vide C3a-1",
+"rank_num_1570":1.1,
+"commune_1570":"vide C3a-1",
 "sections":{
 "Rule":"Evangelium non appropriatum\nGloria",
 "Introitus":"!Ps 32:18; 32:19; 32:20\nv. Ecce, óculi Dómini super timéntes eum, sperántes in misericórdia ejus, allelúja: ut erípiat a morte ánimas eórum: quóniam adjútor et protéctor noster est, allelúja, allelúja.\n!Ps 32:1\nExsultáte, justi, in Dómino: rectos decet collaudátio.\n&Gloria\nv. Ecce, óculi Dómini super timéntes eum, sperántes in misericórdia ejus, allelúja: ut erípiat a morte ánimas eórum: quóniam adjútor et protéctor noster est, allelúja, allelúja.",
@@ -2563,6 +2582,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C3",
+"rank_num_1570":2.2,
+"commune_1570":"vide C3",
 "sections":{
 "Rule":"vide C3;\nGloria",
 "Introitus":"@Sancti/06-15",
@@ -3069,6 +3090,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C4a",
+"rank_num_1570":2.2,
+"commune_1570":"vide C4-1",
 "sections":{
 "Rule":"vide C4a;\n(sed rubrica 1570)\nvide C4-1\nGloria\nCredoDA",
 "Name":"Bonaventúram\n(sed rubrica 1570)\nBonaventúræ\nSecreta=Bonaventúræ\nPostcommunio=Bonaventúræ",
@@ -3128,6 +3151,8 @@
 "rank":"Semiduplex",
 "rank_num":2.2,
 "commune":"vide C5",
+"rank_num_1570":1.1,
+"commune_1570":"vide C5",
 "sections":{
 "Rule":"vide C5;\nGloria",
 "Name":"Aléxii",
@@ -3279,6 +3304,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C2-1",
+"rank_num_1570":2.2,
+"commune_1570":"vide C2-1",
 "sections":{
 "Rule":"vide C2-1;\nGloria",
 "Introitus":"@Commune/C2a-1",
@@ -3784,6 +3811,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C6a",
+"rank_num_1570":1.1,
+"commune_1570":"vide C6a",
 "sections":{
 "Rule":"vide C6a;\nGloria",
 "Name":"Claræ"
@@ -4038,6 +4067,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C5a",
+"rank_num_1570":3.0,
+"commune_1570":"vide C5b",
 "sections":{
 "Rule":"vide C5a;\n(sed rubrica 1570 aut rubrica 1617)\nvide C5b\nGloria\nCredoDA",
 "Name":"Bernárdum\n(sed rubrica 1570 aut rubrica 1617)\nBernárdi\nSecreta=Bernárdi\n(sed rubrica 1570 aut rubrica 1617)\nSecreta=Bernárdus\nPostcommunio=Bernárdus",
@@ -4165,6 +4196,8 @@
 "rank":"Semiduplex",
 "rank_num":2.2,
 "commune":"vide C5",
+"rank_num_1570":1.1,
+"commune_1570":"vide C5",
 "sections":{
 "Rule":"Evangelium non appropriatum\nvide C5;\nGloria",
 "Introitus":"@Commune/C5b",
@@ -4690,6 +4723,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C3a",
+"rank_num_1570":1.1,
+"commune_1570":"vide C3a",
 "sections":{
 "Rule":"Gloria",
 "Name":"Eustáchii et Sociórum ejus\nPostcommunio=Eustáchio et Sóciis ejus"
@@ -5174,6 +5209,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C2b",
+"rank_num_1570":2.2,
+"commune_1570":"vide C2b",
 "sections":{
 "Rule":"vide C2b;\nGloria",
 "Oratio":"Deus, qui nos cónspicis ex nostra infirmitáte defícere: ad amórem tuum nos misericórditer per Sanctórum tuórum exémpla restáura.\n$Per Dominum",
@@ -5853,6 +5890,8 @@
 "rank":"Semiduplex",
 "rank_num":2.2,
 "commune":"vide C4",
+"rank_num_1570":1.1,
+"commune_1570":"vide C4",
 "sections":{
 "Rule":"Evangelium non appropriatum\nvide C4;\nGloria",
 "Name":"Gregórii\nPostcommunio=Gregório",
@@ -5947,6 +5986,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C6",
+"rank_num_1570":2.2,
+"commune_1570":"vide C6",
 "sections":{
 "Rule":"vide C6;\nGloria",
 "Oratio":"Deus, qui nos ánnua beátæ Cæcíliæ Vírginis et Mártyris tuæ sollemnitáte lætíficas: da, ut, quam venerámur offício, étiam piæ conversatiónis sequámur exémplo.\n$Per Dominum",
@@ -5961,6 +6002,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C2b",
+"rank_num_1570":2.2,
+"commune_1570":"vide C2b",
 "sections":{
 "Rule":"vide C2b;\nGloria",
 "Name":"Cleméntem",
@@ -6100,6 +6143,8 @@
 "rank":"Semiduplex",
 "rank_num":2.2,
 "commune":"vide C6-1",
+"rank_num_1570":1.1,
+"commune_1570":"vide C6-1",
 "sections":{
 "Rule":"vide C6-1;\nGloria",
 "Name":"Bibiána\nSecreta=Bibiánæ\nPostcommunio=Bibiána",
@@ -6181,6 +6226,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C4",
+"rank_num_1570":2.2,
+"commune_1570":"vide C4",
 "sections":{
 "Rule":"vide C4;\nGloria",
 "Introitus":"@Commune/C2a",
@@ -6639,6 +6686,8 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C2-1",
+"rank_num_1570":2.2,
+"commune_1570":"vide C2-1",
 "sections":{
 "Rule":"vide C2-1;\nGloria\nCredo\nPrefatio=Nat\nEvangelium non appropriatum",
 "Name":"Thomas\nSecreta=Thoma\nPostcommunio=Thoma",
@@ -8759,6 +8808,8 @@
 "rank":"Duplex majus",
 "rank_num":4.2,
 "commune":"ex Tempora/Pasc5-4",
+"rank_num_1570":3.1,
+"commune_1570":"ex Tempora/Pasc5-4",
 "sections":{
 "Rule":"ex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-5"

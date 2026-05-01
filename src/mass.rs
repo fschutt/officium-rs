@@ -17,7 +17,7 @@
 //! See DIVINUM_OFFICIUM_PORT_PLAN.md Phase 5.
 
 use crate::divinum_officium::core::{
-    CommuneType, FileCategory, FileKey, MassPropers, OfficeOutput, ProperBlock,
+    CommuneType, FileCategory, FileKey, MassPropers, OfficeOutput, ProperBlock, Season,
 };
 use crate::divinum_officium::corpus::Corpus;
 use crate::divinum_officium::missa::MassFile;
@@ -177,14 +177,23 @@ pub fn proper_block(
     corpus: &dyn Corpus,
 ) -> Option<ProperBlock> {
     let winner_file = corpus.mass_file(&office.winner)?;
-    if let Some(block) = read_section(
-        winner_file,
-        &office.winner,
-        section,
-        corpus,
-        /* via_commune */ false,
-    ) {
-        return Some(block);
+
+    // 1570 baseline: when the winner file is itself a post-1570 reform
+    // feast (Patrocinii octave, Sacred-Heart octave, Christ-the-King
+    // octave), do NOT use its in-file bodies. Fall through to the
+    // commune-fallback / feria-Sunday-fallback chain so the Tridentine
+    // feria propers win.
+    let winner_is_post_1570 = is_post_1570_octave_file(winner_file);
+    if !winner_is_post_1570 {
+        if let Some(block) = read_section(
+            winner_file,
+            &office.winner,
+            section,
+            corpus,
+            /* via_commune */ false,
+        ) {
+            return Some(block);
+        }
     }
 
     // Commune fallback. Match the Perl `getproprium`'s second branch:
@@ -202,9 +211,15 @@ pub fn proper_block(
     // file (Peter & Paul Evangelium → @Commune/C4b) reach this
     // branch via the *winner-file* path above, not commune-fallback,
     // so they keep working.
+    //
+    // In paschal time (Easter Sunday through Saturday after Pentecost),
+    // swap the commune key `Cxx[-y][a/b/c]` → `Cxx[-y][a/b/c]p` so the
+    // chain lands in the paschal Common variant — Introit "Protexisti"
+    // instead of "Sacerdotes Dei", etc. — see `paschal_commune_swap`.
     if commune_eligible(office.commune_type) {
         if let Some(commune_key) = office.commune.as_ref() {
-            if let Some(commune_file) = corpus.mass_file(commune_key) {
+            let resolved_commune = paschal_commune_swap(commune_key, office.season, corpus);
+            if let Some(commune_file) = corpus.mass_file(&resolved_commune) {
                 // Skip commune if its officium is a post-1570 reform
                 // (Sacred Heart Octave, Patrocinii St Joseph, etc.)
                 // — fall through to the Tempora-feria-Sunday-fallback
@@ -212,7 +227,7 @@ pub fn proper_block(
                 if !is_post_1570_octave_file(commune_file) {
                     if let Some(block) = read_section_skipping_annotated(
                         commune_file,
-                        commune_key,
+                        &resolved_commune,
                         section,
                         corpus,
                     ) {
@@ -298,15 +313,64 @@ fn commune_eligible(t: CommuneType) -> bool {
 /// True when the file's officium identifies it as a post-1570
 /// reform feast that doesn't apply under Tridentine 1570. Mirrors
 /// `occurrence::downgrade_post_1570_octave` — kept in sync.
+///
+/// The Patrocinii match is intentionally permissive — upstream is
+/// inconsistent about the dot ("Patrocinii St. Joseph" vs "Patrocinii
+/// St Joseph") and case ("Patrocinii" vs "Patrocínii"). See
+/// UPSTREAM_WEIRDNESSES.md #4.
 fn is_post_1570_octave_file(file: &MassFile) -> bool {
     let officium = file.officium.as_deref().unwrap_or("");
     officium.contains("Cordis Jesu")
         || officium.contains("Cordis Iesu")
         || officium.contains("Sacratissimi")
         || officium.contains("Christi Regis")
-        || officium.contains("Patrocinii St Joseph")
-        || officium.contains("Patrocinii Sancti Joseph")
+        || officium.contains("Patrocinii")
         || officium.contains("Patrocínii")
+}
+
+/// Paschal-time commune-variant swap: in `Season::Easter` (the only
+/// season label upstream uses for paschal time, covering Pasc0–Pasc7
+/// inclusive), swap a Commune file-key `Cxx[-y][a/b/c]` → its `p`-
+/// suffixed paschal variant. Falls back to the original key if the
+/// `p` variant doesn't exist in the corpus.
+///
+/// The horas-side Commune dir ships pairs like:
+///     C2.txt   ↔ C2p.txt        (Common one Martyr Pope)
+///     C2-1.txt ↔ C2-1p.txt
+///     C2b.txt  ↔ C2bp.txt
+/// The paschal variant inherits the fixed parts (Oratio/Secreta/
+/// Postcommunio) from the base file and supplies its own movable
+/// parts (Introit/Lectio/Graduale-as-alleluia/Tractus/Offertorium/
+/// Communio). Resolution chains via the `parent` inherit, so once we
+/// land in `Cxx-yp` the existing parent-chase machinery does the rest.
+fn paschal_commune_swap(
+    key: &FileKey,
+    season: Season,
+    corpus: &dyn Corpus,
+) -> FileKey {
+    if season != Season::Easter {
+        return key.clone();
+    }
+    if !matches!(key.category, FileCategory::Commune) {
+        return key.clone();
+    }
+    if key.stem.ends_with('p') {
+        return key.clone();
+    }
+    // Only swap for `C<digit>...` stems — Coronatio, Propaganda, etc.
+    // don't have paschal variants.
+    if !key.stem.starts_with('C') {
+        return key.clone();
+    }
+    let candidate = FileKey {
+        category: key.category.clone(),
+        stem: format!("{}p", key.stem),
+    };
+    if corpus.mass_file(&candidate).is_some() {
+        candidate
+    } else {
+        key.clone()
+    }
 }
 
 /// For a Tempora feria stem like `Pent06-2`, return the FileKey of
@@ -315,8 +379,18 @@ fn is_post_1570_octave_file(file: &MassFile) -> bool {
 /// preempted by post-1856 octave-day feasts; the `-r` suffix
 /// preserves the Tridentine Sunday). The caller validates that
 /// the resulting file exists.
+///
+/// Also accepts the `Feria`-suffixed Tridentine-1570 form
+/// (`Pasc2-5Feria` → `Pasc2-0`); the `Feria` suffix marks files that
+/// are the 1570-baseline body for a slot whose bare stem now carries
+/// a post-1570 feast.
 fn tempora_feria_sunday_fallback(key: &FileKey) -> Option<FileKey> {
-    let (week, dow_str) = key.stem.rsplit_once('-')?;
+    let (week, mut dow_str) = key.stem.rsplit_once('-')?;
+    // Strip a trailing `Feria` (Pasc2-5Feria → dow_str="5") so the
+    // 1570 feria-Sunday-fallback fires for the same-week's Sunday.
+    if let Some(stripped) = dow_str.strip_suffix("Feria") {
+        dow_str = stripped;
+    }
     if dow_str.len() != 1 {
         return None;
     }
@@ -332,6 +406,17 @@ fn tempora_feria_sunday_fallback(key: &FileKey) -> Option<FileKey> {
     // landing on `Pent03-0` will get its own propers from there.
     // For weeks where the bare Sunday is post-1570 (e.g. Pent03-0
     // = Sacred Heart Octave Day), we prefer the `-r` if it exists.
+    //
+    // Special case Pent01: the bare Pent01-0 is Trinity Sunday (1570
+    // form), but the week's ferias inherit from "Sunday I after
+    // Pentecost" propers, which lives at Pent01-0a. Trinity is a
+    // festal-only displacement; the week's prayer-cycle is otherwise.
+    if week == "Pent01" {
+        return Some(FileKey {
+            category: key.category.clone(),
+            stem: "Pent01-0a".to_string(),
+        });
+    }
     Some(FileKey {
         category: key.category.clone(),
         stem: format!("{week}-0"),

@@ -1,0 +1,121 @@
+# Divinum Officium upstream — observations from the Rust port
+
+Notes for the upstream Perl maintainers about anomalies encountered
+while porting the propers resolver to Rust. Most are not bugs per se
+(the Perl runtime "just works" because it threads context through
+globals), but they are surprises that an external reader / ports
+author will hit.
+
+## 1. `Pasc2-3.txt` is "Patrocinii St Joseph" — file-stem doesn't match week-day
+
+`/tmp/do-upstream/web/www/missa/Latin/Tempora/Pasc2-3.txt`:
+
+```
+[Officium]
+Patrocinii St. Joseph Confessoris Sponsi B.M.V. confessoris
+
+[Rank]
+;;Duplex I classis;;6;;
+```
+
+The file-stem `Pasc2-3` reads as "Wednesday in 2nd week of Easter",
+but the file actually carries the **Patrocinii St Joseph** Mass
+(itself a movable feast on the 3rd Wednesday after Easter
+historically, instituted 1847, abolished 1956). Surrounding files
+`Pasc2-4.txt` … `Pasc3-3.txt` form the Octave (`Die II..VIII infra
+Octavam Patrocinii`) but the bare-stem ferias for those days are
+`Pasc2-3Feria.txt` … `Pasc3-3Feria.txt`. Confusing for ports — the
+expectation from the stem alone is that `Pasc2-3` carries the feria
+and `Pasc2-3Feria` would be a transferred/variant form.
+
+## 2. `Tempora/093-3.txt`, `093-5.txt`, `093-6.txt`, `104-0.txt` —
+   day-of-year numeric stems
+
+```
+$ ls Tempora/ | grep -v "^[A-Z]"
+093-3.txt   ← Sabbato Quattuor Temporum Septembris (?)
+093-5.txt
+093-6.txt
+104-0.txt
+```
+
+These four files do not follow the dominant `<season><week>-<dow>`
+naming. `093-6` is "Sabbato Quattuor Temporum Septembris" (Ember
+Saturday in September); the leading number suggests day-of-year
+(093 = April 3) but the contents suggest September Embertide. A
+comment near the top of these files explaining the intended slot
+would help.
+
+## 3. `[Missa]\nName` directs to a Mass file by *title*, not file-stem
+
+Multiple Common files declare e.g.:
+
+```
+[Missa]
+Statuit
+```
+
+(`Commune/C2.txt` — Common of one Martyr Pontiff, base / non-paschal).
+The Mass propers titled "Statuit" actually live in
+`Sancti/01-22.txt` (S. Vincentii Mart.) — not in any
+`Commune/Statuit.txt`. There's no in-tree explanation that the Mass
+title resolves to a Sancti file with that title's incipit. A port
+discovers this only by full-corpus grep on the Introit text.
+
+(Similarly: `Commune/C2p.txt` says `[Missa]\nProtexisti`, which
+resolves to `Sancti/04-25.txt` (St Mark Evangelist).)
+
+## 4. Substring matching for "post-1570 octave" must be permissive
+
+The Patrocinii octave officium spelling is inconsistent across files:
+- `Pasc2-3.txt`: `Patrocinii St. Joseph Confessoris …` (with dot)
+- `Pasc2-4.txt`: `Die II infra Octavam Patrocinii St Joseph` (no dot)
+- `Pasc3-3.txt`: `Die Octava Patrocinii St Joseph`           (no dot)
+
+A port that detects post-1570 octaves by substring `"Patrocinii St
+Joseph"` will miss the Sunday file (`Pasc2-3`). Just match
+`"Patrocinii"` — but it's a small footgun.
+
+## 5. NFD ligature handling around `ǽ`
+
+`Genetríce` / `Genetrícis` (with `í`) is one orthography and
+`Genitrice` / `Genitricis` (with `i`) is another — they appear in
+adjacent commune files (`Commune/C10.txt` vs `Commune/C11.txt`).
+Even with rigorous Unicode normalization (NFD + combining-mark
+strip), the bare `e` vs `i` letters survive — these are genuinely
+different spellings of the same word. Worth deciding which is
+canonical and applying corpus-wide; right now a regression
+comparator sees these as divergent bodies.
+
+## 6. Section-header annotations carry implicit corpus shape
+
+Files like `Commune/C2b-1.txt` have **every** section annotated
+`(communi Summorum Pontificum)`. This is the *only* hint that the
+file has no Tridentine-1570 body of its own — it relies entirely on
+its `@Commune/C2-1` parent inherit. A `[Description]` or `[Era]`
+metadata block at the head of these files would make corpus
+generations explicit, instead of having a port reverse-engineer the
+"all-annotated → no-baseline-content" rule.
+
+## 7. Saturday-BVM "free Saturday" detection in upstream `horascommon.pl:401-420`
+
+The Perl rule fires on the saint's rank floor (~`< 1.4`). After
+porting and adding the post-1570-octave rank-downgrade
+(Sacred-Heart, Christ-the-King, Patrocinii — see #4), we still see
+the Saturday-BVM rule firing on weekday-not-Saturday dates because
+the kalendar override (`Tabulae/Kalendaria/1570.txt`) puts a
+post-1570 saint on the date. The fix on our side is to treat the
+1570 kalendar as authoritative; but the upstream rule itself works
+off rubric-runtime state, which makes it hard to validate against a
+single eternal source-of-truth.
+
+## 8. `vide C2b-1` vs `ex C2b-1` semantics not clearly documented
+
+`[Rank]` carries a `commune` column whose two values mean different
+things:
+- `vide C2b-1` = "see C2b-1 — some sections proper, others fall back"
+- `ex C2b-1`   = "all sections drawn directly from C2b-1"
+
+The actual behavior in `getproprium` (propers.pl) treats these
+slightly differently (the `flag` parameter). A port that reads only
+the file format would think they're synonyms.

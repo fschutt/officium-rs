@@ -26,10 +26,20 @@ pub struct MassFile {
     /// 2=Semiduplex, 3=Duplex, 5=II classis, 6=I classis, etc.).
     #[serde(default)]
     pub rank_num: Option<f32>,
+    /// Tridentine 1570 variant of `rank_num` when the corpus's
+    /// `[Rank]` section carries a `(sed rubrica 1570)` annotation.
+    /// E.g. Bibiana (Sancti/12-02): default 2.2 (Semiduplex), 1570
+    /// 1.1 (Simplex). When `None`, the file has no 1570 variant —
+    /// `rank_num` applies under all rubrics.
+    #[serde(default)]
+    pub rank_num_1570: Option<f32>,
     /// Common reference (e.g. "vide C2a-1") — what the rubrics
     /// section pointed at.
     #[serde(default)]
     pub commune: Option<String>,
+    /// Tridentine 1570 variant of `commune` (parallel to `rank_num_1570`).
+    #[serde(default)]
+    pub commune_1570: Option<String>,
     /// Section name -> raw body. Sections are kept in upstream
     /// order via `serde`'s default behavior on `BTreeMap` is
     /// alphabetic; we lose stable order here, so the renderer

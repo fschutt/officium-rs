@@ -358,9 +358,11 @@ fn downgrade_post_1570_octave(rank: f32, file: &MassFile) -> f32 {
         || officium.contains("Christi Regis")
         // Patrocinii Sancti Joseph (Pius IX, 1856) — added an
         // octave to the Easter cycle. In 1570 these days were
-        // regular Easter ferias.
-        || officium.contains("Patrocinii St Joseph")
-        || officium.contains("Patrocinii Sancti Joseph")
+        // regular Easter ferias. Match permissively because upstream
+        // is inconsistent about dot/case ("Patrocinii St. Joseph",
+        // "Patrocinii St Joseph", "Patrocínii"). See
+        // UPSTREAM_WEIRDNESSES.md #4.
+        || officium.contains("Patrocinii")
         || officium.contains("Patrocínii");
     if has_post_1570_octave {
         return 1.0; // ordinary feria
@@ -447,6 +449,20 @@ fn pick_tempora_variant_for_1570(stem: &str, corpus: &dyn Corpus) -> String {
         if corpus.mass_file(&key).is_some() {
             return candidate;
         }
+    }
+    // `Feria`-suffixed variants exist whenever the bare stem carries a
+    // post-1570 feast (Septem Dolorum on Quad5-5, Patrocinii Octave on
+    // Pasc2-3..Pasc3-3, Sacred Heart Octave on Pent02-5..Pent03-5).
+    // The mere existence of `<stem>Feria` in the corpus is the upstream
+    // signal that the bare stem is post-1570; for 1570 we always prefer
+    // the `Feria` variant.
+    let feria_stem = format!("{stem}Feria");
+    let feria_key = FileKey {
+        category: FileCategory::Tempora,
+        stem: feria_stem.clone(),
+    };
+    if corpus.mass_file(&feria_key).is_some() {
+        return feria_stem;
     }
     stem.to_string()
 }
@@ -591,15 +607,30 @@ fn resolve_sancti_for_tridentine_1570(
         );
         let key = resolve_sancti_stem(&stem, corpus);
         let mass = corpus.mass_file(&key);
+        // Pick the right rank for 1570:
+        //   1. `rank_num_1570` from corpus when annotated `(sed rubrica
+        //      1570)` (Bibiana 12-02: default 2.2 Semiduplex, 1570 1.1
+        //      Simplex).
+        //   2. Else the corpus's bare `rank_num` (Christmas 12-25 has
+        //      no annotation; bare 6.5 applies under all rubrics —
+        //      including 1570).
+        //   3. Else the kalendar 1570.txt rank — coarse but at least
+        //      tells us whether the date carries a feast.
+        // The kalendar's rank is intentionally a *last* resort because
+        // it uses an integer 1..7 grading whereas the corpus carries
+        // fractional ranks (e.g. Christmas 6.5).
         let rank_num = mass
-            .and_then(|m| m.rank_num)
+            .and_then(|m| m.rank_num_1570.or(m.rank_num))
             .unwrap_or(override_.main.rank_num);
+        let commune = mass
+            .and_then(|m| m.commune_1570.clone().or_else(|| m.commune.clone()))
+            .unwrap_or_default();
         let entry = SanctiEntry {
             rubric: "1570".into(),
             name: override_.main.name.clone(),
             rank_class: mass.and_then(|m| m.rank.clone()).unwrap_or_default(),
             rank_num: Some(rank_num),
-            commune: mass.and_then(|m| m.commune.clone()).unwrap_or_default(),
+            commune,
         };
         return (key, Some(entry));
     }
@@ -666,14 +697,17 @@ fn parse_commune_in_context(
 fn parse_commune_target(target: &str, winner_category: &FileCategory) -> FileKey {
     if let Some((cat, stem)) = target.split_once('/') {
         // Explicit `Sancti/12-26`, `Tempora/Epi1-0a`, `Commune/C2a-1`.
-        let category = match cat {
-            "Sancti" => FileCategory::Sancti,
-            "Tempora" => FileCategory::Tempora,
-            "Commune" => FileCategory::Commune,
-            "SanctiM" => FileCategory::SanctiM,
-            "SanctiOP" => FileCategory::SanctiOP,
-            "SanctiCist" => FileCategory::SanctiCist,
-            other => FileCategory::Other(other.to_string()),
+        // Match case-insensitively: corpus is inconsistent ("ex
+        // sancti/08-15" lowercase on Sancti/08-19bmv, "ex Sancti/08-15"
+        // uppercase on Sancti/08-20bmv).
+        let category = match cat.to_ascii_lowercase().as_str() {
+            "sancti" => FileCategory::Sancti,
+            "tempora" => FileCategory::Tempora,
+            "commune" => FileCategory::Commune,
+            "sanctim" => FileCategory::SanctiM,
+            "sanctiop" => FileCategory::SanctiOP,
+            "sancticist" => FileCategory::SanctiCist,
+            _ => FileCategory::Other(cat.to_string()),
         };
         return FileKey {
             category,

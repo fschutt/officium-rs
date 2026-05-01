@@ -136,18 +136,59 @@ def parse_mass_file(text: str) -> dict:
     if "Officium" in sections:
         out["officium"] = " ".join(s.strip() for s in sections.pop("Officium")).strip() or None
     if "Rank" in sections:
-        rank_body = [ln.strip() for ln in sections.pop("Rank") if ln.strip()
-                     and not (ln.strip().startswith("(") and ln.strip().endswith(")"))]
-        if rank_body:
-            parts = [p.strip() for p in rank_body[0].split(";;")]
-            if not out.get("officium") and parts and parts[0]:
-                out["officium"] = parts[0]
-            out["rank"] = parts[1] if len(parts) > 1 else None
+        rank_lines = sections.pop("Rank")
+        # Walk the body looking for variant blocks. Format:
+        #   <default>;;Class;;Rank;;Commune
+        #   (sed rubrica 1570 aut rubrica monastica)
+        #   <1570 variant>;;Class;;Rank;;Commune
+        #   (sed rubrica cisterciensis)
+        #   <cist variant>;;Class;;Rank;;Commune
+        # We capture the default (rank_num/rank/commune) plus the
+        # rubrica-1570 variant (rank_num_1570) when one exists.
+        default_parts = None
+        variant_1570_parts = None
+        current_label = None
+        for raw in rank_lines:
+            line = raw.strip()
+            if not line:
+                continue
+            if line.startswith("(") and line.endswith(")"):
+                inner = line[1:-1].strip().lower()
+                # `(sed rubrica X aut rubrica Y)` — pick the first
+                # rubrica name as the variant label.
+                current_label = inner
+                continue
+            parts = [p.strip() for p in line.split(";;")]
+            if current_label is None and default_parts is None:
+                default_parts = parts
+            elif current_label and "1570" in current_label and variant_1570_parts is None:
+                variant_1570_parts = parts
+            current_label = None
+        if default_parts:
+            if not out.get("officium") and default_parts[0]:
+                out["officium"] = default_parts[0]
+            out["rank"] = default_parts[1] if len(default_parts) > 1 else None
             try:
-                out["rank_num"] = float(parts[2]) if len(parts) > 2 and parts[2] else None
+                out["rank_num"] = (
+                    float(default_parts[2]) if len(default_parts) > 2 and default_parts[2] else None
+                )
             except ValueError:
                 out["rank_num"] = None
-            out["commune"] = parts[3] if len(parts) > 3 else None
+            out["commune"] = default_parts[3] if len(default_parts) > 3 else None
+        if variant_1570_parts:
+            try:
+                out["rank_num_1570"] = (
+                    float(variant_1570_parts[2])
+                    if len(variant_1570_parts) > 2 and variant_1570_parts[2]
+                    else None
+                )
+            except ValueError:
+                out["rank_num_1570"] = None
+            # Capture the 1570 commune too — for Bibiana etc. it's
+            # the same as default, but for some saints the commune
+            # changes between rubrics.
+            if len(variant_1570_parts) > 3 and variant_1570_parts[3]:
+                out["commune_1570"] = variant_1570_parts[3]
     # Keep all remaining sections as joined strings so the renderer can
     # treat `\n` as a soft separator (matching the upstream convention).
     out["sections"] = {

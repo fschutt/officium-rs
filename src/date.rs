@@ -930,3 +930,67 @@ mod phase2_tests {
         assert_eq!(getadvent(2024), 336);
     }
 }
+
+#[cfg(test)]
+mod leap_shift_tests {
+    //! Pin the Tridentine leap-year shift in `sday_pair` against
+    //! upstream Perl `Date.pm::get_sday`. The leap day is "kept" on
+    //! Feb 24 (kalendar key 02-29 — bissextile day, encoded as the
+    //! Vigil of Matthias); subsequent days shift down by one so saint
+    //! tables stay at their original distance from March 1.
+    use super::*;
+
+    #[test]
+    fn non_leap_passes_through() {
+        // Non-leap: no shift, ever.
+        for d in 1..=31 {
+            assert_eq!(sday_pair(2, d, 2025), (2, d));
+        }
+        for d in 1..=31 {
+            assert_eq!(sday_pair(3, d, 2025), (3, d));
+        }
+    }
+
+    #[test]
+    fn leap_february_shift() {
+        // Real Feb 1..23 in a leap year keep their key (no shift).
+        for d in 1..=23 {
+            assert_eq!(sday_pair(2, d, 2024), (2, d));
+        }
+        // Real Feb 24 (leap) → kalendar key 02-29 (the inserted
+        // bissextile day, encoded with the Vigil of Matthias).
+        assert_eq!(sday_pair(2, 24, 2024), (2, 29));
+        // Real Feb 25..29 (leap) shift DOWN by one: real Feb 25 ⇒
+        // kalendar 02-24 (Matthias's day), real Feb 26 ⇒ 02-25, etc.
+        assert_eq!(sday_pair(2, 25, 2024), (2, 24));
+        assert_eq!(sday_pair(2, 26, 2024), (2, 25));
+        assert_eq!(sday_pair(2, 27, 2024), (2, 26));
+        assert_eq!(sday_pair(2, 28, 2024), (2, 27));
+        assert_eq!(sday_pair(2, 29, 2024), (2, 28));
+    }
+
+    #[test]
+    fn non_february_unaffected_in_leap_year() {
+        assert_eq!(sday_pair(1, 24, 2024), (1, 24));
+        assert_eq!(sday_pair(3, 1, 2024), (3, 1));
+        assert_eq!(sday_pair(3, 25, 2024), (3, 25));
+    }
+
+    #[test]
+    fn century_leap_year_handling() {
+        // 2000: leap (divisible by 400).
+        assert_eq!(sday_pair(2, 24, 2000), (2, 29));
+        // 1900: NOT leap (divisible by 100, not 400).
+        assert_eq!(sday_pair(2, 24, 1900), (2, 24));
+        // 2100: NOT leap.
+        assert_eq!(sday_pair(2, 24, 2100), (2, 24));
+    }
+
+    #[test]
+    fn get_sday_string_round_trip() {
+        // The string-returning sibling stays in sync with sday_pair.
+        assert_eq!(get_sday(2, 24, 2024), "02-29");
+        assert_eq!(get_sday(2, 25, 2024), "02-24");
+        assert_eq!(get_sday(2, 24, 2025), "02-24");
+    }
+}

@@ -272,4 +272,46 @@ mod tests {
         let t = transfers_for(2026, "1570", 6, 15);
         assert!(t.is_empty());
     }
+
+    #[test]
+    fn leap_year_uses_next_letter_for_jan_feb23() {
+        // 2024 (leap): Easter = March 31, post-leap Sunday letter = 'f',
+        // pre-leap-day letter = 'g'. The file `g.txt` has the entry
+        // `01-19=01-14~01-19;;1570` (Hilarius transferred to Jan 19);
+        // without the leap-year shift this rule wouldn't fire because
+        // the regular letter file (f.txt) doesn't include it.
+        let t = transfers_for(2024, "1570", 1, 19);
+        assert!(!t.is_empty(), "expected Hilarius transfer to fire in 2024");
+        assert_eq!(t[0].main, "01-14");
+    }
+
+    #[test]
+    fn leap_year_post_leap_dates_use_post_leap_letter() {
+        // 2024 March 25 is Holy Monday (Easter March 31 = letter f);
+        // f.txt's transfer entry `04-08=03-25;;` (no rubric tag = all)
+        // → Annunciation moved to April 8 in 2024.
+        let t = transfers_for(2024, "1570", 4, 8);
+        assert!(!t.is_empty(), "expected Annunciation transfer to April 8");
+        assert_eq!(t[0].main, "03-25");
+    }
+
+    #[test]
+    fn stem_transferred_away_fires_on_03_25_when_easter_march_31() {
+        // 2024: 03-25 native Annunciation is moved to 04-08 — the
+        // native date should report itself as transferred away.
+        assert!(stem_transferred_away(2024, "1570", 3, 25));
+    }
+
+    #[test]
+    fn stem_transferred_away_quiet_for_unaffected_date() {
+        // 2024 June 15: no transfer entries point to or from this date.
+        assert!(!stem_transferred_away(2024, "1570", 6, 15));
+    }
+
+    #[test]
+    fn stem_transferred_away_quiet_in_year_without_clash() {
+        // 2025: Easter April 20, no Annunciation transfer needed —
+        // the 03-25 stem stays on its native date.
+        assert!(!stem_transferred_away(2025, "1570", 3, 25));
+    }
 }

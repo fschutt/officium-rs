@@ -3174,4 +3174,86 @@ mod tests {
         );
         assert!(!intro.contains("&Gloria"), "literal &Gloria should be gone");
     }
+
+    // ─── Perl-substitution helper tests ───────────────────────────
+
+    #[test]
+    fn perl_sub_capture_group_with_dollar1_inserts_suffix() {
+        // Used by Commune/C1v's `[Oratio pro Evangelistae]`:
+        //   `s/(Apóstoli tui)/$1 et Evangelístæ/`
+        // splices "et Evangelístæ" after "Apóstoli tui" so the
+        // Vigil-of-Matthew Oratio reads "Apostle and Evangelist".
+        let body = "ut beáti N. Apóstoli tui solemnitas...";
+        let out =
+            apply_perl_substitution(body, "s/(Apóstoli tui)/$1 et Evangelístæ/")
+                .unwrap();
+        assert_eq!(out, "ut beáti N. Apóstoli tui et Evangelístæ solemnitas...");
+    }
+
+    #[test]
+    fn perl_sub_pattern_not_found_returns_original_text() {
+        let body = "no such phrase here";
+        let out =
+            apply_perl_substitution(body, "s/(Apóstoli tui)/$1 et Evangelístæ/")
+                .unwrap();
+        assert_eq!(out, body);
+    }
+
+    #[test]
+    fn perl_sub_literal_replace_no_capture_group() {
+        let body = "Foo bar baz";
+        let out = apply_perl_substitution(body, "s/bar/qux/").unwrap();
+        assert_eq!(out, "Foo qux baz");
+    }
+
+    #[test]
+    fn perl_sub_rejects_unsupported_metachars() {
+        // `?` is a regex metacharacter we don't model; bail.
+        assert!(apply_perl_substitution("text", "s/a?/x/").is_none());
+    }
+
+    // ─── Tempora ferial → Sunday fallback tests ────────────────────
+
+    #[test]
+    fn tempora_feria_fallback_strips_feriat_suffix() {
+        let key = FileKey {
+            category: FileCategory::Tempora,
+            stem: "Pasc2-3Feriat".into(),
+        };
+        let fallback = tempora_feria_sunday_fallback(&key)
+            .expect("Pasc2-3Feriat should fall back to Pasc2 Sunday");
+        assert_eq!(fallback.stem, "Pasc2-0");
+    }
+
+    #[test]
+    fn tempora_feria_fallback_strips_feria_suffix() {
+        let key = FileKey {
+            category: FileCategory::Tempora,
+            stem: "Pasc2-3Feria".into(),
+        };
+        let fallback = tempora_feria_sunday_fallback(&key)
+            .expect("Pasc2-3Feria should fall back to Pasc2 Sunday");
+        assert_eq!(fallback.stem, "Pasc2-0");
+    }
+
+    #[test]
+    fn tempora_feria_fallback_strips_single_letter_suffix() {
+        // Adv1-1o (Tridentine redirect form) → Adv1-0 Sunday.
+        let key = FileKey {
+            category: FileCategory::Tempora,
+            stem: "Adv1-1o".into(),
+        };
+        let fallback = tempora_feria_sunday_fallback(&key).unwrap();
+        assert_eq!(fallback.stem, "Adv1-0");
+    }
+
+    #[test]
+    fn tempora_feria_fallback_skips_sunday() {
+        // dow 0 should not produce a fallback.
+        let key = FileKey {
+            category: FileCategory::Tempora,
+            stem: "Adv1-0".into(),
+        };
+        assert!(tempora_feria_sunday_fallback(&key).is_none());
+    }
 }

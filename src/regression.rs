@@ -1853,4 +1853,71 @@ oratio body
         let s = match_score(a, b);
         assert!(s > 0.5, "got {s}");
     }
+
+    // ─── Placeholder + Perl-bug equivalence tests ─────────────────
+
+    #[test]
+    fn placeholder_introitus_missing_normalises_to_empty() {
+        // Perl emits `Introitus missing!` when a winner file has no
+        // [Introitus]. After normalisation this becomes
+        // "introitusmissing"; strip_perl_rubrics should reduce it to
+        // empty so the comparator pairs it with Rust's blank.
+        let normed = "introitusmissing";
+        let stripped = strip_perl_rubrics(normed, "Introitus");
+        assert!(stripped.is_empty(), "got {stripped:?}");
+    }
+
+    #[test]
+    fn placeholder_lectio_missing_with_deo_gratias_tail() {
+        // After Lectio Perl appends "Deo gratias" (Lector response).
+        let normed = "lectiomissingdeogratias";
+        let stripped = strip_perl_rubrics(normed, "Lectio");
+        assert!(stripped.is_empty(), "got {stripped:?}");
+    }
+
+    #[test]
+    fn placeholder_evangelium_missing_with_responses() {
+        // Evangelium's closing responses are "Laus tibi Christe" and
+        // "Per evangelica dicta..." — both should be tolerated as
+        // tails after the missing-marker.
+        for normed in [
+            "evangeliummissinglaustibichristes",
+            "evangeliummissingperevangelicadictadeleanturnostradelicta",
+            "evangeliummissinglaustibichristesperevangelicadictadeleanturnostradelicta",
+        ] {
+            let stripped = strip_perl_rubrics(normed, "Evangelium");
+            assert!(stripped.is_empty(), "expected empty, got {stripped:?}");
+        }
+    }
+
+    #[test]
+    fn placeholder_only_fires_for_exact_section_marker() {
+        // Section name mismatch: Lectio placeholder shouldn't be
+        // stripped when comparing the Communio cell.
+        let normed = "lectiomissing";
+        let stripped = strip_perl_rubrics(normed, "Communio");
+        assert_eq!(stripped, normed);
+    }
+
+    #[test]
+    fn perl_bug_pent01_introit_treated_as_match() {
+        // Trinity Sunday Pent01-0 [Introitus] crashes upstream with
+        // "Cannot resolve too deeply nested Hashes". Rust emits the
+        // correct Pent01-0r body. The comparator substitutes Rust's
+        // text for the Perl error stub so the cell reads as Match.
+        let rust_body = "v. Benedícta sit sancta Trínitas atque indivísa Únitas...";
+        let perl_html = "\n<br/>\nCannot resolve too deeply nested Hashes<br/>\n";
+        let status = compare_section_named(rust_body, perl_html, "Introitus");
+        assert_eq!(status, SectionStatus::Match);
+    }
+
+    #[test]
+    fn perl_bug_does_not_swallow_genuine_differences() {
+        // When Perl renders normal content, the comparator must
+        // continue to flag genuine divergences.
+        let rust_body = "totally different content";
+        let perl_html = "<br/>Normal Latin prayer body</br>";
+        let status = compare_section_named(rust_body, perl_html, "Oratio");
+        assert!(matches!(status, SectionStatus::Differ), "got {status:?}");
+    }
 }

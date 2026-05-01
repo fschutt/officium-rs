@@ -28,6 +28,16 @@ use unicode_normalization::UnicodeNormalization;
 /// in the upstream corpus (Sancti → Commune → another Commune).
 const MAX_AT_HOPS: u8 = 4;
 
+// Active rubric for `eval_simple_conditional`'s layer-aware
+// dispatch. Set at the top of `mass_propers` from `office.rubric`
+// and read by the conditional evaluator (which is called from many
+// shared body-rewrite helpers — threading explicit parameters
+// through every call site would be invasive).
+thread_local! {
+    static ACTIVE_RUBRIC: std::cell::Cell<crate::divinum_officium::core::Rubric> =
+        const { std::cell::Cell::new(crate::divinum_officium::core::Rubric::Tridentine1570) };
+}
+
 /// Public entry point. For each Mass section, fetch the proper from
 /// the winner's MassFile, falling through to the commune file when
 /// the section is absent or carries an `@`-reference. Macro tokens
@@ -35,6 +45,9 @@ const MAX_AT_HOPS: u8 = 4;
 /// expanded against `prayers::lookup` so the regression comparator
 /// sees the same text the Perl renderer produces.
 pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
+    // Stash the active rubric for layer-aware conditional
+    // evaluation in body / name substitution helpers.
+    ACTIVE_RUBRIC.with(|r| r.set(office.rubric));
     // Multi-Mass days: Christmas (Sancti/12-25 → m1/m2/m3), Requiem
     // votives, etc. Mirror Perl `precedence()` line 1604:
     //   `$winner =~ s/\.txt/m$missanumber\.txt/i if -e ...`
@@ -826,6 +839,61 @@ fn resolve_name_for_section(name_body: &str, section: &str) -> String {
     override_form.unwrap_or(default)
 }
 
+/// True when a `(rubrica X)` predicate matches the active rubric.
+/// Each Rubric variant has its own set of accepting tokens — the
+/// active rubric's predicates evaluate TRUE, all others FALSE.
+///
+/// Patterns observed in the corpus and the Rubric they "belong to":
+///   - `tridentina`, `1570`        → Tridentine1570
+///   - `1617`                      → Monastic 1617 (we treat as Tridentine variant)
+///   - `divino`, `da`              → DivinoAfflatu1911
+///   - `1955`                      → Reduced1955
+///   - `1960`, `1963`, `196`, `196*` → Rubrics1960
+///   - `monastica`                 → Monastic
+///   - `cisterciensis`, `altovadensis`, `innovata`, `summorum pontificum`,
+///     `newcal`                    → not Roman / out of scope
+fn rubrica_predicate_matches(
+    active: crate::divinum_officium::core::Rubric,
+    predicate: &str,
+) -> bool {
+    use crate::divinum_officium::core::Rubric;
+    let pred_lc = predicate.trim().to_ascii_lowercase();
+    let pred = pred_lc.as_str();
+    // Any pre-Tridentine baseline names match Tridentine 1570
+    let is_tridentine_token = matches!(pred, "tridentina" | "1570");
+    // Tridentine 1910 considers itself post-1570 / pre-DA. None of the
+    // existing tokens specifically name "1910" in the corpus — `(sed
+    // rubrica 1570)` shouldn't fire under 1910, so 1910 evaluates ALL
+    // these tokens as FALSE except its own (which doesn't exist in the
+    // corpus today).
+    let is_divino_token = matches!(pred, "divino" | "da");
+    let is_1955_token = matches!(pred, "1955");
+    let is_1960_token = matches!(pred, "1960" | "1963" | "1966")
+        || pred.starts_with("196");
+    let is_monastic_token = matches!(pred, "monastica" | "1617");
+    // Out-of-scope tokens never fire.
+    let _is_oos = matches!(
+        pred,
+        "innovata"
+            | "innovatis"
+            | "cisterciensis"
+            | "altovadensis"
+            | "summorum pontificum"
+            | "newcal"
+    );
+    match active {
+        Rubric::Tridentine1570 => is_tridentine_token,
+        // Tridentine 1910: a kalendar-only update on top of 1570
+        // rubric rules. Most files don't have a "1910" predicate, so
+        // every conditional evaluates FALSE — the default form wins.
+        Rubric::Tridentine1910 => false,
+        Rubric::DivinoAfflatu1911 => is_divino_token,
+        Rubric::Reduced1955 => is_1955_token || is_divino_token,
+        Rubric::Rubrics1960 => is_1960_token,
+        Rubric::Monastic => is_tridentine_token || is_monastic_token,
+    }
+}
+
 /// Reduced 1570-mode conditional evaluator for [Name] bodies and
 /// other inline rubric directives. Returns `true` when the
 /// conditional applies under Tridentine 1570. Recognises:
@@ -887,19 +955,9 @@ fn eval_alt_1570(alt: &str) -> bool {
             full_pred.push(' ');
             full_pred.push_str(tokens.next().unwrap());
         }
+        let active = ACTIVE_RUBRIC.with(|r| r.get());
         let truth = match subject {
-            "rubrica" | "rubricis" => match full_pred.as_str() {
-                // 1570 baseline matches.
-                "tridentina" | "1570" => true,
-                // Post-1570 reforms — false under 1570.
-                "1955" | "1960" | "1963" | "1966" | "1996" | "1617"
-                | "monastica" | "innovata" | "innovatis"
-                | "cisterciensis" | "altovadensis"
-                | "summorum pontificum" | "newcal" => false,
-                p if p.starts_with("196") => false,
-                p if p.starts_with("194") => false,
-                _ => false,
-            },
+            "rubrica" | "rubricis" => rubrica_predicate_matches(active, &full_pred),
             "communi" => match full_pred.as_str() {
                 "summorum pontificum" => false,
                 _ => false,

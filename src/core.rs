@@ -107,6 +107,11 @@ pub struct OfficeInput {
 /// `mass_propers()` consumes it.
 #[derive(Debug, Clone)]
 pub struct OfficeOutput {
+    /// The calendar date this office applies to (carried through
+    /// from `OfficeInput`). Needed by Mass-side rendering for
+    /// date-keyed special cases like the Pope-coronation
+    /// anniversary (Commune/Coronatio fires on May 18).
+    pub date: Date,
     pub winner: FileKey,
     pub commemoratio: Option<FileKey>,
     pub scriptura: Option<FileKey>,

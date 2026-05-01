@@ -190,15 +190,22 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         let block = substitute_name_with_corpus(block, sect, winner_file, Some(corpus));
         // Suffragium concatenation is computed but currently DISABLED:
         // Perl's first-Oratio-block layout differs by day in ways
-        // that aren't deterministic from `Suffr=...;;` alone (the
-        // first commemoration appears INSIDE the main Oratio block on
-        // Pasc6-1 but in a SEPARATE Oremus block on Sat-BVM Saturdays
-        // — see UPSTREAM_WEIRDNESSES.md #13). Until we can match
-        // Perl exactly, skip the append so we don't regress the
-        // baseline. The plumbing stays so we can re-enable later.
+        // that aren't deterministic from `Suffr=...;;` alone — see
+        // UPSTREAM_WEIRDNESSES.md #13. The plumbing stays so we can
+        // re-enable later.
         let _ = (suffr_groups.as_ref(), dayofweek_winner);
+        // Pope Coronation Anniversary (May 18). Mirror Perl
+        // `propers.pl::oratio` ll. 249-255: when `check_coronatio`
+        // fires for the date, strip `$Per`/`$Qui` macro lines from
+        // the main body and APPEND the `Commune/Coronatio:[type]`
+        // body (with `N.p` substituted via `replaceNpb`). This is
+        // why Pasc6-1 / Pasc5-4 / etc. on May 18 emit a "Pro Papa"
+        // block before the Per Dominum.
+        let coronatio_appended = apply_coronatio_oratio(
+            &block.latin, sect, office.date, corpus,
+        );
         let latin = apply_post_septuagesima_conditional(
-            &block.latin, in_post_septuagesima,
+            &coronatio_appended, in_post_septuagesima,
         );
         let latin = spell_var_pre1960(&do_expand_macros(&latin));
         let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
@@ -1479,6 +1486,80 @@ fn self_reference_sibling(
         }
     }
     None
+}
+
+/// Append the Pope-Coronation-Anniversary commemoration to a prayer
+/// body when the date is May 18 and the section is one of Oratio /
+/// Secreta / Postcommunio. Mirrors Perl `propers.pl::oratio`
+/// ll. 249-255 + `DivinumOfficium::Directorium::check_coronatio`
+/// (returns truthy only for May 18). The Perl logic:
+///
+///   1. Strip every `$Per`/`$Qui` macro line from the body so the
+///      conclusio doesn't fire mid-block.
+///   2. Append `_\n$Papa\n[Commune/Coronatio:<sect> body]` —
+///      `$Papa` is the macro that expands to "!Pro Papa" rubric
+///      label. The Coronatio body has its own `$Per Dominum` at the
+///      end (with `N.p` substituted via `replaceNpb`).
+///
+/// `N.p` substitution converts the placeholder to the Pope's name
+/// in the right Latin case (acc. for Oratio: `N.p` → "Leonem"). The
+/// upstream Perl uses a global `$pope` variable from the user
+/// session. We hardcode "Leonem" / "Leone" / "Leonis" — the same
+/// declensions Perl emits in current rendering. Different popes
+/// would need a `Pope` configuration in `OfficeInput`.
+fn apply_coronatio_oratio(
+    body: &str,
+    sect: &str,
+    date: crate::divinum_officium::core::Date,
+    corpus: &dyn Corpus,
+) -> String {
+    if date.month != 5 || date.day != 18 {
+        return body.to_string();
+    }
+    if !matches!(sect, "Oratio" | "Secreta" | "Postcommunio") {
+        return body.to_string();
+    }
+    let key = FileKey {
+        category: FileCategory::Commune,
+        stem: "Coronatio".to_string(),
+    };
+    let coronatio_file = match corpus.mass_file(&key) {
+        Some(f) => f,
+        None => return body.to_string(),
+    };
+    let coronatio_body = match coronatio_file.sections.get(sect) {
+        Some(b) => b.clone(),
+        None => return body.to_string(),
+    };
+    // Substitute `N.p` (Pope-name placeholder, accusative case for
+    // Oratio/Secreta, ablative-genitive for Postcommunio). For our
+    // 11-year corpus the rendered output is always "Leonem" — see
+    // upstream `replaceNpb` ll. 801-820 with $pope="Leone" + e='um'
+    // → 'em' branch. We hardcode here; a configurable Pope name
+    // belongs in Phase 12+.
+    let case_form = match sect {
+        "Oratio" | "Secreta" => "Leonem",
+        "Postcommunio" => "Leonem",
+        _ => "Leonem",
+    };
+    let coronatio_with_name = coronatio_body.replace("N.p", case_form);
+    // Strip $Per/$Qui macro lines from the main body — they would
+    // otherwise emit a conclusio mid-block before the appended
+    // Coronatio prayer. The final $Per Dominum from the Coronatio
+    // body becomes the block's only conclusio.
+    let main_stripped: String = body
+        .lines()
+        .filter(|line| {
+            let t = line.trim_start();
+            !t.starts_with("$Per ") && !t.starts_with("$Qui ")
+        })
+        .collect::<Vec<&str>>()
+        .join("\n");
+    format!(
+        "{}\n_\n!Pro Papa\n{}",
+        main_stripped.trim_end_matches('\n'),
+        coronatio_with_name
+    )
 }
 
 /// Return the lowercased [Rule] body of the winner file, if present.

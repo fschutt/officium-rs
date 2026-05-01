@@ -53,6 +53,7 @@ pub fn compute_office(input: &OfficeInput, corpus: &dyn Corpus) -> OfficeOutput 
     let rule = resolve_rule_lines(&occ, corpus);
 
     OfficeOutput {
+        date: input.date,
         winner: occ.winner.clone(),
         commemoratio: occ.commemoratio.clone(),
         scriptura: occ.scriptura.clone(),

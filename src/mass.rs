@@ -21,6 +21,7 @@ use crate::divinum_officium::core::{
 };
 use crate::divinum_officium::corpus::Corpus;
 use crate::divinum_officium::missa::MassFile;
+use crate::divinum_officium::prayers;
 
 /// Maximum `@`-chain hops. Three is enough for every multi-hop case
 /// in the upstream corpus (Sancti → Commune → another Commune).
@@ -28,7 +29,10 @@ const MAX_AT_HOPS: u8 = 4;
 
 /// Public entry point. For each Mass section, fetch the proper from
 /// the winner's MassFile, falling through to the commune file when
-/// the section is absent or carries an `@`-reference.
+/// the section is absent or carries an `@`-reference. Macro tokens
+/// (`&Gloria`, `$Per Dominum`, …) in the resulting bodies are
+/// expanded against `prayers::lookup` so the regression comparator
+/// sees the same text the Perl renderer produces.
 pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
     // Multi-Mass days: Christmas (Sancti/12-25 → m1/m2/m3), Requiem
     // votives, etc. Mirror Perl `precedence()` line 1604:
@@ -38,23 +42,30 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
     let resolved = resolve_multi_mass(office, corpus);
 
     MassPropers {
-        introitus:    proper_block(&resolved, "Introitus",    corpus),
-        oratio:       proper_block(&resolved, "Oratio",       corpus),
-        lectio:       proper_block(&resolved, "Lectio",       corpus),
-        graduale:     proper_block(&resolved, "Graduale",     corpus),
-        tractus:      proper_block(&resolved, "Tractus",      corpus),
-        sequentia:    proper_block(&resolved, "Sequentia",    corpus),
-        evangelium:   proper_block(&resolved, "Evangelium",   corpus),
-        offertorium:  proper_block(&resolved, "Offertorium",  corpus),
-        secreta:      proper_block(&resolved, "Secreta",      corpus),
-        prefatio:     proper_block(&resolved, "Prefatio",     corpus),
-        communio:     proper_block(&resolved, "Communio",     corpus),
-        postcommunio: proper_block(&resolved, "Postcommunio", corpus),
+        introitus:    expanded(proper_block(&resolved, "Introitus",    corpus)),
+        oratio:       expanded(proper_block(&resolved, "Oratio",       corpus)),
+        lectio:       expanded(proper_block(&resolved, "Lectio",       corpus)),
+        graduale:     expanded(proper_block(&resolved, "Graduale",     corpus)),
+        tractus:      expanded(proper_block(&resolved, "Tractus",      corpus)),
+        sequentia:    expanded(proper_block(&resolved, "Sequentia",    corpus)),
+        evangelium:   expanded(proper_block(&resolved, "Evangelium",   corpus)),
+        offertorium:  expanded(proper_block(&resolved, "Offertorium",  corpus)),
+        secreta:      expanded(proper_block(&resolved, "Secreta",      corpus)),
+        prefatio:     expanded(proper_block(&resolved, "Prefatio",     corpus)),
+        communio:     expanded(proper_block(&resolved, "Communio",     corpus)),
+        postcommunio: expanded(proper_block(&resolved, "Postcommunio", corpus)),
         // Phase 6+ — chase `office.commemoratio` through the same
         // resolver to populate per-commemoration Oratio/Secreta/
         // Postcommunio.
         commemorations: vec![],
     }
+}
+
+fn expanded(b: Option<ProperBlock>) -> Option<ProperBlock> {
+    b.map(|mut b| {
+        b.latin = expand_macros(&b.latin);
+        b
+    })
 }
 
 /// If the winner's MassFile has no proper-text sections (only `Rule`
@@ -228,6 +239,191 @@ fn chase_at_reference(
         source: key.clone(),
         via_commune: via_commune || matches!(key.category, FileCategory::Commune),
     })
+}
+
+// ─── Macro expansion (Phase 6.5) ─────────────────────────────────────
+//
+// Proper bodies routinely embed `&Macro` and `$Macro` tokens that the
+// upstream renderer interpolates by looking up the corresponding
+// `[Macro]` block in `Latin/Ordo/Prayers.txt`. Examples:
+//
+//     Introit body…
+//     &Gloria                  ⇒ Glória Patri, et Fílio, …
+//     v. (Introit antiphon)
+//
+//     Oratio body…
+//     $Per Dominum             ⇒ Per Dóminum nostrum Jesum Christum, …
+//
+// The Rust mass_propers() pipeline ships these tokens as literals (it
+// simply joins the upstream files); the comparator then sees a
+// `&Gloria` literal on the Rust side vs an expanded text on the Perl
+// side, registering as Differ. Expanding the macros at this layer
+// brings shape-parity for the regression harness (Phase 6.5) without
+// the need to teach the comparator about the expansion semantics.
+//
+// Expansion rules — mirror the upstream Perl:
+//
+//   * `&Identifier` — alphanumeric + underscore; underscore → space
+//     for the lookup name (`&Pater_noster` ⇒ `[Pater noster]`).
+//   * `$Phrase`     — alphanumeric + space; up to 4 words of phrase.
+//     Longest-match wins so that `$Per Dominum eiusdem` is preferred
+//     over `$Per` or `$Per Dominum`.
+//   * Lookup is case-insensitive (`&pater_noster` ⇒ `[Pater noster]`).
+//   * Expansion is recursive — a macro body can itself contain macro
+//     tokens; we cap recursion at 4 hops (DefunctV invokes
+//     `&Dominus_vobiscum` and `&Benedicamus_Domino`, etc.).
+//   * Unknown macro tokens (`&NoSuchMacro`) pass through unchanged
+//     — the comparator can flag them.
+//
+// We do NOT attempt to interpret the leading `r./R./v./V.` line sigils
+// from inside expanded bodies, nor strip `_` line markers. The
+// regression `normalize()` already normalises those into oblivion;
+// keeping them visible aids the per-day diff dump.
+
+const MAX_MACRO_HOPS: u8 = 4;
+
+/// Expand `&`/`$` macros in a proper body using the production
+/// Prayers.txt (`prayers::lookup_ci`). The default callsite for the
+/// regression harness; see `expand_macros_with_lookup` for tests that
+/// want to inject a synthetic macro table.
+pub fn expand_macros(text: &str) -> String {
+    expand_macros_with_lookup(text, &|name| prayers::lookup_ci(name).map(str::to_string), 0)
+}
+
+/// Internal entry point parameterised by lookup function. Lets unit
+/// tests pin behaviour without depending on the bundled Prayers.txt.
+fn expand_macros_with_lookup(
+    text: &str,
+    lookup: &dyn Fn(&str) -> Option<String>,
+    depth: u8,
+) -> String {
+    if depth > MAX_MACRO_HOPS {
+        return text.to_string();
+    }
+    let chars: Vec<char> = text.chars().collect();
+    let mut out = String::with_capacity(text.len());
+    let mut i = 0;
+    while i < chars.len() {
+        let c = chars[i];
+        if (c == '&' || c == '$') && peek_alpha(&chars, i + 1) {
+            if let Some((expansion, consumed)) = try_expand(c, &chars, i + 1, lookup) {
+                let inner = expand_macros_with_lookup(&expansion, lookup, depth + 1);
+                out.push_str(&inner);
+                i += 1 + consumed;
+                continue;
+            }
+            // Unknown macro — emit the prefix and continue past it.
+            out.push(c);
+            i += 1;
+            continue;
+        }
+        out.push(c);
+        i += 1;
+    }
+    out
+}
+
+fn peek_alpha(chars: &[char], idx: usize) -> bool {
+    chars.get(idx).map_or(false, |c| c.is_ascii_alphabetic())
+}
+
+/// Try to consume a macro starting at `start` (the char after the
+/// `&`/`$` sigil). Returns `(body, chars_consumed)` on hit.
+///
+/// `&` macros: alphanumeric + underscore identifier (single token),
+/// underscore → space.
+///
+/// `$` macros: up to 4 space-separated words, longest match wins.
+/// Words are alphabetic only — digits/punctuation terminate the run.
+fn try_expand(
+    sigil: char,
+    chars: &[char],
+    start: usize,
+    lookup: &dyn Fn(&str) -> Option<String>,
+) -> Option<(String, usize)> {
+    if sigil == '&' {
+        let (name_raw, consumed) = read_amp_identifier(chars, start);
+        if name_raw.is_empty() {
+            return None;
+        }
+        let name = name_raw.replace('_', " ");
+        if let Some(body) = case_insensitive_lookup(&name, lookup) {
+            return Some((body, consumed));
+        }
+        return None;
+    }
+    // `$` form — collect candidate phrases of decreasing length.
+    let phrases = read_dollar_phrases(chars, start, /* max_words */ 4);
+    // Try longest first.
+    for (phrase, consumed) in phrases.into_iter().rev() {
+        if let Some(body) = case_insensitive_lookup(&phrase, lookup) {
+            return Some((body, consumed));
+        }
+    }
+    None
+}
+
+fn read_amp_identifier(chars: &[char], start: usize) -> (String, usize) {
+    let mut s = String::new();
+    let mut i = start;
+    while i < chars.len() {
+        let c = chars[i];
+        if c.is_ascii_alphanumeric() || c == '_' {
+            s.push(c);
+            i += 1;
+        } else {
+            break;
+        }
+    }
+    (s, i - start)
+}
+
+/// Returns `(phrase, consumed)` pairs for 1..=max_words consecutive
+/// alphabetic words separated by single ASCII spaces. Multi-word
+/// phrases include trailing space cost in `consumed`.
+fn read_dollar_phrases(chars: &[char], start: usize, max_words: usize) -> Vec<(String, usize)> {
+    let mut out = Vec::new();
+    let mut i = start;
+    let mut words = 0usize;
+    let mut phrase = String::new();
+    while i < chars.len() && words < max_words {
+        // Read an alphabetic word.
+        let word_start = i;
+        let mut had_alpha = false;
+        while i < chars.len() && chars[i].is_ascii_alphabetic() {
+            phrase.push(chars[i]);
+            i += 1;
+            had_alpha = true;
+        }
+        if !had_alpha {
+            break;
+        }
+        words += 1;
+        out.push((phrase.clone(), i - start));
+        // Look for a single space (not multiple) followed by an
+        // alphabetic char — keep extending the phrase.
+        if i + 1 < chars.len()
+            && chars[i] == ' '
+            && chars[i + 1].is_ascii_alphabetic()
+        {
+            phrase.push(' ');
+            i += 1;
+        } else {
+            break;
+        }
+        let _ = word_start; // silence unused
+    }
+    out
+}
+
+fn case_insensitive_lookup(
+    name: &str,
+    lookup: &dyn Fn(&str) -> Option<String>,
+) -> Option<String> {
+    // `lookup` is responsible for case folding — the production callsite
+    // wires through `prayers::lookup_ci`, and unit-test callsites wrap
+    // their synthetic table similarly.
+    lookup(name)
 }
 
 #[cfg(test)]
@@ -484,5 +680,122 @@ mod tests {
             p.introitus.as_ref().unwrap().source.render(),
             o.winner.render()
         );
+    }
+
+    // ─── Macro expansion tests (Phase 6.5) ───────────────────────────
+
+    /// Mirror `prayers::lookup_ci` — case-insensitive table lookup.
+    fn synthetic_lookup(name: &str) -> Option<String> {
+        let entries: &[(&str, &str)] = &[
+            ("gloria", "Glória Patri, et Fílio, et Spirítui Sancto.\nSicut erat in princípio."),
+            ("per dominum", "Per Dóminum nostrum Jesum Christum.\nAmen."),
+            ("per dominum eiusdem", "Per Dóminum nostrum Jesum Christum, ejúsdem.\nAmen."),
+            ("pater noster", "Pater noster, qui es in cælis."),
+            ("dominus vobiscum", "Dóminus vobíscum.\nEt cum spíritu tuo."),
+            ("deep", "&Inner"),
+            ("inner", "EXPANDED"),
+        ];
+        let key = name.to_lowercase();
+        entries.iter().find_map(|(k, v)| (*k == key).then_some(v.to_string()))
+    }
+
+    fn expand(text: &str) -> String {
+        expand_macros_with_lookup(text, &|n| synthetic_lookup(n), 0)
+    }
+
+    #[test]
+    fn expand_amp_gloria() {
+        let s = expand("Body before\n&Gloria\nBody after");
+        assert!(s.contains("Glória Patri"), "got: {s}");
+        assert!(s.contains("Body before"));
+        assert!(s.contains("Body after"));
+        assert!(!s.contains("&Gloria"));
+    }
+
+    #[test]
+    fn expand_dollar_per_dominum() {
+        let s = expand("Oratio body...\n$Per Dominum");
+        assert!(s.contains("Per Dóminum nostrum"), "got: {s}");
+        assert!(!s.contains("$Per Dominum"));
+    }
+
+    #[test]
+    fn expand_longest_match_wins() {
+        // `$Per Dominum eiusdem` should match the 3-word phrase, not
+        // the shorter `$Per Dominum`.
+        let s = expand("$Per Dominum eiusdem extra");
+        assert!(s.contains("ejúsdem"), "expected longer match, got: {s}");
+        // The trailing " extra" survives.
+        assert!(s.contains("extra"));
+    }
+
+    #[test]
+    fn expand_underscore_form() {
+        // `&Pater_noster` → `[Pater noster]`.
+        let s = expand("&Pater_noster\nMore");
+        assert!(s.contains("Pater noster, qui es"));
+        assert!(s.contains("More"));
+    }
+
+    #[test]
+    fn expand_case_insensitive() {
+        // `&pater_noster` (lowercase) — still finds [Pater noster].
+        let s = expand("&pater_noster end");
+        assert!(s.contains("Pater noster, qui es"), "got: {s}");
+    }
+
+    #[test]
+    fn expand_recursive() {
+        let s = expand("&Deep");
+        assert_eq!(s, "EXPANDED");
+    }
+
+    #[test]
+    fn expand_unknown_passes_through() {
+        let s = expand("nothing &Unknown $NotAPrayer here");
+        assert!(s.contains("&Unknown"));
+        assert!(s.contains("$NotAPrayer"));
+    }
+
+    #[test]
+    fn expand_no_macros_unchanged() {
+        let s = expand("plain text without sigils");
+        assert_eq!(s, "plain text without sigils");
+    }
+
+    #[test]
+    fn expand_amp_at_eol() {
+        // Practical case — `&Gloria` is alone on a line at end of an Introit.
+        let s = expand("Verse line.\n&Gloria");
+        assert!(s.starts_with("Verse line.\n"), "got: {s:?}");
+        assert!(s.contains("Glória Patri"));
+    }
+
+    #[test]
+    fn expand_real_gloria_macro_exists_in_corpus() {
+        // Smoke test against the actual bundled Prayers.txt — confirms
+        // the production lookup wires through.
+        let s = expand_macros("intro body\n&Gloria");
+        assert!(s.contains("Glória Patri"), "got: {s}");
+    }
+
+    #[test]
+    fn expand_real_per_dominum_in_corpus() {
+        let s = expand_macros("Oratio body $Per Dominum");
+        assert!(s.contains("Per Dóminum nostrum"), "got: {s}");
+        assert!(s.contains("vivit et regnat"));
+    }
+
+    #[test]
+    fn expanded_christmas_introitus_has_gloria_patri() {
+        // End-to-end: production pipeline expands the &Gloria at end
+        // of the Christmas In Nocte Introit.
+        let p = propers(2026, 12, 25);
+        let intro = p.introitus.expect("Introitus").latin;
+        assert!(
+            intro.contains("Glória Patri") || intro.contains("Gloria Patri"),
+            "Expanded Introit body should contain Glória Patri:\n{intro}"
+        );
+        assert!(!intro.contains("&Gloria"), "literal &Gloria should be gone");
     }
 }

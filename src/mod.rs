@@ -53,3 +53,11 @@ pub mod mass;
 // comparator. Used by the `year-sweep` binary to produce green/
 // yellow/red boards under `target/regression/`.
 pub mod regression;
+
+// Phase 6.5 — Mass-Ordinary prayer corpus (Prayers.txt). Holds the
+// `[Gloria]`, `[Per Dominum]`, `[Dominus vobiscum]`, … bodies that the
+// upstream renderer interpolates via `&Macro`/`$Macro` tokens. The
+// macro expander in `mass.rs` consumes this; the regression
+// comparator uses it to bring Rust output into shape parity with the
+// rendered Perl HTML.
+pub mod prayers;

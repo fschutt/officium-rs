@@ -40,8 +40,8 @@ use md2json2::divinum_officium::corpus::BundledCorpus;
 use md2json2::divinum_officium::mass::mass_propers;
 use md2json2::divinum_officium::precedence::compute_office;
 use md2json2::divinum_officium::regression::{
-    compare_day, explain_divergence, extract_perl_sections, normalize, DayReport,
-    DivergenceCategory, SectionStatus, PROPER_SECTIONS,
+    compare_day, explain_divergence, extract_perl_sections, normalize, strip_perl_rubrics,
+    DayReport, DivergenceCategory, SectionStatus, PROPER_SECTIONS,
 };
 
 const KNOWN_RUBRICS: &[(&str, Rubric)] = &[
@@ -651,6 +651,7 @@ fn render_day_diff(
         let p_raw = perl_sections.get(*sect).map(String::as_str).unwrap_or("");
         let r_norm = normalize(r_raw);
         let p_norm = normalize(p_raw);
+        let p_clean = strip_perl_rubrics(&p_norm, sect);
         let status = report
             .sections
             .iter()
@@ -661,46 +662,120 @@ fn render_day_diff(
         writeln!(&mut out, "## {sect} — {:?}", status).unwrap();
         writeln!(
             &mut out,
-            "    rust raw  ({:>5}b): {}",
+            "    rust raw   ({:>5}b): {}",
             r_raw.len(),
             excerpt(r_raw, 200)
         )
         .unwrap();
         writeln!(
             &mut out,
-            "    rust norm ({:>5}c): {}",
+            "    rust norm  ({:>5}c): {}",
             r_norm.chars().count(),
             excerpt(&r_norm, 200)
         )
         .unwrap();
         writeln!(
             &mut out,
-            "    perl raw  ({:>5}b): {}",
+            "    perl raw   ({:>5}b): {}",
             p_raw.len(),
             excerpt(p_raw, 200)
         )
         .unwrap();
         writeln!(
             &mut out,
-            "    perl norm ({:>5}c): {}",
+            "    perl norm  ({:>5}c): {}",
             p_norm.chars().count(),
             excerpt(&p_norm, 200)
         )
         .unwrap();
-        if matches!(status, SectionStatus::Differ) {
-            let div = explain_divergence(&r_norm, &p_norm);
+        // The clean form is what the comparator actually consults —
+        // surfaces it so a dump reader can compute the diff manually.
+        if p_clean != p_norm {
             writeln!(
                 &mut out,
-                "    diverge at rust char {} (matched {} char prefix)",
+                "    perl clean ({:>5}c): {}   (rubrics stripped)",
+                p_clean.chars().count(),
+                excerpt(&p_clean, 200)
+            )
+            .unwrap();
+        }
+        if matches!(status, SectionStatus::Differ) {
+            let div = explain_divergence(&r_norm, &p_clean);
+            writeln!(
+                &mut out,
+                "    diverge at rust char {} (matched {} char prefix vs cleaned perl)",
                 div.matched_prefix_len, div.matched_prefix_len
             )
             .unwrap();
             writeln!(&mut out, "      rust ctx: {}", excerpt(&div.rust_context, 80)).unwrap();
             writeln!(&mut out, "      perl ctx: {}", excerpt(&div.perl_context, 80)).unwrap();
+            // Word-level hint: split into normalised "words" of length
+            // 4-12 chars by sliding window. Helps when the divergence
+            // is a single substituted word (genetrice vs genitrice).
+            if let Some((rword, pword)) = first_diff_word(&r_norm, &p_clean) {
+                writeln!(&mut out, "      single-word diff: rust={rword:?} perl={pword:?}").unwrap();
+            }
         }
         writeln!(&mut out).unwrap();
     }
     out
+}
+
+/// Heuristic single-word divergence locator. Slides through the
+/// normalised strings looking for the smallest substituted run.
+/// Returns the diverging chars on each side (up to 24 chars), with
+/// some shared context trimmed so the user can eyeball the diff.
+/// Returns None when the two strings are equal or one is a strict
+/// prefix of the other.
+fn first_diff_word(rust: &str, perl: &str) -> Option<(String, String)> {
+    if rust == perl {
+        return None;
+    }
+    let rb: &[u8] = rust.as_bytes();
+    let pb: &[u8] = perl.as_bytes();
+    let common = rb.iter().zip(pb.iter()).take_while(|(a, b)| a == b).count();
+    // Walk forward until we re-sync (or hit end on either side).
+    // Try resyncs of length 1..16; the smallest one wins.
+    for resync_len in 4..=16 {
+        for k in (common + 1)..rust.chars().count().min(common + 64) {
+            // Position k bytes into rust; find a window of resync_len
+            // chars that occurs in perl after `common`.
+            let r_chars: Vec<char> = rust.chars().collect();
+            if k + resync_len > r_chars.len() {
+                break;
+            }
+            let needle: String = r_chars[k..k + resync_len].iter().collect();
+            let p_chars: Vec<char> = perl.chars().collect();
+            if let Some(p_pos) = subslice_find(&p_chars, &needle.chars().collect::<Vec<_>>(), common) {
+                let r_word: String = r_chars[common..k].iter().collect();
+                let p_word: String = p_chars[common..p_pos].iter().collect();
+                if r_word != p_word {
+                    return Some((excerpt(&r_word, 32), excerpt(&p_word, 32)));
+                }
+            }
+        }
+    }
+    // Could not re-sync — fall back to "rest of both" up to 24 chars.
+    let r_rest: String = rust.chars().skip(common).take(24).collect();
+    let p_rest: String = perl.chars().skip(common).take(24).collect();
+    if r_rest != p_rest {
+        Some((r_rest, p_rest))
+    } else {
+        None
+    }
+}
+
+fn subslice_find(haystack: &[char], needle: &[char], from: usize) -> Option<usize> {
+    if needle.is_empty() || haystack.len() < needle.len() {
+        return None;
+    }
+    let max = haystack.len() - needle.len();
+    for i in from..=max {
+        if &haystack[i..i + needle.len()] == needle {
+            return Some(i);
+        }
+    }
+    None
 }
 
 fn rust_block<'a>(p: &'a MassPropers, name: &str) -> Option<&'a md2json2::divinum_officium::core::ProperBlock> {

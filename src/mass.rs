@@ -510,6 +510,7 @@ fn apply_post_septuagesima_conditional(text: &str, post_septuagesima: bool) -> S
 /// Replace a trailing "Allelúja[.,]?" or "alleluja[.,]?" with `alt`,
 /// keeping any leading punctuation. If no Alleluja is found, the
 /// alternate is appended.
+#[allow(dead_code)]
 fn swap_trailing_alleluja(line: &str, alt: &str) -> String {
     use unicode_normalization::UnicodeNormalization;
     let folded: String = line
@@ -1319,6 +1320,7 @@ fn winner_has_oratio_dominica(winner_file: &MassFile) -> bool {
 /// — single `!` followed by a SPACE then Latin text. Citation
 /// headers `!Exod 15:27` (no space after `!`, immediately
 /// alphanumeric) stay.
+#[allow(dead_code)]
 fn is_inline_latin_rubric(line: &str) -> bool {
     let t = line.trim_start();
     if let Some(rest) = t.strip_prefix('!') {
@@ -1654,6 +1656,7 @@ fn dayofweek_from_winner_stem(stem: &str) -> u32 {
 /// label and Papa body... actually the rendered HTML strips main's
 /// Per Dominum. Need to delconclusio the main body too. See
 /// UPSTREAM_WEIRDNESSES.md #13.
+#[allow(dead_code)]
 fn apply_suffragium(
     body: &str,
     sect: &str,
@@ -1720,6 +1723,7 @@ fn apply_suffragium(
 /// looking for the last line starting with `$`. The returned
 /// conclusio includes the `$` token (so a later macro pass expands
 /// it).
+#[allow(dead_code)]
 fn strip_trailing_dollar_line(body: &str) -> (String, Option<String>) {
     let mut lines: Vec<&str> = body.lines().collect();
     while let Some(last) = lines.last() {

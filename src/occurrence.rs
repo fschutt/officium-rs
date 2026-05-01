@@ -90,6 +90,20 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     // the post-1911 "Sancta Familia"). The `-tt` and other suffixes
     // map to other rubric layers; we only chase `-a` for 1570.
     let tempora_stem = pick_tempora_variant_for_1570(&tempora_stem_default, corpus);
+    // September Embertide overlay: for Pent06+ ferias the upstream
+    // `officestring` (SetupString.pl:720-779) overlays a monthday
+    // file (e.g. `Tempora/093-6` for Sept Ember Saturday) onto the
+    // bare Pent file. The Pent file (rank 1.0 Feria) gets eclipsed by
+    // the monthday file's rank (e.g. 2.1 "Feria major"), which keeps
+    // Saturday-BVM from firing and supplies the Sept Embertide
+    // propers. We approximate the overlay by *replacing* the
+    // tempora_stem with the monthday stem when both:
+    //   1. The original stem is in `Pent06+` or `Epi*` (the Perl
+    //      guard is `fname =~ /Pent|Epi/ && !/Pent0[1-5]/`).
+    //   2. The monthday-derived file exists in the missa corpus.
+    // For 1570 only `093-3 / 093-5 / 093-6` ship under missa, so the
+    // overlay fires only on Sept Ember Wed/Fri/Sat.
+    let tempora_stem = apply_monthday_overlay_1570(&tempora_stem, d, m, y, corpus);
     let tempora_key = FileKey {
         category: FileCategory::Tempora,
         stem: tempora_stem,
@@ -438,6 +452,70 @@ fn saturday_bvm_winner_1570(
     })
 }
 
+/// September Embertide overlay (Tridentine 1570 only).
+///
+/// Mirrors the upstream `officestring()` overlay
+/// (`SetupString.pl:720-779`): when the requested file is a Pent06+
+/// or Epi week file AND the date maps to a `monthday`-derived stem
+/// that exists in the missa corpus, prefer the monthday file.
+///
+/// The Perl implementation actually merges section bodies from the
+/// monthday file onto the base Pent file (preserving `[Rank]` from
+/// the base file). We side-step the merge by simply *replacing* the
+/// base stem when the overlay applies, because for our corpus:
+///
+///   * Bodies under `093-X` are self-contained — the matching Pent
+///     file (`Pent16-X` etc.) carries no Mass propers anyway.
+///   * Ranks differ (Pent16-X is `Feria;;1`, 093-X is `Feria
+///     major;;2.1`); using 093-X's rank is what keeps Saturday-BVM
+///     from displacing Sept Ember Saturday.
+///
+/// For 1570 the only monthday files that ship under `missa/` are
+/// `093-3`, `093-5`, `093-6` (Sept Ember Wed/Fri/Sat) and `104-0`
+/// (Christ the King — post-1925, irrelevant to 1570). The function
+/// is therefore a no-op outside those three dates.
+fn apply_monthday_overlay_1570(
+    base_stem: &str,
+    day: u32,
+    month: u32,
+    year: i32,
+    corpus: &dyn Corpus,
+) -> String {
+    // Perl guard: `fname =~ /Pent|Epi/ && !/Pent0[1-5]/`.
+    let is_pent06_plus = base_stem.starts_with("Pent")
+        && !base_stem.starts_with("Pent01")
+        && !base_stem.starts_with("Pent02")
+        && !base_stem.starts_with("Pent03")
+        && !base_stem.starts_with("Pent04")
+        && !base_stem.starts_with("Pent05");
+    let is_epi = base_stem.starts_with("Epi");
+    if !is_pent06_plus && !is_epi {
+        return base_stem.to_string();
+    }
+    let md = date::monthday(day, month, year, false, false);
+    if md.is_empty() {
+        return base_stem.to_string();
+    }
+    let candidate = FileKey {
+        category: FileCategory::Tempora,
+        stem: md.clone(),
+    };
+    // The monthday file must carry both [Officium] and [Rank] —
+    // otherwise it's a partial-overlay file that the Perl runtime
+    // would merge over the base while preserving the base's
+    // [Rank] (e.g. `Tempora/104-0` ships only Commemoratio
+    // sections under 1570 because Christ the King is post-1925
+    // and the file is gated by `(rubrica 1960)` annotations). For
+    // the 1570 baseline only the September Embertide files
+    // (093-3, 093-5, 093-6) are full-overlay candidates.
+    if let Some(file) = corpus.mass_file(&candidate) {
+        if file.officium.is_some() && file.rank_num.is_some() {
+            return md;
+        }
+    }
+    base_stem.to_string()
+}
+
 /// Pick the Tridentine-1570 variant of a Tempora stem when one
 /// exists. The corpus uses the `-a` suffix to store the 1570 form of
 /// Sundays where a *post-1570* feast has since bumped the original
@@ -694,6 +772,10 @@ fn was_sancti_preempted_1570(
         format!("{}-{}", weekname, dow)
     };
     let tempora_stem = pick_tempora_variant_for_1570(&tempora_stem_default, corpus);
+    // Same Sept Embertide overlay as compute_occurrence, so the
+    // preemption check sees Pent16-6's rank as 2.1 (from 093-6) on
+    // Sept Ember Saturday rather than the bare 1.0 of Pent16-6.
+    let tempora_stem = apply_monthday_overlay_1570(&tempora_stem, day, month, year, corpus);
     let tempora_key = FileKey {
         category: FileCategory::Tempora,
         stem: tempora_stem,
@@ -723,7 +805,21 @@ fn was_sancti_preempted_1570(
     // Saint is preempted iff effective trank > srank. (Don't apply
     // the "Sunday wins ties" rule yet — it's rare enough at the
     // transfer layer that we skip it for now.)
-    trank > entry.main.rank_num
+    //
+    // Use the *higher* of the kalendar rank and the sancti-corpus rank.
+    // Kalendar 1570 stores integer ranks (2 = Semiduplex), while the
+    // sancti corpus has the fractional convention (2.2 for Semiduplex).
+    // Without taking the max, days like Sept 16 (Cornelius/Cyprian:
+    // kalendar=2.0, corpus=2.2) report preempted by Sept Embertide
+    // Wednesday (rank 2.1 from monthday overlay) when in fact the
+    // saint outranks the embertide.
+    let corpus_rank = corpus
+        .sancti_entries(month, day)
+        .iter()
+        .find_map(|e| e.rank_num)
+        .unwrap_or(0.0);
+    let srank = entry.main.rank_num.max(corpus_rank);
+    trank > srank
 }
 
 /// Walk a file's `parent` chain, returning the first key whose
@@ -1130,6 +1226,36 @@ mod tests {
         // Lectio as scriptura instead — that's the `scriptura` field.)
         assert!(r.scriptura.is_some(),
             "expected scriptura to retain Tempora reference for Lectio");
+    }
+
+    #[test]
+    fn sept_ember_saturday_uses_093_6_not_sat_bvm() {
+        // 2026-09-19 = Sat. Pent16-6 (rank 1.0 Feria) → monthday
+        // overlay → Tempora/093-6 (rank 2.1 Feria major). Without
+        // overlay, Saturday-BVM (rank 1.3) would fire and the propers
+        // would be Commune/C10. With overlay, 2.1 ≥ 1.4 → Sat-BVM
+        // skipped, winner is Sept Embertide Saturday.
+        let r = run(2026, 9, 19);
+        assert_eq!(winner_path(&r), "Tempora/093-6");
+        assert!(!r.sanctoral_office);
+    }
+
+    #[test]
+    fn sept_ember_friday_uses_093_5() {
+        // 2026-09-18 = Fri. Pent16-5 (rank 1.0) → monthday → 093-5
+        // (rank 2.1).
+        let r = run(2026, 9, 18);
+        assert_eq!(winner_path(&r), "Tempora/093-5");
+    }
+
+    #[test]
+    fn pent22_dominica_minor_beats_chrysanthus_simplex() {
+        // 2026-10-25 = Sun. Pent22-0 = Dominica minor 5.0
+        // (downgraded to 2.9 by 1570 rule). Chrysanthus is Simplex
+        // 1.1. Sunday wins → winner = Tempora/Pent22-0.
+        let r = run(2026, 10, 25);
+        assert_eq!(winner_path(&r), "Tempora/Pent22-0");
+        assert!(!r.sanctoral_office);
     }
 
     #[test]

@@ -79,6 +79,36 @@ impl Rubric {
         Rubric::Reduced1955,
         Rubric::Rubrics1960,
     ];
+
+    /// Map this rubric to its kalendar layer
+    /// (`kalendaria_layers::Layer`). Multiple rubrics may share a
+    /// layer when the difference between them is rubric-rule changes
+    /// rather than kalendar diffs (Tridentine 1570 vs 1910 share the
+    /// 1888/1906 kalendar updates as far as the saint table goes).
+    ///
+    /// Used by `lookup_kalendar_for_rubric` so reform-layer code can
+    /// drive the kalendar lookup from the active rubric without each
+    /// site re-deciding the mapping.
+    pub const fn kalendar_layer(
+        self,
+    ) -> crate::divinum_officium::kalendaria_layers::Layer {
+        use crate::divinum_officium::kalendaria_layers::Layer;
+        match self {
+            // Tridentine 1570 baseline.
+            Rubric::Tridentine1570    => Layer::Pius1570,
+            // Tridentine 1910 = Pius X early kalendar (pre-Divino-Afflatu).
+            Rubric::Tridentine1910    => Layer::PiusX1906,
+            // Divino Afflatu (1911) — kalendar is the 1939 cumulative
+            // (Pius XI added Christ the King 1925, etc.); rubric rules
+            // are the 1911 breviary reforms.
+            Rubric::DivinoAfflatu1911 => Layer::PiusXI1939,
+            Rubric::Reduced1955       => Layer::PiusXII1955,
+            Rubric::Rubrics1960       => Layer::JohnXXIII1960,
+            // Monastic shares the Tridentine 1570 kalendar baseline
+            // (the differences are in the Office cycle, not the saints).
+            Rubric::Monastic          => Layer::Pius1570,
+        }
+    }
 }
 
 // ─── Locale ──────────────────────────────────────────────────────────
@@ -444,5 +474,18 @@ mod tests {
     fn all_roman_excludes_monastic() {
         assert_eq!(Rubric::ALL_ROMAN.len(), 5);
         assert!(!Rubric::ALL_ROMAN.contains(&Rubric::Monastic));
+    }
+
+    #[test]
+    fn rubric_kalendar_layer_mapping() {
+        use crate::divinum_officium::kalendaria_layers::Layer;
+        assert_eq!(Rubric::Tridentine1570.kalendar_layer(), Layer::Pius1570);
+        assert_eq!(Rubric::Tridentine1910.kalendar_layer(), Layer::PiusX1906);
+        assert_eq!(Rubric::DivinoAfflatu1911.kalendar_layer(), Layer::PiusXI1939);
+        assert_eq!(Rubric::Reduced1955.kalendar_layer(), Layer::PiusXII1955);
+        assert_eq!(Rubric::Rubrics1960.kalendar_layer(), Layer::JohnXXIII1960);
+        // Monastic shares the 1570 kalendar baseline (rubric-rule
+        // differences only).
+        assert_eq!(Rubric::Monastic.kalendar_layer(), Layer::Pius1570);
     }
 }

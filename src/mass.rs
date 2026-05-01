@@ -41,19 +41,28 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
     // less. Phase 6+ adds `missa_number` selection.
     let resolved = resolve_multi_mass(office, corpus);
 
+    let winner_file = corpus.mass_file(&resolved.winner);
+    let go = |sect: &str| -> Option<ProperBlock> {
+        let block = proper_block(&resolved, sect, corpus)?;
+        let block = substitute_name(block, sect, winner_file);
+        Some(ProperBlock {
+            latin: expand_macros(&block.latin),
+            ..block
+        })
+    };
     MassPropers {
-        introitus:    expanded(proper_block(&resolved, "Introitus",    corpus)),
-        oratio:       expanded(proper_block(&resolved, "Oratio",       corpus)),
-        lectio:       expanded(proper_block(&resolved, "Lectio",       corpus)),
-        graduale:     expanded(proper_block(&resolved, "Graduale",     corpus)),
-        tractus:      expanded(proper_block(&resolved, "Tractus",      corpus)),
-        sequentia:    expanded(proper_block(&resolved, "Sequentia",    corpus)),
-        evangelium:   expanded(proper_block(&resolved, "Evangelium",   corpus)),
-        offertorium:  expanded(proper_block(&resolved, "Offertorium",  corpus)),
-        secreta:      expanded(proper_block(&resolved, "Secreta",      corpus)),
-        prefatio:     expanded(proper_block(&resolved, "Prefatio",     corpus)),
-        communio:     expanded(proper_block(&resolved, "Communio",     corpus)),
-        postcommunio: expanded(proper_block(&resolved, "Postcommunio", corpus)),
+        introitus:    go("Introitus"),
+        oratio:       go("Oratio"),
+        lectio:       go("Lectio"),
+        graduale:     go("Graduale"),
+        tractus:      go("Tractus"),
+        sequentia:    go("Sequentia"),
+        evangelium:   go("Evangelium"),
+        offertorium:  go("Offertorium"),
+        secreta:      go("Secreta"),
+        prefatio:     go("Prefatio"),
+        communio:     go("Communio"),
+        postcommunio: go("Postcommunio"),
         // Phase 6+ — chase `office.commemoratio` through the same
         // resolver to populate per-commemoration Oratio/Secreta/
         // Postcommunio.
@@ -61,11 +70,60 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
     }
 }
 
-fn expanded(b: Option<ProperBlock>) -> Option<ProperBlock> {
-    b.map(|mut b| {
-        b.latin = expand_macros(&b.latin);
-        b
-    })
+/// Substitute the saint's name into commune-template `N.` placeholders.
+/// Reads the `[Name]` section from `winner_file`:
+///
+///     [Name]
+///     Marcélli                  ← default form
+///     Postcommunio=Marcéllo     ← case override per section
+///     Secreta=Marcéllo
+///
+/// Default form replaces every `N.` in the body. Section overrides
+/// take precedence for their named section (the `Section=Name`
+/// lines). Lines starting with `(` are skipped (rubric annotations).
+/// Lines following an annotation that match the same `Section=Name`
+/// shape are also overrides — first-occurrence-wins.
+fn substitute_name(
+    block: ProperBlock,
+    section: &str,
+    winner_file: Option<&MassFile>,
+) -> ProperBlock {
+    if !block.latin.contains("N.") {
+        return block;
+    }
+    let name_body = match winner_file.and_then(|f| f.sections.get("Name")) {
+        Some(b) => b,
+        None => return block,
+    };
+    let resolved = resolve_name_for_section(name_body, section);
+    if resolved.is_empty() {
+        return block;
+    }
+    ProperBlock {
+        latin: block.latin.replace("N.", &resolved),
+        ..block
+    }
+}
+
+fn resolve_name_for_section(name_body: &str, section: &str) -> String {
+    let mut default: String = String::new();
+    let mut override_form: Option<String> = None;
+    for line in name_body.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('(') {
+            continue;
+        }
+        if let Some((sec, name)) = line.split_once('=') {
+            if sec.trim().eq_ignore_ascii_case(section) && override_form.is_none() {
+                override_form = Some(name.trim().to_string());
+            }
+            continue;
+        }
+        if default.is_empty() {
+            default = line.to_string();
+        }
+    }
+    override_form.unwrap_or(default)
 }
 
 /// If the winner's MassFile has no proper-text sections (only `Rule`

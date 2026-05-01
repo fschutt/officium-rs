@@ -98,7 +98,8 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     let temporal_rank = tempora_file.and_then(|f| f.rank_num).unwrap_or(0.0);
 
     // ── Sanctoral side ───────────────────────────────────────────────
-    let (sancti_key, sancti_entry_holder) = resolve_sancti_for_tridentine_1570(m, d, corpus);
+    let (sancti_key, sancti_entry_holder) =
+        resolve_sancti_for_tridentine_1570(y, m, d, corpus);
     let sancti_entry: Option<&SanctiEntry> = sancti_entry_holder.as_ref();
     let sanctoral_rank = sancti_entry.and_then(|e| e.rank_num).unwrap_or(0.0);
 
@@ -109,6 +110,32 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
         temporal_rank,
         sanctoral_rank,
     );
+
+    // ── Saturday-BVM rule (Tridentine 1570) ──────────────────────────
+    // On free Saturdays (no major feast), the Mass is "Sanctæ Mariæ
+    // Sabbato" using Commune/C10[a/b/c/Pasc] depending on the
+    // liturgical season. Mirrors `horascommon.pl:401-420`.
+    if let Some(saturday_bvm) = saturday_bvm_winner_1570(
+        dow,
+        &weekname,
+        m,
+        d,
+        temporal_rank,
+        sanctoral_rank,
+    ) {
+        return OccurrenceResult {
+            winner: saturday_bvm.clone(),
+            commemoratio: None,
+            scriptura: tempora_file.map(|_| tempora_key.clone()),
+            commune: Some(saturday_bvm),
+            commune_type: CommuneType::Vide,
+            rank: 1.3,
+            sanctoral_office: true,
+            temporal_rank,
+            sanctoral_rank,
+            reform_trace: vec![],
+        };
+    }
 
     // ── Build result ─────────────────────────────────────────────────
     if sanctoral_office {
@@ -309,6 +336,51 @@ fn commemorate_sanctoral_under_temporal_1570(
     true
 }
 
+/// Saturday Mass of the Blessed Virgin Mary (Tridentine 1570).
+/// Mirrors `horascommon.pl:401-420`. Fires on free Saturdays
+/// (DOW=6, no major temporal or sanctoral feast); the winner becomes
+/// `Commune/C10[a|b|c|Pasc]` depending on season:
+///
+///   * Adv*    → `C10a`  (Common of BVM in Advent)
+///   * Jan or Feb 1 → `C10b`  (Common of BVM after Christmas)
+///   * Epi*/Quad* → `C10c`  (Common of BVM Epiphany–Septuagesima)
+///   * Pasc*   → `C10Pasc` (Common of BVM during Eastertide)
+///   * Otherwise → `C10`   (Common of BVM, generic)
+///
+/// Returns `None` when the conditions don't fire — including the
+/// case where any of the higher-rank `<1.4` thresholds is exceeded.
+fn saturday_bvm_winner_1570(
+    dow: u32,
+    weekname: &str,
+    month: u32,
+    day: u32,
+    temporal_rank: f32,
+    sanctoral_rank: f32,
+) -> Option<FileKey> {
+    if dow != 6 {
+        return None;
+    }
+    if temporal_rank >= 1.4 || sanctoral_rank >= 1.4 {
+        return None;
+    }
+    let stem = if weekname.starts_with("Adv") {
+        "C10a"
+    } else if month == 1 || (month == 2 && day == 1) {
+        "C10b"
+    } else if weekname.starts_with("Epi") || weekname.starts_with("Quad") {
+        // Includes Quadp (pre-Lent / Septuagesima).
+        "C10c"
+    } else if weekname.starts_with("Pasc") {
+        "C10Pasc"
+    } else {
+        "C10"
+    };
+    Some(FileKey {
+        category: FileCategory::Commune,
+        stem: stem.to_string(),
+    })
+}
+
 /// Pick the Tridentine-1570 variant of a Tempora stem when one
 /// exists. The corpus uses the `-a` suffix to store the 1570 form of
 /// Sundays where a *post-1570* feast has since bumped the original
@@ -344,6 +416,69 @@ fn pick_tempora_variant_for_1570(stem: &str, corpus: &dyn Corpus) -> String {
 const TRIDENTINE_1570_TEMPORA_A_CHASE: &[&str] = &[
     "Epi1-0", // post-1911 Holy Family bumps the 1570 Dominica infra Octavam
 ];
+
+/// Resolve a file's effective Officium, chasing the file-level
+/// `parent` inherit when the local file is body-less (e.g.
+/// `Sancti/01-12t.txt = @Tempora/Epi1-0a` has no [Officium] of its
+/// own; the parent Tempora/Epi1-0a supplies it).
+fn effective_officium(key: &FileKey, corpus: &dyn Corpus) -> Option<String> {
+    let mut k = key.clone();
+    for _ in 0..4 {
+        let file = corpus.mass_file(&k)?;
+        if let Some(o) = file.officium.as_deref() {
+            return Some(o.to_string());
+        }
+        if let Some(p) = file.parent.as_deref() {
+            k = FileKey::parse(p);
+            continue;
+        }
+        break;
+    }
+    None
+}
+
+/// When the override stem points at a "Dominica" Mass file but the
+/// actual date is NOT a Sunday this year, swap to the numerical-day
+/// variant. Concretely: 01-12 in 2026 is Monday; the kalendar table
+/// assumes Sunday and points at Sancti/01-12t (Dominica infra
+/// Octavam) — instead use Sancti/01-12 (Septima die infra Octavam).
+fn redirect_dominica_to_numerical(
+    stem: &str,
+    year: i32,
+    month: u32,
+    day: u32,
+    corpus: &dyn Corpus,
+) -> String {
+    let key = FileKey {
+        category: FileCategory::Sancti,
+        stem: stem.to_string(),
+    };
+    let officium_is_dominica = effective_officium(&key, corpus)
+        .map(|o| o.trim_start().to_lowercase().starts_with("dominica"))
+        .unwrap_or(false);
+    if !officium_is_dominica {
+        return stem.to_string();
+    }
+    if date::day_of_week(day, month, year) == 0 {
+        return stem.to_string(); // Actually Sunday — keep.
+    }
+    // Strip the trailing `t` (the most common Sunday-only suffix)
+    // and check if the bare stem exists. For other suffix forms,
+    // try just dropping the suffix letter.
+    for trim in [1, 2] {
+        if stem.len() > trim {
+            let bare = &stem[..stem.len() - trim];
+            let bare_key = FileKey {
+                category: FileCategory::Sancti,
+                stem: bare.to_string(),
+            };
+            if corpus.mass_file(&bare_key).is_some() {
+                return bare.to_string();
+            }
+        }
+    }
+    stem.to_string()
+}
 
 /// Resolve a Sancti stem to a FileKey backed by an actual MassFile.
 /// When the requested stem points to a body-less file (typically a
@@ -382,17 +517,26 @@ fn resolve_sancti_stem(stem: &str, corpus: &dyn Corpus) -> FileKey {
 /// Returns `(file_key, sancti_entry)` — the entry's `rank_num` and
 /// `commune` are wired downstream by the precedence logic.
 fn resolve_sancti_for_tridentine_1570(
+    year: i32,
     month: u32,
     day: u32,
     corpus: &dyn Corpus,
 ) -> (FileKey, Option<SanctiEntry>) {
     if let Some(override_) = kalendarium_1570::lookup(month, day) {
-        // The kalendar may point at a stem (`12-24o`) whose upstream
-        // file is just a single-line `@Sancti/12-24` redirect — and
-        // build_missa_json.py drops those because they have no
-        // section bodies. Resolve to the real underlying file when
-        // that happens.
-        let key = resolve_sancti_stem(&override_.main.stem, corpus);
+        // Some kalendar entries assume a specific weekday — e.g.
+        // 01-12 → 01-12t = "Dominica infra Octavam Epi" assumes
+        // Jan 12 is Sunday, which fails in years like 2026 where
+        // Jan 12 is Monday. When the override stem points at a
+        // file whose officium starts with "Dominica" and the
+        // actual date is NOT a Sunday this year, fall back to the
+        // bare Sancti/<MM-DD> file (the numerical-day variant —
+        // e.g. Sancti/01-12 = "Septima die infra Octavam Epi").
+        let stem = redirect_dominica_to_numerical(
+            &override_.main.stem,
+            year, month, day,
+            corpus,
+        );
+        let key = resolve_sancti_stem(&stem, corpus);
         let mass = corpus.mass_file(&key);
         let rank_num = mass
             .and_then(|m| m.rank_num)

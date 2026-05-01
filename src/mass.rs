@@ -467,11 +467,31 @@ fn apply_post_septuagesima_conditional(text: &str, post_septuagesima: bool) -> S
         // preceding line).
         let alt_idx = (i + 1..lines.len()).find(|&j| !lines[j].trim().is_empty());
         let alt = alt_idx.map(|j| lines[j].trim().to_string()).unwrap_or_default();
+        // Mirror Perl's SCOPE_LINE backscope semantics for the
+        // `(sed post Septuagesimam dicitur)` conditional:
+        //   * post_septuagesima TRUE: drop the preceding non-blank
+        //     line, push the alt line in its place. (This makes the
+        //     output much shorter — the preceding "Justorum animae
+        //     ... in pace, allelúja." line is REPLACED entirely
+        //     with the bare "pace.".)
+        //   * post_septuagesima FALSE: keep the preceding line, skip
+        //     the conditional marker and alt line.
+        // Liturgically the swap_trailing_alleluja semantics (replace
+        // only the trailing "alleluja" word with "pace") would be
+        // more meaningful, but Perl's `setupstring` does the literal
+        // SCOPE_LINE drop-and-replace — our parity goal is to match.
+        let _ = &alt;
         if post_septuagesima {
-            // Apply the alternate. Replace the preceding line's
-            // trailing word "alleluja[.,?!]?" with `alt`.
-            if let Some(prev) = out.last_mut() {
-                *prev = swap_trailing_alleluja(prev, &alt);
+            while let Some(last) = out.last() {
+                if last.trim().is_empty() {
+                    out.pop();
+                } else {
+                    break;
+                }
+            }
+            out.pop();
+            if let Some(j) = alt_idx {
+                out.push(lines[j].to_string());
             }
         }
         // Skip the conditional marker line and the alternate line.

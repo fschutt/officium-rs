@@ -25,7 +25,7 @@
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
-use crate::divinum_officium::date::geteaster;
+use crate::divinum_officium::date::{geteaster, leap_year};
 
 /// One transfer instruction for a date.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -112,8 +112,16 @@ pub fn easter_code(year: i32) -> u32 {
 }
 
 /// Look up transfers applicable to a given (year, rubric, mm-dd).
-/// Returns the list of targets (main + extras) from both the
-/// Sunday-letter file and the Easter-coded file.
+/// Returns the list of targets (main + extras) from the Sunday-letter
+/// file and the Easter-coded file, plus their leap-year companions
+/// when applicable.
+///
+/// In a leap year, the dominical letter shifts at the bissextile day:
+/// dates from Jan 1 to Feb 23 (and the inserted 02-29) follow the
+/// PRE-leap-day letter (one ahead of the post-leap-day letter), and
+/// dates from Feb 24 (which kalendar-shifts to 02-29 → Vigil of
+/// Matthias) onward follow the post-leap-day letter. Mirrors
+/// `Directorium::load_transfers` lines 132-149.
 pub fn transfers_for(
     year: i32,
     rubric: &str,
@@ -123,9 +131,8 @@ pub fn transfers_for(
     let mm_dd = format!("{month:02}-{day:02}");
     let mut out = Vec::new();
     let parsed = parsed();
-    let letter_file = format!("{}.txt", sunday_letter(year));
-    let easter_file = format!("{}.txt", easter_code(year));
-    for fname in [letter_file, easter_file] {
+    let files_to_consult = transfer_files_for(year, month, day);
+    for fname in files_to_consult {
         let Some(entries) = parsed.get(&fname) else {
             continue;
         };
@@ -141,6 +148,47 @@ pub fn transfers_for(
     out
 }
 
+/// Picks the right transfer files for `(year, month, day)`. In a
+/// leap year, dates from Jan 1 to Feb 23 (and the inserted 02-29)
+/// follow the *next* dominical letter and the *next* Easter code
+/// (`letter+1` mod 7, `easter_code + 1`). Other dates use the bare
+/// year's letter+easter.
+fn transfer_files_for(year: i32, month: u32, day: u32) -> Vec<String> {
+    let letter = sunday_letter(year);
+    let easter = easter_code(year);
+    let mut out = Vec::with_capacity(4);
+    if leap_year(year) && is_pre_leap_day(month, day) {
+        // Use the next letter + next Easter file. Letter advance is
+        // cyclic: letters[(idx + 1) % 7]. Perl's `$letters[$letter-6]`
+        // exploits Perl negative-index wrap; for `letter='f'` (idx 5)
+        // → `idx-6 = -1` → letters[-1] = 'g'. Equivalent to (idx+1)%7.
+        let letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+        let idx = letters.iter().position(|&c| c == letter).unwrap_or(0);
+        let next_letter = letters[(idx + 1) % 7];
+        let next_easter = if easter == 331 { 401 } else { easter + 1 };
+        out.push(format!("{}.txt", next_letter));
+        out.push(format!("{}.txt", next_easter));
+    } else {
+        out.push(format!("{}.txt", letter));
+        out.push(format!("{}.txt", easter));
+    }
+    out
+}
+
+/// True for dates in `Jan 1 → Feb 23` and `Feb 29` (bissextile day).
+/// Mirrors the upstream regex
+/// `^(?:Hy|seant)?(?:01|02-[01]|02-2[01239]|dirge1)`. Excludes Feb
+/// 24..28 and Mar onward.
+fn is_pre_leap_day(month: u32, day: u32) -> bool {
+    if month == 1 {
+        return true;
+    }
+    if month == 2 {
+        return day < 24 || day == 29;
+    }
+    false
+}
+
 /// True if `rubric` (e.g. `"1570"`, `"DA"`) appears in `rubric_list`.
 /// Empty list means "applies always".
 fn rubric_matches(rubric_list: &[String], rubric: &str) -> bool {
@@ -148,6 +196,43 @@ fn rubric_matches(rubric_list: &[String], rubric: &str) -> bool {
         return true;
     }
     rubric_list.iter().any(|r| r == rubric)
+}
+
+/// True when this `(year, rubric, month, day)`'s native stem is being
+/// *transferred away* — i.e. the year's transfer table contains a
+/// `xx-yy=mm-dd` rule pointing TO this date's stem (with `xx-yy` ≠
+/// the current date). Used to suppress the saint on its native date
+/// when it has been moved (typically Annunciation in Holy Week:
+/// `04-08=03-25` means "April 8 receives Annunciation; March 25 is
+/// vacated").
+pub fn stem_transferred_away(
+    year: i32,
+    rubric: &str,
+    month: u32,
+    day: u32,
+) -> bool {
+    let mm_dd = format!("{month:02}-{day:02}");
+    let parsed = parsed();
+    let files_to_consult = transfer_files_for(year, month, day);
+    for fname in files_to_consult {
+        let Some(entries) = parsed.get(&fname) else {
+            continue;
+        };
+        for (source_mmdd, targets) in entries {
+            if source_mmdd == &mm_dd {
+                continue;
+            }
+            for (target, rubrics) in targets {
+                if !rubric_matches(rubrics, rubric) {
+                    continue;
+                }
+                if target.main == mm_dd {
+                    return true;
+                }
+            }
+        }
+    }
+    false
 }
 
 #[cfg(test)]

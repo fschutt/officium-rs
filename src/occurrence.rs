@@ -920,10 +920,18 @@ fn was_sancti_preempted_1570(
     // Wednesday (rank 2.1 from monthday overlay) when in fact the
     // saint outranks the embertide.
     let (look_m, look_d) = date::sday_pair(month, day, year);
-    let corpus_rank = corpus
-        .sancti_entries(look_m, look_d)
+    // Pick the 1570-specific rank when one is supplied — many saints
+    // were promoted post-Tridentine (e.g. Annunciation: 1570 rank
+    // 5.0 Duplex II classis, default 6.92 Duplex I classis), and the
+    // preemption test must use the era's actual rank to match Perl's
+    // behaviour. Falls through to default when no 1570 variant is
+    // present.
+    let entries = corpus.sancti_entries(look_m, look_d);
+    let corpus_rank = entries
         .iter()
-        .find_map(|e| e.rank_num)
+        .find(|e| e.rubric.contains("1570"))
+        .or_else(|| entries.iter().find(|e| e.rubric == "default"))
+        .and_then(|e| e.rank_num)
         .unwrap_or(0.0);
     let srank = entry.main.rank_num.max(corpus_rank);
     trank > srank
@@ -1094,7 +1102,31 @@ fn resolve_sancti_for_tridentine_1570(
     //      saint (the transferred saint then displaces today's native
     //      saint, who gets commemorated).
     let (look_m, look_d) = date::sday_pair(month, day, year);
-    let native_entry = kalendarium_1570::lookup(look_m, look_d);
+    // If the year's transfer table ANNOUNCES that this date's stem
+    // (e.g. `03-25` = Annunciation) has been moved to a future date
+    // (`04-08=03-25` for years where Easter falls on March 31), AND
+    // the native saint was actually preempted on its native date, the
+    // saint is suppressed on its native date — fall through to the
+    // temporal cycle. Mirrors upstream's directorium behaviour:
+    // March 25 in 2024 (Holy Monday) becomes Quad6-1, not Annunciation.
+    //
+    // The preemption guard matters because table entries like
+    // `02-03=02-01` (1570, letter d) are *conditional* — they only
+    // fire in years where 02-01's saint is genuinely preempted. In
+    // 2020 (letter d) Ignatius (Feb 1, rank 2.2) lands on a free
+    // Saturday and isn't preempted, so the Feb-3 transfer entry
+    // should not activate.
+    let suppressed_by_transfer =
+        crate::divinum_officium::transfer_table::stem_transferred_away(
+            year, "1570", look_m, look_d,
+        ) && kalendarium_1570::lookup(look_m, look_d)
+            .map(|e| was_sancti_preempted_1570(year, month, day, e, corpus))
+            .unwrap_or(false);
+    let native_entry = if suppressed_by_transfer {
+        None
+    } else {
+        kalendarium_1570::lookup(look_m, look_d)
+    };
     let native_rank = native_entry.map(|e| e.main.rank_num).unwrap_or(0.0);
     if let Some((stem, name, rank_num)) =
         transferred_sancti_for_1570(year, month, day, corpus)
@@ -1120,7 +1152,12 @@ fn resolve_sancti_for_tridentine_1570(
             return (key, Some(entry));
         }
     }
-    if let Some(override_) = kalendarium_1570::lookup(look_m, look_d) {
+    let kalendar_lookup = if suppressed_by_transfer {
+        None
+    } else {
+        kalendarium_1570::lookup(look_m, look_d)
+    };
+    if let Some(override_) = kalendar_lookup {
         // Some kalendar entries assume a specific weekday — e.g.
         // 01-12 → 01-12t = "Dominica infra Octavam Epi" assumes
         // Jan 12 is Sunday, which fails in years like 2026 where

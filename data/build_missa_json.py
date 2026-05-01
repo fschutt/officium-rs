@@ -71,15 +71,14 @@ COND_PARENT_RE = re.compile(r"^\(([^)]+)\)\s*@(\S+)\s*$")
 # `(rubrica tridentina)`, `(ad missam)`, `(tempore paschali)`, etc.)
 # is kept.
 EXCLUDED_ANNOTATIONS_1570 = (
-    "communi Summorum Pontificum",
+    "communi summorum pontificum",
     "rubrica 1960",
     "rubrica 196",
     "rubrica 1955",
-    "rubrica Divino",
-    "rubrica Divino aut",
+    "rubrica divino",
     "rubrica monastica",
     "rubrica cisterciensis",
-    "rubrica Ordo Praedicatorum",
+    "rubrica ordo praedicatorum",
 )
 
 
@@ -90,14 +89,17 @@ def is_excluded_annotation(annotation: str) -> bool:
     Disjunctive predicates (`rubrica Divino aut rubrica Tridentina aut
     rubrica Monastica`) include 1570 if any disjunct mentions
     Tridentina/1570 — keep the section in that case so the consumer
-    can pick up the body under 1570 mode."""
+    can pick up the body under 1570 mode.
+
+    Matched case-insensitively: upstream sometimes writes `(rubrica
+    divino et feria 3 …)` (lowercase d) and `(rubrica Divino …)`
+    (capital D) for the same logical predicate."""
     if not annotation:
         return False
-    a = annotation.strip()
-    a_lower = a.lower()
+    a_lower = annotation.strip().lower()
     if "tridentina" in a_lower or "1570" in a_lower:
         return False
-    return any(a.startswith(needle) for needle in EXCLUDED_ANNOTATIONS_1570)
+    return any(a_lower.startswith(needle) for needle in EXCLUDED_ANNOTATIONS_1570)
 
 
 def parse_mass_file(text: str) -> dict:

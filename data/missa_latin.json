@@ -2784,7 +2784,10 @@
 "Evangelium":"@Commune/C5b",
 "Secreta":"@Sancti/07-04oct",
 "Postcommunio":"@Sancti/06-29"
-}
+},
+"annotated_sections":[
+"Evangelium"
+]
 },
 "Sancti/07-01t":{
 "officium":"In Octava S. Joannis Baptistæ",
@@ -2858,7 +2861,10 @@
 "Secreta":"@Sancti/07-04oct",
 "Postcommunio":"@Sancti/06-29"
 },
-"parent_1570":"Sancti/07-04oct"
+"parent_1570":"Sancti/07-04oct",
+"annotated_sections":[
+"Evangelium"
+]
 },
 "Sancti/07-03r":{
 "officium":"S. Irenæi Episcopi et Martyris",
@@ -2930,7 +2936,10 @@
 "Evangelium":"@Commune/C5b",
 "Secreta":"@Sancti/07-04oct",
 "Postcommunio":"@Sancti/06-29"
-}
+},
+"annotated_sections":[
+"Evangelium"
+]
 },
 "Sancti/07-06":{
 "officium":"In Octava Ss. Apostolorum Petri et Pauli",
@@ -6840,7 +6849,12 @@
 "Commemoratio Oratio":"!Pro fidei propagatione\n@Commune/Propaganda:Oratio",
 "Commemoratio Secreta":"!Pro fidei propagatione\n@Commune/Propaganda:Secreta",
 "Commemoratio Postcommunio":"!Pro fidei propagatione\n@Commune/Propaganda:Postcommunio"
-}
+},
+"annotated_sections":[
+"Commemoratio Oratio",
+"Commemoratio Postcommunio",
+"Commemoratio Secreta"
+]
 },
 "Tempora/Adv1-0":{
 "officium":"Dominica I Adventus",

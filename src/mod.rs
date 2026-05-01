@@ -79,3 +79,13 @@ pub mod tempora_table;
 // Drives transferred-vigil cases (Andrew Vigil to Sat) and the
 // "Dominica anticipata" Saturday-Mass propers in short Epi cycles.
 pub mod transfer_table;
+
+// Phase 7+ — Year-aware kalendar layer lookup. Loads the
+// `data/kalendaria_by_rubric.json` produced by
+// `data/build_canonization.py` (which walks the upstream
+// `Tabulae/Kalendaria/{1570,1888,…,1960}.txt` chain in order and
+// resolves diffs into a per-rubric table). Exposes a uniform
+// `lookup(layer, month, day)` so future reform layers can plug in
+// without each one reading its own .txt; `layer_for_year(year)`
+// maps a calendar year to its active rubric layer.
+pub mod kalendaria_layers;

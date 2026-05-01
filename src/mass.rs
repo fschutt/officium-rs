@@ -203,24 +203,19 @@ pub fn proper_block(
 ) -> Option<ProperBlock> {
     let winner_file = corpus.mass_file(&office.winner)?;
 
-    // Christmas-Octave weekday (Tempora/Nat29/30/31/04/05): in 1570
-    // these days use "Dominica Infra Octavam Nativitatis" (Nat1-0)
-    // propers directly. Skip the normal chain.
-    if is_christmas_octave_weekday(&office.winner) {
-        let target = FileKey {
-            category: FileCategory::Tempora,
-            stem: "Nat1-0".to_string(),
-        };
-        if let Some(target_file) = corpus.mass_file(&target) {
-            if let Some(block) = read_section(
-                target_file, &target, section, corpus,
-                /* via_commune */ false,
-            ) {
-                return Some(block);
-            }
-        }
-        return None;
-    }
+    // Christmas-Octave weekday handling under 1570 is two-track:
+    //   * Days that the Sunday-Within-Octave (`Tempora/Nat1-0`) Mass
+    //     gets anticipated to (Dec 30 in 2026, letter d) — handled
+    //     via the Sunday-letter Transfer table
+    //     (`12-30=Tempora/Nat1-0`) which rewrites the temporal stem
+    //     in `compute_occurrence` *before* this resolver runs.
+    //   * Other Octave weekdays (Dec 29, Dec 31, Jan 4-5) — use the
+    //     in-file commune `ex Sancti/12-25m3` (Christmas Mass III).
+    //     The natural commune-fallback chain handles this; no
+    //     short-circuit needed. Removing the previous unconditional
+    //     short-circuit to `Tempora/Nat1-0` for *all* `Tempora/Nat<DD>`
+    //     winners, which mis-rendered "Dum medium silentium" on
+    //     Dec 29 (Becket's day) where Perl renders "Puer natus est".
 
     // 1570 baseline: when the winner file is itself a post-1570 reform
     // feast (Patrocinii octave, Sacred-Heart octave, Christ-the-King
@@ -430,36 +425,6 @@ fn sunday_key_for_winner(winner: &FileKey) -> Option<FileKey> {
         category: FileCategory::Tempora,
         stem: format!("{week}-0"),
     })
-}
-
-/// True when the winner is a Christmas-Octave weekday Tempora file
-/// (`Tempora/Nat29[o]`, `Tempora/Nat30[o]`, `Tempora/Nat31[o]`, etc.).
-/// In 1570 these dates use "Dominica Infra Octavam Nativitatis"
-/// propers (`Tempora/Nat1-0`); the per-day Nat<DD> file is a post-
-/// 1570 expansion that we should skip.
-fn is_christmas_octave_weekday(key: &FileKey) -> bool {
-    if !matches!(key.category, FileCategory::Tempora) {
-        return false;
-    }
-    let stem = &key.stem;
-    if !stem.starts_with("Nat") {
-        return false;
-    }
-    let rest = &stem[3..];
-    if rest.is_empty() {
-        return false;
-    }
-    let mut chars = rest.chars();
-    let c1 = match chars.next() {
-        Some(c) if c.is_ascii_digit() => c,
-        _ => return false,
-    };
-    // Reject Nat1-0 itself (the actual Sunday-Within-Octave Mass).
-    if rest.contains('-') {
-        return false;
-    }
-    let _ = c1;
-    true
 }
 
 /// True when the file's officium identifies it as a post-1570

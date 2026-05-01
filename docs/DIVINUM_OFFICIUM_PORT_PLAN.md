@@ -771,23 +771,31 @@ Continuing work since:
 | `b56375e` parens + Name conds      | 276/365 75.6% | 3177/4380 72.5% | 27 | 32 + 138 |
 | `4468782` Allelúja header NFD-fold | 309/365 84.7% | 3214/4380 73.4% | 23 | 32 + 138 |
 | `aefb450` post-Septuagesimam cond  | **318/365 87.1%** | **3226/4380 73.7%** | 11 | 32 + 138 |
+| `de8ded5` GradualeF feria-fallback | 333/365 91.2% | 3252/4380 74.2% | 6 | 32 + 138 |
+| `e6635cf` parent-chase in @-refs   | 342/365 93.7% | 3261/4380 74.5% | 6 | 32 + 138 |
+| `5508f13` regex-sub + level-aware  | 347/365 95.1% | 3268/4380 74.6% | 5 | 32 + 138 |
+| `95d51bf` body-cond before name-sub| 353/365 96.7% | 3274/4380 74.7% | 4 | 32 + 138 |
+| `f8ba510` Defunctorum + Full text  | 354/365 97.0% | 3275/4380 74.8% | 4 | 32 + 138 |
+| `ed8dfe6` Sat-BVM PentEpi → C10c   | 357/365 97.8% | 3280/4380 74.9% | 3 | 32 + 138 |
+| `447d5a0` two-mode body cond + drop Latin rubrics | 358/365 98.1% | 3281/4380 74.9% | 3 | 32 + 138 |
+| `18dcb3d` (sed X versus omittuntur) backscope | **359/365 98.4%** | **3282/4380 74.9%** | 3 | 32 + 138 |
 
-Per-section pass rates at the 87.1% milestone:
+Per-section pass rates at the 98.4% milestone:
 
-| Section      | Start | At 87% | Δ      |
-|--------------|-------|--------|--------|
-| Introitus    | 86.8% | 98.6%  | +11.8  |
-| Oratio       | 86.6% | 97.3%  | +10.7  |
-| Lectio       | 82.2% | 96.2%  | +14.0  |
-| Graduale     | 68.2% | 93.4%  | +25.2  |
-| Tractus      | 72.3% | 99.5%  | +27.2  |
-| Sequentia    | 99.7% | 100.0% | +0.3   |
-| Evangelium   | 84.9% | 97.0%  | +12.1  |
-| Offertorium  | 84.7% | 98.4%  | +13.7  |
-| Secreta      | 88.8% | 98.9%  | +10.1  |
-| Prefatio     | 100%  | 100%   | 0      |
-| Communio     | 88.2% | 99.2%  | +11.0  |
-| Postcommunio | 88.5% | 98.9%  | +10.4  |
+| Section      | Start | At 98.4% | Δ       |
+|--------------|-------|----------|---------|
+| Introitus    | 86.8% | 99.7%    | +12.9   |
+| Oratio       | 86.6% | 99.7%    | +13.1   |
+| Lectio       | 82.2% | 99.5%    | +17.3   |
+| Graduale     | 68.2% | 99.7%    | +31.5   |
+| Tractus      | 72.3% | 99.5%    | +27.2   |
+| Sequentia    | 99.7% | 100.0%   | +0.3    |
+| Evangelium   | 84.9% | 99.5%    | +14.6   |
+| Offertorium  | 84.7% | 100.0%   | +15.3   |
+| Secreta      | 88.8% | 99.5%    | +10.7   |
+| Prefatio     | 100%  | 100%     | 0       |
+| Communio     | 88.2% | 99.7%    | +11.5   |
+| Postcommunio | 88.5% | 99.7%    | +11.2   |
 
 Top remaining workload (each pair count is a count of divergent
 sections in the year sweep):

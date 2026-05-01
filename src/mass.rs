@@ -205,13 +205,19 @@ pub fn proper_block(
     if commune_eligible(office.commune_type) {
         if let Some(commune_key) = office.commune.as_ref() {
             if let Some(commune_file) = corpus.mass_file(commune_key) {
-                if let Some(block) = read_section_skipping_annotated(
-                    commune_file,
-                    commune_key,
-                    section,
-                    corpus,
-                ) {
-                    return Some(block);
+                // Skip commune if its officium is a post-1570 reform
+                // (Sacred Heart Octave, Patrocinii St Joseph, etc.)
+                // — fall through to the Tempora-feria-Sunday-fallback
+                // below.
+                if !is_post_1570_octave_file(commune_file) {
+                    if let Some(block) = read_section_skipping_annotated(
+                        commune_file,
+                        commune_key,
+                        section,
+                        corpus,
+                    ) {
+                        return Some(block);
+                    }
                 }
             }
         }
@@ -227,7 +233,20 @@ pub fn proper_block(
     // DO carry a commune `vide Tempora/<octave-day>`) reach the
     // octave Mass via the commune branch first.
     if matches!(office.winner.category, FileCategory::Tempora) {
-        if let Some(sunday_key) = tempora_feria_sunday_fallback(&office.winner) {
+        if let Some(mut sunday_key) = tempora_feria_sunday_fallback(&office.winner) {
+            // If the bare Sunday is itself post-1570 (e.g. Pent03-0
+            // = Sacred Heart Octave Day), try its `-r` variant first.
+            if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
+                if is_post_1570_octave_file(sunday_file) {
+                    let r_key = FileKey {
+                        category: sunday_key.category.clone(),
+                        stem: format!("{}r", sunday_key.stem),
+                    };
+                    if corpus.mass_file(&r_key).is_some() {
+                        sunday_key = r_key;
+                    }
+                }
+            }
             if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
                 if let Some(block) = read_section(
                     sunday_file,
@@ -276,15 +295,28 @@ fn commune_eligible(t: CommuneType) -> bool {
     matches!(t, CommuneType::Ex | CommuneType::Vide)
 }
 
+/// True when the file's officium identifies it as a post-1570
+/// reform feast that doesn't apply under Tridentine 1570. Mirrors
+/// `occurrence::downgrade_post_1570_octave` — kept in sync.
+fn is_post_1570_octave_file(file: &MassFile) -> bool {
+    let officium = file.officium.as_deref().unwrap_or("");
+    officium.contains("Cordis Jesu")
+        || officium.contains("Cordis Iesu")
+        || officium.contains("Sacratissimi")
+        || officium.contains("Christi Regis")
+        || officium.contains("Patrocinii St Joseph")
+        || officium.contains("Patrocinii Sancti Joseph")
+        || officium.contains("Patrocínii")
+}
+
 /// For a Tempora feria stem like `Pent06-2`, return the FileKey of
-/// the same week's Sunday (`Pent06-0`). Returns `None` for stems
-/// that don't follow the `<week>-<dow>` convention or where the
-/// dow is already 0 (Sunday). Doesn't validate that the Sunday
-/// file exists; the caller checks.
+/// the same week's Sunday Mass. For 1570, this prefers the `-0r`
+/// variant when one exists in the corpus (the bare `-0` stem was
+/// preempted by post-1856 octave-day feasts; the `-r` suffix
+/// preserves the Tridentine Sunday). The caller validates that
+/// the resulting file exists.
 fn tempora_feria_sunday_fallback(key: &FileKey) -> Option<FileKey> {
     let (week, dow_str) = key.stem.rsplit_once('-')?;
-    // dow_str must be a single ASCII digit 1..=6 (skip 0=Sunday and
-    // longer suffixes like `-0a` or `-0r`).
     if dow_str.len() != 1 {
         return None;
     }
@@ -292,6 +324,14 @@ fn tempora_feria_sunday_fallback(key: &FileKey) -> Option<FileKey> {
     if !(1..=6).contains(&dow) {
         return None;
     }
+    // The caller in proper_block tries this candidate against the
+    // corpus; we return the bare `-0` stem and the resolver follows
+    // the file's `parent` if one exists. The 1570 `-r` variant is
+    // applied for Sundays at the occurrence layer
+    // (`pick_tempora_variant_for_1570`), so a feria-Sunday-fallback
+    // landing on `Pent03-0` will get its own propers from there.
+    // For weeks where the bare Sunday is post-1570 (e.g. Pent03-0
+    // = Sacred Heart Octave Day), we prefer the `-r` if it exists.
     Some(FileKey {
         category: key.category.clone(),
         stem: format!("{week}-0"),

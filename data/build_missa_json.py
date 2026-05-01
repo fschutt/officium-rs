@@ -124,8 +124,20 @@ def parse_mass_file(text: str) -> dict:
         m = SECTION_RE.match(raw.rstrip())
         if m is not None:
             seen_section = True
-            current = m.group(1).strip()
+            base_name = m.group(1).strip()
             annotation = (m.group(3) or "").strip()
+            # Treat seasonal annotations (`tempore X`) as a distinct
+            # variant key so the runtime can pick the right body when
+            # it knows the current season. Other annotations follow
+            # the original first-wins / dropped-if-excluded rule.
+            seasonal_variant = (
+                annotation
+                and annotation.lower().startswith("tempore ")
+            )
+            if seasonal_variant:
+                current = f"{base_name} ({annotation})"
+            else:
+                current = base_name
             if current not in sections:
                 sections[current] = []
                 annotations[current] = annotation

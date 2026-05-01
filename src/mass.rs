@@ -100,7 +100,9 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
     // ll. 930-962. (`OratioL1` is a SECOND Oratio header in the HTML,
     // so the main Oratio remains first; we don't redirect Oratio.)
     let has_lectio_l = winner_has_lectio_l_rule(winner_file, corpus);
+    let season = office.season;
     let go = |sect: &str| -> Option<ProperBlock> {
+        let effective_sect_str: String;
         let effective_sect = if has_lectio_l && winner_has_l1_section(winner_file, sect, corpus) {
             match sect {
                 "Lectio" => "LectioL1",
@@ -110,7 +112,24 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         } else {
             sect
         };
-        let block = proper_block(&resolved, effective_sect, corpus)?;
+        // Prefer seasonal variant `<Section> (tempore Adventus)` etc.
+        // when in the matching season AND the variant exists in any
+        // file we'd reach. Used by Sancti/12-08o (Immaculate Conception
+        // in Advent) which inherits C11's [Graduale] (tempore Adventus)
+        // — "invenia" form instead of the default "invénta".
+        let final_sect: &str = if let Some(variant) = seasonal_variant_section(effective_sect, season) {
+            // Only use the variant if it actually resolves somewhere.
+            // Check up-front by trying proper_block on the variant.
+            if proper_block(&resolved, &variant, corpus).is_some() {
+                effective_sect_str = variant;
+                effective_sect_str.as_str()
+            } else {
+                effective_sect
+            }
+        } else {
+            effective_sect
+        };
+        let block = proper_block(&resolved, final_sect, corpus)?;
         // Apply body conditionals FIRST — before name substitution.
         // `replace_n_dot` collapses `N\..*?N\.` across lines, so a
         // body with two conditional variants ("...beatum N. ... in
@@ -842,6 +861,17 @@ fn graduale_or_tractus(
         }
     }
     None
+}
+
+/// Map an `Adv` season to the seasonal section-variant suffix.
+/// `[Graduale] (tempore Adventus)` is stored under the literal section
+/// name `Graduale (tempore Adventus)` in the JSON.
+fn seasonal_variant_section(base: &str, season: crate::divinum_officium::core::Season) -> Option<String> {
+    use crate::divinum_officium::core::Season;
+    match season {
+        Season::Advent => Some(format!("{base} (tempore Adventus)")),
+        _ => None,
+    }
 }
 
 /// Pasc-season analogue of `graduale_or_tractus`: at each fallback

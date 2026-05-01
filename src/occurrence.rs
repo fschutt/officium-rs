@@ -462,7 +462,12 @@ fn saturday_bvm_winner_1570(
         "C10a"
     } else if month == 1 || (month == 2 && day == 1) {
         "C10b"
-    } else if weekname.starts_with("Epi") || weekname.starts_with("Quad") {
+    } else if weekname.contains("Epi") || weekname.contains("Quad") {
+        // Mirror Perl `horascommon.pl` ll. 1572 `($dayname[0] =~
+        // /(Epi|Quad)/i)`: matches any substring `Epi` or `Quad` in
+        // the week label, NOT just a prefix. The "PentEpi" labels
+        // (long post-Pentecost cycle re-using Epi readings — Nov
+        // 14/21 in 2026) use C10c for the Sat-BVM Mass.
         // Includes Quadp (pre-Lent / Septuagesima).
         "C10c"
     } else if weekname.starts_with("Pasc") {

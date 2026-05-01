@@ -125,9 +125,36 @@ fn substitute_name(
         return block;
     }
     ProperBlock {
-        latin: block.latin.replace("N.", &resolved),
+        latin: replace_n_dot(&block.latin, &resolved),
         ..block
     }
+}
+
+/// Mirror Perl `replaceNdot` (propers.pl): for prayers that mention
+/// the saint twice with `N. ... N.` (Common of Two Martyrs etc.), do
+/// ONE substitution that consumes both placeholders so a multi-name
+/// `Name` body like `Gervásii et Protásii` lands once. Then any
+/// remaining single `N.` is substituted normally.
+fn replace_n_dot(text: &str, name: &str) -> String {
+    let mut out = String::with_capacity(text.len() + name.len());
+    let mut rest = text;
+    // Step 1: greedy-but-shortest "N. … N." → name (one shot).
+    if let Some(first) = rest.find("N.") {
+        // Look for a SECOND `N.` after the first.
+        let after_first = first + "N.".len();
+        if let Some(rel_second) = rest[after_first..].find("N.") {
+            let second = after_first + rel_second;
+            out.push_str(&rest[..first]);
+            out.push_str(name);
+            rest = &rest[second + "N.".len()..];
+            // Step 2: a remaining single N. (rare for two-martyr
+            // prayers but Perl applies it).
+            out.push_str(&rest.replace("N.", name));
+            return out;
+        }
+    }
+    // Only one (or zero) N. — direct substitution.
+    text.replace("N.", name)
 }
 
 fn resolve_name_for_section(name_body: &str, section: &str) -> String {

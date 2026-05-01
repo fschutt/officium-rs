@@ -240,6 +240,33 @@ pub fn proper_block(
         }
     }
 
+    // "Oratio Dominica" rule (Perl `propers.pl::oratio` ll. 175-179):
+    // when the winner's [Rule] contains `Oratio Dominica` AND the
+    // section is one of the prayer types (Oratio, Secreta,
+    // Postcommunio), pull from the current week's Sunday Mass before
+    // falling through to the [Rank] commune. Drives the 1570 Octave
+    // of Corpus Christi weekday Mass: file `Tempora/Pent02-1.txt`
+    // says `;;Semiduplex IIS class;;2.9;;ex Tempora/Pent01-4` (so
+    // commune-chain would land in Corpus Christi propers), but
+    // [Rule] also says `Oratio Dominica`, which forces the Oratio
+    // back to Sunday `Tempora/Pent02-0`. Body sections (Introitus,
+    // Lectio, Graduale, Evangelium) follow the commune unchanged.
+    if is_dominica_oratio_section(section) && winner_has_oratio_dominica(winner_file) {
+        if let Some(sunday_key) = sunday_key_for_winner(&office.winner) {
+            if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
+                if let Some(block) = read_section(
+                    sunday_file,
+                    &sunday_key,
+                    section,
+                    corpus,
+                    /* via_commune */ false,
+                ) {
+                    return Some(block);
+                }
+            }
+        }
+    }
+
     // Commune fallback. Match the Perl `getproprium`'s second branch:
     //   `if (!$w && $communetype && ($communetype =~ /ex/i || $flag))`
     // The flag in Perl is set per-section by the caller chain; we
@@ -359,6 +386,50 @@ fn read_section_skipping_annotated(
 
 fn commune_eligible(t: CommuneType) -> bool {
     matches!(t, CommuneType::Ex | CommuneType::Vide)
+}
+
+/// True for the prayer-type sections that the "Oratio Dominica"
+/// rule swaps to Sunday Mass. Body sections (Introitus, Lectio,
+/// Graduale, Evangelium) are excluded because Perl's `oratio()`
+/// only fires for collects.
+fn is_dominica_oratio_section(section: &str) -> bool {
+    matches!(section, "Oratio" | "Secreta" | "Postcommunio")
+}
+
+/// True when the winner's `[Rule]` body contains the
+/// `Oratio Dominica` directive. Mirrors the Perl
+/// `$rule =~ /Oratio Dominica/i` check in `propers.pl:175`.
+fn winner_has_oratio_dominica(winner_file: &MassFile) -> bool {
+    winner_file
+        .sections
+        .get("Rule")
+        .map(|s| s.to_lowercase().contains("oratio dominica"))
+        .unwrap_or(false)
+}
+
+/// Compute the current week's Sunday-Mass `FileKey` for a Tempora
+/// winner — strip the trailing `-N` (where N is the day-of-week)
+/// and replace with `-0`. Mirrors Perl `getitem`'s
+/// `my $name = "$dayname[0]-0"` and the matching `Epi1` /
+/// `Pent01` redirects (those Sundays' files use the `-a` variant
+/// in 1570; the rule applies to the Mass-propers redirect, but the
+/// Tridentine 1570 corpus already chases `-a` for the Sunday
+/// winner so we don't repeat it here).
+fn sunday_key_for_winner(winner: &FileKey) -> Option<FileKey> {
+    if !matches!(winner.category, FileCategory::Tempora) {
+        return None;
+    }
+    let stem = &winner.stem;
+    // Stems like `Pent02-1`, `Quad3-4`, `Pasc6-1` etc.
+    let dash_idx = stem.rfind('-')?;
+    if dash_idx == 0 {
+        return None;
+    }
+    let week = &stem[..dash_idx];
+    Some(FileKey {
+        category: FileCategory::Tempora,
+        stem: format!("{week}-0"),
+    })
 }
 
 /// True when the winner is a Christmas-Octave weekday Tempora file

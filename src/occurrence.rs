@@ -123,8 +123,12 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     // to find the file that actually carries the rank/officium.
     let effective_tempora_key = effective_tempora_key(&tempora_key, corpus);
     let tempora_file = corpus.mass_file(&effective_tempora_key);
+    // Prefer `rank_num_1570` when the corpus has a 1570-specific
+    // override (e.g. Pent02-1: default 5.6 Semiduplex II classis,
+    // 1570 2.9 Semiduplex IIS classis). Without this the temporal
+    // rank carries a post-1570 promotion that distorts precedence.
     let temporal_rank = tempora_file
-        .and_then(|f| f.rank_num)
+        .and_then(|f| f.rank_num_1570.or(f.rank_num))
         .map(|r| downgrade_post_1570_octave(r, tempora_file.unwrap()))
         .unwrap_or(0.0);
 
@@ -197,9 +201,19 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
             reform_trace: vec![],
         }
     } else {
+        // Prefer the `commune_1570` annotation when present (e.g.
+        // Pent02-1's `(sed rubrica tridentina nisi rubrica
+        // cisterciensis) ;;Semiduplex IIS class;;2.9;;ex
+        // Tempora/Pent01-4`). This is what makes the Octave of
+        // Corpus Christi weekdays use Pent01-4 (Corpus Christi)
+        // propers under 1570 — the bare `commune` field carries the
+        // post-1570 default which differs.
         let (commune, commune_type) = match tempora_file {
             Some(f) => parse_commune_in_context(
-                f.commune.as_deref().unwrap_or(""),
+                f.commune_1570
+                    .as_deref()
+                    .or(f.commune.as_deref())
+                    .unwrap_or(""),
                 &tempora_key.category,
             ),
             None => (None, CommuneType::None),

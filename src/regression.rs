@@ -441,24 +441,88 @@ fn is_conditional_rubric(inside: &str) -> bool {
 /// First Latin occurrence wins (the upstream sometimes repeats a
 /// header on multi-Mass days, e.g. Christmas In Nocte / In Aurora /
 /// In Die share section names).
+///
+/// Column-aware: the upstream Mass renderer lays out a 2-column
+/// table (Latin / English). Each row is `<TR><TD ID='N'>Latin
+/// content</TD><TD>English content</TD></TR>`. We walk the Latin
+/// `<TD>` cells (those with `ID='N'`) and extract section bodies
+/// bounded by `</TD>` of the Latin column — never crossing into the
+/// English column. Without this, the Evangelium body on Palm Sunday
+/// (Quad6-0) reaches across `</TD><TD>` into the English-column's
+/// "Munda Cor" prayer + `<I>GOSPEL</I>` header, polluting the
+/// Latin body with English overflow.
 pub fn extract_perl_sections(html: &str) -> BTreeMap<String, String> {
-    let markers = section_marker_positions(html);
     let mut out: BTreeMap<String, String> = BTreeMap::new();
-    for i in 0..markers.len() {
-        let (name, _start, body_start) = &markers[i];
-        if !is_latin_proper(name) {
-            continue;
+    for column in latin_column_spans(html) {
+        let column_html = &html[column.start..column.end];
+        // Within a Latin column, find every section header and
+        // capture its body up to the next header in the same column
+        // (or end of column). Since each row's Latin column usually
+        // contains a single Mass-section header (preceded by rubric
+        // prologue), this is typically just one marker.
+        let markers = section_marker_positions(column_html);
+        for i in 0..markers.len() {
+            let (name, _start, body_start) = &markers[i];
+            if !is_latin_proper(name) {
+                continue;
+            }
+            if out.contains_key(*name) {
+                continue; // first occurrence wins
+            }
+            let body_end = markers
+                .get(i + 1)
+                .map(|(_, s, _)| *s)
+                .unwrap_or(column_html.len());
+            if *body_start <= body_end {
+                out.insert(
+                    (*name).to_string(),
+                    column_html[*body_start..body_end].to_string(),
+                );
+            }
         }
-        if out.contains_key(*name) {
-            continue; // first occurrence wins
-        }
-        let body_end = markers
-            .get(i + 1)
-            .map(|(_, s, _)| *s)
-            .unwrap_or(html.len());
-        if *body_start <= body_end {
-            out.insert((*name).to_string(), html[*body_start..body_end].to_string());
-        }
+    }
+    out
+}
+
+#[derive(Debug, Clone, Copy)]
+struct ColumnSpan {
+    start: usize,
+    end: usize,
+}
+
+/// Walk the HTML and return absolute byte spans of each Latin
+/// `<TD>` cell. Latin cells are identified by the `ID='N'` attribute
+/// in `<TD VALIGN='TOP' WIDTH='50%' ID='N'>` — the English column's
+/// `<TD>` has no `ID`.
+fn latin_column_spans(html: &str) -> Vec<ColumnSpan> {
+    let mut out = Vec::new();
+    let mut from = 0usize;
+    while from < html.len() {
+        // Each Latin column TD has a numeric ID, e.g. `ID='2'`. We
+        // search for the open-tag pattern, then locate the matching
+        // `</TD>` (HTML in this corpus has no nested TDs).
+        let needle_open = "<TD VALIGN='TOP' WIDTH='50%' ID='";
+        let open_rel = match html[from..].find(needle_open) {
+            Some(p) => p,
+            None => break,
+        };
+        let open_at = from + open_rel;
+        // Find the closing `>` of the opening tag — content starts
+        // after that.
+        let body_start = match html[open_at..].find('>') {
+            Some(p) => open_at + p + 1,
+            None => break,
+        };
+        let close_rel = match html[body_start..].find("</TD>") {
+            Some(p) => p,
+            None => break,
+        };
+        let body_end = body_start + close_rel;
+        out.push(ColumnSpan {
+            start: body_start,
+            end: body_end,
+        });
+        from = body_start + close_rel + "</TD>".len();
     }
     out
 }
@@ -764,7 +828,12 @@ pub fn compare_section(rust: &str, perl: &str) -> SectionStatus {
 }
 
 pub fn compare_section_named(rust: &str, perl: &str, section: &str) -> SectionStatus {
-    let r = normalize(rust);
+    // Apply the same rubric-stripping rules to BOTH sides so the
+    // comparison is symmetric. Rust may also emit `Glória tibi
+    // Dómine` etc. when rendering [Prelude] sub-sections inline
+    // (Triduum, Pent Vigil) and we want those framing rubrics to
+    // wash out on both sides. `strip_perl_rubrics` is idempotent.
+    let r = strip_perl_rubrics(&normalize(rust), section);
     let p = strip_perl_rubrics(&normalize(perl), section);
     match (r.is_empty(), p.is_empty()) {
         (true, true) => SectionStatus::Empty,

@@ -549,18 +549,32 @@ fn transferred_sancti_for_1570(
         let Some(entry) = kalendarium_1570::lookup(cursor_m, cursor_d) else {
             continue;
         };
+        // Octave-day saints ("Septima die infra Octavam ...", etc.)
+        // don't transfer in 1570 — they're commemorated or lost when
+        // preempted, never moved. Only fixed-date proper saints
+        // transfer. Heuristic match on the kalendar's saint-name.
+        if is_octave_day_kalendar_name(&entry.main.name) {
+            return None;
+        }
         // Was this kalendar entry preempted on its native date?
         let was_preempted = was_sancti_preempted_1570(
             cursor_y, cursor_m, cursor_d, entry, corpus,
         );
         if !was_preempted {
-            return None; // The prior feast wasn't bumped.
+            // Prior saint occupied its own day — keep walking back
+            // through it (the forward walk will respect blocking).
+            continue;
         }
-        // Walk forward from the bumped date. The first free day
-        // (no kalendar entry, and the temporal that day is one the
-        // saint can actually displace) gets the transfer.
+        // Walk forward from the bumped date. At each subsequent day:
+        //   * If the day is free (no native saint) AND the temporal
+        //     allows, the transferred saint lands here.
+        //   * If the day has a native saint of LOWER rank than the
+        //     transferred saint, the transfer displaces it (native
+        //     becomes a commemoration).
+        //   * Otherwise (saint of equal/higher rank, or temporal still
+        //     outranks) keep walking.
         let (mut walk_y, mut walk_m, mut walk_d) = (cursor_y, cursor_m, cursor_d);
-        loop {
+        for _ in 0..14 {
             let next = next_calendar_day(walk_y, walk_m, walk_d);
             walk_y = next.0;
             walk_m = next.1;
@@ -570,29 +584,61 @@ fn transferred_sancti_for_1570(
             if (walk_y, walk_m, walk_d) > (year, month, day) {
                 return None;
             }
-            if kalendarium_1570::lookup(walk_m, walk_d).is_some() {
-                // This day has its own saint. Skip — saint can't land
-                // here unless it outranks. For the simple Semiduplex
-                // case we punt and abandon the transfer.
-                return None;
+            // Is this day's slot available (free or lower-ranked saint)?
+            let native_here = kalendarium_1570::lookup(walk_m, walk_d);
+            let blocked = match native_here {
+                None => false, // free
+                Some(e) => e.main.rank_num >= entry.main.rank_num,
+            };
+            if blocked {
+                continue; // walk further — this day claims its native
             }
-            // This day is free. Does the transferred saint outrank
-            // today's temporal?
-            if !was_sancti_preempted_1570(walk_y, walk_m, walk_d, entry, corpus) {
-                if (walk_y, walk_m, walk_d) == (year, month, day) {
-                    return Some((
-                        entry.main.stem.clone(),
-                        entry.main.name.clone(),
-                        entry.main.rank_num,
-                    ));
-                }
-                // The saint settles on this earlier free day; today
-                // is unaffected.
-                return None;
+            // Slot available. Does the temporal still preempt the
+            // transferred saint here?
+            if was_sancti_preempted_1570(walk_y, walk_m, walk_d, entry, corpus) {
+                continue; // walk further
             }
+            // Saint can land here.
+            if (walk_y, walk_m, walk_d) == (year, month, day) {
+                return Some((
+                    entry.main.stem.clone(),
+                    entry.main.name.clone(),
+                    entry.main.rank_num,
+                ));
+            }
+            // The saint settles on an earlier free day; today is
+            // unaffected.
+            return None;
         }
+        return None;
     }
     None
+}
+
+/// True when the kalendar saint-name is for an octave-day entry that
+/// shouldn't transfer when preempted ("Die II infra Octavam ...",
+/// "Septima die infra Octavam ...", "Octavae Ss. ..."). Only proper
+/// (fixed-date) saints transfer in 1570.
+fn is_octave_day_kalendar_name(name: &str) -> bool {
+    let lower = name.to_lowercase();
+    // Octave-related forms (don't transfer in 1570).
+    if lower.contains("infra octavam")
+        || lower.contains("octava ")
+        || lower.contains("die infra")
+        || lower.contains("octavae ")
+        || lower.starts_with("die ")
+        || lower.starts_with("octava")
+        || lower.starts_with("octavae")
+    {
+        return true;
+    }
+    // Vigils are tied to the day before their saint — they don't
+    // transfer either; if preempted they're lost or shift to a
+    // different rule. Match both "vigilia" and "vigilae" forms.
+    if lower.starts_with("vigil") || lower.contains(" vigil") {
+        return true;
+    }
+    false
 }
 
 fn previous_calendar_day(year: i32, month: u32, day: u32) -> (i32, u32, u32) {
@@ -808,14 +854,23 @@ fn resolve_sancti_for_tridentine_1570(
     day: u32,
     corpus: &dyn Corpus,
 ) -> (FileKey, Option<SanctiEntry>) {
-    // Transferred-feast lookup: if today has no native kalendar entry,
-    // scan back up to 6 days for a Sancti that was preempted on its
-    // native date by a higher-ranked Sunday/feast and that hasn't been
-    // consumed by an intervening transfer.
-    if kalendarium_1570::lookup(month, day).is_none() {
-        if let Some((stem, name, rank_num)) =
-            transferred_sancti_for_1570(year, month, day, corpus)
-        {
+    // Transferred-feast lookup: scan back up to 6 days for a Sancti
+    // that was preempted on its native date by a higher-ranked
+    // Sunday/feast. Apply when:
+    //   1. Today has no native kalendar entry, OR
+    //   2. Today's native entry has lower rank than the transferred
+    //      saint (the transferred saint then displaces today's native
+    //      saint, who gets commemorated).
+    let native_entry = kalendarium_1570::lookup(month, day);
+    let native_rank = native_entry.map(|e| e.main.rank_num).unwrap_or(0.0);
+    if let Some((stem, name, rank_num)) =
+        transferred_sancti_for_1570(year, month, day, corpus)
+    {
+        let should_apply = match native_entry {
+            None => true,
+            Some(_) => rank_num > native_rank,
+        };
+        if should_apply {
             let key = resolve_sancti_stem(&stem, corpus);
             let metadata_key = effective_tempora_key(&key, corpus);
             let mass = corpus.mass_file(&metadata_key);

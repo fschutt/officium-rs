@@ -422,30 +422,40 @@ pub fn monthday(
 }
 
 /// Returns the special Divinum Officium “Sancti” folder date string in `MM-DD` format.
-/// This function adjusts for leap year in the historical sense: if day=24 and month=2 in
-/// a leap year, it becomes “02-29”; subsequent days in February are effectively shifted.
+/// This function adjusts for leap year in the historical sense: real Feb 24 → 02-29
+/// (the bissextile day), and real Feb 25..29 → 02-24..28 (saints "deferred" so they
+/// keep their original distance from March 1).
 ///
 /// ```
 /// # use divinum_officium::date::get_sday;
-/// assert_eq!(get_sday(2, 24, 2024), "02-29");
-/// assert_eq!(get_sday(2, 25, 2024), "02-30");
-/// // And so forth until 02-31 => after that, 03-01 is 03-01 again.
+/// assert_eq!(get_sday(2, 24, 2024), "02-29"); // real Feb 24 (leap) = bissextile
+/// assert_eq!(get_sday(2, 25, 2024), "02-24"); // real Feb 25 (leap) = Matthias day
+/// assert_eq!(get_sday(2, 24, 2025), "02-24"); // non-leap, unchanged
 /// ```
 pub fn get_sday(month: u32, day: u32, year: i32) -> String {
-    // The leap day is “kept” on Feb 24 => “02-29”.
-    // Then 25 => “02-30”, 26 => “02-31”, 27 => “02-32” if a leap year.
-    // That’s how older rubrics number them in “Sancti/” data files.
+    let (m, d) = sday_pair(month, day, year);
+    format!("{:02}-{:02}", m, d)
+}
+
+/// Same shift as `get_sday`, but returned as `(month, day)` so that
+/// callers indexing `(u32, u32)` keys (`kalendarium_1570::lookup`,
+/// `Corpus::sancti_entries`) don't need to re-parse a formatted
+/// string.
+///
+/// Mirrors the upstream `DivinumOfficium::Date::get_sday` Perl: in a
+/// leap year, real Feb 24 → kalendar 02-29 (the bissextile day), and
+/// real Feb 25..29 → kalendar 02-24..28 (the saint-table days are
+/// kept at their original distance from March 1, so they get
+/// "deferred" by one day). Non-February dates pass through.
+pub fn sday_pair(month: u32, day: u32, year: i32) -> (u32, u32) {
     if leap_year(year) && month == 2 {
         if day == 24 {
-            // 24 => 29
-            return "02-29".to_string();
+            return (2, 29);
         } else if day > 24 {
-            // shift by one day
-            let d = day - 1;
-            return format!("02-{:02}", d);
+            return (2, day - 1);
         }
     }
-    format!("{:02}-{:02}", month, day)
+    (month, day)
 }
 
 /// Returns the “Sancti/” date (MM-DD) for the *next* calendar day, used

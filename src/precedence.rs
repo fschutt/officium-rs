@@ -81,7 +81,11 @@ fn resolve_rank(
     let rank_num = occ.rank;
     let raw_label = if occ.sanctoral_office {
         // Sanctoral winner — pull rank_class from the Sancti corpus.
-        let entries = corpus.sancti_entries(input.date.month, input.date.day);
+        // Apply the Tridentine leap shift (real Feb 24 in leap year →
+        // sancti key 02-29, etc.) so we hit the right entry.
+        let (look_m, look_d) =
+            date::sday_pair(input.date.month, input.date.day, input.date.year);
+        let entries = corpus.sancti_entries(look_m, look_d);
         sancti::pick_by_rubric(entries, &["default", "1570"])
             .map(|e| e.rank_class.clone())
             .unwrap_or_default()

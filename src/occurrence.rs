@@ -728,7 +728,8 @@ fn transferred_sancti_for_1570(
         cursor_y = prev.0;
         cursor_m = prev.1;
         cursor_d = prev.2;
-        let Some(entry) = kalendarium_1570::lookup(cursor_m, cursor_d) else {
+        let (look_m, look_d) = date::sday_pair(cursor_m, cursor_d, cursor_y);
+        let Some(entry) = kalendarium_1570::lookup(look_m, look_d) else {
             continue;
         };
         // Octave-day saints ("Septima die infra Octavam ...", etc.)
@@ -767,7 +768,8 @@ fn transferred_sancti_for_1570(
                 return None;
             }
             // Is this day's slot available (free or lower-ranked saint)?
-            let native_here = kalendarium_1570::lookup(walk_m, walk_d);
+            let (look_m2, look_d2) = date::sday_pair(walk_m, walk_d, walk_y);
+            let native_here = kalendarium_1570::lookup(look_m2, look_d2);
             let blocked = match native_here {
                 None => false, // free
                 Some(e) => e.main.rank_num >= entry.main.rank_num,
@@ -917,8 +919,9 @@ fn was_sancti_preempted_1570(
     // kalendar=2.0, corpus=2.2) report preempted by Sept Embertide
     // Wednesday (rank 2.1 from monthday overlay) when in fact the
     // saint outranks the embertide.
+    let (look_m, look_d) = date::sday_pair(month, day, year);
     let corpus_rank = corpus
-        .sancti_entries(month, day)
+        .sancti_entries(look_m, look_d)
         .iter()
         .find_map(|e| e.rank_num)
         .unwrap_or(0.0);
@@ -1090,7 +1093,8 @@ fn resolve_sancti_for_tridentine_1570(
     //   2. Today's native entry has lower rank than the transferred
     //      saint (the transferred saint then displaces today's native
     //      saint, who gets commemorated).
-    let native_entry = kalendarium_1570::lookup(month, day);
+    let (look_m, look_d) = date::sday_pair(month, day, year);
+    let native_entry = kalendarium_1570::lookup(look_m, look_d);
     let native_rank = native_entry.map(|e| e.main.rank_num).unwrap_or(0.0);
     if let Some((stem, name, rank_num)) =
         transferred_sancti_for_1570(year, month, day, corpus)
@@ -1116,7 +1120,7 @@ fn resolve_sancti_for_tridentine_1570(
             return (key, Some(entry));
         }
     }
-    if let Some(override_) = kalendarium_1570::lookup(month, day) {
+    if let Some(override_) = kalendarium_1570::lookup(look_m, look_d) {
         // Some kalendar entries assume a specific weekday — e.g.
         // 01-12 → 01-12t = "Dominica infra Octavam Epi" assumes
         // Jan 12 is Sunday, which fails in years like 2026 where

@@ -739,6 +739,16 @@ fn transferred_sancti_for_1570(
         if is_octave_day_kalendar_name(&entry.main.name) {
             return None;
         }
+        // Tridentine 1570 rule: only Duplex+ feasts transfer when
+        // preempted. Simplex (1.x) and Semiduplex (2.x) saints are
+        // commemorated under the higher-ranking office and lost when
+        // preempted; they don't move forward to the next free day.
+        // Without this guard, Louis of France (Aug 25, rank 2.2)
+        // displaced by a Sunday wrongly lands on Aug 26 and bumps
+        // Zephyrinus instead of being commemorated.
+        if entry.main.rank_num < 3.0 {
+            return None;
+        }
         // Was this kalendar entry preempted on its native date?
         let was_preempted = was_sancti_preempted_1570(
             cursor_y, cursor_m, cursor_d, entry, corpus,

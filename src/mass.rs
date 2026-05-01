@@ -54,8 +54,22 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         .and_then(|f| f.sections.get("Rule"))
         .map(String::as_str)
         .unwrap_or("");
+    // For Triduum / Vigil days where [Rule] is "Full text" or
+    // "Prelude", the actual Mass content lives inside [Prelude] as
+    // `!!<Section>` sub-blocks (see Quad6-0 Palm Sunday, Quad6-5
+    // Good Friday, Quad6-6 Holy Saturday, Pasc6-6 Pent Vigil). We
+    // extract those sub-blocks here and apply them as overrides to
+    // the regular Mass-propers resolution. Mirrors what the Perl
+    // renderer does when it splits the [Prelude] body on `!!` and
+    // emits each segment as a labelled `<I>HeaderName</I>` block,
+    // with the regression extractor's "first header wins" picking
+    // up the first segment.
+    let prelude_overrides = winner_file
+        .and_then(|f| f.sections.get("Prelude"))
+        .map(|p| extract_prelude_subsections(p))
+        .unwrap_or_default();
     if winner_rule.contains("Full text") {
-        return MassPropers::default();
+        return mass_propers_from_prelude_only(&prelude_overrides);
     }
     let in_paschal_season_for_alleluja = matches!(
         office.season,
@@ -137,6 +151,31 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         } else {
             effective_sect
         };
+        // Prelude `!!Section` override: when the winner's [Prelude]
+        // body has a sub-block matching the requested section
+        // (e.g. Quad6-0 Palm Sunday's [Prelude] has `!!Lectio`,
+        // `!!Graduale`, `!!Evangelium` for the Blessing of Palms),
+        // use that body. Perl renders the Prelude inline before the
+        // Mass propers, so the comparator's "first occurrence wins"
+        // picks up the Prelude sub-block.
+        if let Some(prelude_body) = prelude_overrides.get(sect) {
+            let block = ProperBlock {
+                latin: prelude_body.clone(),
+                source: resolved.winner.clone(),
+                via_commune: false,
+            };
+            let block = ProperBlock {
+                latin: apply_body_conditionals_1570(&block.latin),
+                ..block
+            };
+            let block = substitute_name_with_corpus(block, sect, winner_file, Some(corpus));
+            let latin = apply_post_septuagesima_conditional(
+                &block.latin, in_post_septuagesima,
+            );
+            let latin = spell_var_pre1960(&do_expand_macros(&latin));
+            let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
+            return Some(ProperBlock { latin, ..block });
+        }
         let block = proper_block(&resolved, final_sect, corpus)?;
         // Apply body conditionals FIRST — before name substitution.
         // `replace_n_dot` collapses `N\..*?N\.` across lines, so a
@@ -179,7 +218,22 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         office.season,
         crate::divinum_officium::core::Season::Easter
     );
-    let graduale = if in_tractus_season {
+    let graduale = if let Some(prelude_body) = prelude_overrides.get("Graduale") {
+        // Prelude `!!Graduale` overrides the Mass Graduale on
+        // Triduum / Vigil days (Quad6-0 Palm Sunday's "Collegerunt
+        // pontifices" responsorium, etc.).
+        let block = ProperBlock {
+            latin: prelude_body.clone(),
+            source: resolved.winner.clone(),
+            via_commune: false,
+        };
+        let block = substitute_name_with_corpus(block, "Graduale", winner_file, Some(corpus));
+        let latin = apply_body_conditionals_1570(&block.latin);
+        let latin = apply_post_septuagesima_conditional(&latin, in_post_septuagesima);
+        let latin = spell_var_pre1960(&do_expand_macros(&latin));
+        let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
+        Some(ProperBlock { latin, ..block })
+    } else if in_tractus_season {
         // Mirror Perl `getitem` ll. 851-852 / 856 exactly: prefer
         // Tractus over Graduale at the same fallback level. Winner
         // first, then commune, then feria-Sunday — at each level,
@@ -1232,6 +1286,145 @@ fn winner_has_oratio_dominica(winner_file: &MassFile) -> bool {
         .get("Rule")
         .map(|s| s.to_lowercase().contains("oratio dominica"))
         .unwrap_or(false)
+}
+
+/// True for inline rubric lines like `! Deinde cantatur pro Graduali.`
+/// — single `!` followed by a SPACE then Latin text. Citation
+/// headers `!Exod 15:27` (no space after `!`, immediately
+/// alphanumeric) stay.
+fn is_inline_latin_rubric(line: &str) -> bool {
+    let t = line.trim_start();
+    if let Some(rest) = t.strip_prefix('!') {
+        // `!!` is a sub-section header — already handled.
+        if rest.starts_with('!') {
+            return false;
+        }
+        // `! ` (space) = inline rubric.
+        rest.starts_with(' ') || rest.starts_with('\t') || rest.is_empty()
+    } else {
+        false
+    }
+}
+
+/// Walk a body and extract `!!<Section>` sub-blocks. Each
+/// `!!Header` line starts a new sub-block; everything until the next
+/// `!!Header` (or end-of-body) belongs to that header. Used for
+/// Triduum / Vigil days where the Prelude body has inline section
+/// labels for the special-day Lectio / Graduale / Tractus /
+/// Evangelium / Communio. Returns a map from section name (e.g.
+/// "Lectio") to the body content (with surrounding `_` separators
+/// trimmed).
+///
+/// Only Mass-section names that ALSO appear in `MassPropers` are
+/// captured. Other `!!` headers (`Prophetia Prima`, `Benedictio
+/// cerei`, `Tractus`) are ignored unless they map to a Mass slot.
+fn extract_prelude_subsections(body: &str) -> std::collections::HashMap<&'static str, String> {
+    let known_sections: &[&'static str] = &[
+        "Introitus", "Oratio", "Lectio", "Graduale", "Tractus",
+        "Sequentia", "Evangelium", "Offertorium", "Secreta",
+        "Prefatio", "Communio", "Postcommunio",
+    ];
+    let mut out: std::collections::HashMap<&'static str, String> =
+        std::collections::HashMap::new();
+    let lines: Vec<&str> = body.split('\n').collect();
+    let mut current: Option<&'static str> = None;
+    let mut current_body: Vec<&str> = Vec::new();
+    let flush =
+        |current: Option<&'static str>,
+         current_body: &mut Vec<&str>,
+         out: &mut std::collections::HashMap<&'static str, String>| {
+            if let Some(name) = current {
+                if !out.contains_key(name) {
+                    // Filter out single-bang Latin rubric lines
+                    // (`! Deinde cantatur pro Graduali.`). Citation
+                    // headers `!Exod 15:27` (no space after !) stay.
+                    let kept: Vec<&str> = current_body
+                        .iter()
+                        .copied()
+                        .filter(|line| !is_inline_latin_rubric(line))
+                        .collect();
+                    let trimmed = kept
+                        .join("\n")
+                        .trim()
+                        .trim_matches(|c: char| c == '_' || c.is_whitespace())
+                        .to_string();
+                    if !trimmed.is_empty() {
+                        out.insert(name, trimmed);
+                    }
+                }
+            }
+            current_body.clear();
+        };
+    let mut prev_was_separator = false;
+    for line in lines {
+        let trimmed = line.trim();
+        if let Some(rest) = trimmed.strip_prefix("!!") {
+            let header = rest.trim();
+            // Match header against known section names.
+            let matched = known_sections.iter().find(|&&s| s == header).copied();
+            flush(current, &mut current_body, &mut out);
+            current = matched;
+            prev_was_separator = false;
+            continue;
+        }
+        // Two consecutive `_` separator lines mark a paragraph
+        // boundary that Perl renders as an extra `<br/>` and which
+        // ends the implicit `!!Section` scope (subsequent content
+        // belongs to the next-following block, not this section).
+        // Drives Quad6-0 Palm Sunday's `!!Graduale` body — the
+        // Vigilate / Spiritus quidem responsorium ends with `_\n_\n`,
+        // followed by the Munda Cor prayer for the Gospel that's
+        // displayed in a SEPARATE block.
+        let is_sep = trimmed == "_";
+        if is_sep && prev_was_separator {
+            // End the current section's body here.
+            if current.is_some() {
+                flush(current, &mut current_body, &mut out);
+                current = None;
+            }
+            prev_was_separator = false;
+            continue;
+        }
+        prev_was_separator = is_sep;
+        if current.is_some() {
+            current_body.push(line);
+        }
+    }
+    flush(current, &mut current_body, &mut out);
+    out
+}
+
+/// Build a `MassPropers` using ONLY the Prelude subsections, when
+/// [Rule] is "Full text" and the regular Mass propers don't apply.
+/// Drives Quad6-5 (Good Friday) and Quad6-6 (Holy Saturday).
+fn mass_propers_from_prelude_only(
+    prelude_overrides: &std::collections::HashMap<&'static str, String>,
+) -> MassPropers {
+    let mk = |sect: &'static str| -> Option<ProperBlock> {
+        prelude_overrides.get(sect).map(|body| ProperBlock {
+            latin: body.clone(),
+            source: FileKey {
+                category: FileCategory::Other(String::new()),
+                stem: String::new(),
+            },
+            via_commune: false,
+        })
+    };
+    MassPropers {
+        introitus: mk("Introitus"),
+        oratio: mk("Oratio"),
+        lectio: mk("Lectio"),
+        graduale: mk("Graduale"),
+        tractus: None, // Tractus column suppressed (folded into Graduale)
+        sequentia: mk("Sequentia"),
+        evangelium: mk("Evangelium"),
+        offertorium: mk("Offertorium"),
+        secreta: mk("Secreta"),
+        prefatio: mk("Prefatio"),
+        communio: mk("Communio"),
+        postcommunio: mk("Postcommunio"),
+        commemorations: vec![],
+    }
 }
 
 /// Detect a path-prefixed self-reference like

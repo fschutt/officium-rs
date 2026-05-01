@@ -86,6 +86,16 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             sect
         };
         let block = proper_block(&resolved, effective_sect, corpus)?;
+        // Apply body conditionals FIRST — before name substitution.
+        // `replace_n_dot` collapses `N\..*?N\.` across lines, so a
+        // body with two conditional variants ("...beatum N. ... in
+        // cœlis." + "(sed ...)" + "...beatum N. ... in cælis.")
+        // would get mangled into the second-variant text if we
+        // substituted N. before dropping the FALSE conditional.
+        let block = ProperBlock {
+            latin: apply_body_conditionals_1570(&block.latin),
+            ..block
+        };
         let block = substitute_name_with_corpus(block, sect, winner_file, Some(corpus));
         let latin = apply_post_septuagesima_conditional(
             &block.latin, in_post_septuagesima,
@@ -116,6 +126,7 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         // (winner has Graduale but no Tractus) on its local
         // [Graduale] instead of jumping to C3's [Tractus].
         graduale_or_tractus(&resolved, corpus)
+            .map(|block| ProperBlock { latin: apply_body_conditionals_1570(&block.latin), ..block })
             .map(|block| substitute_name_with_corpus(block, "Graduale", winner_file, Some(corpus)))
             .map(|block| {
                 let latin = apply_post_septuagesima_conditional(&block.latin, in_post_septuagesima);
@@ -124,11 +135,21 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
                 ProperBlock { latin, ..block }
             })
     } else if in_paschal_season {
-        // Perl `getitem`: in Pasc, Graduale slot reads `GradualeP`
-        // when present (Marian commune in Pasc weeks 1-5). Fall back
-        // to `Graduale` for the Pasc6 / Pasc7 weeks where some
-        // files only carry the bare form.
-        go("GradualeP").or_else(|| go("Graduale"))
+        // Mirror Perl `getitem` ll. 849 / 855: prefer GradualeP at
+        // the same fallback level. So a winner with its own [Graduale]
+        // (Athanasius 05-02 ships an Alleluja-prefixed paschal
+        // Graduale) keeps that local body — only commune-fallback
+        // GradualeP fires if the winner has neither GradualeP nor
+        // Graduale.
+        gradualep_or_graduale(&resolved, corpus)
+            .map(|block| ProperBlock { latin: apply_body_conditionals_1570(&block.latin), ..block })
+            .map(|block| substitute_name_with_corpus(block, "Graduale", winner_file, Some(corpus)))
+            .map(|block| {
+                let latin = apply_post_septuagesima_conditional(&block.latin, in_post_septuagesima);
+                let latin = spell_var_pre1960(&expand_macros(&latin));
+                let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
+                ProperBlock { latin, ..block }
+            })
     } else {
         go("Graduale")
     };
@@ -156,6 +177,80 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         // Postcommunio.
         commemorations: vec![],
     }
+}
+
+/// Apply general SCOPE_LINE `(sed PREDICATE)` body conditionals
+/// under the 1570 baseline. Mirrors the Perl `setupstring` parsing
+/// where each `(sed PRED)` line scopes the immediately preceding
+/// and following non-blank lines:
+///
+///   * If PRED is TRUE under the active rubric, the next line
+///     REPLACES the previous one (and both the conditional marker
+///     and the next line are consumed).
+///   * If PRED is FALSE, the conditional marker and the next line
+///     are dropped — the previous line stays.
+///
+/// Predicates are limited to those handled by
+/// `eval_simple_conditional_1570` (rubric/communi flags, AND/OR/NOT
+/// over `aut`/`et`/`nisi`). Predicates that are seasonal (`tempore
+/// adventus`, `post septuagesima`) are skipped here — those have
+/// dedicated handlers above. Recognised TRUE-under-1570 predicates
+/// flip the body in-place so the comparator sees the reformed-form
+/// body, not both variants concatenated.
+fn apply_body_conditionals_1570(text: &str) -> String {
+    let lines: Vec<&str> = text.split('\n').collect();
+    let mut out: Vec<String> = Vec::with_capacity(lines.len());
+    let mut i = 0;
+    while i < lines.len() {
+        let line = lines[i];
+        let trimmed = line.trim();
+        let conditional_inner = trimmed
+            .strip_prefix('(')
+            .and_then(|s| s.strip_suffix(')'));
+        let inner = match conditional_inner {
+            Some(s) => s,
+            None => {
+                out.push(line.to_string());
+                i += 1;
+                continue;
+            }
+        };
+        // Skip seasonal predicates we handle elsewhere.
+        let lc = inner.to_lowercase();
+        if lc.contains("post septuage")
+            || lc.contains("tempore adventus")
+            || lc.contains("tempore pasch")
+            || lc.contains("tempore quad")
+            || lc.contains("tempore nat")
+            || lc.contains("ad missam")
+        {
+            out.push(line.to_string());
+            i += 1;
+            continue;
+        }
+        // Bail on predicates we can't evaluate. Returning the
+        // conditional marker as-is keeps the input shape.
+        let truth = eval_simple_conditional_1570(inner);
+        let alt_idx = (i + 1..lines.len()).find(|&j| !lines[j].trim().is_empty());
+        if truth {
+            // Drop preceding non-blank line, replace with next line.
+            // Walk back through `out` skipping blank lines to find
+            // the previous non-blank line.
+            while let Some(last) = out.last() {
+                if last.trim().is_empty() {
+                    out.pop();
+                } else {
+                    break;
+                }
+            }
+            out.pop();
+            if let Some(j) = alt_idx {
+                out.push(lines[j].to_string());
+            }
+        }
+        i = alt_idx.map(|j| j + 1).unwrap_or(i + 1);
+    }
+    out.join("\n")
 }
 
 /// Apply the inline `(sed post Septuagesimam dicitur)` body
@@ -712,6 +807,73 @@ fn graduale_or_tractus(
                 }
                 probes.push("Graduale");
                 for sect in probes {
+                    if let Some(b) = read_section(
+                        sunday_file, &sunday_key, sect, corpus, false,
+                    ) {
+                        return Some(b);
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Pasc-season analogue of `graduale_or_tractus`: at each fallback
+/// level, prefer `[GradualeP]` over `[Graduale]`. Mirrors Perl
+/// `getitem` ll. 849 / 855. On Embertide-style days (Pasc7-3, etc.)
+/// the `[GradualeL1]` form is preferred at the winner level.
+fn gradualep_or_graduale(
+    office: &OfficeOutput,
+    corpus: &dyn Corpus,
+) -> Option<ProperBlock> {
+    let winner_file = corpus.mass_file(&office.winner)?;
+    let winner_post_1570 = is_post_1570_octave_file(winner_file);
+    let has_lectio_l = winner_has_lectio_l_rule(Some(winner_file), corpus);
+    if !winner_post_1570 {
+        let probes: &[&str] = if has_lectio_l {
+            &["GradualeL1", "GradualeP", "Graduale"]
+        } else {
+            &["GradualeP", "Graduale"]
+        };
+        for sect in probes {
+            if let Some(b) = read_section(winner_file, &office.winner, sect, corpus, false) {
+                return Some(b);
+            }
+        }
+    }
+    if commune_eligible(office.commune_type) {
+        if let Some(commune_key) = office.commune.as_ref() {
+            let resolved_commune = paschal_commune_swap(commune_key, office.season, corpus);
+            let resolved_commune = chase_missing_commune(&resolved_commune, corpus);
+            if let Some(commune_file) = corpus.mass_file(&resolved_commune) {
+                if !is_post_1570_octave_file(commune_file) {
+                    for sect in ["GradualeP", "Graduale"] {
+                        if let Some(b) = read_section_skipping_annotated(
+                            commune_file, &resolved_commune, sect, corpus,
+                        ) {
+                            return Some(b);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if matches!(office.winner.category, FileCategory::Tempora) {
+        if let Some(mut sunday_key) = tempora_feria_sunday_fallback(&office.winner) {
+            if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
+                if is_post_1570_octave_file(sunday_file) {
+                    let r_key = FileKey {
+                        category: sunday_key.category.clone(),
+                        stem: format!("{}r", sunday_key.stem),
+                    };
+                    if corpus.mass_file(&r_key).is_some() {
+                        sunday_key = r_key;
+                    }
+                }
+            }
+            if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
+                for sect in ["GradualeP", "Graduale"] {
                     if let Some(b) = read_section(
                         sunday_file, &sunday_key, sect, corpus, false,
                     ) {

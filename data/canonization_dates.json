@@ -1,0 +1,93 @@
+{
+  "_README": [
+    "Canonization / instituting-feast dates for Sancti entries.",
+    "Maps Sancti file-stem → metadata. Used by the year-aware corpus filter",
+    "in Phase 7+ to suppress saints / feasts that didn't exist in the",
+    "year being rendered.",
+    "",
+    "Schema:",
+    "  added         year the saint/feast was added to the Roman calendar",
+    "                (canonized + universal-calendar promotion date)",
+    "  elevated      year the rank was raised (e.g. Class III → II)",
+    "                — same year as `added` if no later promotion",
+    "  suppressed    year the saint/feast was REMOVED from the universal",
+    "                calendar (often 1955, 1960, 1969). null if still",
+    "                present in 1962.",
+    "  rank_history  list of [year, rank] pairs: rank changes over time.",
+    "                First entry = `added` year + initial rank.",
+    "  source        citation: bull, papal document, Acta SS., Wikipedia.",
+    "",
+    "Default for missing entries: { added: 1570, suppressed: null }",
+    "(saint was on the calendar in 1570, never removed pre-1962).",
+    "",
+    "Canonical reference: Pius V's _Quo primum_ (1570), as augmented by",
+    "Acta Apostolicae Sedis through the 1962 Missale Romanum.",
+    "",
+    "Sources we cross-reference (in order of authority):",
+    "  1. Acta Apostolicae Sedis (each papal bull / decree)",
+    "  2. DiPippo's *Compendium Romani Breviarii* (1962 edition)",
+    "  3. _Liber Pontificalis_",
+    "  4. Wikipedia 'List of saints canonized by Pope X'",
+    "",
+    "Initial entries below cover the high-impact post-1570 additions",
+    "that affect the 11-year sweep failures. Phase 7+ extends to",
+    "every saint that was added/elevated/suppressed between 1570",
+    "and 1962.",
+    "",
+    "TBD: this is a stub. Phase 7's first deliverable is to populate",
+    "this from the Acta SS. + DiPippo without manual data entry of",
+    "all 250+ entries. Possible approaches: parse upstream's",
+    "Tabulae/Kalendaria/<rubric>.txt files (which encode rank-by-rubric",
+    "for each date) into a temporal table; or scrape Wikipedia's",
+    "'List of saints canonized by ...' tables."
+  ],
+  "Sancti/01-25": {
+    "officium": "Conversio S. Pauli",
+    "added": 1570,
+    "rank_history": [[1570, "Duplex"], [1908, "Duplex majus"]],
+    "suppressed": null,
+    "source": "_Quo primum_ 1570; Pius X 1908 elevation"
+  },
+  "Sancti/03-19": {
+    "officium": "S. Joseph Sponsi BMV",
+    "added": 1570,
+    "rank_history": [[1570, "Duplex"], [1729, "Duplex II classis"], [1870, "Duplex I classis"]],
+    "suppressed": null,
+    "source": "Pius IX 1870 'Quemadmodum Deus' (Patron of Universal Church)"
+  },
+  "Sancti/05-31": {
+    "officium": "B. Mariæ Virginis Reginæ",
+    "added": 1955,
+    "rank_history": [[1955, "Duplex II classis"]],
+    "suppressed": null,
+    "source": "Pius XII 1954 _Ad caeli Reginam_; instituted 31 May 1955"
+  },
+  "Sancti/06-21": {
+    "officium": "S. Aloysii Gonzagae Confessoris",
+    "added": 1726,
+    "rank_history": [[1726, "Semiduplex"], [1741, "Duplex"]],
+    "suppressed": null,
+    "source": "Benedict XIII canonization 1726; Benedict XIV elevation"
+  },
+  "Sancti/07-05oct": {
+    "officium": "In Octava S. Antonii M. Zaccaria",
+    "added": 1897,
+    "rank_history": [[1897, "Octave"]],
+    "suppressed": 1955,
+    "source": "Leo XIII 1897 instituted; Pius XII 1955 _Cum nostra hac aetate_ abolished octave"
+  },
+  "Sancti/10-25": {
+    "officium": "D.N.J.C. Regis",
+    "added": 1925,
+    "rank_history": [[1925, "Duplex I classis"]],
+    "suppressed": null,
+    "source": "Pius XI 1925 _Quas primas_"
+  },
+  "Sancti/12-08": {
+    "officium": "In Conceptione Immaculata BMV",
+    "added": 1476,
+    "rank_history": [[1476, "Festum"], [1708, "Duplex"], [1854, "Duplex I classis"]],
+    "suppressed": null,
+    "source": "Sixtus IV 1476 'Cum praeexcelsa'; Pius IX 1854 _Ineffabilis Deus_ defined dogma"
+  }
+}

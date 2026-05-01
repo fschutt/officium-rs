@@ -176,6 +176,47 @@ The actual behavior in `getproprium` (propers.pl) treats these
 slightly differently (the `flag` parameter). A port that reads only
 the file format would think they're synonyms.
 
+## 14. Pent01-0 (Trinity Sunday) self-references itself → Perl infinite recursion
+
+`Tempora/Pent01-0.txt` (Dominica Sanctissimæ Trinitatis under
+Tridentine 1570) has:
+
+```
+[Introitus]
+@Tempora/Pent01-0:Introitus
+```
+
+This is a literal self-reference. Perl's `setupstring` follows the
+`@`-reference, lands in the same file's `[Introitus]` body, and
+recurses indefinitely until it crashes with the error message:
+
+> Cannot resolve too deeply nested Hashes
+
+We see this verbatim in the rendered HTML for May 31, 2026 (Trinity
+Sunday) under Tridentine - 1570.
+
+The proper Trinity Sunday Introit ("Benedícta sit sancta Trínitas
+atque indivísa Unitas", Tob 12:6) lives in
+`Tempora/Pent01-0r.txt`, which has identical [Officium] /
+[Rank] / [Oratio] but a real [Introitus] body. The
+`Tabulae/Tempora/Generale.txt` redirect table redirects
+`Pent01-0 → Pent01-0r` for **1960 Newcal** but not for Tridentine.
+
+This means: **under Tridentine 1570 + Trinity Sunday, the upstream
+Perl renderer crashes on the Introit**, while our Rust port avoids
+the loop and falls through to the `-r` sibling variant — emitting
+the correct Trinity Introit. The regression harness flags this as
+"Differ" (perl text = error message vs rust text = real Introit),
+but Rust's behavior is the desired output.
+
+Recommended upstream fix: change `Pent01-0.txt:[Introitus]` to
+`@Tempora/Pent01-0r:Introitus`, OR add a Tridentine-side redirect to
+`Tabulae/Tempora/Generale.txt`:
+
+```
+Tempora/Pent01-0=Tempora/Pent01-0r;;Trident
+```
+
 ## 13. Suffragium first-block layout is not deterministic from `Suffr=…`
 
 The `Suffr=Maria3;Ecclesiæ,Papa;;` directive in `[Rule]` controls

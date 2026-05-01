@@ -1234,6 +1234,40 @@ fn winner_has_oratio_dominica(winner_file: &MassFile) -> bool {
         .unwrap_or(false)
 }
 
+/// Detect a path-prefixed self-reference like
+/// `Tempora/Pent01-0:Introitus` from within `Tempora/Pent01-0`, and
+/// return a sibling variant key (`Tempora/Pent01-0r`,
+/// `Tempora/Pent01-0a`, `Tempora/Pent01-0t`) that exists in the
+/// corpus. Returns None if the reference isn't a self-loop or no
+/// sibling fixes the loop.
+///
+/// Workaround for upstream Perl's "Cannot resolve too deeply nested
+/// Hashes" infinite-recursion crash — see UPSTREAM_WEIRDNESSES.md #14.
+fn self_reference_sibling(
+    body: &str,
+    self_key: &FileKey,
+    corpus: &dyn Corpus,
+) -> Option<FileKey> {
+    let first_line = body.lines().next()?.trim();
+    let (path, _section_spec) = first_line.split_once(':').map(|(p, s)| (p.trim(), s.trim()))?;
+    let target = FileKey::parse(path);
+    if &target != self_key {
+        return None;
+    }
+    // Same file — recursion would loop. Try sibling variants.
+    for suffix in ["r", "a", "t", "o"] {
+        let sibling_stem = format!("{}{}", self_key.stem, suffix);
+        let sib_key = FileKey {
+            category: self_key.category.clone(),
+            stem: sibling_stem,
+        };
+        if corpus.mass_file(&sib_key).is_some() {
+            return Some(sib_key);
+        }
+    }
+    None
+}
+
 /// Return the lowercased [Rule] body of the winner file, if present.
 /// Used by the Defunctorum-mode + LectioL detectors.
 fn winner_rule_lc(winner_file: Option<&MassFile>) -> Option<String> {
@@ -1786,6 +1820,28 @@ fn read_section(
                 // self-reference target missing or unrecognised — fall
                 // through to parent inherit
             } else {
+                // Detect path-prefixed self-reference (e.g.
+                // `@Tempora/Pent01-0:Introitus` from inside the same
+                // file) — Tempora/Pent01-0 [Introitus] has this exact
+                // self-reference under 1570, which makes Perl's
+                // `setupstring` recurse infinitely and emit "Cannot
+                // resolve too deeply nested Hashes". Try a sibling
+                // variant (`-r`, `-a`) under the same stem when the
+                // self-reference is detected — the `-r` variant is
+                // upstream's "fixed" form for Trinity Sunday.
+                // See UPSTREAM_WEIRDNESSES.md #14.
+                let sibling = self_reference_sibling(stripped, file_key, corpus);
+                if let Some(sib_key) = sibling {
+                    if let Some(sib_file) = corpus.mass_file(&sib_key) {
+                        return read_section(
+                            sib_file,
+                            &sib_key,
+                            section,
+                            corpus,
+                            via_commune,
+                        );
+                    }
+                }
                 return chase_at_reference(stripped, section, corpus, via_commune, 1);
             }
         }

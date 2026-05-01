@@ -42,11 +42,17 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
     let resolved = resolve_multi_mass(office, corpus);
 
     let winner_file = corpus.mass_file(&resolved.winner);
+    let in_paschal_season_for_alleluja = matches!(
+        office.season,
+        crate::divinum_officium::core::Season::Easter
+    );
     let go = |sect: &str| -> Option<ProperBlock> {
         let block = proper_block(&resolved, sect, corpus)?;
         let block = substitute_name_with_corpus(block, sect, winner_file, Some(corpus));
+        let latin = spell_var_pre1960(&expand_macros(&block.latin));
+        let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
         Some(ProperBlock {
-            latin: spell_var_pre1960(&expand_macros(&block.latin)),
+            latin,
             ..block
         })
     };
@@ -104,6 +110,57 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         // Postcommunio.
         commemorations: vec![],
     }
+}
+
+/// Mirror Perl `getitem` ll. 870-879: parenthesised `(Alleluja, …)`
+/// blocks toggle on the season —
+///   * In Pasc seasons, drop the parens but keep the content.
+///   * Otherwise, strip the whole parenthetical.
+///
+/// This drives the Common-of-Apostles Sacerdotes Tui Introitus on
+/// transferred Easter-cycle dates: the file ships
+///   `(Allelúja, allelúja.)`
+/// which becomes
+///   `Allelúja, allelúja.`
+/// during Pasc1..Pasc7 and disappears entirely the rest of the year.
+fn strip_parenthetical_alleluja(text: &str, paschal: bool) -> String {
+    // Greedy left-to-right scan. We don't bring in `regex` for one
+    // helper; the pattern is unambiguous and the inputs are short.
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(open) = rest.find('(') {
+        out.push_str(&rest[..open]);
+        let after_open = &rest[open + 1..];
+        let lower: String = after_open
+            .chars()
+            .take(4)
+            .flat_map(char::to_lowercase)
+            .collect();
+        if !(lower.starts_with("alle") || lower.starts_with("allé")) {
+            // Not an Alleluja parenthetical — keep the literal `(`
+            // and continue past it.
+            out.push('(');
+            rest = after_open;
+            continue;
+        }
+        // Find the matching `)`. Inputs don't nest parens here.
+        match after_open.find(')') {
+            Some(close) => {
+                if paschal {
+                    // Keep the content (without the parens).
+                    out.push_str(&after_open[..close]);
+                }
+                rest = &after_open[close + 1..];
+            }
+            None => {
+                // Unbalanced — bail out, emit the rest literal.
+                out.push('(');
+                rest = after_open;
+            }
+        }
+    }
+    out.push_str(rest);
+    out
 }
 
 /// Pre-1960 Latin-orthography normalisation. Mirrors upstream
@@ -218,24 +275,164 @@ fn replace_n_dot(text: &str, name: &str) -> String {
 }
 
 fn resolve_name_for_section(name_body: &str, section: &str) -> String {
+    // Mirror a slice of Perl's `(sed rubrica X)` conditional logic
+    // for [Name] bodies: when a conditional with `sed` evaluates
+    // TRUE under the active rubric (1570 baseline), the conditional
+    // REPLACES the immediately preceding non-conditional line for
+    // its scope, AND the immediately following line is conditioned
+    // on the predicate.
+    //
+    // Reduced grammar we handle (covers all 1570 baseline files):
+    //   * `(sed rubrica X)`            → simple TRUE/FALSE.
+    //   * `(sed rubrica X aut rubrica Y)` → OR.
+    //   * `(sed nisi communi Z)`       → NOT — `nisi` flips truth.
+    //   * `(sed rubrica X nisi rubrica Y)` → AND-NOT.
+    //
+    // We don't handle the SCOPE_NEST / multi-line scope variants —
+    // [Name] bodies are short enough that SCOPE_LINE suffices.
+    enum Frame {
+        Default,
+        Conditional(bool),
+    }
     let mut default: String = String::new();
     let mut override_form: Option<String> = None;
+    let mut frame = Frame::Default;
+    let mut last_default_set = false;
     for line in name_body.lines() {
         let line = line.trim();
-        if line.is_empty() || line.starts_with('(') {
+        if line.is_empty() {
             continue;
         }
-        if let Some((sec, name)) = line.split_once('=') {
-            if sec.trim().eq_ignore_ascii_case(section) && override_form.is_none() {
-                override_form = Some(name.trim().to_string());
+        if let Some(inner) = line.strip_prefix('(').and_then(|s| s.strip_suffix(')')) {
+            let result = eval_simple_conditional_1570(inner);
+            // SCOPE_LINE: backscope when result=TRUE → drop the
+            // previous default if it was just set.
+            if result && last_default_set {
+                default.clear();
+                last_default_set = false;
             }
+            frame = Frame::Conditional(result);
             continue;
         }
-        if default.is_empty() {
-            default = line.to_string();
+        // Skip the line if we're in a FALSE conditional frame.
+        if matches!(frame, Frame::Conditional(false)) {
+            frame = Frame::Default; // SCOPE_LINE → frame consumed
+            continue;
+        }
+        // Section override or default line.
+        if let Some((sec, name)) = line.split_once('=') {
+            if sec.trim().eq_ignore_ascii_case(section) {
+                // First-occurrence-wins, BUT a TRUE conditional
+                // override beats an earlier non-conditional one
+                // (matches the Perl `replace previous line`
+                // semantics for [Name]). We approximate by
+                // preferring the latest TRUE-conditional override.
+                let from_true_cond = matches!(frame, Frame::Conditional(true));
+                if override_form.is_none() || from_true_cond {
+                    override_form = Some(name.trim().to_string());
+                }
+            }
+        } else {
+            // Default form — keep the latest from a TRUE conditional.
+            if default.is_empty() || matches!(frame, Frame::Conditional(true)) {
+                default = line.to_string();
+                last_default_set = true;
+            } else {
+                last_default_set = false;
+            }
+        }
+        if matches!(frame, Frame::Conditional(true)) {
+            frame = Frame::Default;
         }
     }
     override_form.unwrap_or(default)
+}
+
+/// Reduced 1570-mode conditional evaluator for [Name] bodies and
+/// other inline rubric directives. Returns `true` when the
+/// conditional applies under Tridentine 1570. Recognises:
+///
+///   * `sed`/`vero` stopwords (always discarded — we only emit the
+///     post-stopword predicate semantics).
+///   * `rubrica X` / `nisi rubrica X` for X ∈ {`tridentina`,
+///     `1570`, and the post-1570 names we DON'T match —
+///     `1955`, `196*`, `cisterciensis`, `monastica`, `1617`,
+///     `summorum pontificum`, `communi summorum pontificum`}.
+///   * `aut`-separated alternatives.
+fn eval_simple_conditional_1570(condition: &str) -> bool {
+    let lc = condition.to_lowercase();
+    // Strip leading stopwords ("sed", "vero", "atque", "attamen").
+    let mut s = lc.as_str();
+    for stop in ["sed ", "vero ", "atque ", "attamen "] {
+        if let Some(rest) = s.strip_prefix(stop) {
+            s = rest.trim_start();
+        }
+    }
+    // OR over `aut`.
+    s.split(" aut ").any(|alt| eval_alt_1570(alt.trim()))
+}
+
+fn eval_alt_1570(alt: &str) -> bool {
+    // Each alt is an AND of (optionally negated) `rubrica X` clauses
+    // joined by `et` / `nisi`.
+    let mut tokens = alt.split_whitespace().peekable();
+    let mut result = true;
+    let mut negate = false;
+    loop {
+        // Expect `rubrica` / `communi` / `dom` etc; we accept any
+        // `<subject> <predicate>` pair and only special-case
+        // `rubrica`/`communi`.
+        let subject = match tokens.next() {
+            Some(t) => t,
+            None => break,
+        };
+        if subject == "et" {
+            negate = false;
+            continue;
+        }
+        if subject == "nisi" {
+            negate = true;
+            continue;
+        }
+        let predicate = match tokens.next() {
+            Some(t) => t,
+            None => break,
+        };
+        // Some predicates are multi-word ("summorum pontificum",
+        // "communi summorum pontificum"). Greedily consume until
+        // `et` / `nisi`.
+        let mut full_pred = predicate.to_string();
+        while let Some(&peek) = tokens.peek() {
+            if peek == "et" || peek == "nisi" {
+                break;
+            }
+            full_pred.push(' ');
+            full_pred.push_str(tokens.next().unwrap());
+        }
+        let truth = match subject {
+            "rubrica" | "rubricis" => match full_pred.as_str() {
+                // 1570 baseline matches.
+                "tridentina" | "1570" => true,
+                // Post-1570 reforms — false under 1570.
+                "1955" | "1960" | "1963" | "1966" | "1996" | "1617"
+                | "monastica" | "innovata" | "innovatis"
+                | "cisterciensis" | "altovadensis"
+                | "summorum pontificum" | "newcal" => false,
+                p if p.starts_with("196") => false,
+                p if p.starts_with("194") => false,
+                _ => false,
+            },
+            "communi" => match full_pred.as_str() {
+                "summorum pontificum" => false,
+                _ => false,
+            },
+            _ => false,
+        };
+        let truth = if negate { !truth } else { truth };
+        result = result && truth;
+        negate = false;
+    }
+    result
 }
 
 /// If the winner's MassFile has no proper-text sections (only `Rule`

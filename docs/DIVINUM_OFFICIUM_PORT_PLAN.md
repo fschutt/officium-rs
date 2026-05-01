@@ -754,7 +754,27 @@ Continuing work since:
 | `8e26d08` Dominica minor  | 144/365 39.5% | 2942/4380 67.2% | 294          | 39 + 142       |
 | `2cc70dd` Genitrix subst  | 175/365 47.9% | 2993/4380 68.3% | 243          | 39 + 142       |
 | `ad7251c` transfer + commune chase | 175/365 47.9% | 3001/4380 68.5% | 243   | 39 + 142       |
-| `9cb3827` octave/vigil exclusion | **176/365 48.2%** | **3055/4380 69.7%** | 189 | 39 + 142     |
+| `9cb3827` octave/vigil exclusion | 176/365 48.2% | 3055/4380 69.7% | 189 | 39 + 142     |
+| `eceaf3a` @:Section + cond parent | 176/365 48.2% | 3068/4380 70.0% | 189 | 39 + 142     |
+| `b352f79` Christmas Octave weekday | **176/365 48.2%** | **3065/4380 70.0%** | 192 | 39 + 142    |
+
+Per-section pass rates at the 70% milestone (compared to the 63.7%
+starting point):
+
+| Section      | Start | At 70% | Δ      |
+|--------------|-------|--------|--------|
+| Introitus    | 86.8% | 95.9%  | +9.1   |
+| Oratio       | 86.6% | 91.8%  | +5.2   |
+| Lectio       | 82.2% | 94.5%  | +12.3  |
+| Graduale     | 68.2% | 78.1%  | +9.9   |
+| Tractus      | 72.3% | 70.7%  | −1.6   |
+| Sequentia    | 99.7% | 100.0% | +0.3   |
+| Evangelium   | 84.9% | 94.5%  | +9.6   |
+| Offertorium  | 84.7% | 93.2%  | +8.5   |
+| Secreta      | 88.8% | 95.1%  | +6.3   |
+| Prefatio     | 100%  | 100%   | 0      |
+| Communio     | 88.2% | 96.2%  | +8.0   |
+| Postcommunio | 88.5% | 94.5%  | +6.0   |
 
 Top remaining workload (each pair count is a count of divergent
 sections in the year sweep):

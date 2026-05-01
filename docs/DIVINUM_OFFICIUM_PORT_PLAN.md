@@ -842,20 +842,31 @@ year-sweep for every year 2020-2030 against `Tridentine - 1570`.
 
 | Year  | Days passing (initial) | After all 1570 fixes |
 |-------|------------------------|----------------------|
-| 2020  | 353/366 96.4%          | **363/366 99.2%**    |
-| 2021  | 353/365 96.7%          | **358/365 98.1%**    |
-| 2022  | 353/365 96.7%          | **359/365 98.4%**    |
-| 2023  | 357/365 97.8%          | **362/365 99.2%**    |
-| 2024  | 353/366 96.4%          | **363/366 99.2%**    |
-| 2025  | 356/365 97.5%          | **361/365 98.9%**    |
-| 2026  | 359/365 98.4%          | **363/365 99.5%**    |
-| 2027  | 352/365 96.4%          | **357/365 97.8%**    |
-| 2028  | 351/366 95.9%          | **362/366 98.9%**    |
-| 2029  | 354/365 97.0%          | **359/365 98.4%**    |
-| 2030  | 353/365 96.7%          | **360/365 98.6%**    |
+| 2020  | 353/366 96.4%          | **366/366 100.0 %**  |
+| 2021  | 353/365 96.7%          | **365/365 100.0 %**  |
+| 2022  | 353/365 96.7%          | **364/365  99.7 %**  |
+| 2023  | 357/365 97.8%          | **364/365  99.7 %**  |
+| 2024  | 353/366 96.4%          | **365/366  99.7 %**  |
+| 2025  | 356/365 97.5%          | **364/365  99.7 %**  |
+| 2026  | 359/365 98.4%          | **365/365 100.0 %**  |
+| 2027  | 352/365 96.4%          | **363/365  99.5 %**  |
+| 2028  | 351/366 95.9%          | **364/366  99.5 %**  |
+| 2029  | 354/365 97.0%          | **364/365  99.7 %**  |
+| 2030  | 353/365 96.7%          | **362/365  99.2 %**  |
 
-**Aggregate: 98.73 % days passing across 4018 days** (3967/4018,
-up from 96.91 % / 3894 — net +73 days).
+**Aggregate: 99.70 % days passing across 4018 days** (4006/4018,
+up from 96.91 % / 3894 — net +112 days). Three years (2020, 2021,
+2026) hit 100 %.
+
+Remaining 12 days break down into:
+- 7× Sancti/08-09t (Vigil of S. Laurentius) Secreta — file's
+  `[Secreta]` is missing and Perl renders the commemoration of
+  S. Romanus instead. Needs commemoration-handling on Rust side.
+- 1× Commune/C10b — Sat-BVM Marian variant in Christmas-Purif window
+- 1× Sancti/04-11 — S. Leo I (Easter-week collision in 2027)
+- 1× Sancti/02-23o — Vigil of Matthias on the Ash-Wed boundary
+- 1× Sancti/01-12 — Septima die infra Octavam Epi
+- 1× Tempora/Pasc1-0 — rare Easter-Sunday body conditional
 
 The post-fix gain of +73 days came from:
 1. **Leap-year transfer-file pair selection** — mirrors upstream's

@@ -630,6 +630,36 @@ fn read_section(
     corpus: &dyn Corpus,
     via_commune: bool,
 ) -> Option<ProperBlock> {
+    // Skip post-1570 annotated sections — for 1570 they shouldn't
+    // exist. The Tempora ferials in the Octave of Corpus Christi
+    // (Pent01-1 .. Pent01-6, Pent02-X) ship `(rubrica 1960)`-only
+    // versions of [Oratio]/[Secreta]/[Postcommunio] that redirect to
+    // a non-octave ferial (`@Tempora/Pent01-1:Oratio` etc.). Without
+    // this guard the Friday-in-Octave Pent01-5 reads its 1960-only
+    // body instead of falling through to the [Rank] commune
+    // (Pent01-4 = Corpus Christi).
+    let is_annotated = file
+        .annotated_sections
+        .iter()
+        .any(|s| s == section);
+    if is_annotated {
+        // Section's only body is annotated → treat as missing locally,
+        // chase the file-level parent inherit instead.
+        let parent_path = file.parent_1570.as_deref().or(file.parent.as_deref());
+        if let Some(parent_path) = parent_path {
+            let parent_key = FileKey::parse(parent_path);
+            if let Some(parent_file) = corpus.mass_file(&parent_key) {
+                return read_section(
+                    parent_file,
+                    &parent_key,
+                    section,
+                    corpus,
+                    via_commune || matches!(parent_key.category, FileCategory::Commune),
+                );
+            }
+        }
+        return None;
+    }
     let raw_opt = file.sections.get(section).map(|s| s.trim());
     if let Some(raw) = raw_opt.filter(|s| !s.is_empty()) {
         if let Some(stripped) = raw.strip_prefix('@') {
@@ -736,6 +766,28 @@ fn chase_at_reference(
     let target_section = section_spec.unwrap_or(default_section);
     let key = FileKey::parse(path);
     let file = corpus.mass_file(&key)?;
+    // If the chased file's local section is annotated with a
+    // post-1570 rubric (`(communi Summorum Pontificum)`,
+    // `(rubrica 196*)`), skip it and chase the file-level parent.
+    // This is what makes Sancti/12-31 (Sylvester) → Commune/C4b
+    // reach Commune/C4's plain `[Oratio]` "Da, quaesumus, omnipotens
+    // Deus..." in 1570 instead of C4b's `(communi Summorum
+    // Pontificum)` "Gregem tuum, Pastor aeterne..." — the C4b form
+    // was added in 1942 and shouldn't apply under 1570.
+    let is_annotated = file
+        .annotated_sections
+        .iter()
+        .any(|s| s == target_section);
+    if is_annotated {
+        if let Some(parent_path) = file
+            .parent_1570
+            .as_deref()
+            .or(file.parent.as_deref())
+        {
+            return chase_at_reference(parent_path, target_section, corpus, via_commune, hops + 1);
+        }
+        return None;
+    }
     let raw = file.sections.get(target_section)?.trim();
     if raw.is_empty() {
         return None;

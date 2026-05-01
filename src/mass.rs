@@ -50,12 +50,38 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             ..block
         })
     };
+    // Tractus / Graduale interplay (mirror Perl `getitem` ll. 851-852):
+    //   `if Graduale && season=Quad && winner has Tractus`: Graduale
+    //    body becomes the Tractus body. Perl never emits a separate
+    //    Tractus header *except* on Holy Saturday and Vigil of
+    //    Pentecost (those files have multiple `[TractusL1..]` blocks).
+    // We approximate that contract: in Septuagesima/Lent/Passiontide
+    // seasons, prefer the Tractus body for the Graduale slot, and
+    // suppress the standalone Tractus column. In other seasons,
+    // Graduale = Graduale body, Tractus = None.
+    let in_tractus_season = matches!(
+        office.season,
+        crate::divinum_officium::core::Season::Septuagesima
+            | crate::divinum_officium::core::Season::Lent
+            | crate::divinum_officium::core::Season::Passiontide
+    );
+    let graduale = if in_tractus_season {
+        go("Tractus").or_else(|| go("Graduale"))
+    } else {
+        go("Graduale")
+    };
     MassPropers {
         introitus:    go("Introitus"),
         oratio:       go("Oratio"),
         lectio:       go("Lectio"),
-        graduale:     go("Graduale"),
-        tractus:      go("Tractus"),
+        graduale,
+        // Standalone Tractus column suppressed — Perl folds the
+        // Tractus body into the Graduale slot and only emits a
+        // separate `<I>Tractus</I>` header on Holy Saturday and the
+        // Vigil of Pentecost. Both of those land here as `None`
+        // anyway because their files use indexed `[TractusL1..]`
+        // sections rather than a plain `[Tractus]`.
+        tractus:      None,
         sequentia:    go("Sequentia"),
         evangelium:   go("Evangelium"),
         offertorium:  go("Offertorium"),

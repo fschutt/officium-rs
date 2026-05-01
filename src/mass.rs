@@ -97,15 +97,7 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             ..block
         })
     };
-    // Tractus / Graduale interplay (mirror Perl `getitem` ll. 851-852):
-    //   `if Graduale && season=Quad && winner has Tractus`: Graduale
-    //    body becomes the Tractus body. Perl never emits a separate
-    //    Tractus header *except* on Holy Saturday and Vigil of
-    //    Pentecost (those files have multiple `[TractusL1..]` blocks).
-    // We approximate that contract: in Septuagesima/Lent/Passiontide
-    // seasons, prefer the Tractus body for the Graduale slot, and
-    // suppress the standalone Tractus column. In other seasons,
-    // Graduale = Graduale body, Tractus = None.
+    // Tractus / Graduale interplay — see `graduale_or_tractus`.
     let in_tractus_season = matches!(
         office.season,
         crate::divinum_officium::core::Season::Septuagesima
@@ -117,7 +109,20 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         crate::divinum_officium::core::Season::Easter
     );
     let graduale = if in_tractus_season {
-        go("Tractus").or_else(|| go("Graduale"))
+        // Mirror Perl `getitem` ll. 851-852 / 856 exactly: prefer
+        // Tractus over Graduale at the same fallback level. Winner
+        // first, then commune, then feria-Sunday — at each level,
+        // check Tractus before Graduale. This keeps Sancti/03-10
+        // (winner has Graduale but no Tractus) on its local
+        // [Graduale] instead of jumping to C3's [Tractus].
+        graduale_or_tractus(&resolved, corpus)
+            .map(|block| substitute_name_with_corpus(block, "Graduale", winner_file, Some(corpus)))
+            .map(|block| {
+                let latin = apply_post_septuagesima_conditional(&block.latin, in_post_septuagesima);
+                let latin = spell_var_pre1960(&expand_macros(&latin));
+                let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
+                ProperBlock { latin, ..block }
+            })
     } else if in_paschal_season {
         // Perl `getitem`: in Pasc, Graduale slot reads `GradualeP`
         // when present (Marian commune in Pasc weeks 1-5). Fall back
@@ -639,6 +644,86 @@ fn has_proper_sections(f: &MassFile) -> bool {
 ///      Lectio / Evangelium for many saints' Masses ship as
 ///      `@Commune/Cxx` because the commune is the proper source)
 ///
+/// Mirror of Perl `getitem` for the Quad-season Graduale slot
+/// (ll. 851-852 / 856): at each fallback level (winner, then commune,
+/// then feria-Sunday-fallback), check `[Tractus]` BEFORE `[Graduale]`
+/// — but never cross levels. So winner-with-Graduale-but-no-Tractus
+/// stays on its [Graduale] (which may embed a `!Tractus` block) and
+/// only commune-or-feria-Sunday fallback Tractus reaches us when the
+/// winner has neither.
+///
+/// On Embertide-style days ([Rule] contains `LectioL`), the first
+/// reading the regression extractor sees is `[GradualeL1]`, so prefer
+/// that ahead of either Tractus/Graduale at the winner level.
+fn graduale_or_tractus(
+    office: &OfficeOutput,
+    corpus: &dyn Corpus,
+) -> Option<ProperBlock> {
+    let winner_file = corpus.mass_file(&office.winner)?;
+    let winner_post_1570 = is_post_1570_octave_file(winner_file);
+    let has_lectio_l = winner_has_lectio_l_rule(Some(winner_file), corpus);
+    if !winner_post_1570 {
+        let probes: &[&str] = if has_lectio_l {
+            &["GradualeL1", "Tractus", "Graduale"]
+        } else {
+            &["Tractus", "Graduale"]
+        };
+        for sect in probes {
+            if let Some(b) = read_section(winner_file, &office.winner, sect, corpus, false) {
+                return Some(b);
+            }
+        }
+    }
+    if commune_eligible(office.commune_type) {
+        if let Some(commune_key) = office.commune.as_ref() {
+            let resolved_commune = paschal_commune_swap(commune_key, office.season, corpus);
+            let resolved_commune = chase_missing_commune(&resolved_commune, corpus);
+            if let Some(commune_file) = corpus.mass_file(&resolved_commune) {
+                if !is_post_1570_octave_file(commune_file) {
+                    for sect in ["Tractus", "Graduale"] {
+                        if let Some(b) = read_section_skipping_annotated(
+                            commune_file, &resolved_commune, sect, corpus,
+                        ) {
+                            return Some(b);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if matches!(office.winner.category, FileCategory::Tempora) {
+        if let Some(mut sunday_key) = tempora_feria_sunday_fallback(&office.winner) {
+            if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
+                if is_post_1570_octave_file(sunday_file) {
+                    let r_key = FileKey {
+                        category: sunday_key.category.clone(),
+                        stem: format!("{}r", sunday_key.stem),
+                    };
+                    if corpus.mass_file(&r_key).is_some() {
+                        sunday_key = r_key;
+                    }
+                }
+            }
+            if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
+                let prefer_f = is_tempora_ferial_stem(&office.winner.stem);
+                let mut probes: Vec<&str> = vec!["Tractus"];
+                if prefer_f {
+                    probes.push("GradualeF");
+                }
+                probes.push("Graduale");
+                for sect in probes {
+                    if let Some(b) = read_section(
+                        sunday_file, &sunday_key, sect, corpus, false,
+                    ) {
+                        return Some(b);
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
 /// Returns `None` if neither source produces a body for `section`.
 pub fn proper_block(
     office: &OfficeOutput,
@@ -1203,11 +1288,13 @@ fn read_section(
             // scope; chase_at_reference parses path-prefixed forms.
             if let Some(self_section) = stripped.strip_prefix(':') {
                 let target = self_section.lines().next()?.trim();
-                // Skip the regex-substitution and `in N loco` forms
-                // (we don't model those yet).
+                // Skip the regex-substitution form (`s/PAT/REPL/`)
+                // — handled elsewhere — and any line that turned out
+                // to be a path. The `in N loco` form is fine here:
+                // the section name as parsed by build_missa_json.py
+                // already includes the suffix.
                 let unmodelled = target.is_empty()
-                    || target.contains('/')
-                    || target.contains(" in ");
+                    || target.contains('/');
                 if !unmodelled {
                     if let Some(body) = file
                         .sections
@@ -1311,14 +1398,15 @@ fn chase_at_reference(
         _ => None,
     };
     if let Some(spec) = section_spec {
-        if regex_substitution.is_none()
-            && (spec.is_empty() || spec.contains(" in "))
-        {
-            // TODO Phase 6: implement `Section in N loco` indexed
-            // substitution.
+        if regex_substitution.is_none() && spec.is_empty() {
             return None;
         }
     }
+    // The `in N loco` form (e.g. `Evangelium in 2 loco`) is recorded
+    // in our corpus as a literal section name with the suffix —
+    // build_missa_json.py does no special handling, so pass the
+    // section_spec through verbatim and let the section lookup find
+    // the matching key.
     let target_section = if regex_substitution.is_some() {
         default_section
     } else {
@@ -1377,9 +1465,9 @@ fn chase_at_reference(
         // than re-parsing the empty path.
         if let Some(self_section) = stripped.strip_prefix(':') {
             let target = self_section.lines().next().unwrap_or("").trim();
-            let unmodelled = target.is_empty()
-                || target.contains('/')
-                || target.contains(" in ");
+            // Skip embedded paths and empty targets only — `in N loco`
+            // is handled by direct section-name lookup.
+            let unmodelled = target.is_empty() || target.contains('/');
             if !unmodelled {
                 if let Some(body) = file
                     .sections
@@ -1434,10 +1522,10 @@ fn apply_perl_substitution(text: &str, spec: &str) -> Option<String> {
     // Find the next unescaped `/` for end-of-PAT.
     let (pattern, after_pattern) = split_unescaped(rest, '/')?;
     let (replacement, _flags) = split_unescaped(after_pattern, '/')?;
-    // Recognise the `\!(?!M).*` pattern: every line starting with `!`
-    // followed by anything except `M` has its content stripped (the
-    // line becomes empty; subsequent normalisation drops it). Lines
-    // starting with `!M` (chapter/verse references) survive.
+    // Special-case the `\!(?!M).*` pattern (Pasc5-5 Evangelium) —
+    // strip every line starting with `!` followed by anything except
+    // `M`. Lines starting with `!M` (chapter/verse references) keep
+    // their content.
     if pattern == r"\!(?!M).*" && replacement.is_empty() {
         let kept: Vec<String> = text
             .lines()
@@ -1446,11 +1534,6 @@ fn apply_perl_substitution(text: &str, spec: &str) -> Option<String> {
                     if rest.starts_with('M') {
                         Some(line.to_string())
                     } else {
-                        // line content stripped; we skip the line
-                        // entirely so the join doesn't introduce a
-                        // bare newline. (Perl's regex leaves a blank
-                        // line behind, but trailing whitespace is
-                        // normalised away by the comparator.)
                         None
                     }
                 } else {
@@ -1460,7 +1543,39 @@ fn apply_perl_substitution(text: &str, spec: &str) -> Option<String> {
             .collect();
         return Some(kept.join("\n"));
     }
-    None
+    // General literal-string substitution. Unescape `\.`, `\!`, etc.
+    // — the corpus only uses these escapes for "match literal punct"
+    // and never for true regex meta-characters like `(?!…)`. If the
+    // pattern still contains regex meta-chars after unescaping, bail.
+    let lit_pattern = unescape_literal(pattern)?;
+    let lit_replacement = unescape_literal(replacement)?;
+    Some(text.replace(&lit_pattern, &lit_replacement))
+}
+
+/// Unescape a Perl-regex-source string into the literal pattern it
+/// represents. Handles `\.`, `\!`, `\,`, `\:`, `\(`, `\)`, `\/`. Any
+/// remaining metacharacter (`?`, `*`, `+`, `{`, `[`, `^`, `$`, `|`,
+/// unescaped `(`, etc.) means the pattern is a real regex and we
+/// can't faithfully apply it as a literal — return None.
+fn unescape_literal(pattern: &str) -> Option<String> {
+    let mut out = String::with_capacity(pattern.len());
+    let mut chars = pattern.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            match chars.next()? {
+                e @ ('.' | '!' | ',' | ':' | ';' | '(' | ')' | '/' | '\\' | ' ' | '\'' | '"') => {
+                    out.push(e);
+                }
+                _ => return None, // unsupported escape (e.g. \d, \w)
+            }
+        } else if matches!(c, '?' | '*' | '+' | '{' | '}' | '[' | ']' | '^' | '$' | '|' | '(' | ')')
+        {
+            return None;
+        } else {
+            out.push(c);
+        }
+    }
+    Some(out)
 }
 
 /// Split `text` at the next unescaped occurrence of `delim`.

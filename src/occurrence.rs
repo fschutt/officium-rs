@@ -625,11 +625,14 @@ fn apply_transfer_sancti_1570(
         if entry.main == "X-X" {
             continue;
         }
-        let key = FileKey {
-            category: FileCategory::Sancti,
-            stem: entry.main.clone(),
-        };
-        let metadata_key = effective_tempora_key(&key, corpus);
+        // `xx-yy=11-29v` (Andrew's Vigil transferred when 11-30 falls
+        // on Sunday) and `10-30=10-31v` (All Saints Vigil transferred
+        // off a Sunday Oct 31) reference a `<stem>v` file that doesn't
+        // physically exist — Perl strips the `v` and uses the bare
+        // file. Walk through `resolve_sancti_stem` first so the rank
+        // lookup hits the actual on-disk Sancti/<stem>.txt.
+        let resolved_key = resolve_sancti_stem(&entry.main, corpus);
+        let metadata_key = effective_tempora_key(&resolved_key, corpus);
         let mass = corpus.mass_file(&metadata_key);
         let rank = mass
             .and_then(|m| m.rank_num_1570.or(m.rank_num))

@@ -223,24 +223,23 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
     }
 }
 
-/// Apply general SCOPE_LINE `(sed PREDICATE)` body conditionals
-/// under the 1570 baseline. Mirrors the Perl `setupstring` parsing
-/// where each `(sed PRED)` line scopes the immediately preceding
-/// and following non-blank lines:
+/// Apply `(predicate)` body conditionals under 1570. Approximates
+/// Perl `setupstring`'s SCOPE machinery (`SetupString.pl` ll. 110-167)
+/// with a simplified two-mode dispatch:
 ///
-///   * If PRED is TRUE under the active rubric, the next line
-///     REPLACES the previous one (and both the conditional marker
-///     and the next line are consumed).
-///   * If PRED is FALSE, the conditional marker and the next line
-///     are dropped — the previous line stays.
+///   * **`(sed predicate)` / `(vero …)` / `(atque …)`** — SCOPE_LINE
+///     backscope. The conditional is followed by an alternative line.
+///     If TRUE, replace the previous non-blank line with the next
+///     line. If FALSE, drop the conditional + alternative; previous
+///     stays.
+///   * **`(predicate dicitur)` / `(predicate)` (no stopword)** —
+///     forward-only. If TRUE, keep the next line. If FALSE, drop
+///     the next line. Previous is never touched.
 ///
-/// Predicates are limited to those handled by
-/// `eval_simple_conditional_1570` (rubric/communi flags, AND/OR/NOT
-/// over `aut`/`et`/`nisi`). Predicates that are seasonal (`tempore
-/// adventus`, `post septuagesima`) are skipped here — those have
-/// dedicated handlers above. Recognised TRUE-under-1570 predicates
-/// flip the body in-place so the comparator sees the reformed-form
-/// body, not both variants concatenated.
+/// Both consume the conditional marker itself. Lines whose
+/// parenthesised content isn't a recognised logical predicate
+/// (`(deinde dicuntur)`, `(Hic genuflectitur)`, …) are passed
+/// through. Seasonal predicates pass through to dedicated handlers.
 fn apply_body_conditionals_1570(text: &str) -> String {
     let lines: Vec<&str> = text.split('\n').collect();
     let mut out: Vec<String> = Vec::with_capacity(lines.len());
@@ -259,35 +258,66 @@ fn apply_body_conditionals_1570(text: &str) -> String {
                 continue;
             }
         };
-        // Skip seasonal predicates we handle elsewhere.
         let lc = inner.to_lowercase();
-        if lc.contains("post septuage")
+        let is_seasonal = lc.contains("post septuage")
             || lc.contains("tempore adventus")
             || lc.contains("tempore pasch")
             || lc.contains("tempore quad")
             || lc.contains("tempore nat")
-            || lc.contains("ad missam")
-        {
+            || lc.contains("ad missam");
+        let is_logical_predicate = lc.starts_with("sed ")
+            || lc.starts_with("vero ")
+            || lc.starts_with("atque ")
+            || lc.starts_with("attamen ")
+            || lc.starts_with("rubrica ")
+            || lc.starts_with("rubricis ")
+            || lc.starts_with("communi ")
+            || lc.contains(" rubrica ")
+            || lc.contains(" communi ")
+            || lc.contains(" rubricis ");
+        if is_seasonal {
             out.push(line.to_string());
             i += 1;
             continue;
         }
-        // Bail on predicates we can't evaluate. Returning the
-        // conditional marker as-is keeps the input shape.
+        if !is_logical_predicate {
+            // Inline Latin rubric (e.g. "(deinde dicuntur)", "(Hic
+            // genuflectitur)"). Perl wraps these in small-font
+            // formatting that the regression extractor normalises
+            // away — drop them here so our normalised body matches.
+            i += 1;
+            continue;
+        }
+        // Determine backscope. Mirrors Perl's `parse_conditional`:
+        //   * `sed/vero/atque/attamen` stopwords WITHOUT a `semper`
+        //     scope keyword give implicit SCOPE_LINE backscope.
+        //   * No stopword OR `semper` scope → no backscope.
+        let has_backscope_stopword = lc.starts_with("sed ")
+            || lc.starts_with("vero ")
+            || lc.starts_with("atque ")
+            || lc.starts_with("attamen ");
+        let has_semper_scope = lc.contains("semper");
+        let line_backscope = has_backscope_stopword && !has_semper_scope;
         let truth = eval_simple_conditional_1570(inner);
         let alt_idx = (i + 1..lines.len()).find(|&j| !lines[j].trim().is_empty());
-        if truth {
-            // Drop preceding non-blank line, replace with next line.
-            // Walk back through `out` skipping blank lines to find
-            // the previous non-blank line.
-            while let Some(last) = out.last() {
-                if last.trim().is_empty() {
-                    out.pop();
-                } else {
-                    break;
+        if line_backscope {
+            // SCOPE_LINE backscope: TRUE replaces previous line with
+            // the alt line; FALSE drops conditional + alt.
+            if truth {
+                while let Some(last) = out.last() {
+                    if last.trim().is_empty() {
+                        out.pop();
+                    } else {
+                        break;
+                    }
+                }
+                out.pop();
+                if let Some(j) = alt_idx {
+                    out.push(lines[j].to_string());
                 }
             }
-            out.pop();
+        } else if truth {
+            // Forward-only: TRUE keeps next, FALSE drops next.
             if let Some(j) = alt_idx {
                 out.push(lines[j].to_string());
             }

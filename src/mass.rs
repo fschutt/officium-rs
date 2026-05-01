@@ -187,30 +187,6 @@ pub fn proper_block(
         return Some(block);
     }
 
-    // Tempora-feria → Sunday fallback. Tridentine ferias within a
-    // Sunday's week (e.g. Tempora/Pent06-2 = "Feria tertia infra
-    // Hebdomadam VI post Octavam Pentecostes") use the same Mass
-    // as that Sunday (Tempora/Pent06-0). The upstream file has
-    // [Rank] = `;;Feria;;1` with no commune column, so the
-    // commune-fallback branch below doesn't fire. Detect by file
-    // shape: Tempora stem `<week>-<dow>` where dow is 1-6 means
-    // a feria; fall back to `<week>-0`.
-    if matches!(office.winner.category, FileCategory::Tempora) {
-        if let Some(sunday_key) = tempora_feria_sunday_fallback(&office.winner) {
-            if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
-                if let Some(block) = read_section(
-                    sunday_file,
-                    &sunday_key,
-                    section,
-                    corpus,
-                    /* via_commune */ false,
-                ) {
-                    return Some(block);
-                }
-            }
-        }
-    }
-
     // Commune fallback. Match the Perl `getproprium`'s second branch:
     //   `if (!$w && $communetype && ($communetype =~ /ex/i || $flag))`
     // The flag in Perl is set per-section by the caller chain; we
@@ -234,6 +210,31 @@ pub fn proper_block(
                     commune_key,
                     section,
                     corpus,
+                ) {
+                    return Some(block);
+                }
+            }
+        }
+    }
+
+    // Tempora-feria → Sunday fallback. Tridentine ferias within a
+    // Sunday's week (e.g. Tempora/Pent06-2 = "Feria tertia infra
+    // Hebdomadam VI post Octavam Pentecostes") use the same Mass
+    // as that Sunday (Tempora/Pent06-0). The upstream file has
+    // [Rank] = `;;Feria;;1` with no commune column, so the
+    // commune-fallback branch above doesn't fire. We run this
+    // *after* commune-fallback so ferias-within-an-octave (which
+    // DO carry a commune `vide Tempora/<octave-day>`) reach the
+    // octave Mass via the commune branch first.
+    if matches!(office.winner.category, FileCategory::Tempora) {
+        if let Some(sunday_key) = tempora_feria_sunday_fallback(&office.winner) {
+            if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
+                if let Some(block) = read_section(
+                    sunday_file,
+                    &sunday_key,
+                    section,
+                    corpus,
+                    /* via_commune */ false,
                 ) {
                     return Some(block);
                 }

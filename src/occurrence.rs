@@ -348,10 +348,20 @@ fn commemorate_sanctoral_under_temporal_1570(
 /// Regis` (Christ the King) are the recognised post-1570 octaves.
 fn downgrade_post_1570_octave(rank: f32, file: &MassFile) -> f32 {
     let officium = file.officium.as_deref().unwrap_or("");
+    // Post-1856 Sacred Heart octave + post-1925 Christ-the-King.
+    // Corpus Christi octave existed in 1570 (Tridentine), so no
+    // downgrade for `octavam Corporis Christi` — the Friday's
+    // Semiduplex II classis rank is correct under 1570 too.
     let has_post_1570_octave = officium.contains("Cordis Jesu")
         || officium.contains("Cordis Iesu")
         || officium.contains("Sacratissimi")
-        || officium.contains("Christi Regis");
+        || officium.contains("Christi Regis")
+        // Patrocinii Sancti Joseph (Pius IX, 1856) — added an
+        // octave to the Easter cycle. In 1570 these days were
+        // regular Easter ferias.
+        || officium.contains("Patrocinii St Joseph")
+        || officium.contains("Patrocinii Sancti Joseph")
+        || officium.contains("Patrocínii");
     if has_post_1570_octave {
         return 1.0; // ordinary feria
     }
@@ -418,16 +428,25 @@ fn saturday_bvm_winner_1570(
 /// `-a` chase candidates rather than a blanket "always chase if
 /// `-a` exists" rule (which would mis-direct Trinity).
 fn pick_tempora_variant_for_1570(stem: &str, corpus: &dyn Corpus) -> String {
-    if !TRIDENTINE_1570_TEMPORA_A_CHASE.contains(&stem) {
-        return stem.to_string();
+    if TRIDENTINE_1570_TEMPORA_A_CHASE.contains(&stem) {
+        let candidate = format!("{stem}a");
+        let key = FileKey {
+            category: FileCategory::Tempora,
+            stem: candidate.clone(),
+        };
+        if corpus.mass_file(&key).is_some() {
+            return candidate;
+        }
     }
-    let candidate = format!("{stem}a");
-    let key = FileKey {
-        category: FileCategory::Tempora,
-        stem: candidate.clone(),
-    };
-    if corpus.mass_file(&key).is_some() {
-        return candidate;
+    if TRIDENTINE_1570_TEMPORA_R_CHASE.contains(&stem) {
+        let candidate = format!("{stem}r");
+        let key = FileKey {
+            category: FileCategory::Tempora,
+            stem: candidate.clone(),
+        };
+        if corpus.mass_file(&key).is_some() {
+            return candidate;
+        }
     }
     stem.to_string()
 }
@@ -437,6 +456,18 @@ fn pick_tempora_variant_for_1570(stem: &str, corpus: &dyn Corpus) -> String {
 /// list because Trinity already existed in 1570.
 const TRIDENTINE_1570_TEMPORA_A_CHASE: &[&str] = &[
     "Epi1-0", // post-1911 Holy Family bumps the 1570 Dominica infra Octavam
+];
+
+/// Tempora stems where the `-0r` variant is the correct 1570 form.
+/// These are Sundays whose own propers (Dominica III/IV/V/VI post
+/// Pentecosten) were preempted by post-1856 octave-day feasts in
+/// the corpus's bare `<stem>-0` slot; the `-0r` suffix preserves the
+/// 1570 Sunday body.
+const TRIDENTINE_1570_TEMPORA_R_CHASE: &[&str] = &[
+    "Pent03-0", // bare `Pent03-0` is Sacred Heart Octave Day; -0r is the 1570 Sunday III post Pent
+    "Pent04-0", // similar for IV, V, VI as the calendar shifts
+    "Pent05-0",
+    "Pent06-0",
 ];
 
 /// Resolve a file's effective Officium, chasing the file-level

@@ -741,6 +741,48 @@ green on the year sweep").
 |  11   | not started |            |        |       |
 |  12   | not started |            |        |       |
 
+## Phase 7+ progress (Tridentine 1570 baseline grind)
+
+Status row above is the snapshot at commit `f98f7b3` (37.0% / 63.7%).
+Continuing work since:
+
+| Snapshot                  | Days passing  | Section match | Section differ | Section blank |
+|---------------------------|---------------|---------------|----------------|---------------|
+| `f98f7b3` (Phase 7 start) | 135/365 37.0% | 2790/4380 63.7% | 431          | 39 + 147       |
+| `e5ba382` paschal commune | 138/365 37.8% | 2886/4380 65.9% | 343          | 39 + 142       |
+| `f6c41ab` redirect table  | 143/365 39.2% | 2895/4380 66.1% | 334          | 39 + 142       |
+| `8e26d08` Dominica minor  | 144/365 39.5% | 2942/4380 67.2% | 294          | 39 + 142       |
+| `2cc70dd` Genitrix subst  | 175/365 47.9% | 2993/4380 68.3% | 243          | 39 + 142       |
+| `ad7251c` transfer + commune chase | 175/365 47.9% | 3001/4380 68.5% | 243   | 39 + 142       |
+| `9cb3827` octave/vigil exclusion | **176/365 48.2%** | **3055/4380 69.7%** | 189 | 39 + 142     |
+
+Top remaining workload (each pair count is a count of divergent
+sections in the year sweep):
+
+- 7× `Commune/C10 → Tempora/093-6` — Saturday-BVM firing where Sept
+  Embertide Saturday should win.
+- 6× `Tempora/Nat30o → Tempora/Nat1-0` — Christmas-Octave week feria
+  inherits from "Sunday Within Octave" propers, not from its own
+  Tempora/Nat<DD> file.
+- 6× `Tempora/Pent16-5 → Tempora/093-5` — Sept Embertide Friday;
+  needs the Sunday-letter-based Stransfer table.
+- 5× `Commune/C10b → Tempora/Epi4-0` — Saturday-BVM "Dominica
+  anticipata" rule (post-Epi Sundays whose week is bumped by
+  Septuagesima get rendered on the Saturday before Septuagesima).
+- 4× `Sancti/07-03oct → Commune/C4` — `(rubrica tridentina)`
+  conditional parent-inherit form (`(rubrica tridentina)@Sancti/07-04oct`)
+  not yet honoured by our resolver.
+- 4× `Tempora/Pasc6-1 → Tempora/Pasc5-4` — paschal-cycle propers
+  shift in 1570.
+
+These are concrete Phase 7+ deliverables but each is non-trivial.
+At 69.7%, the comparator's "logical-equivalence" baseline is
+sufficient for the Phase 11 `/wip/missal` overlay; closing the
+remaining 30 percentage points requires the Sunday-letter Stransfer
+table parser, the `(rubrica X)`-conditional parent-inherit handler,
+and the "Dominica anticipata" rule — all of which would need their
+own Phase 7+ subprojects.
+
 ## Upstream-divergence tracker
 
 When our port deliberately deviates from the Perl because the

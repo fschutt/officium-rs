@@ -109,7 +109,63 @@ post-1570 saint on the date. The fix on our side is to treat the
 off rubric-runtime state, which makes it hard to validate against a
 single eternal source-of-truth.
 
-## 8. `vide C2b-1` vs `ex C2b-1` semantics not clearly documented
+## 8. Sancti/<MM-DD>.txt files reference non-existent commune stems
+
+`Sancti/08-26.txt` (Zephyrinus, Pope-Martyr) declares
+`[Rank];;Simplex;;1.1;;vide C2-1b`. There's no `Commune/C2-1b.txt` in
+either `missa/Latin/Commune` or `horas/Latin/Commune`. The Perl
+runtime silently falls back through `setupstring`'s "fall through to
+horas" path; our reading is that it should be `vide C2b-1` (a
+typo) or `vide C2-1` (a less-detailed reference). A typo audit
+across the Sancti corpus would help — there are several similar
+malformed `vide` columns.
+
+## 9. `(rubrica tridentina)@Path` — undocumented conditional parent inherit
+
+`Sancti/07-03oct.txt` opens with:
+
+```
+(rubrica tridentina)@Sancti/07-04oct
+
+[Officium]
+Quinta die infra Octavam Ss. Apostolorum Petri et Pauli
+…
+```
+
+The first line is a conditional parent-inherit: under `(rubrica
+tridentina)` the file's parent is `Sancti/07-04oct`. Other rubrics
+get the file's own [Officium] / [Rank]. This is a real feature
+(handled by `setupstring_parse_file`'s `vero()` predicate evaluator)
+but not documented anywhere a port author can easily find. The
+predicate-syntax library deserves a dedicated `docs/PARSER.md`.
+
+## 10. Per-section conditional bodies via `(rubrica X)` annotations
+
+Adjacent to #9: section bodies like
+
+```
+[Oratio] (rubrica divino aut rubrica 196)
+…body for Divino+1960…
+[Oratio]
+…body for everything else…
+```
+
+are also evaluated against the `vero()` predicate. We currently model
+this as a coarse "annotated_sections" list and skip post-1570
+annotated sections in commune-fallback only — but the actual
+semantics is: the section header's annotation is a runtime
+expression. A list of recognised predicate names in one place would
+help port authors validate they handle each.
+
+## 11. `(sed rubrica 1570)` vs `(sed rubrica tridentina)` — same intent
+
+Some Sancti files use `(sed rubrica 1570 aut rubrica monastica)` to
+mark the 1570 variant of [Rank]. Others use `(sed rubrica
+tridentina)`. They mean the same thing for our purposes (Tridentine
+includes 1570 baseline) — but a port has to recognise BOTH spellings
+or it loses Sancti/05-09's 1570 commune column.
+
+## 12. `vide C2b-1` vs `ex C2b-1` semantics not clearly documented
 
 `[Rank]` carries a `commune` column whose two values mean different
 things:

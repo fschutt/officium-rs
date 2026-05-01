@@ -353,6 +353,25 @@ fn decide_sanctoral_wins_1570(
         return srank >= 6.0;
     }
 
+    // Apostolic-Vigil precedence rule (Tridentine 1570): Vigils of
+    // Apostles (Andrew Nov 29, Thomas Dec 20) are CELEBRATED on
+    // ADVENT Feria major days. Lenten ferias (Quad*), which encode
+    // a higher actual privilege than Advent ferias despite sharing
+    // the rank label "Feria major", still preempt the Vigil — Feb 23
+    // (Vigil of Matthias) yields to the Quadragesimae feria.
+    let sancti_name = _sancti.name.as_str();
+    let is_apostolic_vigil = sancti_name.starts_with("Vigilia")
+        && (sancti_name.contains("Apostoli")
+            || sancti_name.contains("Apostol")
+            || sancti_name.contains("Apostolorum"));
+    let is_advent_temporal = temporal_name.contains("Adventus")
+        || temporal_name.contains("Advent")
+        || temporal_name.contains("Hebdomadam I Adventus")
+        || temporal_name.contains("Hebdomadam IV Adventus");
+    if is_apostolic_vigil && is_advent_temporal && srank >= 1.5 && trank < 6.0 {
+        return true;
+    }
+
     // Default: strict numeric rank comparison.
     srank > trank
 }

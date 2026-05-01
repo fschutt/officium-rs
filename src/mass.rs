@@ -2390,7 +2390,19 @@ fn chase_at_reference(
         // `@:Section` self-reference — resolve within `file` rather
         // than re-parsing the empty path.
         if let Some(self_section) = stripped.strip_prefix(':') {
-            let target = self_section.lines().next().unwrap_or("").trim();
+            let first_line = self_section.lines().next().unwrap_or("").trim();
+            // Detect a trailing `:s/PAT/REPL/[FLAGS]` regex
+            // substitution spec (Commune/C1v's `Oratio pro
+            // Evangelistae` does this to splice "et Evangelistae"
+            // into the bare Apostle Oratio).
+            let (target, sub_spec): (&str, Option<&str>) =
+                match first_line.find(":s/") {
+                    Some(pos) => (
+                        first_line[..pos].trim(),
+                        Some(first_line[pos + 1..].trim()),
+                    ),
+                    None => (first_line, None),
+                };
             // Skip embedded paths and empty targets only — `in N loco`
             // is handled by direct section-name lookup.
             let unmodelled = target.is_empty() || target.contains('/');
@@ -2404,8 +2416,14 @@ fn chase_at_reference(
                     if let Some(rest) = body.strip_prefix('@') {
                         return chase_at_reference(rest, target, corpus, via_commune, hops + 1);
                     }
+                    let final_body = if let Some(spec) = sub_spec {
+                        apply_perl_substitution(body, spec)
+                            .unwrap_or_else(|| body.to_string())
+                    } else {
+                        body.to_string()
+                    };
                     return Some(ProperBlock {
-                        latin: body.to_string(),
+                        latin: final_body,
                         source: key.clone(),
                         via_commune: via_commune
                             || matches!(key.category, FileCategory::Commune),
@@ -2468,6 +2486,32 @@ fn apply_perl_substitution(text: &str, spec: &str) -> Option<String> {
             })
             .collect();
         return Some(kept.join("\n"));
+    }
+    // Simple capture-group form `(LITERAL)` with `$1`-refs in the
+    // replacement (e.g. `s/(Apóstoli tui)/$1 et Evangelístæ/`).
+    // We treat the parens as plain markers and substitute the
+    // literal text, expanding `$1` to the captured chunk. Any
+    // other `$N` reference bails — we don't model multi-capture.
+    if pattern.starts_with('(') && pattern.ends_with(')') && !pattern[1..pattern.len() - 1].contains('(') {
+        let literal = &pattern[1..pattern.len() - 1];
+        let lit_pattern = unescape_literal(literal)?;
+        // Replacement: expand `$1` → captured literal. Reject `$0`,
+        // `$2..` and any other capture groups (none present in the
+        // 1570 corpus by inspection).
+        if replacement.contains("$0")
+            || replacement.contains("$2")
+            || replacement.contains("$3")
+            || replacement.contains("$4")
+            || replacement.contains("$5")
+            || replacement.contains("$6")
+            || replacement.contains("$7")
+            || replacement.contains("$8")
+            || replacement.contains("$9")
+        {
+            return None;
+        }
+        let lit_replacement = unescape_literal(&replacement.replace("$1", &lit_pattern))?;
+        return Some(text.replace(&lit_pattern, &lit_replacement));
     }
     // General literal-string substitution. Unescape `\.`, `\!`, etc.
     // — the corpus only uses these escapes for "match literal punct"

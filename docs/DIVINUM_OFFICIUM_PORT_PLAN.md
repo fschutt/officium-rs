@@ -756,25 +756,36 @@ Continuing work since:
 | `ad7251c` transfer + commune chase | 175/365 47.9% | 3001/4380 68.5% | 243   | 39 + 142       |
 | `9cb3827` octave/vigil exclusion | 176/365 48.2% | 3055/4380 69.7% | 189 | 39 + 142     |
 | `eceaf3a` @:Section + cond parent | 176/365 48.2% | 3068/4380 70.0% | 189 | 39 + 142     |
-| `b352f79` Christmas Octave weekday | **176/365 48.2%** | **3065/4380 70.0%** | 192 | 39 + 142    |
+| `b352f79` Christmas Octave weekday | 176/365 48.2% | 3065/4380 70.0% | 192 | 39 + 142    |
+| `67038f4` Sept Embertide overlay   | 177/365 48.5% | 3072/4380 70.1% | 191 | 36 + 145    |
+| `5079825` Transfer table           | 179/365 49.0% | 3112/4380 71.1% | 161 | 32 + 138    |
+| `c37ba2a` Oratio Dominica          | 183/365 50.1% | 3124/4380 71.3% | 152 | 32 + 138    |
+| `0561eff` annotated-section skip   | 186/365 51.0% | 3134/4380 71.6% | 145 | 32 + 138    |
+| `cce945a` drop Christmas-Octave SC | 187/365 51.2% | 3143/4380 71.8% | 142 | 30 + 138    |
+| `1a94b0b` replaceNdot              | 187/365 51.2% | 3151/4380 71.9% | 134 | 30 + 138    |
+| `ed235d6` Name parent chase        | 187/365 51.2% | 3158/4380 72.1% | 127 | 30 + 138    |
+| `b17cc4d` Tractus suppress + Quad-swap | 272/365 74.5% | 3167/4380 72.3% | 33 | 32 + 138 |
+| `6149c9c` Alleluia header + GradualeP | 275/365 75.3% | 3170/4380 72.4% | 30 | 32 + 138  |
+| `b56375e` parens-Alleluja + Name conds | 276/365 75.6% | 3177/4380 72.5% | 27 | 32 + 138 |
+| `4ad875b` GradualeF swap           | **282/365 77.3%** | **3183/4380 72.7%** | 22 | 32 + 138 |
 
-Per-section pass rates at the 70% milestone (compared to the 63.7%
+Per-section pass rates at the 77% milestone (compared to the 63.7%
 starting point):
 
-| Section      | Start | At 70% | Δ      |
+| Section      | Start | At 77% | Δ      |
 |--------------|-------|--------|--------|
-| Introitus    | 86.8% | 95.9%  | +9.1   |
-| Oratio       | 86.6% | 91.8%  | +5.2   |
-| Lectio       | 82.2% | 94.5%  | +12.3  |
-| Graduale     | 68.2% | 78.1%  | +9.9   |
-| Tractus      | 72.3% | 70.7%  | −1.6   |
+| Introitus    | 86.8% | 98.6%  | +11.8  |
+| Oratio       | 86.6% | 97.3%  | +10.7  |
+| Lectio       | 82.2% | 96.2%  | +14.0  |
+| Graduale     | 68.2% | 84.9%  | +16.7  |
+| Tractus      | 72.3% | 99.5%  | +27.2  |
 | Sequentia    | 99.7% | 100.0% | +0.3   |
-| Evangelium   | 84.9% | 94.5%  | +9.6   |
-| Offertorium  | 84.7% | 93.2%  | +8.5   |
-| Secreta      | 88.8% | 95.1%  | +6.3   |
+| Evangelium   | 84.9% | 97.0%  | +12.1  |
+| Offertorium  | 84.7% | 95.1%  | +10.4  |
+| Secreta      | 88.8% | 98.9%  | +10.1  |
 | Prefatio     | 100%  | 100%   | 0      |
-| Communio     | 88.2% | 96.2%  | +8.0   |
-| Postcommunio | 88.5% | 94.5%  | +6.0   |
+| Communio     | 88.2% | 99.2%  | +11.0  |
+| Postcommunio | 88.5% | 98.9%  | +10.4  |
 
 Top remaining workload (each pair count is a count of divergent
 sections in the year sweep):

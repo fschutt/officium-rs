@@ -29,6 +29,7 @@
 //!
 //! See DIVINUM_OFFICIUM_PORT_PLAN.md Phase 6.
 
+use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::fs;
 use std::path::PathBuf;
@@ -40,8 +41,9 @@ use md2json2::divinum_officium::corpus::BundledCorpus;
 use md2json2::divinum_officium::mass::mass_propers;
 use md2json2::divinum_officium::precedence::compute_office;
 use md2json2::divinum_officium::regression::{
-    compare_day, explain_divergence, extract_perl_sections, normalize, strip_perl_rubrics,
-    DayReport, DivergenceCategory, SectionStatus, PROPER_SECTIONS,
+    compare_day, explain_divergence, extract_perl_sections, infer_perl_source, normalize,
+    strip_perl_rubrics, DayReport, DivergenceCategory, InferredSource, SectionStatus,
+    PROPER_SECTIONS,
 };
 
 const KNOWN_RUBRICS: &[(&str, Rubric)] = &[
@@ -196,6 +198,16 @@ struct Stats {
     per_section_total: [usize; 12],
     panics: Vec<(u32, u32, String)>,
     perl_failures: Vec<(u32, u32, String)>,
+    /// Aggregate "what file did Perl actually use, where Rust didn't"
+    /// counts. Key = `<file>:<section>`. Captures the Phase 7+ work
+    /// list: every entry is a Tempora/Sancti/Commune file that the
+    /// Rust pipeline isn't currently selecting.
+    inferred_misses: BTreeMap<String, usize>,
+    /// Aggregate "rust file → perl file" pair counts. Key =
+    /// `<rust_file> -> <perl_file>`. Surfaces systematic 1570→1962
+    /// kalendar diffs (e.g. `Tempora/Epi1-0 -> Tempora/Epi1-0a`
+    /// repeated across the Octave of Epiphany).
+    inferred_pairs: BTreeMap<String, usize>,
 }
 
 struct Cfg {
@@ -357,6 +369,7 @@ fn main() {
         if report.winner_match {
             stats.days_winner_match += 1;
         }
+        let perl_sections_for_infer = extract_perl_sections(&perl_html);
         for (idx, s) in report.sections.iter().enumerate() {
             match s.status {
                 SectionStatus::Match => stats.section_match += 1,
@@ -377,6 +390,24 @@ fn main() {
                 stats.per_section_total[idx] += 1;
                 if matches!(s.status, SectionStatus::Match | SectionStatus::Empty) {
                     stats.per_section_pass[idx] += 1;
+                }
+            }
+            // Aggregate inferred-source data on Differ + RustBlank
+            // cells (the diagnostic-relevant ones).
+            if matches!(s.status, SectionStatus::Differ | SectionStatus::RustBlank) {
+                if let Some(p_raw) = perl_sections_for_infer.get(s.section) {
+                    let p_clean = strip_perl_rubrics(&normalize(p_raw), s.section);
+                    let hits: Vec<InferredSource> = infer_perl_source(&p_clean, s.section);
+                    if let Some(top) = hits.first() {
+                        let key = format!("{}:{}", top.file, top.section);
+                        *stats.inferred_misses.entry(key).or_insert(0) += 1;
+                        // File-pair (no section) — surfaces day-level
+                        // wrong-winner patterns that recur (e.g.
+                        // `Tempora/Epi1-0 → Tempora/Epi1-0a` across
+                        // every section of the Sunday-after-Epiphany).
+                        let pair = format!("{} -> {}", rust_winner, top.file);
+                        *stats.inferred_pairs.entry(pair).or_insert(0) += 1;
+                    }
                 }
             }
         }
@@ -457,6 +488,10 @@ fn main() {
             })
         })
         .collect();
+    // Top-N inferred-source aggregations.
+    let top_misses = top_n(&stats.inferred_misses, 20);
+    let top_pairs = top_n(&stats.inferred_pairs, 20);
+
     let manifest = serde_json::json!({
         "rubric": cfg.rubric_str,
         "year": cfg.year,
@@ -483,6 +518,14 @@ fn main() {
             "pass_pct":            pass_pct,
             "section_match_pct":   section_match_pct,
         },
+        "inferred_top_misses": top_misses
+            .iter()
+            .map(|(k, v)| serde_json::json!({ "file_section": k, "count": v }))
+            .collect::<Vec<_>>(),
+        "inferred_top_pairs": top_pairs
+            .iter()
+            .map(|(k, v)| serde_json::json!({ "rust_to_perl": k, "count": v }))
+            .collect::<Vec<_>>(),
         "panics": stats.panics.iter().map(|(m, d, e)| {
             serde_json::json!({ "date": format!("{:02}-{:02}", m, d), "error": e })
         }).collect::<Vec<_>>(),
@@ -522,6 +565,20 @@ fn main() {
         let pct = if total == 0 { 0.0 } else { pass as f32 / total as f32 * 100.0 };
         println!("    {:14}  {:>3}/{:>3}  ({:>5.1}%)", name, pass, total, pct);
     }
+    if !top_misses.is_empty() {
+        println!();
+        println!("  top inferred Perl-source files (Rust missed):");
+        for (k, v) in top_misses.iter().take(10) {
+            println!("    {:>4}× {}", v, k);
+        }
+    }
+    if !top_pairs.is_empty() {
+        println!();
+        println!("  top rust-winner ⇒ perl-source pairs:");
+        for (k, v) in top_pairs.iter().take(10) {
+            println!("    {:>4}× {}", v, k);
+        }
+    }
     println!();
     println!("manifest: {}", manifest_path.display());
     println!("board:    {}", board_path.display());
@@ -529,6 +586,14 @@ fn main() {
     if pass_pct < 99.0 {
         eprintln!("\nNOTE: pass rate {pass_pct:.1}% < 99% threshold — see board for red cells.");
     }
+}
+
+/// Sort `(key, count)` pairs descending by count, take top `n`.
+fn top_n<K: Clone>(map: &BTreeMap<K, usize>, n: usize) -> Vec<(K, usize)> {
+    let mut v: Vec<(K, usize)> = map.iter().map(|(k, v)| (k.clone(), *v)).collect();
+    v.sort_by(|a, b| b.1.cmp(&a.1));
+    v.truncate(n);
+    v
 }
 
 fn panic_message(e: &Box<dyn std::any::Any + Send>) -> String {
@@ -699,7 +764,7 @@ fn render_day_diff(
             )
             .unwrap();
         }
-        if matches!(status, SectionStatus::Differ) {
+        if matches!(status, SectionStatus::Differ | SectionStatus::RustBlank) {
             let div = explain_divergence(&r_norm, &p_clean);
             writeln!(
                 &mut out,
@@ -714,6 +779,25 @@ fn render_day_diff(
             // is a single substituted word (genetrice vs genitrice).
             if let Some((rword, pword)) = first_diff_word(&r_norm, &p_clean) {
                 writeln!(&mut out, "      single-word diff: rust={rword:?} perl={pword:?}").unwrap();
+            }
+            // Reverse-lookup: which corpus file is Perl effectively
+            // using for this section? Surfaces "wrong-winner" /
+            // "wrong-Tempora-variant" gaps cleanly. Cap at 3 hits to
+            // avoid drowning the dump on prayers that recur (e.g.
+            // common &Gloria-tail antiphons).
+            let hits = infer_perl_source(&p_clean, sect);
+            if !hits.is_empty() {
+                writeln!(&mut out, "      perl-source candidates:").unwrap();
+                for h in &hits {
+                    writeln!(
+                        &mut out,
+                        "        {:>6.1}%  {}:{}",
+                        h.score * 100.0,
+                        h.file,
+                        h.section,
+                    )
+                    .unwrap();
+                }
             }
         }
         writeln!(&mut out).unwrap();

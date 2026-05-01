@@ -18,11 +18,14 @@
 //! shell-out to Perl and the on-disk report writes.
 
 use std::collections::BTreeMap;
+use std::sync::OnceLock;
 
 use serde::Serialize;
 use unicode_normalization::UnicodeNormalization;
 
 use crate::divinum_officium::core::MassPropers;
+use crate::divinum_officium::mass::expand_macros;
+use crate::divinum_officium::missa;
 
 // ─── Public types ────────────────────────────────────────────────────
 
@@ -901,6 +904,136 @@ fn winners_align(rust_winner: &str, perl_headline: &str) -> bool {
     !p.is_empty()
 }
 
+// ─── Reverse lookup: infer Perl source file from rendered body ───────
+//
+// The single most useful diagnostic when a Differ cell fires: which
+// corpus file did Perl actually use? Knowing that, we can name the
+// gap precisely:
+//
+//   * If Perl matches `Tempora/Epi1-0a` and Rust picked
+//     `Tempora/Epi1-0`, the issue is the file-stem selector (1570
+//     wants the `-a` variant).
+//   * If Perl matches `Commune/C4`  and Rust picked `Commune/C4b`,
+//     the issue is the commune-shape resolver.
+//   * If Perl matches `Sancti/12-26` and Rust picked `Sancti/01-02`,
+//     the issue is the `[Rule] vide Sancti/12-26` chase.
+//
+// We build a one-shot index over the bundled Mass corpus: per
+// `(file_key, section)` pair, store the macro-expanded, normalised
+// body. Then for each Perl-side body we look for the file whose
+// normalised body contains it (or vice versa). Top-3 candidates by
+// length-ratio.
+
+#[derive(Debug, Clone, Serialize)]
+pub struct InferredSource {
+    /// FileKey rendered as a path-like string (`Sancti/12-26`).
+    pub file: String,
+    /// Section name where the body was found (typically the section
+    /// we're comparing, but Perl sometimes pulls from a sibling
+    /// section — e.g. `:Lectio in 2 loco`).
+    pub section: &'static str,
+    /// Confidence in [0.0, 1.0] — Jaccard-ish: shared bytes /
+    /// max(rust, perl) length.
+    pub score: f32,
+}
+
+/// Build (or retrieve) the corpus index. Maps `(file_key, section)`
+/// to a normalised body string. Built lazily on first call so the
+/// regression unit tests don't pay the indexing cost.
+fn corpus_index() -> &'static BTreeMap<(String, &'static str), String> {
+    static INDEX: OnceLock<BTreeMap<(String, &'static str), String>> = OnceLock::new();
+    INDEX.get_or_init(|| {
+        let mut idx: BTreeMap<(String, &'static str), String> = BTreeMap::new();
+        for (key, file) in missa::iter() {
+            for section_name in PROPER_SECTIONS {
+                if let Some(raw) = file.sections.get(*section_name) {
+                    if raw.trim().starts_with('@') {
+                        // Skip @-references — the body is in the chased file.
+                        // The chased file is also in the corpus and will be
+                        // indexed in its own pass.
+                        continue;
+                    }
+                    let expanded = expand_macros(raw);
+                    let norm = normalize(&expanded);
+                    if norm.len() >= 8 {
+                        idx.insert((key.clone(), section_name), norm);
+                    }
+                }
+            }
+        }
+        idx
+    })
+}
+
+/// For a (perl-side, rubric-stripped, normalised) section body,
+/// return the top-3 candidate corpus files whose normalised body
+/// looks like the source of the Perl-side text (substring or close
+/// prefix relationship). Empty/short body returns empty result.
+pub fn infer_perl_source(perl_clean: &str, section: &str) -> Vec<InferredSource> {
+    if perl_clean.len() < 16 {
+        return Vec::new();
+    }
+    let idx = corpus_index();
+    let mut hits: Vec<InferredSource> = Vec::new();
+    for ((file, sect), body) in idx {
+        let score = match_score(perl_clean, body);
+        if score > 0.0 {
+            hits.push(InferredSource {
+                file: file.clone(),
+                section: sect,
+                score,
+            });
+        }
+    }
+    // Rank: same-section hits beat cross-section hits at equal score;
+    // among same-section hits, prefer length-similarity (avoids
+    // promoting short-antiphon hits across many files); among cross-
+    // section, prefer raw containment score.
+    hits.sort_by(|a, b| {
+        let a_pref = (a.section == section) as u8;
+        let b_pref = (b.section == section) as u8;
+        b_pref
+            .cmp(&a_pref)
+            .then_with(|| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal))
+    });
+    hits.truncate(3);
+    hits
+}
+
+/// Score in [0.0, 1.0] reflecting how likely `body` is the source of
+/// `perl_clean`:
+///
+///   * 1.0 — the two are equal modulo macro expansion / rubric strip.
+///   * `min/max` — when one is a strict substring of the other.
+///     Length-ratio damping discourages a 50-char antiphon from
+///     matching a 5000-char Mass file body it happens to occur in.
+///   * Common-prefix fallback — when the bodies share a long opening
+///     prefix but diverge later (handy for orthographic variants
+///     between corpus and rendered forms).
+fn match_score(a: &str, b: &str) -> f32 {
+    if a.is_empty() || b.is_empty() {
+        return 0.0;
+    }
+    let (short, long) = if a.len() <= b.len() { (a, b) } else { (b, a) };
+    if long.contains(short) {
+        return short.len() as f32 / long.len() as f32;
+    }
+    // Common-prefix proxy.
+    let common = a
+        .as_bytes()
+        .iter()
+        .zip(b.as_bytes().iter())
+        .take_while(|(x, y)| x == y)
+        .count();
+    if common >= 32 {
+        // Damp common-prefix score so containment hits always rank
+        // above prefix hits at equal length.
+        (common as f32 / a.len().max(b.len()) as f32) * 0.75
+    } else {
+        0.0
+    }
+}
+
 // ─── Tests ───────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -1181,5 +1314,74 @@ oratio body
         let rust_expanded = "Deus, qui hodiérna die... Per Dóminum nostrum.";
         let perl_rendered = "<i>℣.</i> Dóminus vobíscum.<br/><i>℟.</i> Et cum spíritu tuo.<br/><b>O</b>rémus.<br/>Deus, qui hodiérna die... Per Dóminum nostrum.";
         assert_eq!(compare_section_named(rust_expanded, perl_rendered, "Oratio"), SectionStatus::Match);
+    }
+
+    // ─── Reverse-lookup tests (Phase 6.5 followup) ───────────────────
+
+    #[test]
+    fn infer_source_finds_excelso_throno_in_epi1_0a() {
+        // 01-11 fault line: Perl renders "In excélso throno vidi
+        // sedere virum..." — the 1570 Sunday-after-Epiphany Introit.
+        // The body lives in Tempora/Epi1-0a (NOT Tempora/Epi1-0
+        // which is the post-1911 Holy Family). Reverse-lookup should
+        // identify Epi1-0a as the source.
+        let perl_norm = normalize(
+            "In excélso throno vidi sedére virum, quem adórat multitúdo Angelórum, \
+             psalléntes in unum: ecce, cujus impérii nomen est in ætérnum"
+        );
+        let hits = infer_perl_source(&perl_norm, "Introitus");
+        assert!(!hits.is_empty(), "no reverse-lookup hit");
+        assert!(
+            hits.iter().any(|h| h.file == "Tempora/Epi1-0a"),
+            "expected Tempora/Epi1-0a in hits; got {:?}",
+            hits.iter().map(|h| &h.file).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn infer_source_finds_christmas_in_nocte() {
+        // "Dóminus dixit ad me…" — Christmas In Nocte Introit.
+        // Source: Sancti/12-25m1 (the per-Mass m1 file, not the meta
+        // Sancti/12-25 which is body-less).
+        let perl_norm = normalize("Dóminus dixit ad me: Fílius meus es tu, ego hódie génui te.");
+        let hits = infer_perl_source(&perl_norm, "Introitus");
+        assert!(
+            hits.iter().any(|h| h.file == "Sancti/12-25m1"),
+            "expected Sancti/12-25m1; got {:?}",
+            hits.iter().map(|h| (&h.file, h.section, h.score)).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn infer_source_short_body_returns_empty() {
+        let hits = infer_perl_source("short", "Introitus");
+        assert!(hits.is_empty());
+    }
+
+    #[test]
+    fn match_score_substring_one_direction() {
+        // 5/10 — short.len() / long.len()
+        let s = match_score("hello", "hellothere");
+        assert!((s - 0.5).abs() < 0.01, "got {s}");
+    }
+
+    #[test]
+    fn match_score_disjoint_zero() {
+        assert_eq!(match_score("abcdefgh", "xyzwvuts"), 0.0);
+    }
+
+    #[test]
+    fn match_score_identical_one() {
+        assert_eq!(match_score("hellothere", "hellothere"), 1.0);
+    }
+
+    #[test]
+    fn match_score_long_common_prefix() {
+        // 40-char common prefix, then diverge — should score >0
+        // (orthographic-variant case).
+        let a = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnXXXXXX";
+        let b = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnYYYYYY";
+        let s = match_score(a, b);
+        assert!(s > 0.5, "got {s}");
     }
 }

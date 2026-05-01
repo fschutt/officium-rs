@@ -51,6 +51,13 @@ pub fn lookup(key: &str) -> Option<&'static MassFile> {
     parsed().get(key)
 }
 
+/// Iterator over every loaded `(key, MassFile)` pair. Used by the
+/// regression harness's reverse-lookup ("which file does this Perl
+/// body actually come from?") — see `regression::infer_perl_source`.
+pub fn iter() -> impl Iterator<Item = (&'static String, &'static MassFile)> {
+    parsed().iter()
+}
+
 /// Resolve a section, chasing one `@Commune/<key>` reference if the
 /// body is exactly such a marker. Multi-step reference chains and the
 /// `@Commune/C2:Lectio7 in 4 loco` substitution form are intentionally

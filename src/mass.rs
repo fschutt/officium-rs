@@ -44,7 +44,7 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
     let winner_file = corpus.mass_file(&resolved.winner);
     let go = |sect: &str| -> Option<ProperBlock> {
         let block = proper_block(&resolved, sect, corpus)?;
-        let block = substitute_name(block, sect, winner_file);
+        let block = substitute_name_with_corpus(block, sect, winner_file, Some(corpus));
         Some(ProperBlock {
             latin: spell_var_pre1960(&expand_macros(&block.latin)),
             ..block
@@ -108,19 +108,23 @@ pub fn spell_var_pre1960(text: &str) -> String {
 /// lines). Lines starting with `(` are skipped (rubric annotations).
 /// Lines following an annotation that match the same `Section=Name`
 /// shape are also overrides — first-occurrence-wins.
-fn substitute_name(
+/// Substitute `N.` placeholders against the winner's `[Name]` body,
+/// chasing parent chains to find one when the winner is body-less
+/// (e.g. `Sancti/12-31o = @Sancti/12-31`).
+fn substitute_name_with_corpus(
     block: ProperBlock,
     section: &str,
     winner_file: Option<&MassFile>,
+    corpus: Option<&dyn Corpus>,
 ) -> ProperBlock {
     if !block.latin.contains("N.") {
         return block;
     }
-    let name_body = match winner_file.and_then(|f| f.sections.get("Name")) {
+    let name_body = match find_name_body(winner_file, corpus) {
         Some(b) => b,
         None => return block,
     };
-    let resolved = resolve_name_for_section(name_body, section);
+    let resolved = resolve_name_for_section(&name_body, section);
     if resolved.is_empty() {
         return block;
     }
@@ -128,6 +132,26 @@ fn substitute_name(
         latin: replace_n_dot(&block.latin, &resolved),
         ..block
     }
+}
+
+/// Look up `[Name]` on the winner file, then walk the
+/// `parent` chain (1570 first, then default) for the first file
+/// that carries one. Caps at 4 hops.
+fn find_name_body(
+    winner_file: Option<&MassFile>,
+    corpus: Option<&dyn Corpus>,
+) -> Option<String> {
+    let mut current = winner_file?;
+    for _ in 0..4 {
+        if let Some(b) = current.sections.get("Name") {
+            return Some(b.clone());
+        }
+        let parent_path = current.parent_1570.as_deref().or(current.parent.as_deref())?;
+        let corpus = corpus?;
+        let parent_key = FileKey::parse(parent_path);
+        current = corpus.mass_file(&parent_key)?;
+    }
+    None
 }
 
 /// Mirror Perl `replaceNdot` (propers.pl): for prayers that mention

@@ -288,21 +288,49 @@ fn apply_body_conditionals_1570(text: &str) -> String {
             i += 1;
             continue;
         }
-        // Determine backscope. Mirrors Perl's `parse_conditional`:
-        //   * `sed/vero/atque/attamen` stopwords WITHOUT a `semper`
-        //     scope keyword give implicit SCOPE_LINE backscope.
-        //   * No stopword OR `semper` scope → no backscope.
+        // Determine backscope + forward scope. Mirrors Perl
+        // `parse_conditional`:
+        //   * `(... omittitur)` / `(... omittuntur)` —
+        //     SCOPE_NULL forward (always followed by content,
+        //     regardless of truth). Backscope: SCOPE_CHUNK or
+        //     SCOPE_NEST per scope.
+        //   * `(sed/vero/atque/attamen ...)` without `semper` —
+        //     SCOPE_LINE backscope, SCOPE_LINE forward (alt line).
+        //   * Other `(predicate dicitur)` etc. — forward-only,
+        //     SCOPE_LINE.
         let has_backscope_stopword = lc.starts_with("sed ")
             || lc.starts_with("vero ")
             || lc.starts_with("atque ")
             || lc.starts_with("attamen ");
         let has_semper_scope = lc.contains("semper");
-        let line_backscope = has_backscope_stopword && !has_semper_scope;
+        let omit_scope = lc.contains("omittitur") || lc.contains("omittuntur");
         let truth = eval_simple_conditional_1570(inner);
         let alt_idx = (i + 1..lines.len()).find(|&j| !lines[j].trim().is_empty());
-        if line_backscope {
-            // SCOPE_LINE backscope: TRUE replaces previous line with
-            // the alt line; FALSE drops conditional + alt.
+        if omit_scope {
+            // `(sed X versus omittitur/omittuntur)`: when FALSE,
+            // keep subsequent content as-is (SCOPE_NULL forward).
+            // When TRUE, drop the preceding chunk/nest. We
+            // approximate the back-drop with a single-line drop
+            // for simplicity — most omittuntur uses are SCOPE_LINE
+            // ("hic versus omittitur" = "this verse omitted").
+            if truth {
+                while let Some(last) = out.last() {
+                    if last.trim().is_empty() {
+                        out.pop();
+                    } else {
+                        break;
+                    }
+                }
+                out.pop();
+            }
+            // Don't consume the alt line: it's general content,
+            // not a per-conditional alt.
+            i += 1;
+            continue;
+        }
+        if has_backscope_stopword && !has_semper_scope {
+            // SCOPE_LINE backscope: TRUE replaces previous line
+            // with the alt line; FALSE drops conditional + alt.
             if truth {
                 while let Some(last) = out.last() {
                     if last.trim().is_empty() {

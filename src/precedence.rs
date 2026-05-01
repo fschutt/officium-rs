@@ -184,10 +184,21 @@ fn resolve_day_kind(occ: &OccurrenceResult, input: &OfficeInput, corpus: &dyn Co
 }
 
 fn winner_officium(occ: &OccurrenceResult, _input: &OfficeInput, corpus: &dyn Corpus) -> String {
-    if let Some(file) = corpus.mass_file(&occ.winner) {
-        if let Some(name) = file.officium.as_deref() {
-            return name.to_string();
+    let mut key = occ.winner.clone();
+    for _ in 0..4 {
+        if let Some(file) = corpus.mass_file(&key) {
+            if let Some(name) = file.officium.as_deref() {
+                return name.to_string();
+            }
+            // Officium missing — chase the file-level parent inherit
+            // (typical of `@`-only redirects like Sancti/12-24o that
+            // forward everything to Sancti/12-24).
+            if let Some(parent_path) = file.parent.as_deref() {
+                key = crate::divinum_officium::core::FileKey::parse(parent_path);
+                continue;
+            }
         }
+        break;
     }
     String::new()
 }

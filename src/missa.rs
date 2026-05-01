@@ -36,6 +36,20 @@ pub struct MassFile {
     /// imposes one (see `MASS_SECTION_ORDER` in `missal.rs`).
     #[serde(default)]
     pub sections: HashMap<String, String>,
+    /// File-level `@Commune/X` inherit captured from the upstream
+    /// file's leading line — the consumer chases this for any
+    /// section the file doesn't carry locally. Mirrors what the Perl
+    /// `setupstring` does at runtime.
+    #[serde(default)]
+    pub parent: Option<String>,
+    /// Sections whose header carried a post-1570 rubric annotation
+    /// (`(communi Summorum Pontificum)`, `(rubrica 1960)`, etc.).
+    /// In Tridentine 1570 commune-fallback context the consumer
+    /// should treat these as if absent — see
+    /// `mass::proper_block`. The list is sorted; binary search is
+    /// fine.
+    #[serde(default)]
+    pub annotated_sections: Vec<String>,
 }
 
 static MISSA_JSON: &str = include_str!("../../data/missa_latin.json");

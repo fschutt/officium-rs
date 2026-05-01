@@ -1,4 +1,8 @@
 {
+"Sancti/01-00":{
+"sections":{},
+"parent":"Tempora/Nat2-0"
+},
 "Sancti/01-01":{
 "officium":"In Circumcisione Domini",
 "rank":"Duplex II classis",
@@ -31,7 +35,10 @@
 "Commemoratio Oratio":"!Pro S. Joanne Evangelista\n@Sancti/12-27:Oratio\n!Pro Ss. Innocentibus\n@Sancti/12-28:Oratio",
 "Commemoratio Secreta":"!Pro S. Joanne Evangelista\n@Sancti/12-27:Secreta\n!Pro Ss. Innocentibus\n@Sancti/12-28:Secreta",
 "Commemoratio Postcommunio":"!Pro S. Joanne Evangelista\n@Commune/C5:Postcommunio\n!Pro Ss. Innocentibus\n@Sancti/12-28:Postcommunio"
-}
+},
+"annotated_sections":[
+"Oratio"
+]
 },
 "Sancti/01-03":{
 "officium":"In Octava S. Joannis Apostoli et Evangelistæ",
@@ -147,6 +154,10 @@
 "Rule":"Gloria\nCredoDA\nPrefatio=Epi\nSuffragium=Maria2;Papa,Ecclesiæ;;\nInfra octavam Epiphaniæ Domini"
 }
 },
+"Sancti/01-08g":{
+"sections":{},
+"parent":"Tempora/Epi1-0a"
+},
 "Sancti/01-09":{
 "officium":"Quarta die infra Octavam Epiphaniæ",
 "rank":"Semiduplex",
@@ -192,6 +203,10 @@
 "sections":{
 "Rule":"Gloria\nCredoDA\nPrefatio=Epi\nSuffragium=Maria2;Papa,Ecclesiæ;;\nInfra octavam Epiphaniæ Domini"
 }
+},
+"Sancti/01-12t":{
+"sections":{},
+"parent":"Tempora/Epi1-0a"
 },
 "Sancti/01-13":{
 "officium":"Die Octava Epiphaniæ",
@@ -591,6 +606,10 @@
 "Communio":"Fruméntum Christi sum: déntibus bestiárum molar, ut panis mundus invéniar."
 }
 },
+"Sancti/02-02-quadp":{
+"sections":{},
+"parent":"Sancti/02-02"
+},
 "Sancti/02-02":{
 "officium":"In Purificatione Beatæ Mariæ Virginis",
 "rank":"Duplex 2 class",
@@ -923,7 +942,12 @@
 "Tractus":"@Commune/C6-1",
 "Communio":"@Commune/C6-1",
 "Postcommunio":"Mýsticis, Dómine, repléti sumus votis et gáudiis: præsta, quǽsumus; ut intercessiónibus sanctárum Mártyrum tuárum Perpétuæ et Felicitátis, quæ temporáliter ágimus, spirituáliter consequámur.\n$Per Dominum"
-}
+},
+"annotated_sections":[
+"Communio",
+"Graduale",
+"Tractus"
+]
 },
 "Sancti/03-07":{
 "officium":"S. Thomæ de Aquino Confessoris et Ecclesiæ Doctoris (sed rubrica 1570 aut rubrica 1617) S. Thomæ de Aquino Confessoris",
@@ -1458,6 +1482,10 @@
 "Oratio":"Deus, qui ineffábili providéntia beátum Joseph sanctíssimæ Genitrícis tuæ sponsum elígere dignátus es: præsta, quǽsumus; ut quem protectórem venerámur in terris, intercessórem habére mereámur in cælis:\n$Qui vivis"
 }
 },
+"Sancti/05-01cist":{
+"sections":{},
+"parent":"Sancti/05-01"
+},
 "Sancti/05-01r":{
 "officium":"S. Joseph Opificis",
 "rank":"Duplex I classis",
@@ -1678,6 +1706,10 @@
 "Lectio":"@Commune/C4a:Lectio in 2 loco"
 }
 },
+"Sancti/05-09t":{
+"sections":{},
+"parent":"Sancti/05-09"
+},
 "Sancti/05-10":{
 "officium":"S. Antonini Episcopi et Confessoris",
 "rank":"Duplex",
@@ -1701,6 +1733,13 @@
 "Secreta":"Hóstias tibi, Dómine, beatórum Martyrum tuórum Gordiáni et Epímachi dicátas méritis, benígnus assúme: et ad perpétuum nobis tríbue proveníre subsídium.\n$Per Dominum",
 "Postcommunio":"Quǽsumus, omnípotens Deus: ut, qui cœléstia aliménta percépimus, intercedéntibus sanctis Martýribus tuis Gordiáno et Epímacho, per hæc contra ómnia advérsa muniámur.\n$Per Dominum."
 }
+},
+"Sancti/05-11r":{
+"rank":"Duplex II classis",
+"rank_num":5.0,
+"commune":"ex C1",
+"sections":{},
+"parent":"Sancti/05-01"
 },
 "Sancti/05-12":{
 "officium":"Ss. Nerei, Achillei et Domitillæ Virg. atque Pancratii Martyrum",
@@ -1922,7 +1961,8 @@
 "Secreta":"Pro religiónis christiánæ triúmpho hóstias placatiónis tibi, Dómine, immolámus: quæ ut nobis profíciant, opem auxiliátrix Virgo præstet; per quam talis perfécta est victória.\n$Per Dominum",
 "Communio":"@Commune/C10",
 "Postcommunio":"Adésto, Dómine, pópulis, qui participatióne Córporis et Sánguinis tui reficiúntur: ut, sanctíssima tua Genetríce auxiliánte, ab omni malo et perículo liberéntur, et in omni ópere bono custodiántur:\n$Qui vivis"
-}
+},
+"parent":"Commune/C10"
 },
 "Sancti/05-25":{
 "officium":"S. Gregorii VII Papæ et Confessoris (sed rubrica 1930 aut rubrica 1963) S. Gregorii VII Papæ et Confessoris O. N.",
@@ -1949,7 +1989,11 @@
 "Oratio":"Da, quǽsumus, omnipotens Deus: ut qui beati Urbani Martyris tui atque Pontificis solemnia colimus, ejus apud te intercessionibus adjuvemur.\n$Per Dominum.",
 "Secreta":"@Commune/C2b:Secreta pro commemoratio",
 "Postcommunio":"@Commune/C2b:Postcommunio pro commemoratio"
-}
+},
+"annotated_sections":[
+"Postcommunio",
+"Secreta"
+]
 },
 "Sancti/05-26":{
 "officium":"S. Philippi Neri Confessoris",
@@ -2392,6 +2436,10 @@
 "Lectio":"Léctio Epístolæ beáti Judæ Apóstoli.\n!Jud 1:17-21\nCaríssimi: Mémores estóte verborum, quæ prædícta sunt ab Apóstolis Dómini nostri Jesu Christi, qui dicébant vobis, quóniam in novíssimo témpore vénient illusóres, secúndum desidéria sua ambulántes in impietátibus. Hi sunt, qui ségregant semetípsos, animáles, Spíritum non habéntes. Vos autem, caríssimi, superædificántes vosmetípsos sanctíssimæ vestræ fídei, in Spíritu Sancto orántes, vosmetípsos in dilectióne Dei servate, exspectántes misericórdiam Dómini nostri Jesu Christi in vitam ætérnam."
 }
 },
+"Sancti/06-20t":{
+"sections":{},
+"parent":"Sancti/06-20"
+},
 "Sancti/06-21":{
 "officium":"S. Aloisii Gonzagæ Confessoris",
 "rank":"Duplex",
@@ -2594,6 +2642,10 @@
 "Postcommunio":"@Sancti/06-29"
 }
 },
+"Sancti/06-28t":{
+"sections":{},
+"parent":"Sancti/07-03"
+},
 "Sancti/06-29":{
 "officium":"SS. Apostolorum Petri et Pauli",
 "rank":"Duplex I classis cum octava communi",
@@ -2742,6 +2794,10 @@
 "Postcommunio":"Córporis sacri et pretiósi Sánguinis repléti libámine, quǽsumus, Dómine, Deus noster: ut, quod pia devotióne gérimus, certa redemptióne capiámus.\n$Per eundem"
 }
 },
+"Sancti/07-02o":{
+"sections":{},
+"parent":"Sancti/07-02"
+},
 "Sancti/07-02oct":{
 "officium":"Quarta die infra Octavam Ss. Apostolorum Petri et Pauli",
 "rank":"Semiduplex",
@@ -2885,7 +2941,8 @@
 "Secreta":"@Sancti/07-06",
 "Communio":"@Sancti/07-06",
 "Postcommunio":"@Sancti/07-06"
-}
+},
+"parent":"Sancti/07-06"
 },
 "Sancti/07-07":{
 "officium":"Ss. Cyrilli et Methodii Pont. et Conf.",
@@ -2911,6 +2968,10 @@
 "Rule":"vide C7a;\nGloria",
 "Oratio":"Clementíssime Deus, qui beátam Elisabeth regínam, inter céteras egrégias dotes, béllici furóris sedándi prærogatíva decorásti: da nobis, ejus intercessióne; post mortális vitæ, quam supplíciter pétimus, pacem, ad ætérna gáudia perveníre.\n$Per Dominum"
 }
+},
+"Sancti/07-08t":{
+"sections":{},
+"parent":"Sancti/07-08"
 },
 "Sancti/07-09n":{
 "officium":"S. Augustine Zhao Rong and companions, martyrs",
@@ -2949,6 +3010,10 @@
 "Rule":"vide C2b;\nGloria",
 "Name":"Pii\n(sed communi Summorum Pontificum)\nPium\nPostcommunio=Pio"
 }
+},
+"Sancti/07-11o":{
+"sections":{},
+"parent":"Sancti/07-11"
 },
 "Sancti/07-12":{
 "officium":"S. Joannis Gualberti Abbatis",
@@ -3108,7 +3173,8 @@
 "Sancti/07-18pl":{
 "sections":{
 "Oratio":"Omnípotens sempitérne Deus: qui beátum Simónem Confessórem tuum evangélicæ prædicatiónis grátiam sublimásti: concéde propítius; ut eius salutáris doctrínæ pábulo nutríti, quæ tibi sunt plácita exsequéntes, per sémitas iustítiæ ad cæléstem pátriam felíciter perveníre valeámus.\n$Per Dominum"
-}
+},
+"parent":"Commune/C5-1"
 },
 "Sancti/07-19":{
 "officium":"S. Vincentii a Paulo Confessoris",
@@ -3160,7 +3226,8 @@
 "Oratio":"Deus, qui beátum Cesláum virgíneo morum candóre prǽditum, et salútis animárum zelo succénsum, in divérsis natiónum pópulis óperum sanctitáte et fídei propagatióne mirábilem effecísti: præsta, quǽsumus; ut, eius intercessióne, simus semper in fide stábiles, et ad te, qui solus es ætérnæ salútis auctor ac largítor, misericórdiæ tuæ múnere perveníre valeámus.\n$Per Dominum",
 "Evangelium":"@Sancti/02-06",
 "Offertorium":"@Commune/C2"
-}
+},
+"parent":"Commune/C5"
 },
 "Sancti/07-21":{
 "officium":"S. Praxedis Virginis",
@@ -3263,7 +3330,8 @@
 "Evangelium":"@Commune/C6",
 "Secreta":"Munéribus tibi, Dómine, pro beáte Vírginis tuæ Cunegúndis honóre dicátis, benedictiónem tuam propitiátus effúnde: ut per éadem et a vítiis ómnibus emundémur, et cæléstibus delíciis impleámur.\n$Per Dominum",
 "Postcommunio":"Sumpta mystéria, quǽsumus, Dómine, suffragántibus beáte Cunegúndis Vírginis tuæ méritis, íncitent nos iúgiter, et illústrent: ut digne advéntum Fílii tui præstolémur, et ad supérnas eius núptias admittámur.\n$Per eundem"
-}
+},
+"parent":"Commune/C6b"
 },
 "Sancti/07-24r":{
 "officium":"S. Christinæ Virginis et Martyris",
@@ -3354,7 +3422,8 @@
 "Rule":"vide C6a;\nGloria",
 "Name":"Marthæ",
 "Evangelium":"Sequéntia ++ sancti Evangélii secúndum Lucam\n!Luc 10:38-42\nIn illo témpore: Intravit Jesus in quoddam castellum: et mulier quaedam, Martha nomine, excepit illum in domum suam et huic erat soror nomine Maria quae etiam sedens secus pedes Domini audiebat verbum illius. Martha autem satagebat circa frequens ministerium quae stetit, et ait: Domine non est tibi curae quod soror mea reliquit me solam ministrare dic ergo illi ut me adiuvet et respondens dixit illi Dominus: “Martha, Martha, sollicita es, et turbaris erga plurima: porro unum est necessarium. Maria optimam partem elegit, quae non auferetur ab ea.”"
-}
+},
+"parent":"Commune/C6a"
 },
 "Sancti/07-29cc":{
 "officium":"Ss. Felicis, Simplicii, Faustini et Beatricis Martyrum",
@@ -3407,7 +3476,8 @@
 "rank":"Duplex II classis",
 "rank_num":5.0,
 "commune":"",
-"sections":{}
+"sections":{},
+"parent":"Sancti/07-01"
 },
 "Sancti/08-01":{
 "officium":"S. Petri ad Vincula",
@@ -4250,7 +4320,8 @@
 "rank":"Duplex II classis",
 "rank_num":5.0,
 "commune":"ex C5",
-"sections":{}
+"sections":{},
+"parent":"Sancti/08-16"
 },
 "Sancti/09-01":{
 "officium":"S. Ægidii Abbatis",
@@ -4281,7 +4352,8 @@
 "Evangelium":"@Commune/C6",
 "Secreta":"Virginis tuæ Bronislavæ precibus Domine Iesu Christe, plebis tuæ dona sanctifica: ut, quæ tibi tuo grata sunt instituto, gratiora fiant patrocino supplicantis:\n$Qui vivis",
 "Postcommunio":"Corporis et Sanguinis tui sacra libatio, Domine, intercedente beata Virgine Bronislava, ab omnibus nos caducis rebus avertat: ut valeamus tui et sincera in terris caritate proficere, et perpetua in cælis visione gaudere:\n$Qui vivis"
-}
+},
+"parent":"Commune/C6b"
 },
 "Sancti/09-02":{
 "officium":"S. Stephani Hungariæ Regis Confessoris",
@@ -4331,12 +4403,14 @@
 "Oratio":"@Commune/C4::s/N\\./Lauréntii/",
 "Evangelium":"Sequéntia ++ sancti Evangélii secúndum Matthǽum.\n!Matt 25:14-23\nIn illo témpore: Dixit Jesus discípulis suis parábolam hanc: Homo péregre proficíscens vocávit servos suos, et trádidit illis bona sua. Et uni dedit quinque talénta, álii autem duo, álii vero unum, unicuíque secúndum própriam virtútem, et proféctus est statim. Abiit autem, qui quinque talénta accéperat, et operátus est in eis, et lucrátus est ália quinque. Simíliter et, qui duo accéperat, lucrátus est ália duo. Qui autem unum accéperat, ábiens fodit in terram, et abscóndit pecúniam dómini sui. Post multum vero témporis venit dóminus servórum illórum, et pósuit ratiónem cum eis. Et accédens qui quinque talénta accéperat, óbtulit ália quinque talénta, dicens: Dómine, quinque talénta tradidísti mihi, ecce, ália quinque superlucrátus sum. Ait illi dóminus ejus: Euge, serve bone et fidélis, quia super pauca fuísti fidélis, super multa te constítuam: intra in gáudium dómini tui. Accéssit autem et qui duo talénta accéperat, et ait: Dómine, duo talénta tradidísti mihi, ecce, ália duo lucrátus sum. Ait illi dóminus ejus: Euge, serve bone et fidélis, quia super pauca fuísti fidélis, super multa te constítuam: intra in gáudium dómini tui.",
 "Offertorium":"!Ps 88:21-22\nInvéni David servum meum, óleo sancto meo unxi eum: manus enim mea auxiliábitur ei, et bráchium meum confortábit eum."
-}
+},
+"parent":"Commune/C4"
 },
 "Sancti/09-07pl":{
 "sections":{
 "Oratio":"Beati Martyris tui Melchioris, quǽsumus, Domine, precibus adiuvemur; ut, cuius gloriamur triumpho, fidei constantiam imitemur.\n$Per Dominum"
-}
+},
+"parent":"Commune/C2a-1"
 },
 "Sancti/09-08":{
 "officium":"Nativitate Beatæ Mariæ Virginis",
@@ -4386,6 +4460,10 @@
 "sections":{
 "Rule":"ex Sancti/09-08;\nGloria\nCredoDA\nPrefatio=Maria=Nativitate;\nSuffragium=Spiritu;Ecclesiæ,Papa;;"
 }
+},
+"Sancti/09-09dom-oct":{
+"sections":{},
+"parent":"Sancti/09-12"
 },
 "Sancti/09-09n":{
 "officium":"S. Petri Claver Confessoris",
@@ -4729,7 +4807,8 @@
 "Oratio":"Deus, qui beatum Ladislaum religiosa perfectione voluisti omnibus prælucere: concede propitius; ut eius exemplo in virtutibus iugiter proficiamus.\n$Per Dominum",
 "Secreta":"Hostias ad altare tuum offerentibus, Domine, da nobis illum pietatis affectum, quem beato Ladislao Confessori tuo infudisti: ut pura mente ac fervido corde rei sacræ attendamus, et sacrificium tibi placitum nobisque proficuum immolemus.\n$Per Dominum",
 "Postcommunio":"Tribuat nobis, omnipotens Deus, suffragantibus beati Ladislai Confessoris tui precibus, refectio sacra subsidium: ut et castitatis munditiam observemus in corpore, et lumen veritatis exhibeamus in opere.\n$Per Dominum"
-}
+},
+"parent":"Commune/C5-1"
 },
 "Sancti/09-26":{
 "officium":"Ss. Cypriani et Justinæ Virginis, Martyrum",
@@ -4790,6 +4869,10 @@
 "Oratio":"Deus, qui beátum Wencesláum per martýrii palmam a terréno principátu ad cœléstem glóriam transtulísti: ejus précibus nos ab omni adversitáte custódi; et ejúsdem tríbue gaudére consórtio.\n$Per Dominum"
 }
 },
+"Sancti/09-28AV":{
+"sections":{},
+"parent":"Sancti/09-28"
+},
 "Sancti/09-29":{
 "officium":"In Dedicatione S. Michaëlis Archangelis",
 "rank":"Duplex I classis",
@@ -4821,6 +4904,14 @@
 "Postcommunio":"Repleti alimónia cœlésti, quǽsumus, Dómine: ut, interveniénte beáto Hierónymo Confessóre tuo, misericórdiæ tuæ grátiam cónsequi mereámur.\n$Per Dominum"
 }
 },
+"Sancti/09-DT":{
+"sections":{},
+"parent":"Sancti/09-15"
+},
+"Sancti/09-dom-oct":{
+"sections":{},
+"parent":"Sancti/09-12"
+},
 "Sancti/09-sab-oct":{
 "officium":"Sanctae Mariae Sabbato",
 "rank":"Feria",
@@ -4828,7 +4919,8 @@
 "commune":"ex C10",
 "sections":{
 "Rule":"No commemoratio\nGloria\nSuffr=Spiritu;Ecclesiæ,Papa;;\nPrefatio=Maria=Nativitate"
-}
+},
+"parent":"Sancti/09-08"
 },
 "Sancti/10-01":{
 "officium":"S. Remigii Episcopi et Confessoris",
@@ -4843,7 +4935,8 @@
 "Sancti/10-01pl":{
 "sections":{
 "Oratio":"Deus, qui beatum Ioannem Confessorem tuum eximiæ humilitatis et patientiæ donis decorasti: concede propitius; ut, eiusdem imitantes exempla, consequamur et præmia.\n$Per Dominum"
-}
+},
+"parent":"Commune/C5-1"
 },
 "Sancti/10-02":{
 "officium":"Ss. Angelorum Custodum",
@@ -5366,6 +5459,10 @@
 "Postcommunio":"Immortalitátis alimóniam consecúti, quǽsumus, Dómine: ut, qui sub Christi Regis vexíllis militáre gloriámur, cum ipso, in cœlésti sede, júgiter regnáre possímus:\n$Qui tecum"
 }
 },
+"Sancti/10-DUr":{
+"sections":{},
+"parent":"Sancti/10-DU"
+},
 "Sancti/11-01":{
 "officium":"Omnium Sanctorum",
 "rank":"Duplex I classis cum octava communi",
@@ -5470,6 +5567,22 @@
 "sections":{
 "Rule":"vide Sancti/11-01;\nGloria\nCredoDA\nSuffragium=Spiritu;Ecclesiæ,Papa;;"
 }
+},
+"Sancti/11-03sec":{
+"sections":{},
+"parent":"Sancti/11-02"
+},
+"Sancti/11-03secm1":{
+"sections":{},
+"parent":"Sancti/11-02m1"
+},
+"Sancti/11-03secm2":{
+"sections":{},
+"parent":"Sancti/11-02m2"
+},
+"Sancti/11-03secm3":{
+"sections":{},
+"parent":"Sancti/11-02m3"
 },
 "Sancti/11-04":{
 "officium":"S. Caroli Episcopi et Confessoris",
@@ -5813,6 +5926,10 @@
 "Oratio":"Deus, qui beátum Felícem Confessórem tuum ex erémo ad munus rediméndi captívos cǽlitus vocáre dignátus es: præsta, quǽsumus; ut per grátiam tuam ex peccatórum nostrórum captivitáte, eius intercessióne, liberáti, ad cæléstem pátriam perducámur.\n$Per Dominum"
 }
 },
+"Sancti/11-20pl":{
+"sections":{},
+"parent":"Sancti/11-12"
+},
 "Sancti/11-21":{
 "officium":"In Presentatione Beatæ Mariæ Virginis",
 "rank":"Duplex majus",
@@ -5988,6 +6105,10 @@
 "Name":"Bibiána\nSecreta=Bibiánæ\nPostcommunio=Bibiána",
 "Oratio":"Deus, ómnium largítor bonórum, qui in fámula tua Bibiána cum virginitátis flore martýrii palmam conjunxísti: mentes nostras ejus intercessióne tibi caritáte conjúnge; ut, amótis perículis, prǽmia consequámur ætérna.\n$Per Dominum"
 }
+},
+"Sancti/12-02pl":{
+"sections":{},
+"parent":"Sancti/12-04"
 },
 "Sancti/12-03":{
 "officium":"S. Francisci Xaverii Confessoris",
@@ -6243,6 +6364,14 @@
 "Rule":"vide Sancti/12-08;\nGloria\nCredo\nPrefatio=Maria=Conceptióne immaculáta;\nSuffragium=Spiritu;Ecclesiæ,Papa;;"
 }
 },
+"Sancti/12-13r":{
+"sections":{},
+"parent":"Sancti/12-13"
+},
+"Sancti/12-13t":{
+"sections":{},
+"parent":"Sancti/12-13"
+},
 "Sancti/12-14bmv":{
 "officium":"De VII die Infra Octavam Immaculatæ Concept. Beatæ Mariæ Virgini",
 "rank":"Semiduplex",
@@ -6319,6 +6448,10 @@
 "Postcommunio":"Da nobis, quǽsumus, Dómine: unigéniti Fílii tui recensíta nativitáte respiráre; cujus cœlésti mystério páscimur et potámur.\n$Per eundem"
 }
 },
+"Sancti/12-24o":{
+"sections":{},
+"parent":"Sancti/12-24"
+},
 "Sancti/12-24s":{
 "officium":"In Vigilia Nativitatis Domini",
 "rank":"Duplex I classis",
@@ -6336,6 +6469,10 @@
 "Communio":"!Isa 40:5\nRevelábitur glória Dómini: et vidébit omnis caro salutáre Dei nostri.",
 "Postcommunio":"Da nobis, quǽsumus, Dómine: unigéniti Fílii tui recensíta nativitáte respiráre; cujus cœlésti mystério páscimur et potámur.\n$Per eundem"
 }
+},
+"Sancti/12-24so":{
+"sections":{},
+"parent":"Sancti/12-24s"
 },
 "Sancti/12-25":{
 "officium":"In Nativitate Domini",
@@ -6461,7 +6598,8 @@
 "Graduale":"!Joann 21:23; 21:19\nExiit sermo inter fratres, quod discípulus ille non móritur: et non dixit Jesus: Non móritur,\nV. Sed: Sic eum volo manére, donec véniam: tu me séquere. Allelúja, allelúja.\n!Joann 21:24\nV. Hic est discípulus ille, qui testimónium pérhibet de his: et scimus, quia verum est testimónium ejus. Allelúja.",
 "Evangelium":"Sequéntia ++ sancti Evangélii secundum Joánnem.\n!Joann 21:19-24\nIn illo témpore: Dixit Jesus Petro: Séquere me. Convérsus Petrus vidit illum discípulum, quem diligébat Jesus, sequéntem, qui et recúbuit in cena super pectus ejus, et dixit: Dómine, quis est qui tradet te ? Hunc ergo cum vidísset Petrus, dixit Jesu: Dómine, hic autem quid? Dicit ei Jesus: Sic eum volo manére, donec véniam, quid ad te? tu me séquere. Exiit ergo sermo iste inter fratres, quia discípulus ille non móritur. Et non dixit ei Jesus: Non móritur; sed: Sic eum volo manére, donec véniam: quid ad te? Hic est discípulus ille, qui testimónium pérhibet de his, et scripsit hæc: et scimus, quia verum est testimónium ejus.",
 "Communio":"!Joann 21:23\nExiit sermo inter fratres, quod discípulus ille non móritur: et non dixit Jesus: Non móritur; sed: Sic eum volo manére, donec véniam."
-}
+},
+"parent":"Sancti/12-27"
 },
 "Sancti/12-28":{
 "officium":"Ss. Innocentium",
@@ -6486,10 +6624,15 @@
 "Commemoratio Postcommunio":"@Sancti/12-26"
 }
 },
+"Sancti/12-28o":{
+"sections":{},
+"parent":"Sancti/12-28"
+},
 "Sancti/12-28r":{
 "sections":{
 "Rule":"Gloria\nCredo\nPrefatio=Nat"
-}
+},
+"parent":"Sancti/12-28"
 },
 "Sancti/12-29":{
 "officium":"S. Thomæ Cantuariensis Episcopi et Martyris",
@@ -6507,6 +6650,10 @@
 "Offertorium":"@Commune/C2a-1",
 "Communio":"@Tempora/Pasc2-0"
 }
+},
+"Sancti/12-29o":{
+"sections":{},
+"parent":"Sancti/12-29"
 },
 "Sancti/12-29r":{
 "officium":"S. Thomæ Cantuariensis Episcopi et Martyris",
@@ -6535,6 +6682,10 @@
 "Secreta":"@Commune/C4b",
 "Postcommunio":"@Commune/C4b"
 }
+},
+"Sancti/12-31o":{
+"sections":{},
+"parent":"Sancti/12-31"
 },
 "Sancti/12-31r":{
 "officium":"S. Silvestri Papæ et Confessoris",
@@ -6641,6 +6792,10 @@
 "Postcommunio":"Suscipiámus, Dómine, misericórdiam tuam in médio templi tui: ut reparatiónis nostræ ventúra sollémnia cóngruis honóribus præcedámus.\n$Per Dominum"
 }
 },
+"Tempora/Adv1-0o":{
+"sections":{},
+"parent":"Tempora/Adv1-0"
+},
 "Tempora/Adv1-1":{
 "officium":"Feria II infra Hebdomadam I Adventus",
 "rank":"Feria major",
@@ -6649,6 +6804,10 @@
 "sections":{
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
+},
+"Tempora/Adv1-1o":{
+"sections":{},
+"parent":"Tempora/Adv1-1"
 },
 "Tempora/Adv1-2":{
 "officium":"Feria III infra Hebdomadam I Adventus",
@@ -6659,6 +6818,10 @@
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
 },
+"Tempora/Adv1-2o":{
+"sections":{},
+"parent":"Tempora/Adv1-2"
+},
 "Tempora/Adv1-3":{
 "officium":"Feria IV infra Hebdomadam I Adventus",
 "rank":"Feria major",
@@ -6667,6 +6830,10 @@
 "sections":{
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
+},
+"Tempora/Adv1-3o":{
+"sections":{},
+"parent":"Tempora/Adv1-3"
 },
 "Tempora/Adv1-4":{
 "officium":"Feria V infra Hebdomadam I Adventus",
@@ -6677,6 +6844,10 @@
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
 },
+"Tempora/Adv1-4o":{
+"sections":{},
+"parent":"Tempora/Adv1-4"
+},
 "Tempora/Adv1-5":{
 "officium":"Feria VI infra Hebdomadam I Adventus",
 "rank":"Feria major",
@@ -6686,6 +6857,10 @@
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
 },
+"Tempora/Adv1-5o":{
+"sections":{},
+"parent":"Tempora/Adv1-5"
+},
 "Tempora/Adv1-6":{
 "officium":"Sabbato infra Hebdomadam I Adventus",
 "rank":"Feria major",
@@ -6694,6 +6869,10 @@
 "sections":{
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
+},
+"Tempora/Adv1-6o":{
+"sections":{},
+"parent":"Tempora/Adv1-6"
 },
 "Tempora/Adv2-0":{
 "officium":"Dominica II Adventus",
@@ -6714,6 +6893,10 @@
 "Postcommunio":"Repléti cibo spirituális alimóniæ, súpplices te, Dómine, deprecámur: ut, hujus participatióne mystérii, dóceas nos terréna despícere et amáre cœléstia.\n$Per Dominum"
 }
 },
+"Tempora/Adv2-0o":{
+"sections":{},
+"parent":"Tempora/Adv2-0"
+},
 "Tempora/Adv2-1":{
 "officium":"Feria II infra Hebdomadam II Adventus",
 "rank":"Feria major",
@@ -6722,6 +6905,10 @@
 "sections":{
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
+},
+"Tempora/Adv2-1o":{
+"sections":{},
+"parent":"Tempora/Adv2-1"
 },
 "Tempora/Adv2-2":{
 "officium":"Feria III infra Hebdomadam II Adventus",
@@ -6732,6 +6919,10 @@
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
 },
+"Tempora/Adv2-2o":{
+"sections":{},
+"parent":"Tempora/Adv2-2"
+},
 "Tempora/Adv2-3":{
 "officium":"Feria IV infra Hebdomadam II Adventus",
 "rank":"Feria major",
@@ -6740,6 +6931,10 @@
 "sections":{
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
+},
+"Tempora/Adv2-3o":{
+"sections":{},
+"parent":"Tempora/Adv2-3"
 },
 "Tempora/Adv2-4":{
 "officium":"Feria V infra Hebdomadam II Adventus",
@@ -6750,6 +6945,10 @@
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
 },
+"Tempora/Adv2-4o":{
+"sections":{},
+"parent":"Tempora/Adv2-4"
+},
 "Tempora/Adv2-5":{
 "officium":"Feria VI infra Hebdomadam II Adventus",
 "rank":"Feria major",
@@ -6759,6 +6958,10 @@
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
 },
+"Tempora/Adv2-5o":{
+"sections":{},
+"parent":"Tempora/Adv2-5"
+},
 "Tempora/Adv2-6":{
 "officium":"Sabbato infra Hebdomadam II Adventus",
 "rank":"Feria major",
@@ -6767,6 +6970,10 @@
 "sections":{
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
+},
+"Tempora/Adv2-6o":{
+"sections":{},
+"parent":"Tempora/Adv2-6"
 },
 "Tempora/Adv3-0":{
 "officium":"Dominica III Adventus",
@@ -6787,6 +6994,10 @@
 "Postcommunio":"Implorámus, Dómine, cleméntiam tuam: ut hæc divína subsídia, a vítiis expiátos, ad festa ventúra nos prǽparent.\n$Per Dominum"
 }
 },
+"Tempora/Adv3-0o":{
+"sections":{},
+"parent":"Tempora/Adv3-0"
+},
 "Tempora/Adv3-1":{
 "officium":"Feria II infra Hebdomadam III Adventus",
 "rank":"Feria major",
@@ -6796,6 +7007,10 @@
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
 },
+"Tempora/Adv3-1o":{
+"sections":{},
+"parent":"Tempora/Adv3-1"
+},
 "Tempora/Adv3-2":{
 "officium":"Feria III infra Hebdomadam III Adventus",
 "rank":"Feria major",
@@ -6804,6 +7019,10 @@
 "sections":{
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
+},
+"Tempora/Adv3-2o":{
+"sections":{},
+"parent":"Tempora/Adv3-2"
 },
 "Tempora/Adv3-3":{
 "officium":"Feria IV Quattuor Temporum in Adventu",
@@ -6826,6 +7045,10 @@
 "Postcommunio":"Salutáris tui, Dómine, munere satiáti, súpplices deprecámur: ut, cujus lætámur gustu, renovémur efféctu.\n$Per Dominum"
 }
 },
+"Tempora/Adv3-3o":{
+"sections":{},
+"parent":"Tempora/Adv3-3"
+},
 "Tempora/Adv3-4":{
 "officium":"Feria V infra Hebdomadam III Adventus",
 "rank":"Feria major",
@@ -6834,6 +7057,10 @@
 "sections":{
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
+},
+"Tempora/Adv3-4o":{
+"sections":{},
+"parent":"Tempora/Adv3-4"
 },
 "Tempora/Adv3-5":{
 "officium":"Feria VI Quattuor Temporum in Adventu",
@@ -6852,6 +7079,10 @@
 "Communio":"!Zach 14:5\nEcce, Dóminus véniet et omnes Sancti ejus cum eo: et erit in die illa lux magna.",
 "Postcommunio":"Tui nos, Dómine, sacraménti libátio sancta restáuret: et a vetustáte purgátos, in mystérii salutáris fáciat transíre consórtium.\n$Per Dominum"
 }
+},
+"Tempora/Adv3-5o":{
+"sections":{},
+"parent":"Tempora/Adv3-5"
 },
 "Tempora/Adv3-6":{
 "officium":"Sabbato Quattuor Temporum in Adventu",
@@ -6885,6 +7116,10 @@
 "Postcommunio":"Quǽsumus, Dómine, Deus noster: ut sacrosáncta mystéria, quæ pro reparatiónis nostræ munímine contulísti; et præsens nobis remédium esse fácias et futúrum.\n$Per Dominum"
 }
 },
+"Tempora/Adv3-6o":{
+"sections":{},
+"parent":"Tempora/Adv3-6"
+},
 "Tempora/Adv4-0":{
 "officium":"Dominica IV Adventus",
 "rank":"Semiduplex II. classis",
@@ -6904,6 +7139,10 @@
 "Postcommunio":"Sumptis munéribus, quǽsumus, Dómine: ut, cum frequentatióne mystérii, crescat nostræ salútis efféctus.\n$Per Dominum"
 }
 },
+"Tempora/Adv4-0o":{
+"sections":{},
+"parent":"Tempora/Adv4-0"
+},
 "Tempora/Adv4-1":{
 "officium":"Feria II infra Hebdomadam IV Adventus",
 "rank":"Feria major",
@@ -6912,6 +7151,10 @@
 "sections":{
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
+},
+"Tempora/Adv4-1o":{
+"sections":{},
+"parent":"Tempora/Adv4-1"
 },
 "Tempora/Adv4-2":{
 "officium":"Feria III infra Hebdomadam IV Adventus",
@@ -6922,6 +7165,10 @@
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
 },
+"Tempora/Adv4-2o":{
+"sections":{},
+"parent":"Tempora/Adv4-2"
+},
 "Tempora/Adv4-3":{
 "officium":"Feria IV infra Hebdomadam IV Adventus",
 "rank":"Feria major",
@@ -6930,6 +7177,10 @@
 "sections":{
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
+},
+"Tempora/Adv4-3o":{
+"sections":{},
+"parent":"Tempora/Adv4-3"
 },
 "Tempora/Adv4-4":{
 "officium":"Feria V infra Hebdomadam IV Adventus",
@@ -6940,6 +7191,10 @@
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
 },
+"Tempora/Adv4-4o":{
+"sections":{},
+"parent":"Tempora/Adv4-4"
+},
 "Tempora/Adv4-5":{
 "officium":"Feria VI infra Hebdomadam IV Adventus",
 "rank":"Feria major",
@@ -6948,6 +7203,10 @@
 "sections":{
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;"
 }
+},
+"Tempora/Adv4-5o":{
+"sections":{},
+"parent":"Tempora/Adv4-5"
 },
 "Tempora/Epi1-0":{
 "officium":"Sanctæ Familiæ Jesu Mariæ Joseph",
@@ -7070,7 +7329,8 @@
 "rank":"Simplex Dominica anticipata",
 "rank_num":2.5,
 "commune":null,
-"sections":{}
+"sections":{},
+"parent":"Tempora/Epi2-0"
 },
 "Tempora/Epi2-1":{
 "officium":"Feria II infra Hebdomadam II post Epiphaniam",
@@ -7149,7 +7409,8 @@
 "rank":"Simplex Dominica anticipata",
 "rank_num":1.5,
 "commune":null,
-"sections":{}
+"sections":{},
+"parent":"Tempora/Epi3-0"
 },
 "Tempora/Epi3-1":{
 "officium":"Feria II infra Hebdomadam III post Epiphaniam",
@@ -7228,7 +7489,8 @@
 "rank":"Simplex Dominica anticipata",
 "rank_num":1.5,
 "commune":null,
-"sections":{}
+"sections":{},
+"parent":"Tempora/Epi4-0"
 },
 "Tempora/Epi4-1":{
 "officium":"Feria Secunda infra Hebdomadam IV post Epiiphaniam",
@@ -7307,7 +7569,8 @@
 "rank":"Simplex Dominica anticipata",
 "rank_num":1.5,
 "commune":null,
-"sections":{}
+"sections":{},
+"parent":"Tempora/Epi5-0"
 },
 "Tempora/Epi5-1":{
 "officium":"Feria II infra Hebdomadam V post Epiphaniam",
@@ -7386,7 +7649,8 @@
 "rank":"Simplex Dominica anticipata",
 "rank_num":1.5,
 "commune":null,
-"sections":{}
+"sections":{},
+"parent":"Tempora/Epi6-0"
 },
 "Tempora/Epi6-1":{
 "officium":"Feria II infra Hebdomadam VI post Epiphaniam",
@@ -7499,6 +7763,10 @@
 "Commemoratio Postcommunio":"!Pro Octava Nativitatis.\n@Sancti/12-25m3:Postcommunio"
 }
 },
+"Tempora/Nat1-0a":{
+"sections":{},
+"parent":"Tempora/Nat1-0"
+},
 "Tempora/Nat2-0":{
 "officium":"Sanctissimi Nominis Jesu",
 "rank":"Duplex 2 class",
@@ -7524,7 +7792,12 @@
 "rank":"Semiduplex",
 "rank_num":2.92,
 "commune":"ex Sancti/12-25m3",
-"sections":{}
+"sections":{},
+"parent":"Tempora/Nat30"
+},
+"Tempora/Nat29o":{
+"sections":{},
+"parent":"Tempora/Nat29"
 },
 "Tempora/Nat30":{
 "officium":"Die VI infra Octavam Nativitatis",
@@ -7544,12 +7817,21 @@
 "Postcommunio":"@Sancti/12-25m3:Postcommunio"
 }
 },
+"Tempora/Nat30o":{
+"sections":{},
+"parent":"Tempora/Nat30"
+},
 "Tempora/Nat31":{
 "officium":"Die VII infra Octavam Nativitatis",
 "rank":"Semiduplex",
 "rank_num":2.92,
 "commune":"ex Sancti/12-25m3",
-"sections":{}
+"sections":{},
+"parent":"Tempora/Nat30"
+},
+"Tempora/Nat31o":{
+"sections":{},
+"parent":"Tempora/Nat31"
 },
 "Tempora/Pasc0-0":{
 "officium":"Dominica Resurrectionis",
@@ -8356,6 +8638,10 @@
 "Commemoratio Postcommunio":"!de Rogationibus\nVota nostra, quǽsumus, Dómine, pio favóre proséquere: ut, dum dona tua in tribulatióne percípimus, de consolatióne nostra in tuo amóre crescámus.\n$Per Dominum"
 }
 },
+"Tempora/Pasc5-3t":{
+"sections":{},
+"parent":"Tempora/Pasc5-3"
+},
 "Tempora/Pasc5-4":{
 "officium":"In Ascensione Domini",
 "rank":"Duplex I classis cum Octava Privilegiata III classis",
@@ -8382,7 +8668,8 @@
 "sections":{
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-4::s/\\!(?!M).*//"
-}
+},
+"parent":"Tempora/Pasc5-4"
 },
 "Tempora/Pasc5-6":{
 "officium":"Sabbato infra Octavam Ascensionis",
@@ -8392,7 +8679,8 @@
 "sections":{
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-5"
-}
+},
+"parent":"Tempora/Pasc5-4"
 },
 "Tempora/Pasc5-6t":{
 "officium":"Sabbato infra Octavam Ascensionis",
@@ -8432,7 +8720,8 @@
 "sections":{
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-5"
-}
+},
+"parent":"Tempora/Pasc5-4"
 },
 "Tempora/Pasc6-2":{
 "officium":"Feria III infra Octavam Ascensionis",
@@ -8442,7 +8731,8 @@
 "sections":{
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-5"
-}
+},
+"parent":"Tempora/Pasc5-4"
 },
 "Tempora/Pasc6-2t":{
 "officium":"Feria III infra Octavam Ascensionis",
@@ -8461,7 +8751,8 @@
 "sections":{
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-5"
-}
+},
+"parent":"Tempora/Pasc5-4"
 },
 "Tempora/Pasc6-4":{
 "officium":"In Octava Ascensionis",
@@ -8471,7 +8762,8 @@
 "sections":{
 "Rule":"ex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-5"
-}
+},
+"parent":"Tempora/Pasc5-4"
 },
 "Tempora/Pasc6-4r":{
 "officium":"Feria V infra Hebdomadam post Ascensionem",
@@ -8480,7 +8772,8 @@
 "commune":null,
 "sections":{
 "Rule":"ex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;"
-}
+},
+"parent":"Tempora/Pasc5-4"
 },
 "Tempora/Pasc6-4t":{
 "officium":"Feria V in Octava Ascensionis",
@@ -8508,7 +8801,8 @@
 "sections":{
 "Rule":"Prelude\nPrefatio=Pent;",
 "Prelude":"!In Choro, dicta Nona, Sacerdos et Ministri, induti paramentis violacei coloris, accedunt ad Altare, et facta reverentia, Sacerdos illud osculatur in medio. Deinde leguntur Prophetiæ sine titulo, candelis Altaris exstinctis usque ad principium Missæ, sicut in Sabbato sancto. Sacerdos legit eas submissa voce ad Altare in cornu Epistolæ.\n_\n_\n!!Prophetia Prima\n@Tempora/Quad6-6:Proph_Gen22\n_`\n!Oratio\n$Oremus\nv. Deus, qui in Abrahæ fámuli tui opere humáno generi obœdiéntiæ exémpla præbuísti; concéde nobis, et nostræ voluntátis pravitátem frángere, et tuórum præceptórum rectitúdinem in ómnibus adimplére.\n$Per Dominum\n_\n_\n!!Prophetia Secunda\n@Tempora/Quad6-6:Proph_Exodi14\n_`\n!Oratio\n$Oremus\nDeus, qui primis tempóribus impléta mirácula novi Testaménti luce reserásti, ut et Mare Rubrum forma sacri fontis exsísteret, et liberáta plebs ab Ægyptíaca servitúte christiáni pópuli sacraménta præférret: da, ut omnes gentes, Israélis privilégium mérito fídei consecútæ, Spíritus tui participatióne regeneréntur.\n$Per Dominum eiusdem\n_\n_\n!!Prophetia Tertia\n@Tempora/Quad6-6:Proph_Deut31\n_`\n!Oratio\n$Oremus\nDeus, glorificátio fidélium et vita justórum, qui per Móysen, fámulum tuum, nos quoque modulatióne sacri cárminis erudísti: univérsis géntibus misericórdiæ tuæ munus operáre, tribuéndo beatitúdinem, auferéndo terrórem; ut, quod pronuntiátum est ad supplícium, in remédium transferátur ætérnum.\n$Per Dominum\n_\n_\n!!Prophetia Quarta\n@Tempora/Quad6-6:Proph_Isa4\n_`\n!Oratio\n$Oremus\nOmnípotens sempitérne Deus, qui, per únicum Fílium tuum, Ecclésiæ tuæ demonstrásti te esse cultórem, omnem pálmitem, fructum in eodem Christo tuo, qui vera vitis est, afferéntem, cleménter éxcolens, ut fructus áfferat amplióres: fidélibus tuis, quos velut víneam ex Ægýpto per fontem baptísmi transtulísti, nullæ peccatórum spinæ præváleant; ut, Spíritus tui sanctificatióne muníti, perpétua fruge diténtur.\n$Per eundem\n_\n_\n!!Prophetia Quinta\n@Tempora/Quad6-6:Proph_Baruch3\n_`\n!Oratio\n$Oremus\nDeus, qui nobis per Prophetárum ora præcepísti temporália relínquere atque ad ætérna festináre: da fámulis tuis; ut, quæ a te jussa cognóvimus, implére cœlésti inspiratióne valeámus.\n$Per Dominum\n_\n_\n!!Prophetia Sexta\n@Tempora/Quad6-6:Proph_Ezech37\n_`\n!Oratio\n$Oremus\nDómine, Deus virtútum, qui collápsa réparas et reparáta consérvas: auge pópulos in tui nóminis sanctificatióne renovándos; ut omnes, qui sacro baptísmate diluúntur, tua semper inspiratióne dirigántur. \n$Per Dominum\n_\n_\n@Tempora/Quad6-6:Benedictio Fontis"
-}
+},
+"parent":"Tempora/Pasc6-6r"
 },
 "Tempora/Pasc6-6r":{
 "officium":"Sabbato in Vigilia Pentecostes",
@@ -8898,7 +9192,12 @@
 "Oratio":"@Tempora/Pent01-1:Oratio",
 "Secreta":"@Tempora/Pent01-1:Secreta",
 "Postcommunio":"@Tempora/Pent01-1:Postcommunio"
-}
+},
+"annotated_sections":[
+"Oratio",
+"Postcommunio",
+"Secreta"
+]
 },
 "Tempora/Pent01-6":{
 "officium":"Sabbato infra octavam Corporis Christi",
@@ -8910,7 +9209,12 @@
 "Oratio":"@Tempora/Pent01-1:Oratio",
 "Secreta":"@Tempora/Pent01-1:Secreta",
 "Postcommunio":"@Tempora/Pent01-1:Postcommunio"
-}
+},
+"annotated_sections":[
+"Oratio",
+"Postcommunio",
+"Secreta"
+]
 },
 "Tempora/Pent01-6o":{
 "officium":"Sabbato infra octavam Corporis Christi",
@@ -8941,6 +9245,14 @@
 "Postcommunio":"Sumptis munéribus sacris, quǽsumus, Dómine: ut cum frequentatióne mystérii, crescat nostræ salútis efféctus.\n$Per Dominum",
 "Commemoratio Postcommunio":"!Pro Octava Ssmi Corporis Christi\nFac nos, quǽsumus, Dómine, divinitátis tuæ sempitérna fruitióne repléri: quam pretiósi Córporis et Sánguinis tui temporális percéptio præfigúrat:\n$Qui vivis"
 }
+},
+"Tempora/Pent02-0o":{
+"sections":{},
+"parent":"Tempora/Pent02-0"
+},
+"Tempora/Pent02-0r":{
+"sections":{},
+"parent":"Tempora/Pent02-0"
 },
 "Tempora/Pent02-1":{
 "officium":"Feria Secunda infra Octavam Corporis Christi",
@@ -9066,12 +9378,14 @@
 "Commemoratio Oratio":"!Pro Octava sacratissimi Cordis Jesu\n@Tempora/Pent02-5:Oratio",
 "Commemoratio Secreta":"!Pro Octava sacratissimi Cordis Jesu\n@Tempora/Pent02-5:Secreta",
 "Commemoratio Postcommunio":"!Pro Octava sacratissimi Cordis Jesu\n@Tempora/Pent02-5:Postcommunio"
-}
+},
+"parent":"Tempora/Pent03-0r"
 },
 "Tempora/Pent03-0o":{
 "sections":{
 "Rule":"Gloria\nCredo\nPrefatio=Trinitate\nSuffr=Sanctorum;Maria3,Ecclesiæ,Papa;;"
-}
+},
+"parent":"Tempora/Pent03-0r"
 },
 "Tempora/Pent03-0r":{
 "officium":"Dominica III Post Pentecosten",
@@ -10689,7 +11003,8 @@
 "rank":"Simplex Dominica anticipata",
 "rank_num":1.5,
 "commune":null,
-"sections":{}
+"sections":{},
+"parent":"Tempora/Pent23-0"
 },
 "Tempora/Pent23-1":{
 "officium":"Feria Secunda infra Hebdomadam XXIII post Octavam Pentecostes",
@@ -10757,7 +11072,8 @@
 "Evangelium":"Sequéntia ++ sancti Evangélii secúndum Matthǽum\n!Matt 24:15-35\nIn illo témpore: Dixit Jesus discípulis suis: Cum vidéritis abominatiónem desolatiónis, quæ dicta est a Daniéle Prophéta, stantem in loco sancto: qui legit, intélligat: tunc qui in Judǽa sunt, fúgiant ad montes: et qui in tecto, non descéndat tóllere áliquid de domo sua: et qui in agro, non revertátur tóllere túnicam suam. Væ autem prægnántibus et nutriéntibus in illis diébus. Oráte autem, ut non fiat fuga vestra in híeme vel sábbato. Erit enim tunc tribulátio magna, qualis non fuit ab inítio mundi usque modo, neque fiet. Et nisi breviáti fuíssent dies illi, non fíeret salva omnis caro: sed propter eléctos breviabúntur dies illi. Tunc si quis vobis díxerit: Ecce, hic est Christus, aut illic: nolíte crédere. Surgent enim pseudochrísti et pseudoprophétæ, et dabunt signa magna et prodígia, ita ut in errórem inducántur - si fíeri potest - étiam elécti. Ecce, prædíxi vobis. Si ergo díxerint vobis: Ecce, in desérto est, nolíte exíre: ecce, in penetrálibus, nolíte crédere. Sicut enim fulgur exit ab Oriénte et paret usque in Occidéntem: ita erit et advéntus Fílii hóminis. Ubicúmque fúerit corpus, illic congregabúntur et áquilæ. Statim autem post tribulatiónem diérum illórum sol obscurábitur, et luna non dabit lumen suum, et stellæ cadent de cælo, et virtútes cœlórum commovebúntur: et tunc parébit signum Fílii hóminis in cœlo: et tunc plangent omnes tribus terræ: et vidébunt Fílium hóminis veniéntem in núbibus cæli cum virtúte multa et majestáte. Et mittet Angelos suos cum tuba et voce magna: et congregábunt eléctos ejus a quátuor ventis, a summis cœlórum usque ad términos eórum. Ab árbore autem fici díscite parábolam: Cum jam ramus ejus tener fúerit et fólia nata, scitis, quia prope est æstas: ita et vos cum vidéritis hæc ómnia, scitóte, quia prope est in jánuis. Amen, dico vobis, quia non præteríbit generátio hæc, donec ómnia hæc fiant. Cœlum et terra transíbunt, verba autem mea non præteríbunt.",
 "Secreta":"Propítius esto, Dómine, supplicatiónibus nostris: et, pópuli tui oblatiónibus precibúsque suscéptis, ómnium nostrum ad te corda convérte; ut, a terrenis cupiditátibus liberáti, ad cœléstia desidéria transeámus.\n$Per Dominum",
 "Postcommunio":"Concéde nobis, quǽsumus, Dómine: ut per hæc sacraménta quæ súmpsimus, quidquid in nostra mente vitiósum est, ipsorum medicatiónis dono curétur.\n$Per Dominum"
-}
+},
+"parent":"Tempora/Pent23-0"
 },
 "Tempora/Pent24-1":{
 "officium":"Feria Secunda infra Hebdomadam XXIV post Octavam Pentecostes",
@@ -10824,7 +11140,8 @@
 "Graduale":"@Tempora/Pent23-0:Graduale",
 "Offertorium":"@Tempora/Pent23-0:Offertorium",
 "Communio":"@Tempora/Pent23-0:Communio"
-}
+},
+"parent":"Tempora/Epi3-0"
 },
 "Tempora/PentEpi3-1":{
 "officium":"Feria II infra Hebdomadam III quæ superfuit post Epiphaniam",
@@ -10891,7 +11208,8 @@
 "Graduale":"@Tempora/Pent23-0:Graduale",
 "Offertorium":"@Tempora/Pent23-0:Offertorium",
 "Communio":"@Tempora/Pent23-0:Communio"
-}
+},
+"parent":"Tempora/Epi4-0"
 },
 "Tempora/PentEpi4-1":{
 "officium":"Feria Secunda infra Hebdomadam IV quæ superfuit post Epiiphaniam",
@@ -10958,7 +11276,8 @@
 "Graduale":"@Tempora/Pent23-0:Graduale",
 "Offertorium":"@Tempora/Pent23-0:Offertorium",
 "Communio":"@Tempora/Pent23-0:Communio"
-}
+},
+"parent":"Tempora/Epi5-0"
 },
 "Tempora/PentEpi5-1":{
 "officium":"Feria II infra Hebdomadam V quæ superfuit post Epiphaniam",
@@ -11025,7 +11344,8 @@
 "Graduale":"@Tempora/Pent23-0:Graduale",
 "Offertorium":"@Tempora/Pent23-0:Offertorium",
 "Communio":"@Tempora/Pent23-0:Communio"
-}
+},
+"parent":"Tempora/Epi6-0"
 },
 "Tempora/PentEpi6-1":{
 "officium":"Feria II infra Hebdomadam VI quæ superfuit post Epiphaniam",
@@ -11839,6 +12159,10 @@
 "Postcommunio":"Adésto nobis, Dómine, Deus noster: et, quos tuis mystériis recreásti, perpétuis defénde subsídiis.\n$Per Dominum"
 }
 },
+"Tempora/Quad5-0t":{
+"sections":{},
+"parent":"Tempora/Quad5-0"
+},
 "Tempora/Quad5-1":{
 "officium":"Feria Secunda infra Hebdomadam Passionis",
 "rank":"Feria major",
@@ -12016,7 +12340,16 @@
 "Postcommunio":"Sumpti sacrifícii, Dómine, perpetua nos tuítio non derelínquat: et nóxia semper a nobis cuncta depéllat.\n$Per Dominum",
 "Commemoratio Postcommunio":"!Commemoratio Septem Dolorum B. M. V.\nSacrifícia, quæ súmpsimus, Dómine Jesu Christe, Transfixiónem Matris tuæ et Vírginis devóte celebrántes: nobis ímpetrent apud cleméntiam tuam omnis boni salutáris efféctum:\n$Qui vivis",
 "Super populum":"!Oratio super populum\nv. Orémus.\nv. Humiliáte cápita vestra Deo.\nv. Concéde, quǽsumus, omnípotens Deus: ut, qui protectiónis tuæ grátiam quǽrimus, liberáti a malis ómnibus, secúra tibi mente serviámus.\n$Per Dominum"
-}
+},
+"annotated_sections":[
+"Commemoratio Oratio",
+"Commemoratio Postcommunio",
+"Commemoratio Secreta"
+]
+},
+"Tempora/Quad5-5Feriat":{
+"sections":{},
+"parent":"Tempora/Quad5-5Feria"
 },
 "Tempora/Quad5-6":{
 "officium":"Sabbato infra Hebdomadam Passionis",
@@ -12081,6 +12414,10 @@
 "Munda Cor Passionis":"Munda cor meum ac lábia mea, omnípotens Deus, qui lábia Isaíæ Prophétæ cálculo mundásti igníto: ita me tua grata miseratióne dignáre mundáre, ut sanctum Evangélium tuum digne váleam nuntiáre. Per Christum, Dóminum nostrum. Amen.\nD. Jube, domne, benedícere.\nS. Dóminus sit in córdibus vestris et in lábiis vestris: ut digne et competénter annuntiétis Evangélium suum: In nómine Patris, et Fílii, + et Spíritus Sancti.\nD. Amen."
 }
 },
+"Tempora/Quad6-0t":{
+"sections":{},
+"parent":"Tempora/Quad6-0"
+},
 "Tempora/Quad6-1":{
 "officium":"Feria Secunda Majoris Hebdomadæ",
 "rank":"Feria privilegiata",
@@ -12099,6 +12436,10 @@
 "Postcommunio":"Prǽbeant nobis, Dómine, divínum tua sancta fervórem: quo eórum páriter et actu delectémur et fructu.\n$Per Dominum",
 "Super populum":"!Oratio super populum\nv. Orémus.\nv. Humiliáte cápita vestra Deo.\nv. Adjuva nos, Deus, salutáris noster: et ad benefícia recolénda, quibus nos instauráre dignátus es, tríbue veníre gaudéntes.\n$Per Dominum"
 }
+},
+"Tempora/Quad6-1t":{
+"sections":{},
+"parent":"Tempora/Quad6-1"
 },
 "Tempora/Quad6-2":{
 "officium":"Feria Tertia Majoris Hebdomadæ",
@@ -12188,6 +12529,14 @@
 "Postcommunio":"Refécti vitálibus aliméntis, quǽsumus, Dómine, Deus noster: ut, quod témpore nostræ mortalitátis exséquimur, immortalitátis tuæ múnere consequámur.\n$Per Dominum",
 "Communicantes":"Communicántes et diem sacratíssimum celebrántes, quo Dóminus noster Jesus Christus pro nobis est tráditus: sed et memóriam venerántes, in primis gloriósæ semper Vírginis Maríæ, Genetrícis ejúsdem Dei et Dómini nostri Jesu Christi: sed et beatórum Apostolórum ac Mártyrum tuórum, Petri et Pauli, Andréæ, Jacóbi, Joánnis, Thomæ, Jacóbi, Philíppi, Bartholomǽi, Matthǽi, Simónis et Tháddæi: Lini, Cleti, Cleméntis, Xysti, Cornélii, Cypriáni, Lauréntii, Chrysógoni, Joánnis et Pauli, Cosmæ et Damiáni: et ómnium Sanctórum tuórum; quorum méritis precibúsque concédas, ut in ómnibus protectiónis tuæ muniámur auxílio. (Jungit manus.) Per eúndem Christum, Dóminum nostrum. Amen.\n_\n_\n! Tenens manus expansas super Oblata, dicit:\nHanc ígitur oblatiónem servitútis nostræ, sed et cunctæ famíliæ tuæ, quam tibi offérimus ob diem, in qua Dóminus noster Jesus Christus trádidit discípulis suis Córporis et Sánguinis sui mystéria celebránda: quǽsumus, Dómine, ut placátus accípias: diésque nostros in tua pace dispónas, atque ab ætérna damnatióne nos éripi et in electórum tuórum júbeas grege numerári. (Jungit manus.) Per eúndem Christum, Dóminum nostrum. Amen.\n_\n_\nQuam oblatiónem tu, Deus, in ómnibus, quǽsumus, (Signat ter super Oblata,) bene + díctam, adscríp + tam, ra + tam, rationábilem acceptabilémque fácere dignéris: (Signat semel super Hóstiam,) ut nobis Cor + pus, (et semel super Cálicem,) et San + guis fiat dilectíssimi Fílii tui, (Jungit manus,) Dómini nostri Jesu Christi.\n_\n_\nQui prídie, quam pro nostra omniúmque salúte paterétur, hoc est hódie, (Accipit Hostiam,) accépit panem in sanctas ac venerábiles manus suas, (Elevat oculos ad cœlum,) et elevátis óculis in cœlum ad te Deum, Patrem suum omnipoténtem, (Caput inclinat,) tibi grátias agens, (Signat super Hostiam,) bene + dixit, fregit, dedítque discípulis suis, dicens: Accípite, et manducáte ex hoc omnes."
 }
+},
+"Tempora/Quad6-4r":{
+"sections":{},
+"parent":"Tempora/Quad6-4"
+},
+"Tempora/Quad6-4rm1":{
+"sections":{},
+"parent":"Tempora/Quad6-4m1"
 },
 "Tempora/Quad6-4rm2":{
 "officium":"Feria Quinta in Cœna Domini",
@@ -12564,8 +12913,8 @@
 "Commune/Coronatio":{
 "officium":"Missa Votiva in Creatione et Coronatione Papae et in die anniversarii",
 "sections":{
-"Missa":"Statuit (altera)",
 "Rule":"Gloria\nCredo\nPrefatio=Apostolis",
+"Missa":"Statuit (altera)",
 "Introitus":"@Commune/C2",
 "Oratio":"Deus, ómnium fidélium pastor et rector, fámulum tuum N.p, quem pastórem Ecclésiæ tuæ præésse voluísti, propítius réspice: da ei, quǽsumus, verbo et exémplo, quibus præest, profícere; ut ad vitam, una cum grege sibi crédito, pervéniat sempitérnam.\n$Per Dominum",
 "Lectio":"Léctio Epístolæ beáti Petri Apóstoli\n!1 Pet 1:1-7\nPetrus, Apóstolus Jesu Christi, eléctis ádvenis dispersiónis Ponti, Galátiæ, Cappadóciæ, Asiæ et Bithýniæ secúndum præsciéntiam Dei Patris, in sanctificatiónem Spíritus, in obœdiéntiam, et aspersiónem sánguinis Jesu Christi: grátia vobis et pax multiplicétur. Benedíctus Deus et Pater Dómini nostri Jesu Christi, qui secúndum misericórdiam suam magnam regenerávit nos in spem vivam, per resurrectiónem Jesu Christi ex mórtuis, in hereditátem incorruptíbilem et incontaminátam et immarcescíbilem, conservátam in cœlis in vobis, qui in virtúte Dei custodímini per fidem in salútem, parátam revelári in témpore novíssimo. In quo exsultábitis, módicum nunc si opórtet contristári in váriis tentatiónibus: ut probátio vestræ fídei multo pretiósior auro [quod per ignem probatur] inveniátur in laudem et glóriam et honórem, in revelatióne Jesu Christi, Dómini nostri.",
@@ -12577,7 +12926,8 @@
 "Secreta":"Oblátis, quǽsumus, Dómine, placáre munéribus: et fámulum tuum N.p, quem pastórem Ecclésiæ tuæ præésse voluísti, assídua protectióne gubérna.\n$Per Dominum",
 "Communio":"!Matt 16:18\nTu es Petrus, et super hanc petram ædificábo Ecclésiam meam. (Allelúja.)",
 "Postcommunio":"Hæc nos, quǽsumus, Dómine, divíni sacraménti percéptio prótegat: et fámulum tuum N.p, quem pastórem Ecclésiæ tuæ præésse voluísti; una cum commísso sibi grege, salvet semper et múniat.\n$Per Dominum"
-}
+},
+"parent":"Commune/C4b"
 },
 "Commune/Propaganda":{
 "officium":"Pro Propagatione Fidei",
@@ -12597,7 +12947,10 @@
 "Secreta":"Protéctor noster, áspice, Deus, et réspice in fáciem Christi tui, qui dedit redemptiónem semetípsum pro ómnibus: et fac, ut ab ortu solis usque ad occásum magnificétur nomen tuum in géntibus, ac in omni loco sacrificétur, et offerátur nómini tuo oblátio munda.\n$Per eundem",
 "Communio":"!Ps 116:1-2\nLaudáte Dóminum, omnes gentes: laudáte eum, omnes pópuli: quóniam confirmáta est super nos misericórdia ejus, et véritas Dómini manet in aetérnum. (Allelúja.)",
 "Postcommunio":"Redemptiónis nostræ múnere vegetáti: quǽsumus, Dómine; ut hoc perpétuæ salútis auxílio, fides semper vera profíciat.\n$Per Dominum"
-}
+},
+"annotated_sections":[
+"Rule"
+]
 },
 "Ordo/OrdoA":{
 "sections":{
@@ -12848,7 +13201,8 @@
 "GradualeP":"@Commune/C11",
 "Evangelium":"Sequéntia ++ sancti Evangélii secúndum Joánnem\n!Joannes 19:25-27\nIn illo témpore: Stabant juxta Crucem Jesu Mater ejus, et soror Matris ejus, María Cléophæ, et María Magdaléne. Cum vidísset ergo Jesus Matrem, et discípulum stantem, quem diligébat, dicit Matri suæ: Múlier, ecce fílius tuus. Deinde dicit discípulo: Ecce Mater tua. Et ex illa hora accépit eam discípulus in sua.",
 "Offertorium":"Beáta es, Virgo María, quæ ómnium portásti Creatórem: genuísti qui te fecit, et in ætérnum pérmanes Virgo. (Allelúja.)"
-}
+},
+"parent":"Commune/C10"
 },
 "Commune/C10a":{
 "sections":{
@@ -12861,7 +13215,8 @@
 "Secreta":"In méntibus nostris, quǽsumus, Dómine, veræ fídei sacraménta confírma: ut, qui concéptum de Vírgine Deum verum et hóminem confitémur; per ejus salutíferæ resurrectiónis poténtiam, ad ætérnam mereámur perveníre lætítiam.\n$Per eundem",
 "Communio":"!Is 7:14\nEcce, Virgo concípiet et páriet fílium: et vocábitur nomen ejus Emmánuel.",
 "Postcommunio":"Grátiam tuam, quǽsumus, Dómine, méntibus nostris infúnde: ut, qui, Angelo nuntiánte, Christi, Fílii tui, incarnatiónem cognóvimus; per passiónem ejus et crucem, ad resurrectiónis glóriam perducámur.\n$Per eundem"
-}
+},
+"parent":"Commune/C10"
 },
 "Commune/C10b":{
 "sections":{
@@ -12877,7 +13232,8 @@
 "Evangelium":"@Sancti/12-25m2",
 "Offertorium":"Felix namque es, sacra Virgo María, et omni laude digníssima: quia ex te ortus est sol justítiæ, Christus, Deus noster.",
 "Postcommunio":"Hæc nos commúnio, Dómine, purget a crímine: et, intercedénte beáta Vírgine Dei Genetríce María, cœléstis remédii fáciat esse consórtes.\n$Per eundem"
-}
+},
+"parent":"Commune/C10"
 },
 "Commune/C10c":{
 "sections":{
@@ -12885,7 +13241,8 @@
 "Graduale":"Benedícta et venerábilis es, Virgo María: quæ sine tactu pudóris invénta es Mater Salvatóris.\nV. Virgo, Dei Génetrix, quem totus non capit orbis, in tua se clausit víscera factus homo. Allelúja, allelúja.\n!Num 17:8\nVirga Jesse flóruit: Virgo Deum et hóminem génuit: pacem Deus réddidit, in se reconcílians ima summis. Allelúja.",
 "Tractus":"@Commune/C11",
 "Offertorium":"@Commune/C10b"
-}
+},
+"parent":"Commune/C10"
 },
 "Commune/C10n":{
 "sections":{
@@ -12893,7 +13250,8 @@
 "Oratio":"@Sancti/01-01",
 "Ant Laudes":"@Sancti/01-01:Ant Vespera:s/;;.*//g",
 "Ant 2":"@Sancti/01-01:Ant 2"
-}
+},
+"parent":"Commune/C10"
 },
 "Commune/C11":{
 "officium":"In Festis Beatae Mariae Virginis",
@@ -12960,7 +13318,11 @@
 "Secreta":"Tua, Dómine, propitiatióne, et beátæ Maríæ semper Vírginis intercessióne, ad perpétuam atque præséntem hæc oblátio nobis profíciat prosperitátem et pacem.\n$Per Dominum",
 "Communio":"Beáta víscera Maríæ Vírginis, quæ portavérunt ætérni Patris Fílium. (Allelúja.)",
 "Postcommunio":"Sumptis, Dómine, salútis nostræ subsídiis: da, quǽsumus, beátæ Maríæ semper Vírginis patrocíniis nos ubíque prótegi; in cujus veneratióne hæc tuæ obtúlimus majestáti.\n$Per Dominum"
-}
+},
+"annotated_sections":[
+"Ant 43",
+"Ant 44"
+]
 },
 "Commune/C12":{
 "officium":"Officium parvum Beatæ Maríæ Virginis",
@@ -13018,7 +13380,10 @@
 "Capitulum Completorium_":"!Sir 24:24\nv. Ego mater pulchræ dilectiónis, et timóris, et agnitiónis, et sanctæ spei.\n$Deo gratias\n_\nV. Ora pro nobis sancta Dei Génetrix.\nR. Ut digni efficiámur promissiónibus Christi.",
 "Capitulum Completorium":"@:Capitulum Completorium_\n(sed rubrica cisterciensis dicuntur)\n@:Lectio3:1 s/17-//\n@:Lectio3:5 s/^20/v./\n$Deo gratias",
 "Oratio Completorium":"v. Beátæ et gloriósæ semper Vírginis Maríæ, quǽsumus, Dómine, intercéssio gloriósa nos prótegat, et ad vitam perdúcat ætérnam.\n$Per Dominum"
-}
+},
+"annotated_sections":[
+"Hymnus Completorium"
+]
 },
 "Commune/C12A":{
 "officium":"Officium parvum Beatae Mariae Virginis",
@@ -13077,7 +13442,8 @@
 "Special Nona":"@:Minor intro\n@:Hymnus minor\n\n#Psalmi\n@Sancti/01-01:Ant Vespera:5 s/^/Ant. / s/;;.*//\n&psalm(125)\n\n&psalm(126)\n\n&psalm(127)\n_\n@Sancti/01-01:Ant Vespera:5 s/^/Ant. / s/;;.*//\n\n#Capitulum\n@:Capitulum Nona\n_\n@:Verse Nona\n@:Minor final",
 "Ant 3":"@Sancti/01-01",
 "Special Completorium":"@Commune/C12::s/(#Canticum: Nunc dimittis.).*/$1/s\n@Sancti/01-01:Ant 3:s/^/Ant. /\n&psalm(233)\n@Sancti/01-01:Ant 3:s/^/Ant. /\n\n#Oratio\n@:Pre oratio\n@Sancti/01-01:Oratio\n\n@Commune/C12::s/.*(.#Conclusio)/$1/s"
-}
+},
+"parent":"Commune/C12"
 },
 "Commune/C12Q":{
 "officium":"Officium Parvum Beatae Mariae Virginis tempore Septuagesimae usque Sabbato Sancto",
@@ -13086,7 +13452,8 @@
 "commune":null,
 "sections":{
 "Rule":"Ave only\nDoxology=Nat\nOmit Suffragium\nSpecial Benedictio\nVotive nocturn\nno Te Deum"
-}
+},
+"parent":"Commune/C12"
 },
 "Commune/C1a":{
 "officium":"Commune Evangelistarum",
@@ -13100,7 +13467,8 @@
 "Lectio7":"Léctio sancti Evangélii secúndum Lucam\n!Luc 10:1-9\nIn illo témpore: Designávit Dóminus et álios septuagínta duos: et misit illos binos ante fáciem suam, in omnem civitátem et locum, quo erat ipse ventúrus. Et réliqua.\n_\nHomilía sancti Gregórii Papæ\n!Homilia 17 in Evangelia\nDóminus et Salvátor noster, fratres caríssimi, aliquándo nos sermónibus, aliquándo vero opéribus ádmonet. Ipsa étenim facta ejus præcépta sunt: quia dum áliquid tácitus facit, quid ágere debeámus innotéscit. Ecce enim binos in prædicatiónem discípulos mittit: quia duo sunt præcépta caritátis, Dei vidélicet amor, et próximi: et minus quam inter duos cáritas habéri non potest. Nemo enim próprie ad semetípsum habére caritátem dícitur: sed diléctio in álterum tendit, ut cáritas esse possit.",
 "Lectio8":"Ecce enim binos ad prædicándum discípulos Dóminus mittit: quátenus hoc nobis tácitus ínnuat, quia qui caritátem erga álterum non habet, prædicatiónis offícium suscípere nullátenus debet. Bene autem dícitur, quia misit eos ante fáciem suam in omnem civitátem et locum, quo erat ipse ventúrus. Prædicatóres enim suos Dóminus séquitur: quia prædicátio prǽvenit, et tunc ad mentis nostræ habitáculum Dóminus venit, quando verba exhortatiónis præcúrrunt: atque per hoc véritas in mente suscípitur.",
 "Lectio9":"Hinc namque eísdem prædicatóribus Isaías dicit: Paráte viam Dómini, rectas fácite sémitas Dei nostri. Hinc fíliis Psalmísta ait: Iter fácite ei, qui ascéndit super occásum. Super occásum namque Dóminus ascéndit: quia unde in passióne occúbuit, inde majórem suam glóriam resurgéndo manifestávit. Super occásum vidélicet ascéndit; quia mortem quam pértulit, resurgéndo calcávit. Ei ergo qui ascéndit super occásum, iter fácimus, cum nos ejus glóriam vestris méntibus prædicámus, ut eas et ipse post véniens, per amóris sui præséntiam illústret.\n&teDeum"
-}
+},
+"parent":"Commune/C1"
 },
 "Commune/C1ap":{
 "officium":"Commune Evangelistarum tempore Paschali",
@@ -13114,7 +13482,8 @@
 "Lectio7":"@Commune/C1a",
 "Lectio8":"@Commune/C1a",
 "Lectio9":"@Commune/C1a"
-}
+},
+"parent":"Commune/C1p"
 },
 "Commune/C1p":{
 "officium":"Commune Apostolorum tempore Paschali",
@@ -13154,7 +13523,8 @@
 "Ant Vespera 3":"@:Ant Vespera:1 s/$/;;109/\n@:Ant Vespera:2 s/$/;;112/\n@:Ant Vespera:3 s/$/;;115/\n@:Ant Vespera:4 s/$/;;125/\n@:Ant Vespera:5 s/$/;;138/",
 "Versum 3":"@:Versum 2",
 "Ant 3":"Sancti et justi * in Dómino gaudéte, allelúja: vos elégit Deus in hereditátem sibi, allelúja."
-}
+},
+"parent":"Commune/C1"
 },
 "Commune/C1v":{
 "officium":"Vigilia Apostolorum",
@@ -13196,14 +13566,16 @@
 "Secreta":"Múnera tibi, Dómine, dicáta sanctífica: et, intercedénte beáto N. Mártyre tuo atque Pontífice, per éadem nos placátus inténde.\n$Per Dominum",
 "Communio":"!Ps 20:4\nPosuísti, Dómine, in cápite ejus corónam de lápide pretióso. (Allelúja.)",
 "Postcommunio":"Hæc nos commúnio, Dómine, purget a crímine: et, intercedénte beáto N. Mártyre tuo atque Pontífice, coeléstis remédii fáciat esse consórtes.\n$Per Dominum"
-}
+},
+"parent":"Commune/C2"
 },
 "Commune/C2-1p":{
 "sections":{
 "Oratio":"@Commune/C2-1",
 "Secreta":"@Commune/C2-1",
 "Postcommunio":"@Commune/C2-1"
-}
+},
+"parent":"Commune/C2p"
 },
 "Commune/C2":{
 "officium":"Commune Unius Martyris Pontificis",
@@ -13297,14 +13669,16 @@
 "Lectio in 2 loco":"Léctio Epístolæ beáti Jacóbi Apóstoli\n!Jac 1:2-12.\nCaríssimi: Omne gáudium existimáte, cum in tentatiónes várias incidéritis: sciéntes, quod probátio fídei vestræ patiéntiam operátur. Patiéntia autem opus perféctum habet: ut sitis perfécti et íntegri, in nullo deficiéntes. Si quis autem vestrum índiget sapiéntia, póstulet a Deo, qui dat ómnibus affluénter, et non impróperat: et dábitur ei. Póstulet autem in fide nihil hǽsitans: qui enim hǽsitat, símilis est flúctui maris, qui a vento movétur et circumfértur. Non ergo ǽstimet homo ille, quod accípiat áliquid a Dómino. Vir duplex ánimo incónstans est in ómnibus viis suis. Gloriétur autem frater húmilis in exaltatióne sua: dives autem in humilitáte sua, quóniam sicut flos fæni transíbit: exórtus est enim sol cum ardóre, et arefécit fænum, et flos ejus décidit et decor vultus ejus depériit: ita et dives in itinéribus suis marcéscet. Beátus vir, qui suffert tentatiónem: quóniam, cum probátus fúerit, accípiet corónam vitæ, quam repromísit Deus diligéntibus se.",
 "Lectio in 3 loco":"@Sancti/06-19:Lectio",
 "Evangelium in 2 loco":"@Sancti/08-10:Evangelium"
-}
+},
+"parent":"Commune/C2a"
 },
 "Commune/C2a-1p":{
 "sections":{
 "Oratio":"@Commune/C2a-1",
 "Secreta":"@Commune/C2a-1",
 "Postcommunio":"@Commune/C2a-1"
-}
+},
+"parent":"Commune/C2ap"
 },
 "Commune/C2a":{
 "officium":"Commune Unius Martyris",
@@ -13328,7 +13702,8 @@
 "Secreta":"Munéribus nostris, quǽsumus, Dómine, precibúsque suscéptis: et cœléstibus nos munda mystériis, et cleménter exáudi.\n$Per Dominum",
 "Communio":"!Matt 16:24\nQui vult veníre post me, ábneget semetípsum, et tollat crucem suam, et sequátur me.",
 "Postcommunio":"Da, quǽsumus, Dómine, Deus noster: ut, sicut tuórum commemoratióne Sanctórum temporáli gratulámur offício; ita perpétuo lætémur aspéctu.\n$Per Dominum"
-}
+},
+"parent":"Commune/C2"
 },
 "Commune/C2ap":{
 "sections":{
@@ -13338,7 +13713,8 @@
 "Lectio3":"@Commune/C3",
 "Secreta":"@Commune/C2a",
 "Postcommunio":"@Commune/C2a"
-}
+},
+"parent":"Commune/C2p"
 },
 "Commune/C2b-1":{
 "sections":{
@@ -13360,7 +13736,28 @@
 "Communio":"@Commune/C4b",
 "Postcommunio":"@Commune/C4b",
 "Postcommunio pro commemoratio":"@Commune/C2b"
-}
+},
+"parent":"Commune/C2-1",
+"annotated_sections":[
+"Communio",
+"Evangelium",
+"Graduale",
+"GradualeP",
+"Introitus",
+"Lectio",
+"Lectio7",
+"Lectio8",
+"Lectio9",
+"Offertorium",
+"Oratio",
+"Oratio pro commemoratio",
+"Postcommunio",
+"Postcommunio pro commemoratio",
+"Rule",
+"Secreta",
+"Secreta pro commemoratio",
+"Tractus"
+]
 },
 "Commune/C2b-1p":{
 "sections":{
@@ -13382,7 +13779,28 @@
 "Communio":"@Commune/C4b",
 "Postcommunio":"@Commune/C4b",
 "Postcommunio pro commemoratio":"@Commune/C2b"
-}
+},
+"parent":"Commune/C2-1p",
+"annotated_sections":[
+"Communio",
+"Evangelium",
+"Graduale",
+"GradualeP",
+"Introitus",
+"Lectio",
+"Lectio7",
+"Lectio8",
+"Lectio9",
+"Offertorium",
+"Oratio",
+"Oratio pro commemoratio",
+"Postcommunio",
+"Postcommunio pro commemoratio",
+"Rule",
+"Secreta",
+"Secreta pro commemoratio",
+"Tractus"
+]
 },
 "Commune/C2b":{
 "officium":"Commune unius Summi Pontificis et Martyris",
@@ -13405,7 +13823,28 @@
 "Communio":"@Commune/C4b",
 "Postcommunio":"@Commune/C4b",
 "Postcommunio pro commemoratio":"Multíplica, quǽsumus, Dómine, in Ecclésia tua spíritum grátiæ, quem dedísti: ut beáti N. Mártyris tui atque Summi Pontíficis deprecatióne nec pastóri obœdiéntia gregis nec gregi desit cura pastóris.\n$Per Dominum"
-}
+},
+"parent":"Commune/C2",
+"annotated_sections":[
+"Communio",
+"Evangelium",
+"Graduale",
+"GradualeP",
+"Introitus",
+"Lectio",
+"Lectio7",
+"Lectio8",
+"Lectio9",
+"Offertorium",
+"Oratio",
+"Oratio pro commemoratio",
+"Postcommunio",
+"Postcommunio pro commemoratio",
+"Rule",
+"Secreta",
+"Secreta pro commemoratio",
+"Tractus"
+]
 },
 "Commune/C2bp":{
 "officium":"Commune unius Summi Pontificis et Martyris Tempore Paschali",
@@ -13428,7 +13867,28 @@
 "Communio":"@Commune/C4b",
 "Postcommunio":"@Commune/C4b",
 "Postcommunio pro commemoratio":"@Commune/C2b"
-}
+},
+"parent":"Commune/C2p",
+"annotated_sections":[
+"Communio",
+"Evangelium",
+"Graduale",
+"GradualeP",
+"Introitus",
+"Lectio",
+"Lectio7",
+"Lectio8",
+"Lectio9",
+"Offertorium",
+"Oratio",
+"Oratio pro commemoratio",
+"Postcommunio",
+"Postcommunio pro commemoratio",
+"Rule",
+"Secreta",
+"Secreta pro commemoratio",
+"Tractus"
+]
 },
 "Commune/C2p":{
 "officium":"Commune unius Martyris Tempore Paschali",
@@ -13472,7 +13932,8 @@
 "Communio":"!Ps 63:11\nLætábitur justus in Dómino, et sperábit in eo: et laudabúntur omnes recti corde, allelúja, allelúja.",
 "Postcommunio":"@Commune/C2",
 "Lectio in 2 loco":"@Commune/C2a-1:Lectio"
-}
+},
+"parent":"Commune/C1p"
 },
 "Commune/C3":{
 "officium":"Commune Plurimorum Martyrum Pontificum",
@@ -13563,14 +14024,16 @@
 "Secreta":"Oblátis, quǽsumus, Dómine, placáre munéribus: et, intercedéntibus sanctis Martýribus tuis N. et N., a cunctis nos defénde perículis.\n$Per Dominum",
 "Communio":"!Matt 10:27\nQuod dico vobis in ténebris, dícite in lúmine, dicit Dóminus: et quod in aure audítis, prædicáte super tecta.",
 "Postcommunio":"Hæc nos commúnio, Dómine, purget a crímine: et, intercedéntibus sanctis Martýribus tuis N. et N., coeléstis remédii fáciat esse consórtes.\n$Per Dominum"
-}
+},
+"parent":"Commune/C3"
 },
 "Commune/C3a-1p":{
 "sections":{
 "Oratio":"@Commune/C3a-1",
 "Secreta":"@Commune/C3a-1",
 "Postcommunio":"@Commune/C3a-1"
-}
+},
+"parent":"Commune/C3p"
 },
 "Commune/C3a":{
 "officium":"Commune Plurimorum Martyrum",
@@ -13589,14 +14052,16 @@
 "Secreta":"Múnera tibi, Dómine, nostra devotiónis offérimus: quæ et pro tuórum tibi grata sint honóre Justórum, et nobis salutária, te miseránte, reddántur.\n$Per Dominum",
 "Communio":"!Luc 12:4\nDico autem vobis amícis meis: Ne terreámini ab his, qui vos persequúntur.",
 "Postcommunio":"Præsta nobis, quǽsumus, Dómine: intercedéntibus sanctis Martýribus tuis N. et N.; ut, quod ore contíngimus, pura mente capiámus.\n$Per Dominum"
-}
+},
+"parent":"Commune/C3"
 },
 "Commune/C3ap":{
 "sections":{
 "Oratio":"@Commune/C3a",
 "Secreta":"@Commune/C3a",
 "Postcommunio":"@Commune/C3a"
-}
+},
+"parent":"Commune/C3p"
 },
 "Commune/C3b":{
 "officium":"Commune plurium Summorum Pontificum Martyrum",
@@ -13616,7 +14081,25 @@
 "Secreta":"@Commune/C4b",
 "Communio":"@Commune/C4b",
 "Postcommunio":"@Commune/C4b"
-}
+},
+"parent":"Commune/C3",
+"annotated_sections":[
+"Communio",
+"Evangelium",
+"Graduale",
+"GradualeP",
+"Introitus",
+"Lectio",
+"Lectio7",
+"Lectio8",
+"Lectio9",
+"Offertorium",
+"Oratio",
+"Postcommunio",
+"Rule",
+"Secreta",
+"Tractus"
+]
 },
 "Commune/C3bp":{
 "officium":"Commune plurium Summorum Pontificum Martyrum Tempore Paschali",
@@ -13636,7 +14119,25 @@
 "Secreta":"@Commune/C4b",
 "Communio":"@Commune/C4b",
 "Postcommunio":"@Commune/C4b"
-}
+},
+"parent":"Commune/C3p",
+"annotated_sections":[
+"Communio",
+"Evangelium",
+"Graduale",
+"GradualeP",
+"Introitus",
+"Lectio",
+"Lectio7",
+"Lectio8",
+"Lectio9",
+"Offertorium",
+"Oratio",
+"Postcommunio",
+"Rule",
+"Secreta",
+"Tractus"
+]
 },
 "Commune/C3p":{
 "officium":"Commune Plurimorum Martyrum Tempore Paschali",
@@ -13658,7 +14159,8 @@
 "Secreta":"@Commune/C3",
 "Communio":"!Ps 32:1\nGaudéte, justi, in Dómino, allelúja: rectos decet collaudátio, allelúja.",
 "Postcommunio":"@Commune/C3"
-}
+},
+"parent":"Commune/C2p"
 },
 "Commune/C4-1":{
 "sections":{
@@ -13677,7 +14179,8 @@
 "Secreta":"Sancti N. Confessóris tui atque Pontíficis, quǽsumus, Dómine, ánnua sollémnitas pietáti tuæ nos reddat accéptos: ut, per hæc piæ placatiónis offícia, et illum beáta retribútio comitétur, ei nobis grátiæ tuæ dona concíliet.\n$Per Dominum",
 "Communio":"!Matt 24:46-47\nBeátus servus, quem, cum vénerit dóminus, invénerit vigilántem: amen, dico vobis, super ómnia bona sua constítuet eum. (Allelúja.)",
 "Postcommunio":"Deus, fidélium remunerátor animárum: præsta; ut, beáti N. Confessóris tui atque Pontíficis, cujus venerándam celebrámus festivitátem, précibus indulgéntiam consequámur.\n$Per Dominum"
-}
+},
+"parent":"Commune/C4"
 },
 "Commune/C4":{
 "officium":"Commune unius Confessoris Pontificis",
@@ -13792,7 +14295,8 @@
 "Secreta":"Sancti N. Pontíficis tui atque Doctóris nobis, Dómine, pia non desit orátio: quæ et múnera nostra concíliet; et tuam nobis indulgéntiam semper obtíneat.\n$Per Dominum",
 "Postcommunio":"Ut nobis, Dómine, tua sacrifícia dent salútem: beátus N. Póntifex tuus et Doctor egrégius, quǽsumus, precátor accédat.\n$Per Dominum",
 "Lectio in 2 loco":"Léctio libri Sapiéntiæ\n!Eccli 39:6-14\nJustus cor suum tradet ad vigilándum dilúculo ad Dóminum, qui fecit illum, et in conspéctu Altíssimi deprecábitur. Apériet os suum in oratióne, et pro delíctis suis deprecábitur. Si enim Dóminus magnus volúerit, spíritu intellegéntias replébit illum: et ipse tamquam imbres mittet elóquia sapiéntiæ suæ, et in oratióne confitébitur Dómino: et ipse díriget consílium ejus et disciplínam, et in abscónditis suis consiliábitur. Ipse palam fáciet disciplínam doctrínæ suæ, et in lege testaménti Dómini gloriábitur. Collaudábunt multi sapiéntiam ejus, et usque in sǽculum non delébitur. Non recédet memória ejus, et nomen ejus requirétur a generatióne in generatiónem. Sapiéntiam ejus enarrábunt gentes, et laudem ejus enuntiábit ecclésia."
-}
+},
+"parent":"Commune/C4"
 },
 "Commune/C4b-1":{
 "sections":{
@@ -13816,7 +14320,29 @@
 "Communio":"@Commune/C4b",
 "Postcommunio":"@Commune/C4b",
 "Postcommunio pro commemoratio":"@Commune/C4b"
-}
+},
+"parent":"Commune/C4-1",
+"annotated_sections":[
+"Communio",
+"Evangelium",
+"Graduale",
+"GradualeP",
+"Introitus",
+"Lectio",
+"Lectio7",
+"Lectio8",
+"Lectio9",
+"Missa",
+"Offertorium",
+"Oratio",
+"Oratio pro commemoratio",
+"Postcommunio",
+"Postcommunio pro commemoratio",
+"Rule",
+"Secreta",
+"Secreta pro commemoratio",
+"Tractus"
+]
 },
 "Commune/C4b-2":{
 "sections":{
@@ -13839,7 +14365,29 @@
 "Communio":"@Commune/C4b",
 "Postcommunio":"@Commune/C4b",
 "Postcommunio pro commemoratio":"@Commune/C4b"
-}
+},
+"parent":"Commune/C4a",
+"annotated_sections":[
+"Communio",
+"Evangelium",
+"Graduale",
+"GradualeP",
+"Introitus",
+"Lectio",
+"Lectio7",
+"Lectio8",
+"Lectio9",
+"Missa",
+"Offertorium",
+"Oratio",
+"Oratio pro commemoratio",
+"Postcommunio",
+"Postcommunio pro commemoratio",
+"Rule",
+"Secreta",
+"Secreta pro commemoratio",
+"Tractus"
+]
 },
 "Commune/C4b-3":{
 "sections":{
@@ -13863,7 +14411,29 @@
 "Communio":"@Commune/C4b",
 "Postcommunio":"@Commune/C4b",
 "Postcommunio pro commemoratio":"@Commune/C4b"
-}
+},
+"parent":"Commune/C4c",
+"annotated_sections":[
+"Communio",
+"Evangelium",
+"Graduale",
+"GradualeP",
+"Introitus",
+"Lectio",
+"Lectio7",
+"Lectio8",
+"Lectio9",
+"Missa",
+"Offertorium",
+"Oratio",
+"Oratio pro commemoratio",
+"Postcommunio",
+"Postcommunio pro commemoratio",
+"Rule",
+"Secreta",
+"Secreta pro commemoratio",
+"Tractus"
+]
 },
 "Commune/C4b":{
 "officium":"Commune Summorum Pontificum Confessorum",
@@ -13889,7 +14459,30 @@
 "Communio":"@Commune/Coronatio",
 "Postcommunio":"Refectióne sancta enutrítam gubérna, quǽsumus, Dómine, tuam placátus Ecclésiam: ut, poténti moderatióne dirécta, et increménta libertátis accípiat et in religiónis integritáte persístat.\n$Per Dominum",
 "Postcommunio pro commemoratio":"Multíplica, quǽsumus, Dómine, in Ecclésia tua spíritum grátiæ, quem dedísti: ut beáti N. Summi Pontíficis deprecatióne nec pastóri obœdiéntia gregis nec gregi desit cura pastóris.\n$Per Dominum"
-}
+},
+"parent":"Commune/C4",
+"annotated_sections":[
+"Communio",
+"Evangelium",
+"Graduale",
+"GradualeP",
+"Introitus",
+"Lectio",
+"Lectio7",
+"Lectio8",
+"Lectio9",
+"Missa",
+"Offertorium",
+"Oratio",
+"Oratio pro commemoratio",
+"Oratio pro plurium",
+"Postcommunio",
+"Postcommunio pro commemoratio",
+"Rule",
+"Secreta",
+"Secreta pro commemoratio",
+"Tractus"
+]
 },
 "Commune/C4c":{
 "officium":"Commune plurium Confessorum Pontificum",
@@ -13898,7 +14491,8 @@
 "Lectio1":"@Commune/C4:Lectio1 in 2 loco",
 "Lectio2":"@Commune/C4:Lectio2 in 2 loco",
 "Lectio3":"@Commune/C4:Lectio3 in 2 loco"
-}
+},
+"parent":"Commune/C4"
 },
 "Commune/C5-1":{
 "sections":{
@@ -13914,7 +14508,8 @@
 "Secreta":"Præsta nobis, quǽsumus, omnípotens Deus: ut nostræ humilitátis oblátio et pro tuórum tibi grata sit honóre Sanctórum, et nos córpore páriter et mente puríficet.\n$Per Dominum",
 "Communio":"!Matt 19:28-29\nAmen, dico vobis: quod vos, qui reliquístis ómnia et secúti estis me, céntuplum accipiétis, et vitam ætérnam possidébitis. (Allelúja.)",
 "Postcommunio":"Quǽsumus, omnípotens Deus: ut, qui cœléstia aliménta percépimus, intercedénte beáto N. Confessóre tuo, per hæc contra ómnia advérsa muniámur.\n$Per Dominum"
-}
+},
+"parent":"Commune/C5"
 },
 "Commune/C5":{
 "officium":"Commune Confessoris non pontificis",
@@ -13975,7 +14570,8 @@
 "Secreta":"Laudis tibi, Dómine, hóstias immolámus in tuórum commemoratióne Sanctórum: quibus nos et præséntibus éxui malis confídimus et futúris.\n$Per Dominum",
 "Communio":"@Commune/C4-1",
 "Postcommunio":"Refécti cibo potúque cœlésti, Deus noster, te súpplices exorámus: ut, in cujus hæc commemoratióne percépimus, ejus muniámur et précibus.\n$Per Dominum"
-}
+},
+"parent":"Commune/C4"
 },
 "Commune/C5a":{
 "officium":"Commune Doctoris non Pontificis",
@@ -14011,7 +14607,8 @@
 "Communio":"@Commune/C4",
 "Postcommunio":"Ut nobis, Dómine, tua sacrifícia dent salútem: beátus N. Conféssor tuus et Doctor egrégius, quǽsumus, precátor accédat.\n$Per Dominum",
 "Lectio in 2 loco":"@Commune/C4a"
-}
+},
+"parent":"Commune/C5"
 },
 "Commune/C5b":{
 "officium":"Commune Abbatis",
@@ -14029,7 +14626,8 @@
 "Secreta":"Sacris altáribus, Dómine, hóstias superpósitas sanctus N. Abbas, quǽsumus, in salútem nobis proveníre depóscat.\n$Per Dominum",
 "Communio":"@Commune/C4",
 "Postcommunio":"Prótegat nos, Dómine, cum tui perceptióne sacraménti beátus N. Abbas, pro nobis intercedéndo: ut et conversatiónis ejus experiámur insígnia, et intercessiónis percipiámus suffrágia.\n$Per Dominum"
-}
+},
+"parent":"Commune/C5"
 },
 "Commune/C5c-1":{
 "officium":"@Commune/C5c",
@@ -14039,7 +14637,8 @@
 "Lectio2":"@Commune/C4c",
 "Lectio3":"@Commune/C4c",
 "Lectio4":"@Commune/C5::s/Beáti N\\./Beatórum N. et N./ s/cujus/quórum/ s/ipsíus/ipsiórum/"
-}
+},
+"parent":"Commune/C5-1"
 },
 "Commune/C5c":{
 "officium":"Commune plurium Confessorum non Pontificum",
@@ -14049,7 +14648,8 @@
 "Lectio3":"@Commune/C4c",
 "Oratio":"Deus, qui nos beatórum N. et N. Confessórum tuórum ánnua solemnitáte lætíficas: concéde propítius; ut quórum natalítiæ cólimus, étiam actiónes imitémur.\n$Per Dominum.",
 "Lectio4":"@Commune/C5::s/Beáti N\\./Beatórum N. et N./ s/cujus/quórum/ s/ipsíus/ipsiórum/"
-}
+},
+"parent":"Commune/C5"
 },
 "Commune/C6-1":{
 "sections":{
@@ -14066,7 +14666,8 @@
 "Communio":"!Ps 118:121; 118:122; 118:128\nFeci judícium et justítiam, Dómine, non calumniéntur mihi supérbi: ad ómnia mandáta tua dirigébar, omnem viam iniquitátis ódio hábui. (Allelúja.)",
 "Postcommunio":"Divíni múneris largitáte satiáti, quǽsumus, Dómine, Deus noster: ut, intercedénte beáta N. Vírgine et Mártyre tua, in ejus semper participatióne vivámus.\n$Per Dominum",
 "Evangelium in 2 loco":"Sequéntia ++ sancti Evangélii secúndum Matthǽum\n!Matt 19:3-12\nIn illo témpore: Accessérunt ad Jesum pharisǽi, tentántes eum et dicéntes: Si licet hómini dimíttere uxórem suam quacúmque ex causa? Qui respóndens, ait eis: Non legístis, quia, qui fecit hóminem ab inítio, másculum et féminam fecit eos? et dixit: Propter hoc dimíttet homo patrem, et matrem, et adhærébit uxóri suæ, et erunt duo in carne una. Itaque jam non sunt duo, sed una caro. Quod ergo Deus conjúnxit, homo non séparet. Dicunt illi: Quid ergo Móyses mandávit dare libéllum repúdii, et dimíttere? Ait illis: Quóniam Móyses ad durítiam cordis vestri permísit vobis dimíttere uxóres vestras: ab inítio autem non fuit sic. Dico autem vobis, quia, quicúmque dimíserit uxórem suam, nisi ob fornicatiónem, et áliam dúxerit, mœchátur: et qui dimíssam dúxerit, mœchátur. Dicunt ei discípuli ejus: Si ita est causa hóminis cum uxóre, non expédit núbere. Qui dixit illis: Non omnes cápiunt verbum istud, sed quibus datum est. Sunt enim eunúchi, qui de matris útero sic nati sunt; et sunt eunúchi, qui facti sunt ab homínibus; et sunt eunúchi, qui seípsos castravérunt propter regnum cœlórum. Qui potest cápere, cápiat."
-}
+},
+"parent":"Commune/C6"
 },
 "Commune/C6":{
 "officium":"Commune Unius Virginis et Martyris",
@@ -14153,7 +14754,8 @@
 "Offertorium":"@Commune/C6",
 "Communio":"!Matt 13:45-46\nSímile est regnum cœlórum hómini negotiatóri, quærénti bonas margarítas: invénta autem una pretiósa margaríta, dedit ómnia sua, et comparávit eam.",
 "Evangelium in 2 loco":"@Commune/C6"
-}
+},
+"parent":"Commune/C6a"
 },
 "Commune/C6a":{
 "officium":"Commune Virginum tantum",
@@ -14174,7 +14776,8 @@
 "Secreta":"Accépta tibi sit, Dómine, sacrátæ plebis oblátio pro tuórum honóre Sanctórum: quorum se méritis de tribulatióne percepísse cognóscit auxílium.\n$Per Dominum",
 "Communio":"!Matt 25:4-6\nQuinque prudéntes vírgines accepérunt óleum in vasis suis cum lampádibus: média autem nocte clamor factus est: Ecce, sponsus venit: exíte óbviam Christo Dómino. (Allelúja.)",
 "Postcommunio":"Satiásti, Dómine, famíliam tuam munéribus sacris: ejus, quǽsumus, semper interventióne nos réfove, cujus sollémnia celebrámus.\n$Per Dominum"
-}
+},
+"parent":"Commune/C6"
 },
 "Commune/C6b":{
 "officium":"Commune Plurium Virginum Martyrum",
@@ -14191,7 +14794,8 @@
 "Lectio":"@Commune/C6a-1",
 "Secreta":"Inténde, quǽsumus, Dómine, múnera altáribus tuis pro sanctárum Vírginum et Mártyrum tuárum N. et N. festivitáte propósita: ut, sicut per hæc beáta mystéria illis glóriam contulísti; ita nobis indulgéntiam largiáris.\n$Per Dominum",
 "Postcommunio":"Præsta nobis, quǽsumus, Dómine, intercedéntibus sanctis Virgínibus et Martýribus tuis N. et N.: ut, quod ore contíngimus, pura mente capiámus.\n$Per Dominum"
-}
+},
+"parent":"Commune/C6-1"
 },
 "Commune/C7":{
 "officium":"Commune Unius non Virginis Martyris",
@@ -14239,7 +14843,8 @@
 "Secreta":"@Commune/C6::s/Vírginis et // s/N\\./N./",
 "Communio":"!Ps 118:161-162\nPríncipes persecúti sunt me gratis, et a verbis tuis formidávit cor meum: lætábor ego super elóqui tua, quasi qui invénit spólia multa. (Allelúja.)",
 "Postcommunio":"@Commune/C6::s/Vírgine et // s/N\\./N./"
-}
+},
+"parent":"Commune/C6"
 },
 "Commune/C7a":{
 "officium":"Commune non Virginum non Martyrum",
@@ -14262,7 +14867,8 @@
 "Communio":"!Ps 44:8\nDilexísti justítiam, et odísti iniquitátem: proptérea unxit te Deus, Deus tuus, óleo lætítiæ præ consórtibus tuis. (Allelúja.)",
 "Postcommunio":"@Commune/C6a",
 "Lectio in 2 loco":"Léctio Epístolæ beáti Pauli Apóstoli ad Timótheum\n!1 Tim 5:3-10\nCaríssime: Víduas honóra, quæ vere víduæ sunt. Si qua autem vídua fílios aut nepótes habet, discat primum domum suam régere, et mútuam vicem réddere paréntibus: hoc enim accéptum est coram Deo. Quæ autem vere vídua est et desoláta, speret in Deum, et instet obsecratiónibus et oratiónibus nocte ac die. Nam quæ in delíciis est, vivens mórtua est. Et hoc prǽcipe, ut irreprehensíbiles sint. Si quis autem suórum, et máxime domesticórum curam non habet, fidem negávit, et est infidéli detérior. Vídua eligátur non minus sexagínta annórum, quæ fúerit uníus viri uxor, in opéribus bonis testimónium habens, si fílios educávit, si hospítio recépit, si sanctórum pedes lavit, si tribulatiónem patiéntibus subministrávit, si omne opus bonum subsecúta est."
-}
+},
+"parent":"Commune/C7"
 },
 "Commune/C7b":{
 "officium":"Commune plurimarum non Virginum Martyrum",
@@ -14279,7 +14885,8 @@
 "Ant 3":"@:Ant 1",
 "Secreta":"@Commune/C6b::s/Vírginum et // s/N\\. et N\\./N. et N./",
 "Postcommunio":"@Commune/C6b::s/Virgínibus et // s/N\\. et N\\./N. et N./"
-}
+},
+"parent":"Commune/C7"
 },
 "Commune/C8":{
 "officium":"Commune Dedicationis Ecclesiae",

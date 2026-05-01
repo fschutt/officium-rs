@@ -134,19 +134,56 @@ pub fn proper_block(
     // The flag in Perl is set per-section by the caller chain; we
     // approximate by always trying the commune when a fallback is
     // appropriate, since for Mass we want every Latin block to land.
+    //
+    // Tridentine 1570: when the commune file's local section carries
+    // a post-1570 annotation (`(communi Summorum Pontificum)` etc.),
+    // skip it and chase the file-level parent inherit instead. For
+    // Marcellus (Sancti/01-16, vide C2b), Perl 1570 ignores C2b's
+    // annotated `@Commune/C4b` Introit and uses C2's bare "Statuit
+    // ei Dóminus". Explicit `@Commune/X` references from a Sancti
+    // file (Peter & Paul Evangelium → @Commune/C4b) reach this
+    // branch via the *winner-file* path above, not commune-fallback,
+    // so they keep working.
     if commune_eligible(office.commune_type) {
         if let Some(commune_key) = office.commune.as_ref() {
             if let Some(commune_file) = corpus.mass_file(commune_key) {
-                if let Some(block) = read_section(
+                if let Some(block) = read_section_skipping_annotated(
                     commune_file,
                     commune_key,
                     section,
                     corpus,
-                    /* via_commune */ true,
                 ) {
                     return Some(block);
                 }
             }
+        }
+    }
+    None
+}
+
+/// Like `read_section` but skips sections marked
+/// `annotated_sections` (post-1570 rubric variants). When the
+/// commune file's local section is annotated, we fall through to
+/// the file-level parent inherit and recurse. Used in commune-
+/// fallback only.
+fn read_section_skipping_annotated(
+    file: &MassFile,
+    file_key: &FileKey,
+    section: &str,
+    corpus: &dyn Corpus,
+) -> Option<ProperBlock> {
+    let is_annotated = file.annotated_sections.iter().any(|s| s == section);
+    if !is_annotated {
+        if let Some(block) = read_section(file, file_key, section, corpus, /* via_commune */ true)
+        {
+            return Some(block);
+        }
+    }
+    // Section is annotated OR missing — chase the file-level parent.
+    if let Some(parent_path) = file.parent.as_deref() {
+        let parent_key = FileKey::parse(parent_path);
+        if let Some(parent_file) = corpus.mass_file(&parent_key) {
+            return read_section_skipping_annotated(parent_file, &parent_key, section, corpus);
         }
     }
     None
@@ -157,7 +194,10 @@ fn commune_eligible(t: CommuneType) -> bool {
 }
 
 /// Read `section` from `file`. Inlines plain bodies; chases
-/// `@`-references up to `MAX_AT_HOPS` deep.
+/// `@`-references up to `MAX_AT_HOPS` deep. When the section is
+/// missing locally AND the file has a `parent` inherit (a leading
+/// `@Commune/X` line in the upstream `.txt` source), recurse into
+/// the parent — that's what the Perl `setupstring` does at runtime.
 fn read_section(
     file: &MassFile,
     file_key: &FileKey,
@@ -165,18 +205,31 @@ fn read_section(
     corpus: &dyn Corpus,
     via_commune: bool,
 ) -> Option<ProperBlock> {
-    let raw = file.sections.get(section)?.trim();
-    if raw.is_empty() {
-        return None;
+    let raw_opt = file.sections.get(section).map(|s| s.trim());
+    if let Some(raw) = raw_opt.filter(|s| !s.is_empty()) {
+        if let Some(stripped) = raw.strip_prefix('@') {
+            return chase_at_reference(stripped, section, corpus, via_commune, 1);
+        }
+        return Some(ProperBlock {
+            latin: raw.to_string(),
+            source: file_key.clone(),
+            via_commune,
+        });
     }
-    if let Some(stripped) = raw.strip_prefix('@') {
-        return chase_at_reference(stripped, section, corpus, via_commune, 1);
+    // Section missing locally — try the file's parent inherit.
+    if let Some(parent_path) = file.parent.as_deref() {
+        let parent_key = FileKey::parse(parent_path);
+        if let Some(parent_file) = corpus.mass_file(&parent_key) {
+            return read_section(
+                parent_file,
+                &parent_key,
+                section,
+                corpus,
+                via_commune || matches!(parent_key.category, FileCategory::Commune),
+            );
+        }
     }
-    Some(ProperBlock {
-        latin: raw.to_string(),
-        source: file_key.clone(),
-        via_commune,
-    })
+    None
 }
 
 /// Follow an `@<path>[:<section>]` chain.

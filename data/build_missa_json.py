@@ -48,14 +48,43 @@ import re
 import sys
 from pathlib import Path
 
-# Match `[SectionName]` and ignore anything after the closing bracket
-# (upstream files routinely add `(communi Summorum Pontificum)`,
-# `(rubrica 1960)` etc. as conditional / informational annotations).
-# When the same section name appears more than once in the file the
-# FIRST occurrence wins — that's the default (the conditioned variants
-# come later and are deferred to Phase 7+ rubric layers).
-SECTION_RE = re.compile(r"^\[([^\]]+)\]")
+# Match `[SectionName]` and capture the optional rubric annotation
+# trailing the closing bracket — `[Introitus] (communi Summorum
+# Pontificum)`, `[Oratio] (rubrica 1960)`, `[Lectio] (tempore
+# paschali)`. The annotation tells us which rubric layer the variant
+# applies to; for the Tridentine 1570 baseline we filter post-1570
+# variants.
+SECTION_RE = re.compile(r"^\[([^\]]+)\](\s*\(([^)]*)\))?")
 BASE_FILE_RE = re.compile(r"\.txt$")
+# File-level inheritance: a `@Commune/C2` line at the top of a file
+# (before any [Section]) means "inherit every missing section from
+# Commune/C2". Captured as `parent` so the runtime resolver can
+# follow.
+PARENT_RE = re.compile(r"^@(\S+)\s*$")
+# Section-rubric annotations the Tridentine 1570 layer must EXCLUDE
+# because they encode post-1570 reforms. Anything else (no annotation,
+# `(rubrica tridentina)`, `(ad missam)`, `(tempore paschali)`, etc.)
+# is kept.
+EXCLUDED_ANNOTATIONS_1570 = (
+    "communi Summorum Pontificum",
+    "rubrica 1960",
+    "rubrica 196",
+    "rubrica 1955",
+    "rubrica Divino",
+    "rubrica Divino aut",
+    "rubrica monastica",
+    "rubrica cisterciensis",
+    "rubrica Ordo Praedicatorum",
+)
+
+
+def is_excluded_annotation(annotation: str) -> bool:
+    """True when this annotation marks a post-1570 rubric variant we
+    should drop from the 1570 baseline corpus."""
+    if not annotation:
+        return False
+    a = annotation.strip()
+    return any(a.startswith(needle) for needle in EXCLUDED_ANNOTATIONS_1570)
 
 
 def parse_mass_file(text: str) -> dict:
@@ -64,25 +93,44 @@ def parse_mass_file(text: str) -> dict:
     proper section — it carries metadata (rank class / numeric rank /
     Commune ref) rather than printable Mass text.
 
-    First-occurrence wins for repeated section names — the upstream
-    files use `[Section] (rubrica 1960)` etc. to override the default
-    body for specific rubrics; until Phase 7+ implements full
-    conditional parsing we keep the unannotated default."""
+    Tridentine-1570 annotation filter: when a section header has an
+    annotation that matches a post-1570 rubric layer (`(communi
+    Summorum Pontificum)`, `(rubrica 1960)`, etc.), we DROP its body
+    entirely so the unannotated/Tridentine variant wins. When the
+    bare section is missing AND the only variant is annotated, the
+    section is left empty in the JSON — the consumer falls back via
+    the file-level `parent` inherit (also captured below)."""
     sections: dict[str, list[str]] = {}
+    annotations: dict[str, str] = {}
     current = None
     collecting = False
+    parent: str | None = None
+    seen_section = False
     for raw in text.splitlines():
         m = SECTION_RE.match(raw.rstrip())
         if m is not None:
+            seen_section = True
             current = m.group(1).strip()
+            annotation = (m.group(3) or "").strip()
             if current not in sections:
                 sections[current] = []
+                annotations[current] = annotation
                 collecting = True
             else:
-                collecting = False  # later occurrence — drop body
+                # Later occurrence — first-occurrence-wins, drop body.
+                collecting = False
             continue
         if current is not None and collecting:
             sections[current].append(raw)
+            continue
+        # Pre-section content: capture a leading `@Commune/X` as the
+        # file-level inherit. Stop on first non-blank non-`@` line.
+        if not seen_section:
+            stripped = raw.strip()
+            if stripped:
+                pm = PARENT_RE.match(stripped)
+                if pm and parent is None:
+                    parent = pm.group(1)
 
     out: dict = {}
     if "Officium" in sections:
@@ -106,6 +154,18 @@ def parse_mass_file(text: str) -> dict:
         name: "\n".join(body).strip() for name, body in sections.items()
         if "\n".join(body).strip()
     }
+    if parent:
+        out["parent"] = parent
+    # Sections that carry a post-1570 rubric annotation. Consumers
+    # filtering for the Tridentine 1570 baseline should ignore these
+    # IN COMMUNE-FALLBACK CONTEXT; explicit `@Commune/X` references
+    # from a Sancti file still resolve through them.
+    annotated = sorted(
+        name for name, ann in annotations.items()
+        if name in out.get("sections", {}) and is_excluded_annotation(ann)
+    )
+    if annotated:
+        out["annotated_sections"] = annotated
     return out
 
 
@@ -129,7 +189,7 @@ def gather(missa_root: Path) -> dict:
             parsed = parse_mass_file(text)
             # skip files that produced literally nothing — keeps the
             # JSON down to "actual content" only.
-            if parsed.get("sections") or parsed.get("officium"):
+            if parsed.get("sections") or parsed.get("officium") or parsed.get("parent"):
                 out[key] = parsed
     return out
 
@@ -167,8 +227,11 @@ def main():
             except UnicodeDecodeError:
                 text = path.read_text(encoding="latin-1")
             parsed = parse_mass_file(text)
-            if parsed.get("sections") or parsed.get("officium"):
-                data[key] = parsed
+            if parsed.get("sections") or parsed.get("officium") or parsed.get("parent"):
+                # Missa-side entry is authoritative; only fill in
+                # from horas if missa didn't supply one.
+                if key not in data:
+                    data[key] = parsed
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(
         json.dumps(data, ensure_ascii=False, indent=0,

@@ -1,93 +1,6577 @@
 {
-  "_README": [
-    "Canonization / instituting-feast dates for Sancti entries.",
-    "Maps Sancti file-stem → metadata. Used by the year-aware corpus filter",
-    "in Phase 7+ to suppress saints / feasts that didn't exist in the",
-    "year being rendered.",
-    "",
-    "Schema:",
-    "  added         year the saint/feast was added to the Roman calendar",
-    "                (canonized + universal-calendar promotion date)",
-    "  elevated      year the rank was raised (e.g. Class III → II)",
-    "                — same year as `added` if no later promotion",
-    "  suppressed    year the saint/feast was REMOVED from the universal",
-    "                calendar (often 1955, 1960, 1969). null if still",
-    "                present in 1962.",
-    "  rank_history  list of [year, rank] pairs: rank changes over time.",
-    "                First entry = `added` year + initial rank.",
-    "  source        citation: bull, papal document, Acta SS., Wikipedia.",
-    "",
-    "Default for missing entries: { added: 1570, suppressed: null }",
-    "(saint was on the calendar in 1570, never removed pre-1962).",
-    "",
-    "Canonical reference: Pius V's _Quo primum_ (1570), as augmented by",
-    "Acta Apostolicae Sedis through the 1962 Missale Romanum.",
-    "",
-    "Sources we cross-reference (in order of authority):",
-    "  1. Acta Apostolicae Sedis (each papal bull / decree)",
-    "  2. DiPippo's *Compendium Romani Breviarii* (1962 edition)",
-    "  3. _Liber Pontificalis_",
-    "  4. Wikipedia 'List of saints canonized by Pope X'",
-    "",
-    "Initial entries below cover the high-impact post-1570 additions",
-    "that affect the 11-year sweep failures. Phase 7+ extends to",
-    "every saint that was added/elevated/suppressed between 1570",
-    "and 1962.",
-    "",
-    "TBD: this is a stub. Phase 7's first deliverable is to populate",
-    "this from the Acta SS. + DiPippo without manual data entry of",
-    "all 250+ entries. Possible approaches: parse upstream's",
-    "Tabulae/Kalendaria/<rubric>.txt files (which encode rank-by-rubric",
-    "for each date) into a temporal table; or scrape Wikipedia's",
-    "'List of saints canonized by ...' tables."
-  ],
+  "Sancti/01-00": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "01-00",
+    "first_officium": "Sanctissimi Nominis Iesu",
+    "rank_history": [
+      [
+        "1939",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-01": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-01",
+    "first_officium": "In Circumcisione Domini",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-02": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-02",
+    "first_officium": "In Octava Sancti Stephani",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/01-03": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-03",
+    "first_officium": "In Octavam S. Joannis",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/01-04": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-04",
+    "first_officium": "In Octava Ss. Innocentium",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/01-05": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-05",
+    "first_officium": "Vigilia Epiphaniae",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/01-05cc": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "01-05",
+    "first_officium": "S. Telesphori Papae et Martyris",
+    "rank_history": [
+      [
+        "1888",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/01-06": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-06",
+    "first_officium": "Epiphaniae Domini",
+    "rank_history": [
+      [
+        "1570",
+        "6",
+        "Duplex I classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-07": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-07",
+    "first_officium": "Secunda die infra Octavam Epiphaniae",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-08": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-08",
+    "first_officium": "Tertia die infra Octavam Epiphaniae",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-09": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-09",
+    "first_officium": "Quarta die infra Octavam Epiphaniae",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-10": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-10",
+    "first_officium": "Quinta die infra Octavam Epiphaniae",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-11": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-11",
+    "first_officium": "Sexta die infra Octavam Epiphaniae",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-11cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-11",
+    "first_officium": "S. Hygini Papæ et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/01-12": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "01-12",
+    "first_officium": "Septima die infra Octavam Epiphaniae",
+    "rank_history": [
+      [
+        "1939",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-12t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-12",
+    "first_officium": "Dominica infra Octavam Epiphaniae",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/01-13": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-13",
+    "first_officium": "Die Octava Epiphaniae",
+    "rank_history": [
+      [
+        "1570",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-14": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-14",
+    "first_officium": "S. Hilarii Episcopi Confessoris Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-14cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-14",
+    "first_officium": "S. Felicis Presbyteri et Mart",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/01-15": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-15",
+    "first_officium": "S. Pauli primi Eremitae et Confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-15cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-15",
+    "first_officium": "S. Mauri Abbatis",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/01-16": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-16",
+    "first_officium": "S. Marcelli Papae et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-17": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-17",
+    "first_officium": "S. S. Antonii Abbatis",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-18": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-18",
+    "first_officium": "Cathedrae S. Petri",
+    "rank_history": [
+      [
+        "1570",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/01-18r": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-18",
+    "first_officium": "S Priscae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/01-19": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-19",
+    "first_officium": "Ss. Marii, Marthæ, Audifacis, et Abachum Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-19o": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "01-19",
+    "first_officium": "S. Canuti Regis et Martyrum",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ],
+      [
+        "1939",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-20": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-20",
+    "first_officium": "Ss. Fabiani et Sebastiani Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-21": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-21",
+    "first_officium": "S. Agnetis Virginis et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-22": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-22",
+    "first_officium": "Ss. Vincentii et Anastasii Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-23": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "01-23",
+    "first_officium": "S. Raymundi de Penafort Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-23o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-23",
+    "first_officium": "S. Emerentianae Virginis et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-24": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-24",
+    "first_officium": "S. Timothei Episcopi et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
   "Sancti/01-25": {
-    "officium": "Conversio S. Pauli",
-    "added": 1570,
-    "rank_history": [[1570, "Duplex"], [1908, "Duplex majus"]],
-    "suppressed": null,
-    "source": "_Quo primum_ 1570; Pius X 1908 elevation"
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-25",
+    "first_officium": "In Conversione S. Pauli Apostoli",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ],
+      [
+        "1955",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/01-25r": {
+    "added_in_rubric": "1960",
+    "first_mmdd": "01-25",
+    "first_officium": "In Conversione S. Pauli Apostoli",
+    "rank_history": [
+      [
+        "1960",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-26": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-26",
+    "first_officium": "S. Polycarpi Episcopi et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-27": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-27",
+    "first_officium": "S. Joannis Chrysostomi Episcopi Confessoris Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-28": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "01-31",
+    "first_officium": "S. Petri Nolasci Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-28t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "01-28",
+    "first_officium": "S. Agnetis Virginis et Martyris secundo",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-29": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "01-29",
+    "first_officium": "S. Francisci Salesii Episcopi Confessoris Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-30": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "01-30",
+    "first_officium": "S. Martinae Virginis et Martyris",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/01-31": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "01-31",
+    "first_officium": "S.Joannis Bosco Confessoris",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-01": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "02-01",
+    "first_officium": "S. Ignatii Episcopi et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-02": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "02-02",
+    "first_officium": "In Purificatione Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-03": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "02-03",
+    "first_officium": "S. S. Blasii Episcopi et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-04": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "02-04",
+    "first_officium": "S. Andreae Corsini Episcopi et Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-05": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "02-05",
+    "first_officium": "S. Agathae Virginis et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-06": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "02-06",
+    "first_officium": "S. Titi Episc et Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-06o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "02-06",
+    "first_officium": "S. Dorotheæ, Virginis et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-07": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "02-07",
+    "first_officium": "S. Romualdi Abbatis",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-08": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "02-08",
+    "first_officium": "S. S. Joannis de Matha Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-09": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "02-09",
+    "first_officium": "S. Cyrilli Episc Alexandrini Confessoris Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-09o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "02-09",
+    "first_officium": "S. Apolloniae Virginis et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-10": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "02-10",
+    "first_officium": "S. Scholasticae Virginis",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-11": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "02-11",
+    "first_officium": "In apparitione Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1939",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-12": {
+    "added_in_rubric": "1906",
+    "first_mmdd": "02-11",
+    "first_officium": "Ss. Septem Fundatorum Ordinis Servorum B. M. V.",
+    "rank_history": [
+      [
+        "1906",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-14": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "02-14",
+    "first_officium": "S. Valentini Presbyteri et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-15": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "02-15",
+    "first_officium": "Ss. Faustini et Jovitae Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-18": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "02-18",
+    "first_officium": "S. Simeonis Episcopi et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-22": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "02-22",
+    "first_officium": "In Cathedra S. Petri Ap Antiochiae",
+    "rank_history": [
+      [
+        "1570",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-23o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "02-23",
+    "first_officium": "Vigilia S. Matthaei Apostoli",
+    "rank_history": [
+      [
+        "1570",
+        "1.5",
+        "Vigilia"
+      ],
+      [
+        "1888",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/02-23r": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "02-23",
+    "first_officium": "S. Petri Damiani",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-24": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "02-24",
+    "first_officium": "S. Matthiae Apostoli",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/02-27": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "02-27",
+    "first_officium": "S. Gabrielis a Virgine Perdolente Confessoris",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/03-04": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "03-04",
+    "first_officium": "S. Casimiri",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/03-04cc": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "03-04",
+    "first_officium": "S. Lucii I Papae et Martyris",
+    "rank_history": [
+      [
+        "1888",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/03-06": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "03-07",
+    "first_officium": "Ss. Perpetuae et Felicitatis Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ],
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/03-07": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "03-07",
+    "first_officium": "S. Thomae de Aquino Confessoris Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/03-08": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "03-08",
+    "first_officium": "S. Joannis de Deo Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/03-09": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "03-09",
+    "first_officium": "S. Franciscae Viduae Romanae",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/03-10": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "03-09",
+    "first_officium": "Ss. Quadraginta Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/03-12": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "03-12",
+    "first_officium": "S. Gregorii Papae Confessoris et Eccl Doct",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/03-17": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "03-17",
+    "first_officium": "S. Patritii Episcopi et Conf",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/03-18": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "03-18",
+    "first_officium": "S. Cyrilli Episc Hierosolymitani Eccl Doct",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
   },
   "Sancti/03-19": {
-    "officium": "S. Joseph Sponsi BMV",
-    "added": 1570,
-    "rank_history": [[1570, "Duplex"], [1729, "Duplex II classis"], [1870, "Duplex I classis"]],
-    "suppressed": null,
-    "source": "Pius IX 1870 'Quemadmodum Deus' (Patron of Universal Church)"
+    "added_in_rubric": "1888",
+    "first_mmdd": "03-19",
+    "first_officium": "S. Joseph sponsi BMV confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "6",
+        "Duplex I classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/03-19t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "03-19",
+    "first_officium": "S. Joseph sponsi BMV confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1570",
+    "kind": "main"
+  },
+  "Sancti/03-21": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "03-21",
+    "first_officium": "S. Benedicti Abbatis",
+    "rank_history": [
+      [
+        "1570",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": "1888",
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/03-24": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "03-24",
+    "first_officium": "S. Gabrielis Archangeli",
+    "rank_history": [
+      [
+        "1939",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/03-25": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "03-25",
+    "first_officium": "In Annuntiatione Beate Mariæ Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/03-27": {
+    "added_in_rubric": "1906",
+    "first_mmdd": "03-27",
+    "first_officium": "S. Joannis Damascene Confessor et Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1906",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/03-28": {
+    "added_in_rubric": "1906",
+    "first_mmdd": "03-28",
+    "first_officium": "S. Joannis Capistrano Confessoris",
+    "rank_history": [
+      [
+        "1906",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-02": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "04-02",
+    "first_officium": "S. Francisci de Paula Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-04": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "04-04",
+    "first_officium": "S. Isidori Episc Confessoris et Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-05": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "04-05",
+    "first_officium": "S. Vincentii Ferrerii Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-11": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "04-11",
+    "first_officium": "S. Leonis I Papae Confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-13": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "04-13",
+    "first_officium": "S. Hermenegildi Martyris",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-14": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "04-14",
+    "first_officium": "S. Justini Martyris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-14t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "04-14",
+    "first_officium": "Ss. Tiburtii, Valeriani et Maximi, Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-17": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "04-17",
+    "first_officium": "S. Aniceti Papae et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-21": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "04-21",
+    "first_officium": "S. Anselmi Episcopi Confessoris et Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-22": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "04-22",
+    "first_officium": "Ss. Soteris et Caji Pontifices et Martyres",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-23": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "04-23",
+    "first_officium": "S. Georgii Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-24": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "04-24",
+    "first_officium": "S. Fidelis Sigmaringa Martyris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-25": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "04-25",
+    "first_officium": "S. Marci Evangelistae",
+    "rank_history": [
+      [
+        "1570",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-26": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "04-26",
+    "first_officium": "S. Cleti et Marcellini Pontif Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-27": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "04-27",
+    "first_officium": "S. Petri Canisii Confessoris et Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-28": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "04-28",
+    "first_officium": "S. Pauli a Cruce Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-28o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "04-28",
+    "first_officium": "S. Vitalis Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/04-29": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "04-29",
+    "first_officium": "S. Petri Martyris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/04-30": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "04-30",
+    "first_officium": "S. Catharinae Senensis Virginis",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-01": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-01",
+    "first_officium": "SS Philippi et Jacobi Apostolorum",
+    "rank_history": [
+      [
+        "1570",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/05-01r": {
+    "added_in_rubric": "1955",
+    "first_mmdd": "05-01",
+    "first_officium": "S. Joseph Opificis",
+    "rank_history": [
+      [
+        "1955",
+        "6",
+        "Duplex I classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-02": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-02",
+    "first_officium": "S. Athanasii Confessoris Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-03": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "05-03",
+    "first_officium": "Inventione Sanctae crucis",
+    "rank_history": [
+      [
+        "1888",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/05-03r": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-03",
+    "first_officium": "Ss. Alexandri I Papa, Eventino et Theoduli Mártyrum atque Juvenalis Confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/05-03t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-03",
+    "first_officium": "Invention of the Holy Cross",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1570",
+    "kind": "main"
+  },
+  "Sancti/05-04": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-04",
+    "first_officium": "S. Monica Vidua",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-05": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "05-05",
+    "first_officium": "S. Pii V Papae Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-06": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-06",
+    "first_officium": "S. Joannis Apostoli ante portam Latinam",
+    "rank_history": [
+      [
+        "1570",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": "1960",
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/05-07": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "05-07",
+    "first_officium": "S. Stanislai Episcopi Martyri",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-08": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-08",
+    "first_officium": "Apparitione S Michaelis Archangeli",
+    "rank_history": [
+      [
+        "1570",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": "1960",
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/05-09": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "05-09",
+    "first_officium": "S. Gregorii Nazianzi Episcopi Confessoris Ecclasiae Doctorum",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-09t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-09",
+    "first_officium": "S. Gregorii Nazianzi Episcopi Confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1570",
+    "kind": "main"
+  },
+  "Sancti/05-10": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "05-10",
+    "first_officium": "S. Antonii Episcopi Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-10o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-10",
+    "first_officium": "Ss. Gordiani et Epimachi Martyri",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-11r": {
+    "added_in_rubric": "1955",
+    "first_mmdd": "05-11",
+    "first_officium": "Ss. Philippi et Jacobi Apostolorum",
+    "rank_history": [
+      [
+        "1955",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-12": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-12",
+    "first_officium": "Ss. Nerei, Achillei et Domitillae Virgini atque Pancratii Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-13": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "05-13",
+    "first_officium": "S.Roberti Ballarmino Episcopi Confessoris et Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-14": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-14",
+    "first_officium": "S. Bonifacii Martyri",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-15": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "05-15",
+    "first_officium": "S. Joanni Baptistae de la Salle Confessoris",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-16": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "05-16",
+    "first_officium": "S. Ubaldi Episcopi Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-17": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "05-17",
+    "first_officium": "S. Paschalis Baylon Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-18": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "05-18",
+    "first_officium": "S. Venantii Martyris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-19": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "05-19",
+    "first_officium": "S. Petri Celestini Papae Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-19o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-19",
+    "first_officium": "S. Pudentianae",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-20": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "05-20",
+    "first_officium": "S. Bernardini Senensis Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-25": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "05-25",
+    "first_officium": "S. Gregory VII Papae Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-25o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-25",
+    "first_officium": "S. Urbani I Pp et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-26": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "05-26",
+    "first_officium": "S. Philippi Neri Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-26o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-26",
+    "first_officium": "S. Eleutherius pope and martyr",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-27": {
+    "added_in_rubric": "1906",
+    "first_mmdd": "05-27",
+    "first_officium": "S. Bedæ Venerabilis Confessoris et Ecclesiæ Doctoris",
+    "rank_history": [
+      [
+        "1906",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-27o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-27",
+    "first_officium": "S. Joanne Papa et Mart",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-28": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "05-28",
+    "first_officium": "S. Augustini Episcopi Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-29": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "05-27",
+    "first_officium": "S. Mariae Magdalenae de Pazzis",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-30": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-30",
+    "first_officium": "S. Felicis Papae et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
   },
   "Sancti/05-31": {
-    "officium": "B. Mariæ Virginis Reginæ",
-    "added": 1955,
-    "rank_history": [[1955, "Duplex II classis"]],
-    "suppressed": null,
-    "source": "Pius XII 1954 _Ad caeli Reginam_; instituted 31 May 1955"
+    "added_in_rubric": "1954",
+    "first_mmdd": "05-31",
+    "first_officium": "Beatae Mariae Virginis Regina",
+    "rank_history": [
+      [
+        "1954",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/05-31o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "05-31",
+    "first_officium": "S. Petronillae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-01": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "05-31",
+    "first_officium": "S. Angelae Mericiae Virginis",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-02": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-02",
+    "first_officium": "Ss. Marcellini, Petri, atque Erasmi Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-04": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "06-04",
+    "first_officium": "S. Francisci Caracciolo Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-05": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "06-05",
+    "first_officium": "S. Bonifacii Episc et Mart",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-06": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "06-06",
+    "first_officium": "S. Norberti Episc et Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-09": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-09",
+    "first_officium": "Ss. Primi et Feliciani Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-10": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "06-10",
+    "first_officium": "S. Margaritae Reginae viduae",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-11": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-11",
+    "first_officium": "S. Barnabae Apostoli",
+    "rank_history": [
+      [
+        "1570",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-12": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "06-12",
+    "first_officium": "S. Joannis a S Facundo Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-12o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-12",
+    "first_officium": "Ss. Basilides, Cyrinus, Nabor and Nazarius martyrs",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-13": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "06-13",
+    "first_officium": "S. Antonii de Padua Confessoris (1946: & Ecclesiae Doctoris)",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-14": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-14",
+    "first_officium": "S. Basilii Magni Confessoris et Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-15": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-15",
+    "first_officium": "Ss. Viti, Modesti atque Crescentiae Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-17r": {
+    "added_in_rubric": "1960",
+    "first_mmdd": "06-17",
+    "first_officium": "S. Gregorii Barbadici Ep. Conf",
+    "rank_history": [
+      [
+        "1960",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-18": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "06-18",
+    "first_officium": "S. Ephraem Syri Confessorem et Ecclesiae Doctorem",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-18t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-18",
+    "first_officium": "SS Marci et Marcellini Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-19": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "06-19",
+    "first_officium": "S. Julianae de Falconeriis Virginae",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-19o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-19",
+    "first_officium": "Ss. Gervasii et Protasii Martyres",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-20": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "06-20",
+    "first_officium": "S. Sylverii Papae et Martyri",
+    "rank_history": [
+      [
+        "1888",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-20t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-20",
+    "first_officium": "S. Sylverii Papae et Martyri",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1570",
+    "kind": "main"
   },
   "Sancti/06-21": {
-    "officium": "S. Aloysii Gonzagae Confessoris",
-    "added": 1726,
-    "rank_history": [[1726, "Semiduplex"], [1741, "Duplex"]],
-    "suppressed": null,
-    "source": "Benedict XIII canonization 1726; Benedict XIV elevation"
+    "added_in_rubric": "1888",
+    "first_mmdd": "06-21",
+    "first_officium": "S. Alosii Gonzage Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-22": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "06-22",
+    "first_officium": "S. Paulini episcopi et Confessoris",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-22t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-22",
+    "first_officium": "S. Paulini episcopi et Confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/06-23": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-23",
+    "first_officium": "Vigilia S. Joannis Baptistae",
+    "rank_history": [
+      [
+        "1570",
+        "1.5",
+        "Vigilia"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-24": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-24",
+    "first_officium": "In Nativitate S. Joannis Baptistae",
+    "rank_history": [
+      [
+        "1570",
+        "6",
+        "Duplex I classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-25": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "06-25",
+    "first_officium": "S. Gulielmi Abbatis",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-25oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-25",
+    "first_officium": "De II die infra Octavam Nativitatis S. Joannis Baptistae",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/06-26": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-26",
+    "first_officium": "Ss. Joannis et Pauli Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-26oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-26",
+    "first_officium": "Tertia die infra Octavam Nativitatis S. Joannis Baptistae",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "commemoratio"
+  },
+  "Sancti/06-27oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-27",
+    "first_officium": "Quarta die infra Octavam Nativitatis S. Joannis Baptistae",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/06-28": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "06-28",
+    "first_officium": "S. Irenaei Episcopi et Martyris",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/06-28oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-28",
+    "first_officium": "Vigilia Ss. Petri et Pauli Apostolorum",
+    "rank_history": [
+      [
+        "1570",
+        "1.5",
+        "Vigilia"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "commemoratio"
+  },
+  "Sancti/06-28r": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-28",
+    "first_officium": "Vigilia Ss. Petri et Pauli Apostolorum",
+    "rank_history": [
+      [
+        "1570",
+        "1.5",
+        "Vigilia"
+      ],
+      [
+        "1960",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/06-28t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-28",
+    "first_officium": "S. Leonis Papae et Confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/06-29": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-29",
+    "first_officium": "Ss. Apostolorum Petri et Pauli",
+    "rank_history": [
+      [
+        "1570",
+        "6",
+        "Duplex I classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-30": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-30",
+    "first_officium": "In Commemoratione Sancti Pauli Apostoli",
+    "rank_history": [
+      [
+        "1570",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/06-30oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "06-30",
+    "first_officium": "Septima die infra Octavam Nativitatis S. Joannis Baptistae",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "commemoratio"
+  },
+  "Sancti/07-01": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "07-01",
+    "first_officium": "Pretiosissimi Sanguinis Domini Nostri Jesu Christi",
+    "rank_history": [
+      [
+        "1939",
+        "6",
+        "Duplex I classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-01oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-01",
+    "first_officium": "Octavae Ss. Petri et Pauli",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "commemoratio"
+  },
+  "Sancti/07-01t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-01",
+    "first_officium": "In Octava S. Joannis Baptistae",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/07-02": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "07-02",
+    "first_officium": "In Visitatione B Mariae Virginis",
+    "rank_history": [
+      [
+        "1888",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-02cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-02",
+    "first_officium": "Quarta die infra Octavam Ss. Petri et Pauli",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ],
+      [
+        "1888",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/07-02o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-02",
+    "first_officium": "In Visitatione B Mariae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1570",
+    "kind": "main"
+  },
+  "Sancti/07-02oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-02",
+    "first_officium": "Quarta die infra Octavam Ss. Petri et Pauli",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1570",
+    "kind": "commemoratio"
+  },
+  "Sancti/07-03": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "07-03",
+    "first_officium": "S. Leonis Papae et Confessoris",
+    "rank_history": [
+      [
+        "1939",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/07-03oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-03",
+    "first_officium": "Quinta die infra Octavam Ss. Petri et Pauli",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/07-03r": {
+    "added_in_rubric": "1960",
+    "first_mmdd": "07-03",
+    "first_officium": "S. Irenaei Episcopi et Martyris",
+    "rank_history": [
+      [
+        "1960",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-04oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-04",
+    "first_officium": "Sexta die infra Octavam Ss. Petri et Pauli",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/07-05": {
+    "added_in_rubric": "1906",
+    "first_mmdd": "07-05",
+    "first_officium": "S. Antonii Mariae Zacharia Confessor",
+    "rank_history": [
+      [
+        "1906",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
   },
   "Sancti/07-05oct": {
-    "officium": "In Octava S. Antonii M. Zaccaria",
-    "added": 1897,
-    "rank_history": [[1897, "Octave"]],
-    "suppressed": 1955,
-    "source": "Leo XIII 1897 instituted; Pius XII 1955 _Cum nostra hac aetate_ abolished octave"
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-05",
+    "first_officium": "Septima die infra Octavam Ss. Petri et Pauli",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/07-06": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "07-06",
+    "first_officium": "In Octava Ss. Petri et Pauli",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/07-06o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-06",
+    "first_officium": "In Octava Ss. Petri et Pauli",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1570",
+    "kind": "main"
+  },
+  "Sancti/07-07": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "07-05",
+    "first_officium": "Ss. Cyrilli et Methodii Pont et Conf",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-08": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "07-08",
+    "first_officium": "S. Elisabeth Reg Portugaliae Viduae",
+    "rank_history": [
+      [
+        "1939",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-08t": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "07-08",
+    "first_officium": "S. Elisabeth Reg Portugaliae Viduae",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/07-10": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-10",
+    "first_officium": "Ss. Septem Fratrum Martyrum, ac Rufinae et Secundae Virgini et Martyri",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-11": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "07-11",
+    "first_officium": "S. Pii I Papae et Martyris",
+    "rank_history": [
+      [
+        "1888",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-11o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-11",
+    "first_officium": "S. Pii I Papae et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1570",
+    "kind": "main"
+  },
+  "Sancti/07-12": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "07-12",
+    "first_officium": "S. Joannis Gualberti Abbatis",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-12o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-12",
+    "first_officium": "Ss. Nabor and Felix martyrs",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-13": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-13",
+    "first_officium": "S. Anacleti Papae et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1960",
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/07-14": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-14",
+    "first_officium": "S. Bonaventurae Episcopi Confessoris (1588: et Ecclesiae Doctoris)",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-15": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "07-15",
+    "first_officium": "S. Henrici Imperatoris Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-16": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "07-16",
+    "first_officium": "In Commemoratione Beatae Mariae Virginis de Monte Carmelo",
+    "rank_history": [
+      [
+        "1888",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-17": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-17",
+    "first_officium": "S. Alexii Confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-18": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "07-18",
+    "first_officium": "S. Camilli de Lellis Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-18o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-18",
+    "first_officium": "Ss. Symphorosa et septem filiis Martyribus",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-19": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "07-19",
+    "first_officium": "S. Vincentii a Paulo Conf",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-20": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "07-20",
+    "first_officium": "S. Hieronomy Emiliani Conf",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-20o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-20",
+    "first_officium": "S. Margaritæ, Virginis et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-21": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-21",
+    "first_officium": "S. Praxedis Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-21r": {
+    "added_in_rubric": "1960",
+    "first_mmdd": "07-21",
+    "first_officium": "S. Laurentii de Brundusio Confessoris et Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1960",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-22": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-22",
+    "first_officium": "S. Mariae Magdalenae Poenitentis",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-23": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-23",
+    "first_officium": "S. Apollinaris Episcopi et Mart",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-23cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-23",
+    "first_officium": "S. Liborii Ep Conf",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/07-24": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-24",
+    "first_officium": "Vigilia S. Jacobi Apostoli",
+    "rank_history": [
+      [
+        "1570",
+        "1.5",
+        "Vigilia"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/07-24r": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-24",
+    "first_officium": "S. Christinae",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/07-25": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-25",
+    "first_officium": "S. Jacobi Apostoli",
+    "rank_history": [
+      [
+        "1570",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-25cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-25",
+    "first_officium": "S. Christophori Mart",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/07-26": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "07-26",
+    "first_officium": "S. Annae Matris BMV",
+    "rank_history": [
+      [
+        "1888",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-27": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-27",
+    "first_officium": "S. Pantaleon Martyr",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-28": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-28",
+    "first_officium": "Ss. Nazarii et Celsi Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-29": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-29",
+    "first_officium": "S. Marthae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-29cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-29",
+    "first_officium": "Ss. Felicis, Simplicii, Faustini et Beatricis Mart",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/07-30": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "07-30",
+    "first_officium": "S. Abdon et Senen Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/07-31": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "07-31",
+    "first_officium": "S. Ignatii Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-01": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-01",
+    "first_officium": "S. Petri ad Vincula",
+    "rank_history": [
+      [
+        "1570",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/08-01r": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-01",
+    "first_officium": "Ss. Martyrum Machabaeorum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/08-02": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "08-02",
+    "first_officium": "S. Alphonsi Mariae de Ligorio Episc Conf et Eccles Doct",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-02o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-02",
+    "first_officium": "St Stephano Papae Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-03": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-03",
+    "first_officium": "De Inventione S. Stephani Protomartyris",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1960",
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/08-04": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-04",
+    "first_officium": "S. Dominici Confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-05": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-05",
+    "first_officium": "S. Mariae ad Nives",
+    "rank_history": [
+      [
+        "1570",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-06": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-06",
+    "first_officium": "Transfiguratio Domini Nostri Jesu Christi",
+    "rank_history": [
+      [
+        "1570",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-06cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-06",
+    "first_officium": "Ss. Xysti Felicissimi et Agapiti Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/08-07": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "08-07",
+    "first_officium": "S. Cajetani Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-07o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-07",
+    "first_officium": "S. Donati Ep et Mart",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-08": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-08",
+    "first_officium": "Ss. Cyriaci, Largi et Smaragdi Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ],
+      [
+        "1960",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-09": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "08-09",
+    "first_officium": "S. Joannis Vianney Confessoris",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-09cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-09",
+    "first_officium": "S. Romani Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ],
+      [
+        "1939",
+        "1.5",
+        "Vigilia"
+      ],
+      [
+        "1960",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/08-09t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-09",
+    "first_officium": "Vigilia S. Laurentii Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1.5",
+        "Vigilia"
+      ],
+      [
+        "1960",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-10": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-10",
+    "first_officium": "S. Laurentii Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-11": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-11",
+    "first_officium": "Ss. Tiburtii et Susannae Virg. Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/08-11oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-11",
+    "first_officium": "Secunda die infra Octavam S. Laurentii",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/08-12": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-12",
+    "first_officium": "S. Clarae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ],
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/08-12oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-12",
+    "first_officium": "Tertia die infra Octavam S. Laurentii",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/08-13": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-13",
+    "first_officium": "Ss. Hippolyti et Cassiani Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/08-13oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-13",
+    "first_officium": "Quarta die infra Octavam S. Laurentii",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/08-14": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-14",
+    "first_officium": "Vigiliae Assumptionis Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "1.5",
+        "Vigilia"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/08-14cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-14",
+    "first_officium": "Vigiliae Assumptionis Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "1.5",
+        "Vigilia"
+      ],
+      [
+        "1939",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/08-14oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-14",
+    "first_officium": "Quinta die infra Octavam S. Laurentii",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/08-15": {
+    "added_in_rubric": "1954",
+    "first_mmdd": "08-15",
+    "first_officium": "Assumptione Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1954",
+        "6",
+        "Duplex I classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-15t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-15",
+    "first_officium": "Assumptione Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "6",
+        "Duplex I classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1939",
+    "kind": "main"
+  },
+  "Sancti/08-16": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "08-16",
+    "first_officium": "S. Joachim Confessoris, Patris B Mariae Virginis",
+    "rank_history": [
+      [
+        "1939",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-16bmv": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-16",
+    "first_officium": "Secunda die infra Octavam S. Assumptionis",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/08-16oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-16",
+    "first_officium": "Septima die infra Octavam S. Laurentii",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "commemoratio"
+  },
+  "Sancti/08-17": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "08-16",
+    "first_officium": "S. Hyacinthi Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-17bmv": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-17",
+    "first_officium": "Tertia die infra Octavam S. Assumptionis",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "commemoratio"
+  },
+  "Sancti/08-17t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-17",
+    "first_officium": "Octava S. Laurentii Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/08-18bmv": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-18",
+    "first_officium": "Quarta die infra Octavam S. Assumptionis",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/08-18r": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-18",
+    "first_officium": "S. Agapiti Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/08-19": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "08-19",
+    "first_officium": "S. Joannis Eudes Confessoris",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-19bmv": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-19",
+    "first_officium": "Quinta die infra Octavam S. Assumptionis",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/08-20": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-20",
+    "first_officium": "S. Bernardi Abbatis (1830: et Ecclesiae Doctoris)",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ],
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-20bmv": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-20",
+    "first_officium": "Sexta die infra Octavam S. Assumptionis",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "commemoratio"
+  },
+  "Sancti/08-21": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "08-21",
+    "first_officium": "S. Joanne Franciscae Fremiot de Chantal Viduae",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-21bmv": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-21",
+    "first_officium": "Septima die infra Octavam S. Assumptionis",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/08-22": {
+    "added_in_rubric": "1954",
+    "first_mmdd": "08-22",
+    "first_officium": "Festum Immaculati Cordis Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1954",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-22cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-22",
+    "first_officium": "Ss. Timothei, Hippolyti et Symphoriani Mart",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/08-22t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-22",
+    "first_officium": "In Octava Assumptionis BMV",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1939",
+    "kind": "main"
+  },
+  "Sancti/08-23": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "08-23",
+    "first_officium": "S. Philippi BenitiConfessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-23o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-23",
+    "first_officium": "Vigilia S.Barthalomei Apostoli",
+    "rank_history": [
+      [
+        "1570",
+        "1.5",
+        "Vigilia"
+      ],
+      [
+        "1888",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/08-24": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-24",
+    "first_officium": "S. Bartholomaei Apostoli",
+    "rank_history": [
+      [
+        "1570",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-25": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-25",
+    "first_officium": "S. Ludovioci Confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-26": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-26",
+    "first_officium": "S. Zephirini Papae et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-27": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "08-27",
+    "first_officium": "S. Josephi Calasantini Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-28": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-28",
+    "first_officium": "S. Augustini Episcopi et Confessoris et Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-28cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-28",
+    "first_officium": "S. Hermetis Mart",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/08-29": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-29",
+    "first_officium": "Decollatione S. Joannis Baptistae",
+    "rank_history": [
+      [
+        "1570",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-29cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-29",
+    "first_officium": "S. Sabinae Mart",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/08-30": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "08-30",
+    "first_officium": "S. Rosae a Sancta Maria Limange Virgini",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-30o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "08-30",
+    "first_officium": "Ss. Felicis et Soc. Mart.",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/08-31": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "08-31",
+    "first_officium": "S. Raymundi Nonnati Confessori",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-01": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-01",
+    "first_officium": "S. Aegidii Abbatis",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-01cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-01",
+    "first_officium": "Ss. Duodecim Fratrum Mm",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/09-02": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "09-02",
+    "first_officium": "S. Stephani Hungariae Regis Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-03": {
+    "added_in_rubric": "1954",
+    "first_mmdd": "09-03",
+    "first_officium": "S. Pius X Papae Confessoris",
+    "rank_history": [
+      [
+        "1954",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-05": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "09-05",
+    "first_officium": "S. Laurentii Justiniani Episcopi et Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-08": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-08",
+    "first_officium": "Nativitate Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-08cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-08",
+    "first_officium": "S. Adriani Mart",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/09-09": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-09",
+    "first_officium": "S. Gorgonii mart",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/09-09bmv": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-09",
+    "first_officium": "Secunda die infra Octavam S. Nativitatis Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/09-10": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "09-10",
+    "first_officium": "S. Nicolai de Tolentino Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-10bmv": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-10",
+    "first_officium": "Tertia die infra Octavam",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/09-11": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-11",
+    "first_officium": "Ss. Proti et Hyacinthi Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/09-11bmv": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-11",
+    "first_officium": "Quarta die infra Octavam Nativitatis Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/09-12": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "09-12",
+    "first_officium": "S. Nominis Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1939",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-12bmv": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-12",
+    "first_officium": "Quinta die infra Octavam Nativitatis Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/09-13bmv": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-13",
+    "first_officium": "Sexta die infra Octavam Nativitatis Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1939",
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/09-14": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-14",
+    "first_officium": "In Exaltatione Sanctae crucis",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ],
+      [
+        "1939",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-14bmv": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-14",
+    "first_officium": "Sexta die infra Octavam Nativitatis Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "commemoratio"
+  },
+  "Sancti/09-15": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "09-15",
+    "first_officium": "Septem Dolorum Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1939",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-15cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-15",
+    "first_officium": "S. Nicomedis",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/09-15t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-15",
+    "first_officium": "In Octava Nativitatis Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/09-16": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-16",
+    "first_officium": "Ss. Cornelii et Cypriani Pontificium et Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-16cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-16",
+    "first_officium": "Ss. Euphemiae, Luciae et Geminiani Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/09-17": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "09-17",
+    "first_officium": "Impressionis Stigmatum S. Francisci",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-18": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "09-18",
+    "first_officium": "S. Joseph Cupertino",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-19": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "09-19",
+    "first_officium": "S. Januarii Episcopi et Sociorum Martyrum",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-20": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-20",
+    "first_officium": "S. Eustachii et Sociorum Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ],
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/09-20o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-20",
+    "first_officium": "Vigilae St Matthaei Apostoli",
+    "rank_history": [
+      [
+        "1570",
+        "1.5",
+        "Vigilia"
+      ],
+      [
+        "1888",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/09-21": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-21",
+    "first_officium": "S. Matthaei Apostoli et Evangelistae",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-22": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "09-22",
+    "first_officium": "S. Thomae de Villanove Episcopi et Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-22o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-22",
+    "first_officium": "Ss. Martyris Mauritii et Sociorum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-23": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-23",
+    "first_officium": "S. Linae Papae et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-23cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-23",
+    "first_officium": "S. Theclae Virgini et Martyri",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/09-24": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "09-24",
+    "first_officium": "Beatae Mariae Virginis de Mercede",
+    "rank_history": [
+      [
+        "1888",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-26": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-26",
+    "first_officium": "Ss. Cypriani et Justinae Martyri",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-27": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-27",
+    "first_officium": "S. Cosmae et Damiani Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-28": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "09-28",
+    "first_officium": "S. Wenceslai Ducis et Martyris",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-29": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-29",
+    "first_officium": "In dedicatione S. Michaelis Archangelis",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/09-30": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "09-30",
+    "first_officium": "S. Hieronomy Presbitery Confessorie et Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-01": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "10-01",
+    "first_officium": "S. Remigii Episcopi Confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-02": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "10-02",
+    "first_officium": "Ss. Angelorum Custodum",
+    "rank_history": [
+      [
+        "1888",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-03": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "10-03",
+    "first_officium": "S. Theresiae a Jesu Infante Virginis",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-04": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "10-04",
+    "first_officium": "S. Francisci Confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-05": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "10-05",
+    "first_officium": "S. Placidi et Sociorum Martyrum",
+    "rank_history": [
+      [
+        "1888",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-06": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "10-06",
+    "first_officium": "S. Brunonis Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-07": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "10-07",
+    "first_officium": "Sanctissimi Rosarii Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1939",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-07cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "10-07",
+    "first_officium": "Ss. Martyrum Sergii, Bacchi, Marcelli et Apuleji",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/10-07t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "10-07",
+    "first_officium": "S. Marci Papae Confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-08": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "10-08",
+    "first_officium": "S. Brigittae Viduae",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-09": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "10-09",
+    "first_officium": "S. Joannis Leonardi Confessoris",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-09t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "10-09",
+    "first_officium": "S. Dionysii Episcopi Rustici et Eleuthery Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ],
+      [
+        "1939",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-10": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "10-10",
+    "first_officium": "S. Francisci Borgiae Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-11": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "10-11",
+    "first_officium": "Maternitatis Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1939",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-13": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "10-13",
+    "first_officium": "S. Eduardi Regis Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-14": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "10-14",
+    "first_officium": "S. Callisti Papae et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-15": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "10-15",
+    "first_officium": "S. Teresiae Virginis",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-16": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "10-17",
+    "first_officium": "S. Hedwigis Viduae",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-17": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "10-17",
+    "first_officium": "S. Margaritae Mariae Alaquoque Virginis",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-18": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "10-18",
+    "first_officium": "S. Lucae Evangelistae",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-19": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "10-19",
+    "first_officium": "S. Petri de Alcantara Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-20": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "10-20",
+    "first_officium": "S. Joannis Cantii Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-21": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "10-21",
+    "first_officium": "S. Hilarionis Abbatis",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-21cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "10-21",
+    "first_officium": "Ss. Ursule et Soc Virg et Mart",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/10-23r": {
+    "added_in_rubric": "1960",
+    "first_mmdd": "10-23",
+    "first_officium": "S. Antonii Mariae Claret Episcopi Confessoris",
+    "rank_history": [
+      [
+        "1960",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-24": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "10-24",
+    "first_officium": "S. Raphaelis Archangeli",
+    "rank_history": [
+      [
+        "1939",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
   },
   "Sancti/10-25": {
-    "officium": "D.N.J.C. Regis",
-    "added": 1925,
-    "rank_history": [[1925, "Duplex I classis"]],
-    "suppressed": null,
-    "source": "Pius XI 1925 _Quas primas_"
+    "added_in_rubric": "1570",
+    "first_mmdd": "10-25",
+    "first_officium": "Ss. Chrysanthi et Dariae Martyres",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-26": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "10-26",
+    "first_officium": "S. Evaristi Papae et Martyri",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-27": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "10-27",
+    "first_officium": "In Vigilia Ss. Simonis et Judae Apostolorum",
+    "rank_history": [
+      [
+        "1570",
+        "1.5",
+        "Vigilia"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/10-28": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "10-28",
+    "first_officium": "Ss. Simonis et Judae Apostolorum",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/10-31": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "10-31",
+    "first_officium": "In Vigilia Omnium Sanctorum",
+    "rank_history": [
+      [
+        "1570",
+        "1.5",
+        "Vigilia"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/11-01": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-01",
+    "first_officium": "Omnium Sanctorum",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-02": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "11-02",
+    "first_officium": "Commemoratio Omnium Fidelium Defunctorum",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-02oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-02",
+    "first_officium": "Secunda die infra Octavam Omnium Sanctorum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/11-03oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-03",
+    "first_officium": "Tertia die infra Octavam Omnium Sanctorum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/11-04": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "11-04",
+    "first_officium": "S. Caroli Episcopi et Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-04cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-04",
+    "first_officium": "Ss. Mart Vitalis et Agricolae",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ],
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ],
+      [
+        "1955",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/11-04oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-04",
+    "first_officium": "Quarta die infra Octavam Omnium Sanctorum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/11-05oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-05",
+    "first_officium": "Quinta die infra Octavam Omnium Sanctorum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/11-06oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-06",
+    "first_officium": "Sexta die infra Octavam Omnium Sanctorum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/11-07oct": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-07",
+    "first_officium": "Septima die infra Octavam Omnium Sanctorum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/11-08": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-08",
+    "first_officium": "In Octava Omnium Sanctorum",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/11-08r": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-08",
+    "first_officium": "Ss. Quatuor Coronatorum Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/11-09": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-09",
+    "first_officium": "In dedicatione Basilicae Ss. Salvatoris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-09cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-09",
+    "first_officium": "S. Theodori",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/11-10": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "11-10",
+    "first_officium": "S.Andreae Avellini Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-10o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-10",
+    "first_officium": "Ss. Tryphonis et Sociorum Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-11": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-11",
+    "first_officium": "S. Martini Episcopi et Confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-11cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-11",
+    "first_officium": "\"S. Menna",
+    "rank_history": [
+      [
+        "1570",
+        "Mart\"",
+        ""
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/11-12": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-12",
+    "first_officium": "S. Martini Papae et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-13": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "11-13",
+    "first_officium": "S. Didaci Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-14": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "11-14",
+    "first_officium": "S. Josaphat Episcopi et Martyris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-15": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "11-15",
+    "first_officium": "S. Albertus Magnus Ep Conf et Eccl Doctoris",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-16": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "11-15",
+    "first_officium": "S. Gertrudis Virginis",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-17": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-17",
+    "first_officium": "S. Gregorii Thaumaturgi Episcopi et Confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-18": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "11-18",
+    "first_officium": "In Dedicatione Basilicarum Ss. Apostolorum Petri et Pauli",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/11-18o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-18",
+    "first_officium": "In Dedicatione Basilicarum Ss. Apostolorum Petri et Pauli",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1570",
+    "kind": "main"
+  },
+  "Sancti/11-18r": {
+    "added_in_rubric": "1960",
+    "first_mmdd": "11-18",
+    "first_officium": "In Dedicatione Basilicarum Ss. Apostolorum Petri et Pauli",
+    "rank_history": [
+      [
+        "1960",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-19": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "11-19",
+    "first_officium": "S. Elisabeth vidue",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-19o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-19",
+    "first_officium": "S. Pontianae Papae et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-20": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "11-20",
+    "first_officium": "S. Felicis Valois Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-21": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "11-21",
+    "first_officium": "In Presentatione of Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1888",
+        "4",
+        "Duplex majus"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-22": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-22",
+    "first_officium": "S. Ceciliae Virginis et Martyrum",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-23": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-23",
+    "first_officium": "S. Clement Papae et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-23cc": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-23",
+    "first_officium": "S. Felicitatis Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/11-24": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "11-24",
+    "first_officium": "S. Joannis de Cruce Confessoris (1926: et Ecclesiae Doctoris)",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-24o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-24",
+    "first_officium": "S. Chrysogoni Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-25": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-25",
+    "first_officium": "S. Catharinae Virginis et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-26": {
+    "added_in_rubric": "1906",
+    "first_mmdd": "11-26",
+    "first_officium": "S. Silvesteri Abbatis Confessoris",
+    "rank_history": [
+      [
+        "1906",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-26t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-26",
+    "first_officium": "S. Petri Alexandrini",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/11-29": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-29",
+    "first_officium": "Vigilia S. Andreas Apostol",
+    "rank_history": [
+      [
+        "1570",
+        "1.5",
+        "Vigilia"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/11-29r": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-29",
+    "first_officium": "S. Saturnini Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "commemoratio"
+  },
+  "Sancti/11-30": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "11-30",
+    "first_officium": "S. Andreae Apostoli",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-02": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-02",
+    "first_officium": "S. Bibianae Virginis et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-03": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "12-03",
+    "first_officium": "S. Francisci Xaverii Confessoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-04": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "12-04",
+    "first_officium": "S. Petri Chrysologi Episcopi Confessoris Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-04o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-04",
+    "first_officium": "S. Barbarae Virginis et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-05": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-05",
+    "first_officium": "S. Sabbae Abbatis",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-06": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-06",
+    "first_officium": "S. Nicolai Episcopi et confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-07": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-07",
+    "first_officium": "S. Ambrosii Episcopi Confesoris et Ecclesiae Doctoris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
   },
   "Sancti/12-08": {
-    "officium": "In Conceptione Immaculata BMV",
-    "added": 1476,
-    "rank_history": [[1476, "Festum"], [1708, "Duplex"], [1854, "Duplex I classis"]],
-    "suppressed": null,
-    "source": "Sixtus IV 1476 'Cum praeexcelsa'; Pius IX 1854 _Ineffabilis Deus_ defined dogma"
+    "added_in_rubric": "1888",
+    "first_mmdd": "12-08",
+    "first_officium": "Immaculata Conceptione Beatae Mariae Virginis",
+    "rank_history": [
+      [
+        "1888",
+        "6",
+        "Duplex I classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-08o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-08",
+    "first_officium": "Conception of Blessed Mary",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1570",
+    "kind": "main"
+  },
+  "Sancti/12-09bmv": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "12-09",
+    "first_officium": "De II die Infra Octavam Immaculatae Concept Beatae Mariae Virgini",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/12-10bmv": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "12-10",
+    "first_officium": "De III die Infra Octavam Immaculatae Concept Beatae Mariae Virgini",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/12-10o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-10",
+    "first_officium": "S. S. Melchiadis Papae et Mart",
+    "rank_history": [
+      [
+        "1570",
+        "1",
+        "Simplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-11": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-11",
+    "first_officium": "S. Damasi Papae et confessoris",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-11bmv": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "12-11",
+    "first_officium": "Die IV infra Octavam Immaculatae Conceptionis BMV",
+    "rank_history": [
+      [
+        "1888",
+        "1",
+        "Simplex"
+      ],
+      [
+        "1939",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "commemoratio"
+  },
+  "Sancti/12-12bmv": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "12-12",
+    "first_officium": "De V die Infra Octavam Immaculatae Concept Beatae Mariae Virgini",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/12-13": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "12-13",
+    "first_officium": "S. Luciae Virginis et Martyris",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/12-13bmv": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "12-13",
+    "first_officium": "Die V infra Octavam Immaculatae conceptionem BMV",
+    "rank_history": [
+      [
+        "1888",
+        "1",
+        "Simplex"
+      ],
+      [
+        "1939",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1954",
+    "kind": "commemoratio"
+  },
+  "Sancti/12-13r": {
+    "added_in_rubric": "1960",
+    "first_mmdd": "12-13",
+    "first_officium": "S. Luciae Virginis et Martyris",
+    "rank_history": [
+      [
+        "1960",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-13t": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-13",
+    "first_officium": "S. Luciae Virginis et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/12-14bmv": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "12-14",
+    "first_officium": "De VII die Infra Octavam Immaculatae Concept Beatae Mariae Virgini",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/12-15": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "12-15",
+    "first_officium": "In Octava Immaculatae Concept Beatae Mariae Virgini",
+    "rank_history": [
+      [
+        "1888",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/12-16": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "12-16",
+    "first_officium": "S. Eusebii Episcopi et Martyris",
+    "rank_history": [
+      [
+        "1888",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-20o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-20",
+    "first_officium": "Vigilia Sancti Thomae Apostoli (in missa tantum)",
+    "rank_history": [
+      [
+        "1570",
+        "1.5",
+        "Vigilia"
+      ]
+    ],
+    "suppressed_in_rubric": "1955",
+    "last_live_rubric": "1954",
+    "kind": "main"
+  },
+  "Sancti/12-21": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-21",
+    "first_officium": "S. Thomae Apostoli",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-24": {
+    "added_in_rubric": "1888",
+    "first_mmdd": "12-24",
+    "first_officium": "Vigilia Nativitatis Domini",
+    "rank_history": [
+      [
+        "1888",
+        "6",
+        "Duplex I classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-24o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-24",
+    "first_officium": "Vigilia Nativitatis Domini",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1570",
+    "kind": "main"
+  },
+  "Sancti/12-25": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-25",
+    "first_officium": "In Nativitate Domini",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-26": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-26",
+    "first_officium": "S. Stephani Protomartyris",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-27": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "12-27",
+    "first_officium": "S. Joanni Apostoli",
+    "rank_history": [
+      [
+        "1939",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-27o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-27",
+    "first_officium": "S. Joanni Apostoli",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/12-28": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "12-28",
+    "first_officium": "Ss. Innocetium",
+    "rank_history": [
+      [
+        "1939",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/12-28o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-28",
+    "first_officium": "Ss. Innocetium",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/12-28r": {
+    "added_in_rubric": "1960",
+    "first_mmdd": "12-28",
+    "first_officium": "Die quarta infra octavam Nativitatis",
+    "rank_history": [
+      [
+        "1960",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-29": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "12-29",
+    "first_officium": "S. Thomae Episcopi et Martyris",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/12-29o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-29",
+    "first_officium": "S. Thomae Episcopi et Martyris",
+    "rank_history": [
+      [
+        "1570",
+        "2",
+        "Semiduplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/12-29r": {
+    "added_in_rubric": "1960",
+    "first_mmdd": "12-29",
+    "first_officium": "Die quinta infra octavam Nativitatis",
+    "rank_history": [
+      [
+        "1960",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
+  },
+  "Sancti/12-31": {
+    "added_in_rubric": "1939",
+    "first_mmdd": "12-31",
+    "first_officium": "S. Silvestri Papae et Conf",
+    "rank_history": [
+      [
+        "1939",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1955",
+    "kind": "main"
+  },
+  "Sancti/12-31o": {
+    "added_in_rubric": "1570",
+    "first_mmdd": "12-31",
+    "first_officium": "S. Silvestri Papae et Conf",
+    "rank_history": [
+      [
+        "1570",
+        "3",
+        "Duplex"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1906",
+    "kind": "main"
+  },
+  "Sancti/12-31r": {
+    "added_in_rubric": "1960",
+    "first_mmdd": "12-31",
+    "first_officium": "Die septima infra octavam Nativitatis",
+    "rank_history": [
+      [
+        "1960",
+        "5",
+        "Duplex II classis"
+      ]
+    ],
+    "suppressed_in_rubric": null,
+    "last_live_rubric": "1960",
+    "kind": "main"
   }
 }

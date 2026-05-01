@@ -767,21 +767,23 @@ Continuing work since:
 | `b17cc4d` Tractus suppress + Quad-swap | 272/365 74.5% | 3167/4380 72.3% | 33 | 32 + 138 |
 | `6149c9c` Alleluia header + GradualeP | 275/365 75.3% | 3170/4380 72.4% | 30 | 32 + 138  |
 | `b56375e` parens-Alleluja + Name conds | 276/365 75.6% | 3177/4380 72.5% | 27 | 32 + 138 |
-| `4ad875b` GradualeF swap           | **282/365 77.3%** | **3183/4380 72.7%** | 22 | 32 + 138 |
+| `4ad875b` GradualeF swap           | 282/365 77.3% | 3183/4380 72.7% | 22 | 32 + 138 |
+| `b56375e` parens + Name conds      | 276/365 75.6% | 3177/4380 72.5% | 27 | 32 + 138 |
+| `4468782` Allelúja header NFD-fold | 309/365 84.7% | 3214/4380 73.4% | 23 | 32 + 138 |
+| `aefb450` post-Septuagesimam cond  | **318/365 87.1%** | **3226/4380 73.7%** | 11 | 32 + 138 |
 
-Per-section pass rates at the 77% milestone (compared to the 63.7%
-starting point):
+Per-section pass rates at the 87.1% milestone:
 
-| Section      | Start | At 77% | Δ      |
+| Section      | Start | At 87% | Δ      |
 |--------------|-------|--------|--------|
 | Introitus    | 86.8% | 98.6%  | +11.8  |
 | Oratio       | 86.6% | 97.3%  | +10.7  |
 | Lectio       | 82.2% | 96.2%  | +14.0  |
-| Graduale     | 68.2% | 84.9%  | +16.7  |
+| Graduale     | 68.2% | 93.4%  | +25.2  |
 | Tractus      | 72.3% | 99.5%  | +27.2  |
 | Sequentia    | 99.7% | 100.0% | +0.3   |
 | Evangelium   | 84.9% | 97.0%  | +12.1  |
-| Offertorium  | 84.7% | 95.1%  | +10.4  |
+| Offertorium  | 84.7% | 98.4%  | +13.7  |
 | Secreta      | 88.8% | 98.9%  | +10.1  |
 | Prefatio     | 100%  | 100%   | 0      |
 | Communio     | 88.2% | 99.2%  | +11.0  |

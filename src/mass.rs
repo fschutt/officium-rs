@@ -1361,23 +1361,29 @@ fn extract_prelude_subsections(body: &str) -> std::collections::HashMap<&'static
          current_body: &mut Vec<&str>,
          out: &mut std::collections::HashMap<&'static str, String>| {
             if let Some(name) = current {
-                if !out.contains_key(name) {
-                    // Filter out single-bang Latin rubric lines
-                    // (`! Deinde cantatur pro Graduali.`). Citation
-                    // headers `!Exod 15:27` (no space after !) stay.
-                    let kept: Vec<&str> = current_body
-                        .iter()
-                        .copied()
-                        .filter(|line| !is_inline_latin_rubric(line))
-                        .collect();
-                    let trimmed = kept
-                        .join("\n")
-                        .trim()
-                        .trim_matches(|c: char| c == '_' || c.is_whitespace())
-                        .to_string();
-                    if !trimmed.is_empty() {
-                        out.insert(name, trimmed);
-                    }
+                // Keep rubric lines (`! Deinde cantatur pro Graduali.`)
+                // since Perl renders them in red but inline within the
+                // same section block. Citation headers `!Exod 15:27`
+                // (no space after !) are also kept.
+                let trimmed = current_body
+                    .iter()
+                    .copied()
+                    .collect::<Vec<&str>>()
+                    .join("\n")
+                    .trim()
+                    .trim_matches(|c: char| c == '_' || c.is_whitespace())
+                    .to_string();
+                if !trimmed.is_empty() {
+                    // Holy Saturday + Pent Vigil have multiple
+                    // `!!Tractus` blocks (one per prophecy), and Perl
+                    // renders all of them concatenated. Append rather
+                    // than first-wins so the Mass body matches.
+                    out.entry(name)
+                        .and_modify(|existing| {
+                            existing.push('\n');
+                            existing.push_str(&trimmed);
+                        })
+                        .or_insert(trimmed);
                 }
             }
             current_body.clear();
@@ -1389,8 +1395,21 @@ fn extract_prelude_subsections(body: &str) -> std::collections::HashMap<&'static
             let header = rest.trim();
             // Match header against known section names.
             let matched = known_sections.iter().find(|&&s| s == header).copied();
-            flush(current, &mut current_body, &mut out);
-            current = matched;
+            if matched.is_some() {
+                // True sub-section break — flush and switch.
+                flush(current, &mut current_body, &mut out);
+                current = matched;
+                prev_was_separator = false;
+                continue;
+            }
+            // Not a known section header — likely a `!!Bible 1:1`
+            // citation marker (Quad6-6 [Benedictio Fontis] uses
+            // `!!Ps 41:2-4.` as the Tractus citation header). Keep
+            // the line in the current body so it renders as part of
+            // the section.
+            if current.is_some() {
+                current_body.push(line);
+            }
             prev_was_separator = false;
             continue;
         }
@@ -1442,7 +1461,7 @@ fn mass_propers_from_prelude_only(
         oratio: mk("Oratio"),
         lectio: mk("Lectio"),
         graduale: mk("Graduale"),
-        tractus: None, // Tractus column suppressed (folded into Graduale)
+        tractus: None, // Triduum file Tractus blocks live in @-referenced sub-sections; Perl's selection isn't a simple first-wins
         sequentia: mk("Sequentia"),
         evangelium: mk("Evangelium"),
         offertorium: mk("Offertorium"),

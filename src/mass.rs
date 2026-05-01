@@ -43,6 +43,20 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
     let resolved = resolve_multi_mass(office, corpus);
 
     let winner_file = corpus.mass_file(&resolved.winner);
+    // Mirror Perl `ordo.pl` ll. 35-39: when [Rule] contains
+    // `Full text`, the renderer wipes the Mass-propers script and
+    // replaces it with the [Prelude] body. Days affected (1570):
+    // Quad6-5 (Good Friday), Quad6-6 (Holy Saturday). Both have
+    // their entire liturgy in [Prelude] — no Mass propers in the
+    // normal slots. Emit a fully blank `MassPropers` so the
+    // comparator's perl-blank cells match.
+    let winner_rule = winner_file
+        .and_then(|f| f.sections.get("Rule"))
+        .map(String::as_str)
+        .unwrap_or("");
+    if winner_rule.contains("Full text") {
+        return MassPropers::default();
+    }
     let in_paschal_season_for_alleluja = matches!(
         office.season,
         crate::divinum_officium::core::Season::Easter
@@ -57,6 +71,17 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             | crate::divinum_officium::core::Season::Lent
             | crate::divinum_officium::core::Season::Passiontide
     );
+    // Defunctorum mode — winner [Rule] mentions "defunct" or "C9"
+    // (votive of the Dead) or "Add Defunctorum" (Octave-of-All-Saints
+    // commemoration day). Swaps `&Gloria` to Requiem antiphon.
+    let in_defunctorum_mode = winner_rule_lc(winner_file)
+        .map(|r| r.contains("defunct") || r.contains("c9"))
+        .unwrap_or(false);
+    let do_expand_macros: &dyn Fn(&str) -> String = if in_defunctorum_mode {
+        &expand_macros_defunctorum
+    } else {
+        &expand_macros
+    };
     // [GradualeF] is handled INSIDE `proper_block` — only the
     // feria-Sunday-fallback branch swaps to GradualeF (mirroring Perl
     // `getitem` ll. 859-866 where the substitution lives in the third
@@ -100,7 +125,7 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         let latin = apply_post_septuagesima_conditional(
             &block.latin, in_post_septuagesima,
         );
-        let latin = spell_var_pre1960(&expand_macros(&latin));
+        let latin = spell_var_pre1960(&do_expand_macros(&latin));
         let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
         Some(ProperBlock {
             latin,
@@ -130,7 +155,7 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             .map(|block| substitute_name_with_corpus(block, "Graduale", winner_file, Some(corpus)))
             .map(|block| {
                 let latin = apply_post_septuagesima_conditional(&block.latin, in_post_septuagesima);
-                let latin = spell_var_pre1960(&expand_macros(&latin));
+                let latin = spell_var_pre1960(&do_expand_macros(&latin));
                 let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
                 ProperBlock { latin, ..block }
             })
@@ -146,7 +171,7 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             .map(|block| substitute_name_with_corpus(block, "Graduale", winner_file, Some(corpus)))
             .map(|block| {
                 let latin = apply_post_septuagesima_conditional(&block.latin, in_post_septuagesima);
-                let latin = spell_var_pre1960(&expand_macros(&latin));
+                let latin = spell_var_pre1960(&do_expand_macros(&latin));
                 let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
                 ProperBlock { latin, ..block }
             })
@@ -1104,6 +1129,14 @@ fn winner_has_oratio_dominica(winner_file: &MassFile) -> bool {
         .unwrap_or(false)
 }
 
+/// Return the lowercased [Rule] body of the winner file, if present.
+/// Used by the Defunctorum-mode + LectioL detectors.
+fn winner_rule_lc(winner_file: Option<&MassFile>) -> Option<String> {
+    winner_file
+        .and_then(|f| f.sections.get("Rule"))
+        .map(|s| s.to_lowercase())
+}
+
 /// True when the winner file's [Rule] contains the `LectioL<n>`
 /// directive that triggers `LectionesTemporum` in Perl. Drives the
 /// "first Lectio = LectioL1" redirect for Embertide-style days
@@ -1826,6 +1859,25 @@ const MAX_MACRO_HOPS: u8 = 4;
 /// want to inject a synthetic macro table.
 pub fn expand_macros(text: &str) -> String {
     expand_macros_with_lookup(text, &|name| prayers::lookup_ci(name).map(str::to_string), 0)
+}
+
+/// Variant of `expand_macros` that swaps `&Gloria` (and `$Gloria`) for
+/// the Requiem antiphon. Mirrors Perl `propers.pl::Gloria` ll. 833-836:
+/// when the winner's [Rule] contains `defunct` or `C9`, `&Gloria`
+/// emits "Réquiem ætérnam dóna eis, Dómine, et lux perpétua lúceat
+/// eis." instead of "Glória Patri, …". Drives the All Souls Octave
+/// (Sancti/11-02oct → "Add Defunctorum") Introit/Communion repeat.
+pub fn expand_macros_defunctorum(text: &str) -> String {
+    expand_macros_with_lookup(
+        text,
+        &|name| {
+            if name.eq_ignore_ascii_case("Gloria") {
+                return prayers::lookup_ci("Requiem").map(str::to_string);
+            }
+            prayers::lookup_ci(name).map(str::to_string)
+        },
+        0,
+    )
 }
 
 /// Internal entry point parameterised by lookup function. Lets unit

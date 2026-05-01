@@ -126,7 +126,7 @@ pub struct OfficeOutput {
 
 // ─── Mass propers ────────────────────────────────────────────────────
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct MassPropers {
     pub introitus:    Option<ProperBlock>,
     pub oratio:       Option<ProperBlock>,

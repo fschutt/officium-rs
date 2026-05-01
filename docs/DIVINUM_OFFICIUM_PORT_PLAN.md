@@ -1038,20 +1038,44 @@ Adding a new reform layer is a *config-only* change: drop the
 the `Layer` enum. No saint or year breakpoint is hard-coded in
 the business logic.
 
-### Phase 7 todo: rubric-rule wiring
+### Phase 7 in flight: Tridentine 1910 wired to 89.3 %
 
-Kalendar layers (saint tables) are data; **rubric rules**
-(precedence, vigil suppression, octave handling) are still 1570-
-specific Rust. Phase 7 wraps up by:
+Initial 1910 wiring landed:
 
-  * Threading `layer: Layer` (or `rubric: Rubric`) through the
-    occurrence/precedence helpers so a single function body can
-    serve every layer.
-  * Layer-specific override hooks for the few real rule deltas
-    (Apostolic-vigil precedence, octave handling, etc.).
-  * Wiring `compute_occurrence` for `Tridentine1910`,
-    `DivinoAfflatu1911`, `Reduced1955`, `Rubrics1960` so the
-    year-sweep harness can validate each rubric against Perl.
+  * `compute_occurrence` and `compute_office` no longer panic on
+    non-1570 — every Roman rubric now runs through the same code
+    path with the right kalendar layer (`Rubric::kalendar_layer()`).
+  * `Layer` is threaded through `transferred_sancti_for_1570` and
+    `was_sancti_preempted_1570`; both now consult
+    `kalendarium_1570::lookup_for_layer(layer, m, d)`.
+  * Era-aware rank/commune lookup: layers other than `Pius1570`
+    prefer `default` over `(sed rubrica 1570)` overrides.
+  * `OfficeOutput` carries the active rubric forward so the Mass-
+    side rendering can read it.
+  * `eval_simple_conditional` (in `mass.rs`) is now layer-aware —
+    a `(sed rubrica 1570)` predicate no longer fires under
+    Tridentine 1910 / DivinoAfflatu / Rubrics1960, so the default
+    name / body form wins. Implementation uses a `thread_local!`
+    `ACTIVE_RUBRIC` set at the top of `mass_propers`.
+
+Sweep impact (2026):
+
+  | Stage                                | Tridentine 1910 |
+  |--------------------------------------|-----------------|
+  | Panic guard removed                  | 64.7 %          |
+  | + layer-threaded kalendar lookup     | 87.9 %          |
+  | + era-aware rank/commune             | 88.8 %          |
+  | + rubric-aware (sed rubrica X)       | 89.3 %          |
+
+Remaining 11 % gap is in body-side handling that's still
+1570-shape: `apply_body_conditionals_1570`'s name still says
+1570 (it correctly delegates to the rubric-aware evaluator now,
+so 1910 fails come from rule-deltas the rubric-aware evaluator
+doesn't yet model — name-substitution edge cases, post-1570
+rank-promotion sub-rules, etc.).
+
+Tridentine 1570 stays at 99.70 % across the 11-year sweep — the
+era-aware logic adds no regressions to the load-bearing rubric.
 
 ### Canonisation-date table — derive from upstream Tabulae
 

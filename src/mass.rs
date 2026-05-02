@@ -1108,10 +1108,23 @@ fn eval_alt_1570(alt: &str) -> bool {
         let active = ACTIVE_RUBRIC.with(|r| r.get());
         let truth = match subject {
             "rubrica" | "rubricis" => rubrica_predicate_matches(active, &full_pred),
-            "communi" => match full_pred.as_str() {
-                "summorum pontificum" => false,
-                _ => false,
-            },
+            "communi" => {
+                // Mirror Perl `summorum pontificum` predicate
+                // `/194[2-9]|195[45]|196/i` and `tridentina`
+                // (rare on the `communi` subject).
+                let pred = full_pred.as_str();
+                if pred == "summorum pontificum" {
+                    let v = active.as_perl_version().to_ascii_lowercase();
+                    [
+                        "1942", "1943", "1944", "1945", "1946", "1947", "1948", "1949",
+                        "1954", "1955", "196",
+                    ]
+                    .iter()
+                    .any(|n| v.contains(*n))
+                } else {
+                    rubrica_predicate_matches(active, pred)
+                }
+            }
             _ => false,
         };
         let truth = if negate { !truth } else { truth };

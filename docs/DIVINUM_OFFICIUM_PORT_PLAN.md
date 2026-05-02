@@ -1038,6 +1038,27 @@ Adding a new reform layer is a *config-only* change: drop the
 the `Layer` enum. No saint or year breakpoint is hard-coded in
 the business logic.
 
+### Phase 7 milestone: all five Roman rubrics now run
+
+2026 single-year sweep across every Roman rubric, after the
+layer-aware kalendar + transfer + spelling pipeline:
+
+| Rubric                  | 2026 day-pass rate |
+|-------------------------|--------------------|
+| Tridentine 1570         | 365/365 (100.0 %)  |
+| Tridentine 1910         | 345/365 ( 94.5 %)  |
+| Divino Afflatu          | 197/365 ( 54.0 %)  |
+| Reduced 1955            | 272/365 ( 74.5 %)  |
+| Rubrics 1960 - 1960     | 227/365 ( 62.2 %)  |
+
+The lower numbers on DA / Reduced / 1960 reflect bigger rubric-rule
+deltas the 1570-shape precedence logic doesn't yet model:
+Octave suppression (Pius XII 1955), Vigil demotion (1960),
+post-1911 Sunday feasts (Holy Family, Christ the King), and
+Pius X-era saint elevations / kalendar additions.
+
+Aggregate across all five rubrics for 2026: 1406/1825 = 77.0 %.
+
 ### Phase 7 in flight: Tridentine 1910 11-year aggregate at 94.15 %
 
 11-year sweep for Tridentine 1910 (with rubric-aware transfer

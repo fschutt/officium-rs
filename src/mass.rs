@@ -710,15 +710,19 @@ pub fn spell_classical_post1910(text: &str) -> String {
 pub fn apply_spelling_for_active_rubric(text: &str) -> String {
     let active = ACTIVE_RUBRIC.with(|r| r.get());
     use crate::divinum_officium::core::Rubric;
+    // Perl `spell_var` is a hard if/else: the /196/ branch and the
+    // pre-1960 branch are mutually exclusive. Under R60 the only
+    // substitution is `tr/Jj/Ii/` (with the H-Jesu opt-out and
+    // er-eumdem→er-eundem); Génetrix→Génitrix is intentionally NOT
+    // applied. Earlier we composed the two passes for R60 which
+    // overshot — Perl R60 keeps "Génetrix" verbatim.
     match active {
-        // Pre-1960 rubrics keep the older j/Génetrix spelling.
         Rubric::Tridentine1570
         | Rubric::Tridentine1910
         | Rubric::DivinoAfflatu1911
         | Rubric::Reduced1955
         | Rubric::Monastic => spell_var_pre1960(text),
-        // Only Rubrics 1960 swaps j→i (matches Perl `$version =~ /196/`).
-        Rubric::Rubrics1960 => spell_classical_post1910(&spell_var_pre1960(text)),
+        Rubric::Rubrics1960 => spell_classical_post1910(text),
     }
 }
 

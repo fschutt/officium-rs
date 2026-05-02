@@ -1764,14 +1764,24 @@ fn extract_prelude_subsections(body: &str) -> std::collections::HashMap<&'static
 fn mass_propers_from_prelude_only(
     prelude_overrides: &std::collections::HashMap<&'static str, String>,
 ) -> MassPropers {
-    let mk = |sect: &'static str| -> Option<ProperBlock> {
-        prelude_overrides.get(sect).map(|body| ProperBlock {
-            latin: body.clone(),
-            source: FileKey {
-                category: FileCategory::Other(String::new()),
-                stem: String::new(),
-            },
-            via_commune: false,
+    let mk = |_sect: &'static str| -> Option<ProperBlock> {
+        prelude_overrides.get(_sect).map(|body| {
+            // Apply spelling + macro pipeline so the Lord's Prayer
+            // and other Latin phrases match Perl's rendered form
+            // ("panem nostrum cotidianum" → "quotidianum" under
+            // pre-1960 spelling). Skips body conditionals and
+            // post-Septuagesima alleluja stripping — Triduum
+            // [Prelude] bodies are pre-stripped by upstream.
+            let latin = expand_macros(body);
+            let latin = apply_spelling_for_active_rubric(&latin);
+            ProperBlock {
+                latin,
+                source: FileKey {
+                    category: FileCategory::Other(String::new()),
+                    stem: String::new(),
+                },
+                via_commune: false,
+            }
         })
     };
     MassPropers {

@@ -89,25 +89,36 @@ EXCLUDED_ANNOTATIONS_1570 = (
 )
 
 
-def _is_post_da_rubric(label: str) -> bool:
-    """True when the conditional label matches Reduced 1955 or
-    Rubrics 1960 (the post-DA Roman regime). Specifically excludes
-    `1963` (Monastic 1963), `1939`/`1954` (DA dates — those use
-    different, non-1955+ semantics), and the cisterciensis/altovadensis
-    variants. Match is loose-prefix on the conditional body text.
+def _post_da_buckets(label: str) -> tuple[bool, bool]:
+    """Return (matches_R55, matches_R60) for a `(rubrica ...)` body.
+
+    The two regimes overlap but aren't identical:
+      `(rubrica 1955)`                — R55 only.
+      `(rubrica 196)`                 — R60 only (Perl's `$version`
+                                         regex matches `Rubrics 1960`).
+      `(rubrica 196 aut rubrica 1955)` — both R55 and R60.
+
+    Specifically excludes `1963` (Monastic 1963), `1939`/`1954` (DA
+    dates), and the cisterciensis/altovadensis variants — none of those
+    is the post-DA Roman regime.
     """
     s = label.lower()
-    # Hard exclusions
     if "1963" in s or "altovadensis" in s or "cisterciensis" in s:
-        return False
+        return (False, False)
     if "1939" in s or "1954" in s:
-        return False
-    # Inclusions
-    if "1955" in s:
-        return True
-    if "196" in s:
-        return True
-    return False
+        return (False, False)
+    is_55 = "1955" in s
+    # `196` means R60. Avoid matching `1963`/`1965` etc — already
+    # excluded above. `1960` substring also passes here.
+    is_60 = "196" in s
+    return (is_55, is_60)
+
+
+def _is_post_da_rubric(label: str) -> bool:
+    """Compatibility shim — true if either bucket matches. Used for
+    deciding whether to emit a second-header [Rank] body at all."""
+    a, b = _post_da_buckets(label)
+    return a or b
 
 
 def is_excluded_annotation(annotation: str) -> bool:
@@ -247,6 +258,7 @@ def parse_mass_file(text: str) -> dict:
         default_parts = None
         variant_1570_parts = None
         variant_1955_parts = None
+        variant_1960_parts = None
         current_label = None
         for raw in rank_lines:
             line = raw.strip()
@@ -269,16 +281,17 @@ def parse_mass_file(text: str) -> dict:
                 # Both "(sed rubrica 1570)" and "(sed rubrica
                 # tridentina)" describe the Tridentine 1570 baseline.
                 variant_1570_parts = parts
-            elif (
-                current_label
-                and _is_post_da_rubric(current_label)
-                and variant_1955_parts is None
-            ):
-                # `(rubrica 196 aut rubrica 1955)` covers both R55 and
-                # R60; bare `(rubrica 196)` is 1960-only — same bucket.
-                # `(rubrica 1963)` is Monastic 1963 — explicitly
-                # excluded; it's not a Roman 1955/60 variant.
-                variant_1955_parts = parts
+            elif current_label:
+                # Post-DA Roman regimes — bucket per (matches_R55,
+                # matches_R60). Bare `(rubrica 1955)` populates only
+                # `*_1955`; bare `(rubrica 196)` only `*_1960`;
+                # disjunctive `(rubrica 196 aut rubrica 1955)` populates
+                # both.
+                m55, m60 = _post_da_buckets(current_label)
+                if m55 and variant_1955_parts is None:
+                    variant_1955_parts = parts
+                if m60 and variant_1960_parts is None:
+                    variant_1960_parts = parts
             current_label = None
         if default_parts:
             if not out.get("officium") and default_parts[0]:
@@ -320,6 +333,21 @@ def parse_mass_file(text: str) -> dict:
                 out["rank_num_1955"] = None
             if len(variant_1955_parts) > 3 and variant_1955_parts[3]:
                 out["commune_1955"] = variant_1955_parts[3]
+        if variant_1960_parts:
+            if len(variant_1960_parts) > 0 and variant_1960_parts[0]:
+                out["officium_1960"] = variant_1960_parts[0]
+            if len(variant_1960_parts) > 1 and variant_1960_parts[1]:
+                out["rank_1960"] = variant_1960_parts[1]
+            try:
+                out["rank_num_1960"] = (
+                    float(variant_1960_parts[2])
+                    if len(variant_1960_parts) > 2 and variant_1960_parts[2]
+                    else None
+                )
+            except ValueError:
+                out["rank_num_1960"] = None
+            if len(variant_1960_parts) > 3 and variant_1960_parts[3]:
+                out["commune_1960"] = variant_1960_parts[3]
     # Keep all remaining sections as joined strings so the renderer can
     # treat `\n` as a soft separator (matching the upstream convention).
     out["sections"] = {

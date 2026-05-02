@@ -1328,13 +1328,18 @@ fn resolve_sancti_for_tridentine_1570(
         // being lost and the saint kept its DA-era 5.6 Semiduplex.
         let prefer_1570_overrides =
             matches!(layer, crate::divinum_officium::kalendaria_layers::Layer::Pius1570);
-        let prefer_1955_overrides = matches!(
-            rubric,
-            Rubric::Reduced1955 | Rubric::Rubrics1960
-        );
+        let prefer_r55 = matches!(rubric, Rubric::Reduced1955);
+        let prefer_r60 = matches!(rubric, Rubric::Rubrics1960);
         let rank_num = mass
             .and_then(|m| {
-                if prefer_1955_overrides {
+                if prefer_r60 {
+                    // 1960-only first, then 1955+ shared, then default.
+                    m.rank_num_1960.or(m.rank_num_1955).or(m.rank_num).or(m.rank_num_1570)
+                } else if prefer_r55 {
+                    // R55 must NOT pick up an `(rubrica 196)`-only
+                    // variant — Patrick (03-17) declares Duplex 2 only
+                    // for /196/, so under R55 the default Duplex 3
+                    // applies.
                     m.rank_num_1955.or(m.rank_num).or(m.rank_num_1570)
                 } else if prefer_1570_overrides {
                     m.rank_num_1570.or(m.rank_num)
@@ -1345,7 +1350,13 @@ fn resolve_sancti_for_tridentine_1570(
             .unwrap_or(override_.main.rank_num);
         let commune = mass
             .and_then(|m| {
-                if prefer_1955_overrides {
+                if prefer_r60 {
+                    m.commune_1960
+                        .clone()
+                        .or_else(|| m.commune_1955.clone())
+                        .or_else(|| m.commune.clone())
+                        .or_else(|| m.commune_1570.clone())
+                } else if prefer_r55 {
                     m.commune_1955
                         .clone()
                         .or_else(|| m.commune.clone())
@@ -1357,10 +1368,11 @@ fn resolve_sancti_for_tridentine_1570(
                 }
             })
             .unwrap_or_default();
-        // Officium / rank_class follow the same dispatch.
         let name = mass
             .and_then(|m| {
-                if prefer_1955_overrides {
+                if prefer_r60 {
+                    m.officium_1960.clone().or_else(|| m.officium_1955.clone())
+                } else if prefer_r55 {
                     m.officium_1955.clone()
                 } else {
                     None
@@ -1369,7 +1381,9 @@ fn resolve_sancti_for_tridentine_1570(
             .unwrap_or_else(|| override_.main.name.clone());
         let rank_class = mass
             .and_then(|m| {
-                if prefer_1955_overrides {
+                if prefer_r60 {
+                    m.rank_1960.clone().or_else(|| m.rank_1955.clone()).or_else(|| m.rank.clone())
+                } else if prefer_r55 {
                     m.rank_1955.clone().or_else(|| m.rank.clone())
                 } else {
                     m.rank.clone()

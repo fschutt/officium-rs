@@ -57,6 +57,22 @@ pub struct MassFile {
     /// Reduced-1955 / Rubrics-1960 variant of `commune`.
     #[serde(default)]
     pub commune_1955: Option<String>,
+    /// Rubrics-1960-only variant of `officium` from a `[Rank]
+    /// (rubrica 196)` second header. Patrick (Sancti/03-17) etc. use
+    /// this — without splitting from the 1955 bucket the same body
+    /// would also fire under R55, where Perl actually keeps the
+    /// default rank.
+    #[serde(default)]
+    pub officium_1960: Option<String>,
+    /// Rubrics-1960-only variant of `rank`.
+    #[serde(default)]
+    pub rank_1960: Option<String>,
+    /// Rubrics-1960-only variant of `rank_num`.
+    #[serde(default)]
+    pub rank_num_1960: Option<f32>,
+    /// Rubrics-1960-only variant of `commune`.
+    #[serde(default)]
+    pub commune_1960: Option<String>,
     /// Section name -> raw body. Sections are kept in upstream
     /// order via `serde`'s default behavior on `BTreeMap` is
     /// alphabetic; we lose stable order here, so the renderer

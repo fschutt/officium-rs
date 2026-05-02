@@ -637,3 +637,44 @@ A port has to:
 
 Affects R60 Ascension Mass (Pasc5-4 / Pasc6-4r) plus a handful
 of other "rubric-variant body" days.
+
+## 32. Multi-line `@:Section` body — comparator-hack interaction
+
+Sancti/01-25 / 02-22 / 06-30 all share a multi-prayer [Oratio]
+body shape:
+
+```
+@:Oratio Pauli   (or Petri)
+(deinde dicuntur semper)
+_
+$Oremus
+(sed rubrica 196 omittuntur)
+@:Oratio Petri   (or Pauli)
+```
+
+Pre-Step-1, our Rust `read_section`'s `@:Section` branch
+returned only the first-line body and dropped the rest. The
+regression comparator's prefix-match (`p.contains(r) ||
+r.contains(p)` at `regression.rs:908`) accepted this — the first
+prayer body is a prefix of Perl's "first prayer + Lent feria
+commemoration" output, so days passed.
+
+When we expanded multi-line @-refs (audit Step 1), the
+comparator stopped matching because Rust now appends `_ +
+$Oremus + <second prayer>` AFTER the first prayer, while Perl
+appends Lent feria / octave / other commemoration text. The two
+outputs diverge.
+
+To actually close these cells we need both halves:
+- Multi-line @:Section / @Path:Section expansion in
+  `expand_inline_at_lines` (Step 1 of audit).
+- `MassPropers.commemorations` populated from
+  `office.commemoratio` — currently hardcoded `vec![]` at
+  `mass.rs:368`. Requires recursive `mass_propers` on the comm
+  key + rubric-aware gating per `propers.pl:257-261`.
+
+Step 1 alone is net-negative because it exposes mismatches the
+prefix-match comparator was hiding. The prefix-match is itself
+a hack; the proper fix is the full rendering pipeline.
+
+Tracked in `RUST_PERL_UNIFICATION_AUDIT.md` Steps 1+2.

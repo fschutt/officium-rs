@@ -698,22 +698,27 @@ pub fn spell_classical_post1910(text: &str) -> String {
 /// Layer-aware spelling pass: dispatches between `spell_var_pre1960`
 /// (older Tridentine spelling) and `spell_classical_post1910`
 /// (classical post-1910 spelling) based on the active rubric.
+///
+/// Mirrors upstream `horascommon.pl::spell_var` ll. 2143-2168:
+///   `if ($version =~ /196/) { tr/Jj/Ii/ ... } else { ... pre-1960 ... }`
+/// Only **Rubrics 1960** matches that regex — Divino Afflatu, Reduced
+/// 1955, and the two Tridentine forms all keep the `j`-form. An earlier
+/// reading of this conflated DA with the 1960 swap (because the
+/// regression harness was sending bare "Divino Afflatu", which Perl
+/// silently downgraded to "Rubrics 1960 - 1960" — see year_sweep.rs
+/// `KNOWN_RUBRICS`).
 pub fn apply_spelling_for_active_rubric(text: &str) -> String {
     let active = ACTIVE_RUBRIC.with(|r| r.get());
     use crate::divinum_officium::core::Rubric;
     match active {
-        // Pre-1910 rubrics + Reduced-1955 keep older j/Génetrix
-        // spelling. (Empirically: Perl's `spell_var` j→i path fires
-        // only when `$version =~ /196/`; "Reduced - 1955" doesn't
-        // match that regex so j stays.)
+        // Pre-1960 rubrics keep the older j/Génetrix spelling.
         Rubric::Tridentine1570
         | Rubric::Tridentine1910
+        | Rubric::DivinoAfflatu1911
         | Rubric::Reduced1955
         | Rubric::Monastic => spell_var_pre1960(text),
-        // Divino Afflatu and Rubrics 1960 use classical `i` for `j`.
-        Rubric::DivinoAfflatu1911 | Rubric::Rubrics1960 => {
-            spell_classical_post1910(&spell_var_pre1960(text))
-        }
+        // Only Rubrics 1960 swaps j→i (matches Perl `$version =~ /196/`).
+        Rubric::Rubrics1960 => spell_classical_post1910(&spell_var_pre1960(text)),
     }
 }
 
@@ -3446,20 +3451,22 @@ mod tests {
     #[test]
     fn apply_spelling_for_active_rubric_dispatches_per_rubric() {
         use crate::divinum_officium::core::Rubric;
-        // Tridentine 1570 keeps j.
-        ACTIVE_RUBRIC.with(|r| r.set(Rubric::Tridentine1570));
-        assert_eq!(apply_spelling_for_active_rubric("cujus ejus"), "cujus ejus");
-        // Tridentine 1910 keeps j.
-        ACTIVE_RUBRIC.with(|r| r.set(Rubric::Tridentine1910));
-        assert_eq!(apply_spelling_for_active_rubric("cujus ejus"), "cujus ejus");
-        // Reduced 1955 keeps j (its $version doesn't match /196/ in
-        // upstream's spell_var).
-        ACTIVE_RUBRIC.with(|r| r.set(Rubric::Reduced1955));
-        assert_eq!(apply_spelling_for_active_rubric("cujus Jesum"), "cujus Jesum");
-        // Divino Afflatu swaps to i.
-        ACTIVE_RUBRIC.with(|r| r.set(Rubric::DivinoAfflatu1911));
-        assert_eq!(apply_spelling_for_active_rubric("cujus Jesum"), "cuius Iesum");
-        // Rubrics 1960 swaps to i.
+        // Only Rubrics 1960 swaps j→i — that's the only rubric whose
+        // upstream `$version` matches `spell_var`'s `/196/` regex.
+        for r in [
+            Rubric::Tridentine1570,
+            Rubric::Tridentine1910,
+            Rubric::DivinoAfflatu1911,
+            Rubric::Reduced1955,
+            Rubric::Monastic,
+        ] {
+            ACTIVE_RUBRIC.with(|cell| cell.set(r));
+            assert_eq!(
+                apply_spelling_for_active_rubric("cujus Jesum"),
+                "cujus Jesum",
+                "rubric {r:?} should keep `j`-form",
+            );
+        }
         ACTIVE_RUBRIC.with(|r| r.set(Rubric::Rubrics1960));
         assert_eq!(apply_spelling_for_active_rubric("cujus Jesum"), "cuius Iesum");
         // Reset to default to avoid bleed-through into other tests.

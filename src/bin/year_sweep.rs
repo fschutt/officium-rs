@@ -46,13 +46,21 @@ use md2json2::divinum_officium::regression::{
     PROPER_SECTIONS,
 };
 
+// Perl missa.pl `check_version` accepts only the names declared in
+// `web/www/missa/missa.dialog [versions]`. Bare "Divino Afflatu" is
+// ambiguous (matches both -1939 and -1954) and falls back to
+// "Rubrics 1960 - 1960" with an `Unknown version` error — silently
+// poisoning every DA regression run. The DA-1939 form is the one our
+// `Rubric::DivinoAfflatu1911` resolves to (kalendar 1939, transfer DA).
+//
+// Monastic missa has no dedicated rubric — Perl routes it to Tridentine
+// 1570 — so we omit it here; running it would just duplicate that sweep.
 const KNOWN_RUBRICS: &[(&str, Rubric)] = &[
-    ("Tridentine - 1570",   Rubric::Tridentine1570),
-    ("Tridentine - 1910",   Rubric::Tridentine1910),
-    ("Divino Afflatu",      Rubric::DivinoAfflatu1911),
-    ("Reduced - 1955",      Rubric::Reduced1955),
-    ("Rubrics 1960 - 1960", Rubric::Rubrics1960),
-    ("pre-Trident Monastic", Rubric::Monastic),
+    ("Tridentine - 1570",     Rubric::Tridentine1570),
+    ("Tridentine - 1910",     Rubric::Tridentine1910),
+    ("Divino Afflatu - 1939", Rubric::DivinoAfflatu1911),
+    ("Reduced - 1955",        Rubric::Reduced1955),
+    ("Rubrics 1960 - 1960",   Rubric::Rubrics1960),
 ];
 
 fn usage() -> ! {

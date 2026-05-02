@@ -80,6 +80,22 @@ impl Rubric {
         Rubric::Rubrics1960,
     ];
 
+    /// The rubric tag used in upstream `Tabulae/Transfer/<letter>.txt`
+    /// and `Tabulae/Tempora/Generale.txt` for filtering rubric-
+    /// specific entries. Each Rubric has one canonical tag matching
+    /// the upstream `;;<rubrics>` column.
+    pub const fn transfer_rubric_tag(self) -> &'static str {
+        match self {
+            Rubric::Tridentine1570    => "1570",
+            // Tridentine 1910 reuses 1888-era transfer rules.
+            Rubric::Tridentine1910    => "1888",
+            Rubric::DivinoAfflatu1911 => "DA",
+            Rubric::Reduced1955       => "1955",
+            Rubric::Rubrics1960       => "1960",
+            Rubric::Monastic          => "M1617",
+        }
+    }
+
     /// Map this rubric to its kalendar layer
     /// (`kalendaria_layers::Layer`). Multiple rubrics may share a
     /// layer when the difference between them is rubric-rule changes

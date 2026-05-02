@@ -112,7 +112,8 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     // that Epi4 Sunday never lands on a Sunday). Bare-stem targets
     // (e.g. `11-28=11-29`) are handled later in the sancti
     // resolution path.
-    let tempora_stem = apply_transfer_temporal_1570(&tempora_stem, y, m, d);
+    let tempora_stem =
+        apply_transfer_temporal_1570(&tempora_stem, y, m, d, input.rubric.transfer_rubric_tag());
     let tempora_key = FileKey {
         category: FileCategory::Tempora,
         stem: tempora_stem,
@@ -133,7 +134,7 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
 
     // ── Sanctoral side ───────────────────────────────────────────────
     let (sancti_key, sancti_entry_holder) =
-        resolve_sancti_for_tridentine_1570(y, m, d, layer, corpus);
+        resolve_sancti_for_tridentine_1570(y, m, d, layer, input.rubric, corpus);
     let sancti_entry: Option<&SanctiEntry> = sancti_entry_holder.as_ref();
     let sanctoral_rank = sancti_entry.and_then(|e| e.rank_num).unwrap_or(0.0);
 
@@ -593,9 +594,10 @@ fn apply_transfer_temporal_1570(
     year: i32,
     month: u32,
     day: u32,
+    rubric_tag: &str,
 ) -> String {
     let entries = crate::divinum_officium::transfer_table::transfers_for(
-        year, "1570", month, day,
+        year, rubric_tag, month, day,
     );
     for entry in entries {
         // Only follow `Tempora/...` targets here. Sancti targets are
@@ -617,10 +619,11 @@ fn apply_transfer_sancti_1570(
     year: i32,
     month: u32,
     day: u32,
+    rubric_tag: &str,
     corpus: &dyn Corpus,
 ) -> Option<(String, f32)> {
     let entries = crate::divinum_officium::transfer_table::transfers_for(
-        year, "1570", month, day,
+        year, rubric_tag, month, day,
     );
     for entry in entries {
         // Skip Tempora-targeted entries (handled by
@@ -1130,6 +1133,7 @@ fn resolve_sancti_for_tridentine_1570(
     month: u32,
     day: u32,
     layer: crate::divinum_officium::kalendaria_layers::Layer,
+    rubric: Rubric,
     corpus: &dyn Corpus,
 ) -> (FileKey, Option<SanctiEntry>) {
     // Sunday-letter / Easter-coded Transfer table override (sancti
@@ -1139,7 +1143,7 @@ fn resolve_sancti_for_tridentine_1570(
     // Sunday) live here and override both the kalendar and the
     // walked-back transfer-of-preempted-saints chain.
     if let Some((stem, rank_num)) =
-        apply_transfer_sancti_1570(year, month, day, corpus)
+        apply_transfer_sancti_1570(year, month, day, rubric.transfer_rubric_tag(), corpus)
     {
         let key = resolve_sancti_stem(&stem, corpus);
         let metadata_key = effective_tempora_key(&key, corpus);
@@ -1183,7 +1187,7 @@ fn resolve_sancti_for_tridentine_1570(
     // should not activate.
     let suppressed_by_transfer =
         crate::divinum_officium::transfer_table::stem_transferred_away(
-            year, "1570", look_m, look_d,
+            year, rubric.transfer_rubric_tag(), look_m, look_d,
         ) && kalendarium_1570::lookup_for_layer(layer, look_m, look_d)
             .map(|e| was_sancti_preempted_1570(year, month, day, e, layer, corpus))
             .unwrap_or(false);

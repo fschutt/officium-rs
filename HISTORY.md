@@ -33,16 +33,23 @@ reverts, upstream bugs found.
     surface and a GitHub Pages demo. 4-of-5 rubrics at 100% parity,
     R60 at 99.7% (one known occurrence-resolution gap, see
     [`docs/UPSTREAM_WEIRDNESSES.md`](docs/UPSTREAM_WEIRDNESSES.md) §35).
+14. **V2 — postcard transcoding.** `build.rs` reads source JSON at
+    compile time and emits postcard binaries to `OUT_DIR`; lib loads
+    via `include_bytes!` + `postcard::from_bytes`. Drops the
+    `serde_json` runtime dep from the WASM bundle (gated behind the
+    `regression` feature). Shared struct definitions live in
+    `src/data_types.rs`, `#[path]`-included by `build.rs`. WASM
+    bundle: 3.4 → 2.8 MB raw (16% smaller). Served gzip is slightly
+    larger (926 → 1020 KB) since postcard's tighter packing leaves
+    less redundancy for HTTP-layer compression — the net win is
+    faster runtime decode + smaller compiled-code footprint.
 
-## V2 backlog
+## V3 backlog
 
-- **Postcard-encoded compressed corpus.** Replace
-  `include_str!("../data/*.json") + serde_json` with
-  `include_bytes!("../data/*.postcard") + postcard::from_bytes`.
-  Estimated WASM bundle drop: 3.3 MB → ~1.2 MB raw, ~250 KB brotli.
-- **`no_std` migration.** Most of the crate is already allocation-only;
-  the regression module is the one place that uses `std` heavily, and
-  it's already gated `cfg(not(target_arch = "wasm32"))`. Remaining
+- **`no_std` + `alloc` migration.** Most of the crate is already
+  allocation-only; the regression module is the one place that uses
+  `std` heavily, and it's already gated `cfg(not(target_arch =
+  "wasm32"))`. Remaining
   work is replacing `String` with `alloc::string::String` and
   collections imports.
 - **Mass-propers body assembly over WASM.** V1 returns office winner

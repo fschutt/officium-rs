@@ -144,6 +144,7 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
         tempora_file,
         temporal_rank,
         sanctoral_rank,
+        input.rubric,
     );
 
     // ── Saturday-BVM rule (Tridentine 1570) ──────────────────────────
@@ -288,6 +289,7 @@ fn decide_sanctoral_wins_1570(
     tempora: Option<&MassFile>,
     mut trank: f32,
     srank: f32,
+    rubric: Rubric,
 ) -> bool {
     let _sancti = match sancti {
         None => return false, // no sanctoral entry → temporal wins
@@ -309,20 +311,30 @@ fn decide_sanctoral_wins_1570(
         return false;
     }
 
-    // "Dominica minor" rule (Tridentine 1570): post-Easter and
-    // post-Pentecost Sundays of rank 4.3..5.0 are outranked by any
-    // Duplex feast. Mirrors `horascommon.pl:422-433`:
-    //   if version =~ /Trid/i && ($trank[2] < 5.1 && $trank[2] > 4.2
-    //   && $trank[0] =~ /Dominica/i) { $trank[2] = 2.9 }
-    // Without this downgrade Inventio Crucis (5.1) wouldn't beat
-    // Dominica IV post Pascha (5.0).
     let temporal_name = tempora.officium.as_deref().unwrap_or("");
     let is_dominica = temporal_name.starts_with("Dominica");
-    if is_dominica && trank > 4.2 && trank < 5.1 {
+
+    // Dominica-minor rank handling — three regimes per
+    // `horascommon.pl:422-433`:
+    //
+    //   Tridentine (1570/1888/1906): minor Sunday rank 4.3..5.0 → 2.9
+    //     (any Duplex outranks).
+    //   Divino Afflatu (1911 onwards): minor Sunday rank < 5.1 → 4.9
+    //     (Duplex majus loses, Class II wins).
+    //   Reduced 1955 + Rubrics 1960: leave the Sunday rank as-is. The
+    //     1955/60 occurrence rules pull a different lever (Festum
+    //     Domini gates) which lives below.
+    let is_tridentine = matches!(rubric, Rubric::Tridentine1570 | Rubric::Tridentine1910);
+    let is_divino = matches!(rubric, Rubric::DivinoAfflatu1911 | Rubric::Monastic);
+    if is_tridentine && is_dominica && trank > 4.2 && trank < 5.1 {
         trank = 2.9;
+    } else if is_divino && is_dominica && trank < 5.1 {
+        trank = 4.9;
     }
-    // Same rule for "infra octavam Corp[oris Christi]".
-    if temporal_name.contains("infra octavam Corp")
+    // "infra octavam Corp[oris Christi]" stays a 2.9 weekday for
+    // every pre-1955 Roman rubric — see `horascommon.pl:425`.
+    if (is_tridentine || is_divino)
+        && temporal_name.contains("infra octavam Corp")
         && trank > 4.2
         && trank < 5.1
     {

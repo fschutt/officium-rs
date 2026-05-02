@@ -1197,7 +1197,26 @@ Tabulae files.
 
 ### Cross-rubric 2026 baseline — per-rubric pass-rates
 
-Snapshot at `8d25189` (post R60 modernstyle monthday fix):
+Snapshot at `98f4009` (T1910 and DA-1939 both at 100%):
+
+| Rubric                  | Days passing   | Section match |
+|-------------------------|----------------|---------------|
+| Tridentine 1570         | 365/365 100.0% | 75.2%         |
+| **Tridentine 1910**     | **365/365 100.0%** |           |
+| **Divino Afflatu 1939** | **365/365 100.0%** |           |
+| Reduced 1955            | 339/365  92.9% |               |
+| Rubrics 1960            | 336/365  92.1% |               |
+
+The remaining R55/R60 gap is split across:
+- Sat-of-BVM / Marian commune-fallback miss when III-classis
+  saint should beat the Saturday Marian Mass
+- (sed rubrica 196 aut rubrica 1955) variants on Pent02 ferials
+  with no commune in the variant body — currently fall back to
+  the default Corpus-Christi-octave commune
+- Rosary Sunday + Embertide-Sept under R60 (modernstyle week)
+- Several III-classis saint section diffs
+
+Earlier snapshot at `8d25189` (post R60 modernstyle monthday fix):
 
 | Rubric                  | Days passing | Section match |
 |-------------------------|--------------|---------------|

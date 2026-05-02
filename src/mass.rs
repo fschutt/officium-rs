@@ -977,7 +977,24 @@ fn eval_simple_conditional_1570(condition: &str) -> bool {
 
 fn eval_alt_1570(alt: &str) -> bool {
     // Each alt is an AND of (optionally negated) `rubrica X` clauses
-    // joined by `et` / `nisi`.
+    // joined by `et` / `nisi`. Trailing scope keywords (`dicitur`,
+    // `dicuntur`, `omittitur`, `omittuntur`, `semper`, `loco …`)
+    // are NOT predicate components — Perl's `conditional_regex`
+    // captures them separately. Strip them here so eval doesn't
+    // greedily fold them into the predicate string.
+    let is_scope_kw = |t: &str| -> bool {
+        matches!(
+            t,
+            "dicitur"
+                | "dicuntur"
+                | "omittitur"
+                | "omittuntur"
+                | "semper"
+                | "loco"
+                | "versus"
+                | "versuum"
+        )
+    };
     let mut tokens = alt.split_whitespace().peekable();
     let mut result = true;
     let mut negate = false;
@@ -997,16 +1014,23 @@ fn eval_alt_1570(alt: &str) -> bool {
             negate = true;
             continue;
         }
+        if is_scope_kw(subject) {
+            // Trailing scope marker — end of this alt.
+            break;
+        }
         let predicate = match tokens.next() {
             Some(t) => t,
             None => break,
         };
+        if is_scope_kw(predicate) {
+            break;
+        }
         // Some predicates are multi-word ("summorum pontificum",
         // "communi summorum pontificum"). Greedily consume until
-        // `et` / `nisi`.
+        // `et` / `nisi` / scope-keyword.
         let mut full_pred = predicate.to_string();
         while let Some(&peek) = tokens.peek() {
-            if peek == "et" || peek == "nisi" {
+            if peek == "et" || peek == "nisi" || is_scope_kw(peek) {
                 break;
             }
             full_pred.push(' ');

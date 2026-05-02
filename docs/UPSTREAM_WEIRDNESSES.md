@@ -497,3 +497,143 @@ rubrics. Concrete cases:
 A clean port gates the heuristic to T1570 and Monastic only,
 trusting the explicit Transfer/[letter+easter].txt files for
 everything else.
+
+## 26. `(communi Summorum Pontificum)` is a body conditional, not just a section gate
+
+The annotation appears in three places with DIFFERENT semantics:
+
+1. **As a section-header annotation** `[Oratio] (communi Summorum
+   Pontificum)`: when SP is active, this body REPLACES the
+   default `[Oratio]` body. Same file (Sancti/04-22 SS. Soteris
+   et Caji etc.).
+
+2. **As a `(sed communi Summorum Pontificum)` line inside a
+   [Rank] block**: when SP is active, the `;;Class;;Num;;Commune`
+   line below this annotation REPLACES the default. Mass-side
+   (Sancti/03-12 Gregory the Great).
+
+3. **As an inline body conditional** `(sed communi Summorum
+   Pontificum)` separating two body lines: when SP is active,
+   the line below REPLACES the line above (SCOPE_LINE backscope).
+   Used for `in cœlis` → `in cælis` orthographic swap in
+   Commune/C4a [Oratio].
+
+A port has to handle ALL THREE call sites. Our Rust uses three
+independent dispatches: (1) `annotation_applies_to_rubric` in
+`read_section_skipping_annotated`, (2) `_sp_bucket` in
+build_missa_json.py emitting `commune_sp`/`rank_num_sp`, and
+(3) the `communi` subject branch in `eval_alt_1570`.
+
+Perl's SetupString.pl handles all three uniformly via `vero()` —
+the annotation is captured in the conditional regex and
+evaluated by the same predicate dispatch table.
+
+## 27. `(nisi communi Summorum Pontificum)` inverts the section gate
+
+Unlike the `(communi Summorum Pontificum)` form which is "use
+this body when SP is active", `(nisi communi Summorum
+Pontificum)` means "use this body UNLESS SP is active". Pope-
+saint files (Sancti/11-23 Clement, Sancti/04-22 Soteris/Caji,
+etc.) carry their pre-1942 collect under `(nisi …)` so the body
+is shown under T1570/T1910/DA but skipped under R55/R60 (where
+the SP commune `vide C2b` body fires instead).
+
+Our parser captures `nisi <X>` annotations the same way as
+`<X>` annotations; the runtime annotation evaluator handles
+`nisi` by negating the inner predicate. Perl's `vero()` handles
+`nisi` natively as part of the conditional grammar.
+
+## 28. `(rubrica 1962)` doesn't apply to "Rubrics 1960 - 1960"
+
+Substring "196" appears in both "1960" and "1962", so a port
+that buckets via `"196" in label` over-matches. The Perl
+predicate `196` evaluates `$version =~ /196/i` against
+"Rubrics 1960 - 1960" and matches; against the LABEL "rubrica
+1962" the regex check is `$version =~ /1962/i` which is FALSE.
+
+Our parser's `_post_da_buckets` was originally over-greedy and
+treated `(sed rubrica 1962)` as a R60 variant. Sancti/01-24
+(Timothy) has `(sed rubrica 1570 aut rubrica monastica aut
+rubrica 1962) ;;Simplex;;1.1` — under the broken bucketing,
+R60 read Timothy as Simplex 1.1 (wrongly demoted). The 1962
+token in upstream is the Dominican OP1962 rubric, not R60.
+
+Fixed by extracting each `19\d{1,3}` token from the annotation
+and substring-checking against the version string, matching
+Perl's `$version =~ /<token>/` semantic.
+
+## 29. Triduum Mass [Prelude] needs the spelling pipeline too
+
+`mass_propers_from_prelude_only` (the "Full text" branch for
+Quad6-5 / Quad6-6) was emitting [Prelude] sub-blocks verbatim
+without the spelling layer. Result: under pre-1960 rubrics
+"panem nostrum cotidianum" stayed cotidianum (Perl outputs
+"quotidianum" via `spell_var`'s `\bco(t[íi]d[íi])` → `quo$1`
+substitution).
+
+Lesson: any path that bypasses the regular `proper_block` →
+`go` closure flow needs to re-apply the same post-processing
+pipeline (macros + spelling + post-Septuagesima conditionals).
+
+## 30. `(deinde dicuntur semper)` opens a forward SCOPE_NEST
+
+Sancti/06-30 [Oratio] body:
+```
+@:Oratio Pauli
+(deinde dicuntur semper)
+_
+$Oremus
+(sed rubrica 196 omittuntur)
+@Sancti/01-25:Oratio Petri
+```
+
+Under R60, `(sed rubrica 196 omittuntur)` is TRUE; the
+`omittuntur` keyword opens a SCOPE_NEST backward, dropping
+content back to the previous NEST opener — which is the
+preceding `(deinde dicuntur semper)`. So `_$Oremus` get
+dropped; `@Sancti/01-25:Oratio Petri` is kept.
+
+Under T1570/DA/R55, the omittuntur predicate is FALSE; no
+drop. Result: Pauli + Oremus + Petri.
+
+A port that approximates SCOPE_LINE only (drop one line back)
+will mishandle this: under R60 it drops `$Oremus` but keeps
+`_`, producing Pauli + `_` + Petri. SCOPE_NEST is essential
+for multi-prayer Oratio bodies.
+
+Our Rust currently mishandles this — see RUST_PERL_UNIFICATION_AUDIT.md
+for the fix plan. Affects 2 R60 cells (06-30 and the prayer-
+concatenation pattern on 10-18 commemorations).
+
+## 31. `[Section](rubrica X)` second-header (no space)
+
+Variant section with a different body for a specific rubric.
+Pasc5-4 ships:
+
+```
+[Evangelium]
+…the long Mark 16:14-20 with pre-1955 Paschal-candle rubric…
+
+[Evangelium](rubrica 1960)
+…same Mark 16:14-20 but ends "!Dicto Evangelio exstinguitur
+Cereus paschalis." (no "nec ulterius accenditur" trailing)
+```
+
+Note no space between `]` and `(`. Different from the
+`[Section] (annotation)` form on Rank ([Rank] (rubrica 196 aut
+rubrica 1955)) which always has a space. Both forms need to
+parse equivalently.
+
+A port has to:
+1. Parse the annotation regardless of spacing.
+2. Treat the second [Evangelium] as a per-rubric variant
+   (similar to [Rank] post-DA second headers but for body
+   sections).
+3. Evaluate the annotation against the active rubric and prefer
+   the variant body when it matches.
+4. Cascade through parent inherits — Pasc6-4r inherits from
+   Pasc5-4 and should ALSO get the variant under R60 even
+   though its own file doesn't carry the variant.
+
+Affects R60 Ascension Mass (Pasc5-4 / Pasc6-4r) plus a handful
+of other "rubric-variant body" days.

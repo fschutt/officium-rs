@@ -117,6 +117,16 @@ pub struct MassFile {
     /// fine.
     #[serde(default)]
     pub annotated_sections: Vec<String>,
+    /// Per-section annotation text (lowercased), keyed by section
+    /// name. Used by the consumer to evaluate the annotation
+    /// against the active rubric: `(communi Summorum Pontificum)`
+    /// is a no-op for T1570/T1910/DA but TRUE under R55/R60 (where
+    /// the SP commune was instituted), so those bodies SHOULD fire
+    /// as winner-sections rather than being skipped. Mirrors Perl
+    /// `SetupString::vero` evaluating the conditional inside the
+    /// section header.
+    #[serde(default)]
+    pub annotated_section_meta: std::collections::HashMap<String, String>,
 }
 
 static MISSA_JSON: &str = include_str!("../../data/missa_latin.json");

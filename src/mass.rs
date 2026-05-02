@@ -916,6 +916,75 @@ fn resolve_name_for_section(name_body: &str, section: &str) -> String {
 ///   - `monastica`                 → Monastic
 ///   - `cisterciensis`, `altovadensis`, `innovata`, `summorum pontificum`,
 ///     `newcal`                    → not Roman / out of scope
+/// True when an annotation `(communi X)` or `(rubrica X)` etc. on
+/// a section header applies to the active rubric. Mirrors the
+/// SetupString.pl conditional check that gates whether the body
+/// fires at all.
+///
+/// The post-1570 sections that our parser captures into
+/// `annotated_sections` are gated by:
+/// - `(communi Summorum Pontificum)` ⇒ Perl `$version =~
+///   /194[2-9]|195[45]|196/`. So R55 (`Reduced - 1955`) and R60
+///   (`Rubrics 1960 - 1960`) match; T1570/T1910/DA do not.
+/// - `(rubrica X)` ⇒ regular rubrica predicate.
+/// - Other forms (`rubrica monastica`, `rubrica cisterciensis`,
+///   `rubrica ordo praedicatorum`) ⇒ never fire under our six
+///   active rubrics; treat as always-skip.
+pub(crate) fn annotation_applies_to_rubric(
+    annotation: &str,
+    rubric: crate::divinum_officium::core::Rubric,
+) -> bool {
+    let lc = annotation.trim().to_ascii_lowercase();
+    if lc.is_empty() {
+        return true;
+    }
+    // `communi summorum pontificum` — post-1942 commune. Matches
+    // /194[2-9]|195[45]|196/ on the version string.
+    if lc.starts_with("communi summorum pontificum") {
+        let version = rubric.as_perl_version();
+        for needle in [
+            "1942", "1943", "1944", "1945", "1946", "1947", "1948", "1949",
+            "1954", "1955", "196",
+        ] {
+            if version.contains(needle) {
+                return true;
+            }
+        }
+        return false;
+    }
+    // `rubrica X [aut rubrica Y …]` — regular predicate dispatch.
+    if let Some(rest) = lc.strip_prefix("rubrica ") {
+        // OR over `aut`, AND over `et`; we ignore `nisi` and trailing
+        // scope keywords here — same simplifications as eval_alt_1570.
+        let mut any = false;
+        for alt in rest.split(" aut ") {
+            // Drop trailing scope keywords ("dicitur", etc.) and
+            // any inner "nisi …" clause we don't want to evaluate.
+            let cleaned: Vec<&str> = alt
+                .split_whitespace()
+                .take_while(|w| !matches!(*w, "dicitur" | "dicuntur" | "omittitur" | "omittuntur" | "semper" | "nisi"))
+                .collect();
+            // Strip any inner `rubrica` keyword left over from
+            // `rubrica X aut rubrica Y` chains.
+            let pred_words: Vec<&str> = cleaned
+                .into_iter()
+                .filter(|w| *w != "rubrica")
+                .collect();
+            if pred_words.is_empty() {
+                continue;
+            }
+            let pred = pred_words.join(" ");
+            if rubrica_predicate_matches(rubric, &pred) {
+                any = true;
+                break;
+            }
+        }
+        return any;
+    }
+    // Unknown annotation kind — treat as always-skip (safe default).
+    false
+}
+
 /// Mirrors Perl `SetupString.pl::vero` line 299: when the predicate
 /// isn't a named one (`tridentina`/`monastica`/...), it falls back
 /// to `$version =~ /$predicate/i`. Multi-word predicates also use
@@ -1421,24 +1490,36 @@ pub fn proper_block(
 }
 
 /// Like `read_section` but skips sections marked
-/// `annotated_sections` (post-1570 rubric variants). When the
-/// commune file's local section is annotated, we fall through to
-/// the file-level parent inherit and recurse. Used in commune-
-/// fallback only.
+/// `annotated_sections` (post-1570 rubric variants) UNLESS the
+/// section's annotation applies to the active rubric. When the
+/// commune file's local section is annotated and excluded,
+/// we fall through to the file-level parent inherit and recurse.
+/// Used in commune-fallback.
 fn read_section_skipping_annotated(
     file: &MassFile,
     file_key: &FileKey,
     section: &str,
     corpus: &dyn Corpus,
 ) -> Option<ProperBlock> {
+    let active = ACTIVE_RUBRIC.with(|r| r.get());
     let is_annotated = file.annotated_sections.iter().any(|s| s == section);
-    if !is_annotated {
+    let annotation_applies = if is_annotated {
+        // Look up the original annotation text and evaluate.
+        // Missing meta = treat as always-skip (corpus-pre-meta entry).
+        match file.annotated_section_meta.get(section) {
+            Some(ann) => annotation_applies_to_rubric(ann, active),
+            None => false,
+        }
+    } else {
+        true
+    };
+    if !is_annotated || annotation_applies {
         if let Some(block) = read_section(file, file_key, section, corpus, /* via_commune */ true)
         {
             return Some(block);
         }
     }
-    // Section is annotated OR missing — chase the file-level parent.
+    // Section is annotated AND excluded OR missing — chase file-level parent.
     let parent_path = file.parent_1570.as_deref().or(file.parent.as_deref());
     if let Some(parent_path) = parent_path {
         let parent_key = FileKey::parse(parent_path);
@@ -2302,9 +2383,19 @@ fn read_section(
         .annotated_sections
         .iter()
         .any(|s| s == section);
-    if is_annotated {
-        // Section's only body is annotated → treat as missing locally,
-        // chase the file-level parent inherit instead.
+    let annotation_applies = if is_annotated {
+        let active = ACTIVE_RUBRIC.with(|r| r.get());
+        match file.annotated_section_meta.get(section) {
+            Some(ann) => annotation_applies_to_rubric(ann, active),
+            None => false,
+        }
+    } else {
+        true
+    };
+    if is_annotated && !annotation_applies {
+        // Section's only body is annotated and the annotation
+        // doesn't apply under the active rubric → treat as missing
+        // locally, chase the file-level parent inherit instead.
         let parent_path = file.parent_1570.as_deref().or(file.parent.as_deref());
         if let Some(parent_path) = parent_path {
             let parent_key = FileKey::parse(parent_path);
@@ -2535,7 +2626,16 @@ fn chase_at_reference(
         .annotated_sections
         .iter()
         .any(|s| s == target_section);
-    if is_annotated {
+    let annotation_applies = if is_annotated {
+        let active = ACTIVE_RUBRIC.with(|r| r.get());
+        match file.annotated_section_meta.get(target_section) {
+            Some(ann) => annotation_applies_to_rubric(ann, active),
+            None => false,
+        }
+    } else {
+        true
+    };
+    if is_annotated && !annotation_applies {
         if let Some(parent_path) = file
             .parent_1570
             .as_deref()

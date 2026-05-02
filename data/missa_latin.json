@@ -1075,7 +1075,12 @@
 "Communio",
 "Graduale",
 "Tractus"
-]
+],
+"annotated_section_meta":{
+"Communio":"rubrica 1960",
+"Graduale":"rubrica 1960",
+"Tractus":"rubrica 1960"
+}
 },
 "Sancti/03-07":{
 "officium":"S. Thomæ de Aquino Confessoris et Ecclesiæ Doctoris (sed rubrica 1570 aut rubrica 1617) S. Thomæ de Aquino Confessoris",
@@ -2190,7 +2195,11 @@
 "annotated_sections":[
 "Postcommunio",
 "Secreta"
-]
+],
+"annotated_section_meta":{
+"Postcommunio":"communi Summorum Pontificum",
+"Secreta":"communi Summorum Pontificum"
+}
 },
 "Sancti/05-26":{
 "officium":"S. Philippi Neri Confessoris",
@@ -2977,7 +2986,10 @@
 },
 "annotated_sections":[
 "Evangelium"
-]
+],
+"annotated_section_meta":{
+"Evangelium":"rubrica divino et feria 5 et tempore Octava Corpus"
+}
 },
 "Sancti/07-01t":{
 "officium":"In Octava S. Joannis Baptistæ",
@@ -3054,7 +3066,10 @@
 "parent_1570":"Sancti/07-04oct",
 "annotated_sections":[
 "Evangelium"
-]
+],
+"annotated_section_meta":{
+"Evangelium":"rubrica divino et feria 7 aut rubrica divino et feria 5 et tempore Octava SSmi Cordis"
+}
 },
 "Sancti/07-03r":{
 "officium":"S. Irenæi Episcopi et Martyris",
@@ -3129,7 +3144,10 @@
 },
 "annotated_sections":[
 "Evangelium"
-]
+],
+"annotated_section_meta":{
+"Evangelium":"rubrica divino et feria 3 et tempore Octava SSmi Cordis"
+}
 },
 "Sancti/07-06":{
 "officium":"In Octava Ss. Apostolorum Petri et Pauli",
@@ -7156,7 +7174,12 @@
 "Commemoratio Oratio",
 "Commemoratio Postcommunio",
 "Commemoratio Secreta"
-]
+],
+"annotated_section_meta":{
+"Commemoratio Oratio":"rubrica divino aut rubrica 196",
+"Commemoratio Postcommunio":"rubrica divino aut rubrica 196",
+"Commemoratio Secreta":"rubrica divino aut rubrica 196"
+}
 },
 "Tempora/Adv1-0":{
 "officium":"Dominica I Adventus",
@@ -9717,7 +9740,12 @@
 "Oratio",
 "Postcommunio",
 "Secreta"
-]
+],
+"annotated_section_meta":{
+"Oratio":"rubrica 1960",
+"Postcommunio":"rubrica 1960",
+"Secreta":"rubrica 1960"
+}
 },
 "Tempora/Pent01-6":{
 "officium":"Sabbato infra octavam Corporis Christi",
@@ -9743,7 +9771,12 @@
 "Oratio",
 "Postcommunio",
 "Secreta"
-]
+],
+"annotated_section_meta":{
+"Oratio":"rubrica 1960",
+"Postcommunio":"rubrica 1960",
+"Secreta":"rubrica 1960"
+}
 },
 "Tempora/Pent01-6o":{
 "officium":"Sabbato infra octavam Corporis Christi",
@@ -12998,7 +13031,12 @@
 "Commemoratio Oratio",
 "Commemoratio Postcommunio",
 "Commemoratio Secreta"
-]
+],
+"annotated_section_meta":{
+"Commemoratio Oratio":"rubrica 1955 aut rubrica 1960 aut rubrica innovata",
+"Commemoratio Postcommunio":"rubrica 1955 aut rubrica 1960 aut rubrica innovata",
+"Commemoratio Secreta":"rubrica 1955 aut rubrica 1960 aut rubrica innovata"
+}
 },
 "Tempora/Quad5-5Feriat":{
 "sections":{},
@@ -13634,7 +13672,10 @@
 },
 "annotated_sections":[
 "Rule"
-]
+],
+"annotated_section_meta":{
+"Rule":"rubrica 1960"
+}
 },
 "Ordo/OrdoA":{
 "sections":{
@@ -14007,7 +14048,11 @@
 "annotated_sections":[
 "Ant 43",
 "Ant 44"
-]
+],
+"annotated_section_meta":{
+"Ant 43":"rubrica Ordo Praedicatorum",
+"Ant 44":"rubrica Ordo Praedicatorum"
+}
 },
 "Commune/C12":{
 "officium":"Officium parvum Beatæ Maríæ Virginis",
@@ -14068,7 +14113,10 @@
 },
 "annotated_sections":[
 "Hymnus Completorium"
-]
+],
+"annotated_section_meta":{
+"Hymnus Completorium":"rubrica cisterciensis"
+}
 },
 "Commune/C12A":{
 "officium":"Officium parvum Beatae Mariae Virginis",
@@ -14442,7 +14490,27 @@
 "Secreta",
 "Secreta pro commemoratio",
 "Tractus"
-]
+],
+"annotated_section_meta":{
+"Communio":"communi Summorum Pontificum",
+"Evangelium":"communi Summorum Pontificum",
+"Graduale":"communi Summorum Pontificum",
+"GradualeP":"communi Summorum Pontificum",
+"Introitus":"communi Summorum Pontificum",
+"Lectio":"communi Summorum Pontificum",
+"Lectio7":"communi Summorum Pontificum",
+"Lectio8":"communi Summorum Pontificum",
+"Lectio9":"communi Summorum Pontificum",
+"Offertorium":"communi Summorum Pontificum",
+"Oratio":"communi Summorum Pontificum",
+"Oratio pro commemoratio":"communi Summorum Pontificum",
+"Postcommunio":"communi Summorum Pontificum",
+"Postcommunio pro commemoratio":"communi Summorum Pontificum",
+"Rule":"communi Summorum Pontificum",
+"Secreta":"communi Summorum Pontificum",
+"Secreta pro commemoratio":"communi Summorum Pontificum",
+"Tractus":"communi Summorum Pontificum"
+}
 },
 "Commune/C2b-1p":{
 "sections":{
@@ -14485,7 +14553,27 @@
 "Secreta",
 "Secreta pro commemoratio",
 "Tractus"
-]
+],
+"annotated_section_meta":{
+"Communio":"communi Summorum Pontificum",
+"Evangelium":"communi Summorum Pontificum",
+"Graduale":"communi Summorum Pontificum",
+"GradualeP":"communi Summorum Pontificum",
+"Introitus":"communi Summorum Pontificum",
+"Lectio":"communi Summorum Pontificum",
+"Lectio7":"communi Summorum Pontificum",
+"Lectio8":"communi Summorum Pontificum",
+"Lectio9":"communi Summorum Pontificum",
+"Offertorium":"communi Summorum Pontificum",
+"Oratio":"communi Summorum Pontificum",
+"Oratio pro commemoratio":"communi Summorum Pontificum",
+"Postcommunio":"communi Summorum Pontificum",
+"Postcommunio pro commemoratio":"communi Summorum Pontificum",
+"Rule":"communi Summorum Pontificum",
+"Secreta":"communi Summorum Pontificum",
+"Secreta pro commemoratio":"communi Summorum Pontificum",
+"Tractus":"communi Summorum Pontificum"
+}
 },
 "Commune/C2b":{
 "officium":"Commune unius Summi Pontificis et Martyris",
@@ -14529,7 +14617,27 @@
 "Secreta",
 "Secreta pro commemoratio",
 "Tractus"
-]
+],
+"annotated_section_meta":{
+"Communio":"communi Summorum Pontificum",
+"Evangelium":"communi Summorum Pontificum",
+"Graduale":"communi Summorum Pontificum",
+"GradualeP":"communi Summorum Pontificum",
+"Introitus":"communi Summorum Pontificum",
+"Lectio":"communi Summorum Pontificum",
+"Lectio7":"communi Summorum Pontificum",
+"Lectio8":"communi Summorum Pontificum",
+"Lectio9":"communi Summorum Pontificum",
+"Offertorium":"communi Summorum Pontificum",
+"Oratio":"communi Summorum Pontificum",
+"Oratio pro commemoratio":"communi Summorum Pontificum",
+"Postcommunio":"communi Summorum Pontificum",
+"Postcommunio pro commemoratio":"communi Summorum Pontificum",
+"Rule":"communi Summorum Pontificum",
+"Secreta":"communi Summorum Pontificum",
+"Secreta pro commemoratio":"communi Summorum Pontificum",
+"Tractus":"communi Summorum Pontificum"
+}
 },
 "Commune/C2bp":{
 "officium":"Commune unius Summi Pontificis et Martyris Tempore Paschali",
@@ -14573,7 +14681,27 @@
 "Secreta",
 "Secreta pro commemoratio",
 "Tractus"
-]
+],
+"annotated_section_meta":{
+"Communio":"communi Summorum Pontificum",
+"Evangelium":"communi Summorum Pontificum",
+"Graduale":"communi Summorum Pontificum",
+"GradualeP":"communi Summorum Pontificum",
+"Introitus":"communi Summorum Pontificum",
+"Lectio":"communi Summorum Pontificum",
+"Lectio7":"communi Summorum Pontificum",
+"Lectio8":"communi Summorum Pontificum",
+"Lectio9":"communi Summorum Pontificum",
+"Offertorium":"communi Summorum Pontificum",
+"Oratio":"communi Summorum Pontificum",
+"Oratio pro commemoratio":"communi Summorum Pontificum",
+"Postcommunio":"communi Summorum Pontificum",
+"Postcommunio pro commemoratio":"communi Summorum Pontificum",
+"Rule":"communi Summorum Pontificum",
+"Secreta":"communi Summorum Pontificum",
+"Secreta pro commemoratio":"communi Summorum Pontificum",
+"Tractus":"communi Summorum Pontificum"
+}
 },
 "Commune/C2p":{
 "officium":"Commune unius Martyris Tempore Paschali",
@@ -14785,7 +14913,24 @@
 "Rule",
 "Secreta",
 "Tractus"
-]
+],
+"annotated_section_meta":{
+"Communio":"communi Summorum Pontificum",
+"Evangelium":"communi Summorum Pontificum",
+"Graduale":"communi Summorum Pontificum",
+"GradualeP":"communi Summorum Pontificum",
+"Introitus":"communi Summorum Pontificum",
+"Lectio":"communi Summorum Pontificum",
+"Lectio7":"communi Summorum Pontificum",
+"Lectio8":"communi Summorum Pontificum",
+"Lectio9":"communi Summorum Pontificum",
+"Offertorium":"communi Summorum Pontificum",
+"Oratio":"communi Summorum Pontificum",
+"Postcommunio":"communi Summorum Pontificum",
+"Rule":"communi Summorum Pontificum",
+"Secreta":"communi Summorum Pontificum",
+"Tractus":"communi Summorum Pontificum"
+}
 },
 "Commune/C3bp":{
 "officium":"Commune plurium Summorum Pontificum Martyrum Tempore Paschali",
@@ -14823,7 +14968,24 @@
 "Rule",
 "Secreta",
 "Tractus"
-]
+],
+"annotated_section_meta":{
+"Communio":"communi Summorum Pontificum",
+"Evangelium":"communi Summorum Pontificum",
+"Graduale":"communi Summorum Pontificum",
+"GradualeP":"communi Summorum Pontificum",
+"Introitus":"communi Summorum Pontificum",
+"Lectio":"communi Summorum Pontificum",
+"Lectio7":"communi Summorum Pontificum",
+"Lectio8":"communi Summorum Pontificum",
+"Lectio9":"communi Summorum Pontificum",
+"Offertorium":"communi Summorum Pontificum",
+"Oratio":"communi Summorum Pontificum",
+"Postcommunio":"communi Summorum Pontificum",
+"Rule":"communi Summorum Pontificum",
+"Secreta":"communi Summorum Pontificum",
+"Tractus":"communi Summorum Pontificum"
+}
 },
 "Commune/C3p":{
 "officium":"Commune Plurimorum Martyrum Tempore Paschali",
@@ -15028,7 +15190,28 @@
 "Secreta",
 "Secreta pro commemoratio",
 "Tractus"
-]
+],
+"annotated_section_meta":{
+"Communio":"communi Summorum Pontificum",
+"Evangelium":"communi Summorum Pontificum",
+"Graduale":"communi Summorum Pontificum",
+"GradualeP":"communi Summorum Pontificum",
+"Introitus":"communi Summorum Pontificum",
+"Lectio":"communi Summorum Pontificum",
+"Lectio7":"communi Summorum Pontificum",
+"Lectio8":"communi Summorum Pontificum",
+"Lectio9":"communi Summorum Pontificum",
+"Missa":"communi Summorum Pontificum",
+"Offertorium":"communi Summorum Pontificum",
+"Oratio":"communi Summorum Pontificum",
+"Oratio pro commemoratio":"communi Summorum Pontificum",
+"Postcommunio":"communi Summorum Pontificum",
+"Postcommunio pro commemoratio":"communi Summorum Pontificum",
+"Rule":"communi Summorum Pontificum",
+"Secreta":"communi Summorum Pontificum",
+"Secreta pro commemoratio":"communi Summorum Pontificum",
+"Tractus":"communi Summorum Pontificum"
+}
 },
 "Commune/C4b-2":{
 "sections":{
@@ -15073,7 +15256,28 @@
 "Secreta",
 "Secreta pro commemoratio",
 "Tractus"
-]
+],
+"annotated_section_meta":{
+"Communio":"communi Summorum Pontificum",
+"Evangelium":"communi Summorum Pontificum",
+"Graduale":"communi Summorum Pontificum",
+"GradualeP":"communi Summorum Pontificum",
+"Introitus":"communi Summorum Pontificum",
+"Lectio":"communi Summorum Pontificum",
+"Lectio7":"communi Summorum Pontificum",
+"Lectio8":"communi Summorum Pontificum",
+"Lectio9":"communi Summorum Pontificum",
+"Missa":"communi Summorum Pontificum",
+"Offertorium":"communi Summorum Pontificum",
+"Oratio":"communi Summorum Pontificum",
+"Oratio pro commemoratio":"communi Summorum Pontificum",
+"Postcommunio":"communi Summorum Pontificum",
+"Postcommunio pro commemoratio":"communi Summorum Pontificum",
+"Rule":"communi Summorum Pontificum",
+"Secreta":"communi Summorum Pontificum",
+"Secreta pro commemoratio":"communi Summorum Pontificum",
+"Tractus":"communi Summorum Pontificum"
+}
 },
 "Commune/C4b-3":{
 "sections":{
@@ -15119,7 +15323,28 @@
 "Secreta",
 "Secreta pro commemoratio",
 "Tractus"
-]
+],
+"annotated_section_meta":{
+"Communio":"communi Summorum Pontificum",
+"Evangelium":"communi Summorum Pontificum",
+"Graduale":"communi Summorum Pontificum",
+"GradualeP":"communi Summorum Pontificum",
+"Introitus":"communi Summorum Pontificum",
+"Lectio":"communi Summorum Pontificum",
+"Lectio7":"communi Summorum Pontificum",
+"Lectio8":"communi Summorum Pontificum",
+"Lectio9":"communi Summorum Pontificum",
+"Missa":"communi Summorum Pontificum",
+"Offertorium":"communi Summorum Pontificum",
+"Oratio":"communi Summorum Pontificum",
+"Oratio pro commemoratio":"communi Summorum Pontificum",
+"Postcommunio":"communi Summorum Pontificum",
+"Postcommunio pro commemoratio":"communi Summorum Pontificum",
+"Rule":"communi Summorum Pontificum",
+"Secreta":"communi Summorum Pontificum",
+"Secreta pro commemoratio":"communi Summorum Pontificum",
+"Tractus":"communi Summorum Pontificum"
+}
 },
 "Commune/C4b":{
 "officium":"Commune Summorum Pontificum Confessorum",
@@ -15168,7 +15393,29 @@
 "Secreta",
 "Secreta pro commemoratio",
 "Tractus"
-]
+],
+"annotated_section_meta":{
+"Communio":"communi Summorum Pontificum",
+"Evangelium":"communi Summorum Pontificum",
+"Graduale":"communi Summorum Pontificum",
+"GradualeP":"communi Summorum Pontificum",
+"Introitus":"communi Summorum Pontificum",
+"Lectio":"communi Summorum Pontificum",
+"Lectio7":"communi Summorum Pontificum",
+"Lectio8":"communi Summorum Pontificum",
+"Lectio9":"communi Summorum Pontificum",
+"Missa":"communi Summorum Pontificum",
+"Offertorium":"communi Summorum Pontificum",
+"Oratio":"communi Summorum Pontificum",
+"Oratio pro commemoratio":"communi Summorum Pontificum",
+"Oratio pro plurium":"communi Summorum Pontificum",
+"Postcommunio":"communi Summorum Pontificum",
+"Postcommunio pro commemoratio":"communi Summorum Pontificum",
+"Rule":"communi Summorum Pontificum",
+"Secreta":"communi Summorum Pontificum",
+"Secreta pro commemoratio":"communi Summorum Pontificum",
+"Tractus":"communi Summorum Pontificum"
+}
 },
 "Commune/C4c":{
 "officium":"Commune plurium Confessorum Pontificum",
@@ -15799,7 +16046,10 @@
 "parent":"Sancti/10-07",
 "annotated_sections":[
 "Oratio"
-]
+],
+"annotated_section_meta":{
+"Oratio":"rubrica cisterciensis"
+}
 },
 "Sancti/11-13n":{
 "officium":"S. Franciscæ Xaveriæ Cabrini Virginis",
@@ -17417,7 +17667,10 @@
 },
 "annotated_sections":[
 "Ant Laudes"
-]
+],
+"annotated_section_meta":{
+"Ant Laudes":"rubrica cisterciensis"
+}
 },
 "Tempora/Epi1-0b":{
 "officium":"Dominica I post Epiphaniam",
@@ -17501,7 +17754,12 @@
 "Responsory1",
 "Responsory2",
 "Responsory3"
-]
+],
+"annotated_section_meta":{
+"Responsory1":"rubrica 196",
+"Responsory2":"rubrica 196",
+"Responsory3":"rubrica 196"
+}
 },
 "Tempora/Nat08":{
 "officium":"Ad Romános, cap. 12",
@@ -17521,7 +17779,12 @@
 "Responsory1",
 "Responsory2",
 "Responsory3"
-]
+],
+"annotated_section_meta":{
+"Responsory1":"rubrica 196",
+"Responsory2":"rubrica 196",
+"Responsory3":"rubrica 196"
+}
 },
 "Tempora/Nat09":{
 "officium":"Ad Romános, cap. 13",
@@ -17541,7 +17804,12 @@
 "Responsory1",
 "Responsory2",
 "Responsory3"
-]
+],
+"annotated_section_meta":{
+"Responsory1":"rubrica 196",
+"Responsory2":"rubrica 196",
+"Responsory3":"rubrica 196"
+}
 },
 "Tempora/Nat10":{
 "officium":"Ad Romános, cap. 14",
@@ -17561,7 +17829,12 @@
 "Responsory1",
 "Responsory2",
 "Responsory3"
-]
+],
+"annotated_section_meta":{
+"Responsory1":"rubrica 196",
+"Responsory2":"rubrica 196",
+"Responsory3":"rubrica 196"
+}
 },
 "Tempora/Nat11":{
 "officium":"Ad Romános, cap. 15",
@@ -17581,7 +17854,12 @@
 "Responsory1",
 "Responsory2",
 "Responsory3"
-]
+],
+"annotated_section_meta":{
+"Responsory1":"rubrica 196",
+"Responsory2":"rubrica 196",
+"Responsory3":"rubrica 196"
+}
 },
 "Tempora/Nat12":{
 "officium":"Ad Romános, cap. 16",
@@ -17605,7 +17883,12 @@
 "Responsory1",
 "Responsory2",
 "Responsory3"
-]
+],
+"annotated_section_meta":{
+"Responsory1":"rubrica 196",
+"Responsory2":"rubrica 196",
+"Responsory3":"rubrica 196"
+}
 },
 "Tempora/Nat2-0r":{
 "sections":{
@@ -17633,7 +17916,10 @@
 },
 "annotated_sections":[
 "Ant 2"
-]
+],
+"annotated_section_meta":{
+"Ant 2":"rubrica cisterciensis"
+}
 },
 "Tempora/Nat27":{
 "officium":"Diei III infra Octavam Nativitatis",
@@ -17655,7 +17941,10 @@
 },
 "annotated_sections":[
 "Ant 2"
-]
+],
+"annotated_section_meta":{
+"Ant 2":"rubrica cisterciensis"
+}
 },
 "Tempora/Nat28":{
 "officium":"Diei IV infra Octavam Nativitatis",
@@ -17677,7 +17966,10 @@
 },
 "annotated_sections":[
 "Ant 2"
-]
+],
+"annotated_section_meta":{
+"Ant 2":"rubrica cisterciensis"
+}
 },
 "Tempora/Pasc1-0t":{
 "sections":{},
@@ -17702,7 +17994,10 @@
 "parent":"Tempora/Quad5-5Feria",
 "annotated_sections":[
 "Oratio 2"
-]
+],
+"annotated_section_meta":{
+"Oratio 2":"rubrica 1955 aut rubrica 1960 aut rubrica innovata"
+}
 },
 "Tempora/XPRex":{
 "sections":{},

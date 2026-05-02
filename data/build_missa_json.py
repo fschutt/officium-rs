@@ -433,16 +433,23 @@ def parse_mass_file(text: str) -> dict:
         out["parent"] = parent
     if parent_1570:
         out["parent_1570"] = parent_1570
-    # Sections that carry a post-1570 rubric annotation. Consumers
-    # filtering for the Tridentine 1570 baseline should ignore these
-    # IN COMMUNE-FALLBACK CONTEXT; explicit `@Commune/X` references
-    # from a Sancti file still resolve through them.
-    annotated = sorted(
-        name for name, ann in annotations.items()
+    # Sections that carry a post-1570 rubric annotation. Each entry
+    # is a [section, annotation] pair so the consumer can re-evaluate
+    # the annotation under the active rubric — `(communi Summorum
+    # Pontificum)` is post-1570 baseline (drop) but TRUE under
+    # R55/R60 (where Perl's `summorum pontificum` predicate
+    # `/194[2-9]|195[45]|196/i` matches the version string), so
+    # those sections should fire as winner-bodies under those
+    # later rubrics rather than being skipped to commune fallback.
+    annotated_pairs = sorted(
+        (name, ann) for name, ann in annotations.items()
         if name in out.get("sections", {}) and is_excluded_annotation(ann)
     )
-    if annotated:
-        out["annotated_sections"] = annotated
+    if annotated_pairs:
+        out["annotated_sections"] = [name for name, _ in annotated_pairs]
+        out["annotated_section_meta"] = {
+            name: ann for name, ann in annotated_pairs
+        }
     return out
 
 

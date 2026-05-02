@@ -17,7 +17,7 @@
 //! See DIVINUM_OFFICIUM_PORT_PLAN.md Phase 5.
 
 use crate::divinum_officium::core::{
-    CommuneType, FileCategory, FileKey, MassPropers, OfficeOutput, ProperBlock, Season,
+    CommuneType, FileCategory, FileKey, MassPropers, OfficeOutput, ProperBlock, Rubric, Season,
 };
 use crate::divinum_officium::corpus::Corpus;
 use crate::divinum_officium::missa::MassFile;
@@ -1085,7 +1085,7 @@ fn graduale_or_tractus(
     corpus: &dyn Corpus,
 ) -> Option<ProperBlock> {
     let winner_file = corpus.mass_file(&office.winner)?;
-    let winner_post_1570 = is_post_1570_octave_file(winner_file);
+    let winner_post_1570 = is_post_1570_octave_file(winner_file, office.rubric);
     let has_lectio_l = winner_has_lectio_l_rule(Some(winner_file), corpus);
     if !winner_post_1570 {
         let probes: &[&str] = if has_lectio_l {
@@ -1104,7 +1104,7 @@ fn graduale_or_tractus(
             let resolved_commune = paschal_commune_swap(commune_key, office.season, corpus);
             let resolved_commune = chase_missing_commune(&resolved_commune, corpus);
             if let Some(commune_file) = corpus.mass_file(&resolved_commune) {
-                if !is_post_1570_octave_file(commune_file) {
+                if !is_post_1570_octave_file(commune_file, office.rubric) {
                     for sect in ["Tractus", "Graduale"] {
                         if let Some(b) = read_section_skipping_annotated(
                             commune_file, &resolved_commune, sect, corpus,
@@ -1119,7 +1119,7 @@ fn graduale_or_tractus(
     if matches!(office.winner.category, FileCategory::Tempora) {
         if let Some(mut sunday_key) = tempora_feria_sunday_fallback(&office.winner) {
             if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
-                if is_post_1570_octave_file(sunday_file) {
+                if is_post_1570_octave_file(sunday_file, office.rubric) {
                     let r_key = FileKey {
                         category: sunday_key.category.clone(),
                         stem: format!("{}r", sunday_key.stem),
@@ -1169,7 +1169,7 @@ fn gradualep_or_graduale(
     corpus: &dyn Corpus,
 ) -> Option<ProperBlock> {
     let winner_file = corpus.mass_file(&office.winner)?;
-    let winner_post_1570 = is_post_1570_octave_file(winner_file);
+    let winner_post_1570 = is_post_1570_octave_file(winner_file, office.rubric);
     let has_lectio_l = winner_has_lectio_l_rule(Some(winner_file), corpus);
     if !winner_post_1570 {
         let probes: &[&str] = if has_lectio_l {
@@ -1188,7 +1188,7 @@ fn gradualep_or_graduale(
             let resolved_commune = paschal_commune_swap(commune_key, office.season, corpus);
             let resolved_commune = chase_missing_commune(&resolved_commune, corpus);
             if let Some(commune_file) = corpus.mass_file(&resolved_commune) {
-                if !is_post_1570_octave_file(commune_file) {
+                if !is_post_1570_octave_file(commune_file, office.rubric) {
                     for sect in ["GradualeP", "Graduale"] {
                         if let Some(b) = read_section_skipping_annotated(
                             commune_file, &resolved_commune, sect, corpus,
@@ -1203,7 +1203,7 @@ fn gradualep_or_graduale(
     if matches!(office.winner.category, FileCategory::Tempora) {
         if let Some(mut sunday_key) = tempora_feria_sunday_fallback(&office.winner) {
             if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
-                if is_post_1570_octave_file(sunday_file) {
+                if is_post_1570_octave_file(sunday_file, office.rubric) {
                     let r_key = FileKey {
                         category: sunday_key.category.clone(),
                         stem: format!("{}r", sunday_key.stem),
@@ -1254,7 +1254,7 @@ pub fn proper_block(
     // octave), do NOT use its in-file bodies. Fall through to the
     // commune-fallback / feria-Sunday-fallback chain so the Tridentine
     // feria propers win.
-    let winner_is_post_1570 = is_post_1570_octave_file(winner_file);
+    let winner_is_post_1570 = is_post_1570_octave_file(winner_file, office.rubric);
     if !winner_is_post_1570 {
         if let Some(block) = read_section(
             winner_file,
@@ -1328,7 +1328,7 @@ pub fn proper_block(
                 // (Sacred Heart Octave, Patrocinii St Joseph, etc.)
                 // — fall through to the Tempora-feria-Sunday-fallback
                 // below.
-                if !is_post_1570_octave_file(commune_file) {
+                if !is_post_1570_octave_file(commune_file, office.rubric) {
                     if let Some(block) = read_section_skipping_annotated(
                         commune_file,
                         &resolved_commune,
@@ -1356,7 +1356,7 @@ pub fn proper_block(
             // If the bare Sunday is itself post-1570 (e.g. Pent03-0
             // = Sacred Heart Octave Day), try its `-r` variant first.
             if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
-                if is_post_1570_octave_file(sunday_file) {
+                if is_post_1570_octave_file(sunday_file, office.rubric) {
                     let r_key = FileKey {
                         category: sunday_key.category.clone(),
                         stem: format!("{}r", sunday_key.stem),
@@ -2026,22 +2026,37 @@ fn sunday_key_for_winner(winner: &FileKey) -> Option<FileKey> {
     })
 }
 
-/// True when the file's officium identifies it as a post-1570
-/// reform feast that doesn't apply under Tridentine 1570. Mirrors
-/// `occurrence::downgrade_post_1570_octave` — kept in sync.
+/// True when the file's officium identifies it as a reform feast
+/// that didn't yet exist under the active rubric, so its in-file
+/// bodies (and its Sunday-fallback substitute) should be ignored.
+/// Kept in sync with `occurrence::downgrade_post_1570_octave`.
 ///
 /// The Patrocinii match is intentionally permissive — upstream is
 /// inconsistent about the dot ("Patrocinii St. Joseph" vs "Patrocinii
 /// St Joseph") and case ("Patrocinii" vs "Patrocínii"). See
 /// UPSTREAM_WEIRDNESSES.md #4.
-fn is_post_1570_octave_file(file: &MassFile) -> bool {
+fn is_post_1570_octave_file(file: &MassFile, rubric: Rubric) -> bool {
     let officium = file.officium.as_deref().unwrap_or("");
-    officium.contains("Cordis Jesu")
+    // Sacred Heart (1856) + Patrocinii Joseph (1847): suppressed only
+    // for rubrics that predate them (T1570, Monastic Tridentinum 1617).
+    let suppress_pre_1856 = matches!(rubric, Rubric::Tridentine1570 | Rubric::Monastic);
+    let has_pre_1856_feast = officium.contains("Cordis Jesu")
         || officium.contains("Cordis Iesu")
         || officium.contains("Sacratissimi")
-        || officium.contains("Christi Regis")
         || officium.contains("Patrocinii")
-        || officium.contains("Patrocínii")
+        || officium.contains("Patrocínii");
+    if suppress_pre_1856 && has_pre_1856_feast {
+        return true;
+    }
+    // Christ the King (1925): suppressed under T1570, T1910, Monastic.
+    let suppress_pre_1925 = matches!(
+        rubric,
+        Rubric::Tridentine1570 | Rubric::Tridentine1910 | Rubric::Monastic
+    );
+    if suppress_pre_1925 && officium.contains("Christi Regis") {
+        return true;
+    }
+    false
 }
 
 /// Walk the trailing characters of a Commune stem, dropping one

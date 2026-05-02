@@ -181,9 +181,26 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         // Try it FIRST (before the seasonal-variant swap) so the
         // rubric-specific override beats both the default body and
         // the seasonal commune fallback.
-        let rubric_variant_key = winner_file.and_then(|f| {
+        //
+        // Look up against the WINNER first; if not present, fall back
+        // to the parent file's sections (Pasc6-4r inherits from
+        // Pasc5-4, which is where the variant lives).
+        let mut rubric_variant_key = winner_file.and_then(|f| {
             rubric_variant_section_for(effective_sect, office.rubric, &f.sections)
         });
+        if rubric_variant_key.is_none() {
+            let parent_path = winner_file.and_then(|f| {
+                f.parent_1570.as_deref().or(f.parent.as_deref())
+            });
+            if let Some(parent_path) = parent_path {
+                let parent_key = FileKey::parse(parent_path);
+                if let Some(parent_file) = corpus.mass_file(&parent_key) {
+                    rubric_variant_key = rubric_variant_section_for(
+                        effective_sect, office.rubric, &parent_file.sections,
+                    );
+                }
+            }
+        }
         let final_sect: &str = if let Some(rv) = rubric_variant_key {
             effective_sect_str = rv;
             effective_sect_str.as_str()

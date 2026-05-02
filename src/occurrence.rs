@@ -810,10 +810,19 @@ fn transferred_sancti_for_1570(
             }
             // Is this day's slot available (free or lower-ranked saint)?
             let (look_m2, look_d2) = date::sday_pair(walk_m, walk_d, walk_y);
-            let native_here = kalendarium_1570::lookup(look_m2, look_d2);
+            let native_here = kalendarium_1570::lookup_for_layer(layer, look_m2, look_d2);
+            // Tridentine practice: a transferred saint can displace a
+            // SIMPLEX (rank < 2) native saint, who is then
+            // commemorated. Semiduplex+ native saints (rank 2.0+)
+            // outrank the transferred saint and block it (the
+            // transferred saint walks further or gets lost).
+            // Without this guard, Leo I (Apr 11, rank 3) preempted by
+            // the Easter Octave transfers forward and wrongly displaces
+            // Hermenegildi (Apr 13, rank 2.2), instead of being
+            // commemorated and walking past.
             let blocked = match native_here {
                 None => false, // free
-                Some(e) => e.main.rank_num >= entry.main.rank_num,
+                Some(e) => e.main.rank_num >= 2.0,
             };
             if blocked {
                 continue; // walk further — this day claims its native

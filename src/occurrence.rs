@@ -105,7 +105,7 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     //   2. The monthday-derived file exists in the missa corpus.
     // For 1570 only `093-3 / 093-5 / 093-6` ship under missa, so the
     // overlay fires only on Sept Ember Wed/Fri/Sat.
-    let tempora_stem = apply_monthday_overlay_1570(&tempora_stem, d, m, y, corpus);
+    let tempora_stem = apply_monthday_overlay_1570(&tempora_stem, d, m, y, input.rubric, corpus);
     // Sunday-letter / Easter-coded Transfer table override
     // (`Tabulae/Transfer/<letter>.txt` and `<easter-code>.txt`,
     // filtered to `;;1570`). When the entry's main target starts
@@ -617,6 +617,7 @@ fn apply_monthday_overlay_1570(
     day: u32,
     month: u32,
     year: i32,
+    rubric: Rubric,
     corpus: &dyn Corpus,
 ) -> String {
     // Perl guard: `fname =~ /Pent|Epi/ && !/Pent0[1-5]/`.
@@ -630,7 +631,14 @@ fn apply_monthday_overlay_1570(
     if !is_pent06_plus && !is_epi {
         return base_stem.to_string();
     }
-    let md = date::monthday(day, month, year, false, false);
+    // Modern-style monthday week numbering. Mirrors upstream
+    // SetupString.pl:745:
+    //   $monthday = monthday($day, $month, $year, ($version =~ /196/) + 0, $flag);
+    // Only Rubrics 1960 ($version contains "196") gets the modern
+    // formula. R55 ("Reduced - 1955") and earlier still use the
+    // pre-1955 week count.
+    let modernstyle = matches!(rubric, Rubric::Rubrics1960);
+    let md = date::monthday(day, month, year, modernstyle, false);
     if md.is_empty() {
         return base_stem.to_string();
     }
@@ -976,7 +984,11 @@ fn was_sancti_preempted_1570(
     // Same Sept Embertide overlay as compute_occurrence, so the
     // preemption check sees Pent16-6's rank as 2.1 (from 093-6) on
     // Sept Ember Saturday rather than the bare 1.0 of Pent16-6.
-    let tempora_stem = apply_monthday_overlay_1570(&tempora_stem, day, month, year, corpus);
+    // The transfer-eligibility check operates on the 1570 baseline,
+    // so use Tridentine1570 for the modern-style flag.
+    let tempora_stem = apply_monthday_overlay_1570(
+        &tempora_stem, day, month, year, Rubric::Tridentine1570, corpus,
+    );
     let tempora_key = FileKey {
         category: FileCategory::Tempora,
         stem: tempora_stem,

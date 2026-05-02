@@ -3314,4 +3314,68 @@ mod tests {
         };
         assert!(tempora_feria_sunday_fallback(&key).is_none());
     }
+
+    // ─── Rubric-aware (sed rubrica X) conditional tests ──────────
+
+    #[test]
+    fn rubrica_predicate_matches_1570_baseline() {
+        use crate::divinum_officium::core::Rubric;
+        // Tridentine 1570 accepts both `tridentina` and `1570` tokens.
+        assert!(rubrica_predicate_matches(Rubric::Tridentine1570, "tridentina"));
+        assert!(rubrica_predicate_matches(Rubric::Tridentine1570, "1570"));
+        // Other tokens fail under 1570.
+        assert!(!rubrica_predicate_matches(Rubric::Tridentine1570, "divino"));
+        assert!(!rubrica_predicate_matches(Rubric::Tridentine1570, "1955"));
+        assert!(!rubrica_predicate_matches(Rubric::Tridentine1570, "1960"));
+        assert!(!rubrica_predicate_matches(Rubric::Tridentine1570, "monastica"));
+    }
+
+    #[test]
+    fn rubrica_predicate_matches_1910_rejects_all_tokens() {
+        use crate::divinum_officium::core::Rubric;
+        // Tridentine 1910 has no specific token in the corpus —
+        // every (sed rubrica X) evaluates FALSE so the default form
+        // wins. This is what makes Hilarius read "Hilárium" (default
+        // accusative) rather than "Hilárii" (1570 genitive).
+        for tok in ["tridentina", "1570", "divino", "da", "1955", "1960", "monastica"] {
+            assert!(
+                !rubrica_predicate_matches(Rubric::Tridentine1910, tok),
+                "1910 should reject token {tok:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn rubrica_predicate_matches_divino_afflatu() {
+        use crate::divinum_officium::core::Rubric;
+        assert!(rubrica_predicate_matches(Rubric::DivinoAfflatu1911, "divino"));
+        assert!(rubrica_predicate_matches(Rubric::DivinoAfflatu1911, "da"));
+        assert!(!rubrica_predicate_matches(Rubric::DivinoAfflatu1911, "1570"));
+        assert!(!rubrica_predicate_matches(Rubric::DivinoAfflatu1911, "1955"));
+    }
+
+    #[test]
+    fn rubrica_predicate_matches_rubrics_1960() {
+        use crate::divinum_officium::core::Rubric;
+        // Rubrics 1960 should fire under 196*, 1960, 1963, 1966.
+        for tok in ["1960", "1963", "1966", "196"] {
+            assert!(
+                rubrica_predicate_matches(Rubric::Rubrics1960, tok),
+                "1960 should accept token {tok:?}"
+            );
+        }
+        assert!(!rubrica_predicate_matches(Rubric::Rubrics1960, "tridentina"));
+        assert!(!rubrica_predicate_matches(Rubric::Rubrics1960, "1955"));
+    }
+
+    #[test]
+    fn rubrica_predicate_matches_monastic() {
+        use crate::divinum_officium::core::Rubric;
+        // Monastic shares 1570 baseline + has its own monastica/1617.
+        assert!(rubrica_predicate_matches(Rubric::Monastic, "tridentina"));
+        assert!(rubrica_predicate_matches(Rubric::Monastic, "1570"));
+        assert!(rubrica_predicate_matches(Rubric::Monastic, "monastica"));
+        assert!(rubrica_predicate_matches(Rubric::Monastic, "1617"));
+        assert!(!rubrica_predicate_matches(Rubric::Monastic, "divino"));
+    }
 }

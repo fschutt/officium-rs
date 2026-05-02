@@ -157,6 +157,25 @@ def _t1570_bucket(label: str) -> bool:
     return "1570" in s or "tridentina" in s
 
 
+def _sp_bucket(label: str) -> bool:
+    """Return True if a `(sed communi Summorum Pontificum [...])`
+    annotation applies to "post-1942" rubrics (R55 + R60).
+
+    Perl predicate `summorum pontificum` is `/194[2-9]|195[45]|196/`,
+    matching version strings that contain "1942"–"1949", "1954",
+    "1955", or any "196" substring. Of our six active rubrics:
+    - "Reduced - 1955"      — /1955/ TRUE
+    - "Rubrics 1960 - 1960" — /196/ TRUE
+    - all others             — FALSE
+
+    Used to bucket the Mass-side `(sed communi Summorum Pontificum
+    et ad missam)` second variants (Gregory the Great 03-12,
+    Sylvester 12-31, etc.) so R55 picks the SP commune (C4b) where
+    R60 already takes the explicit `(sed rubrica 196)` body.
+    """
+    return "communi summorum pontificum" in label.lower()
+
+
 def _t1910_bucket(label: str) -> bool:
     """Return True if a `(rubrica …)` annotation applies to T1910
     (Perl version "Tridentine - 1910").
@@ -324,6 +343,7 @@ def parse_mass_file(text: str) -> dict:
         variant_1906_parts = None
         variant_1955_parts = None
         variant_1960_parts = None
+        variant_sp_parts = None
         current_label = None
         for raw in rank_lines:
             line = raw.strip()
@@ -347,6 +367,8 @@ def parse_mass_file(text: str) -> dict:
                     variant_1570_parts = parts
                 if _t1910_bucket(current_label) and variant_1906_parts is None:
                     variant_1906_parts = parts
+                if _sp_bucket(current_label) and variant_sp_parts is None:
+                    variant_sp_parts = parts
                 m55, m60 = _post_da_buckets(current_label)
                 if m55 and variant_1955_parts is None:
                     variant_1955_parts = parts
@@ -393,6 +415,21 @@ def parse_mass_file(text: str) -> dict:
                 out["rank_num_1906"] = None
             if len(variant_1906_parts) > 3 and variant_1906_parts[3]:
                 out["commune_1906"] = variant_1906_parts[3]
+        if variant_sp_parts:
+            if len(variant_sp_parts) > 0 and variant_sp_parts[0]:
+                out["officium_sp"] = variant_sp_parts[0]
+            if len(variant_sp_parts) > 1 and variant_sp_parts[1]:
+                out["rank_sp"] = variant_sp_parts[1]
+            try:
+                out["rank_num_sp"] = (
+                    float(variant_sp_parts[2])
+                    if len(variant_sp_parts) > 2 and variant_sp_parts[2]
+                    else None
+                )
+            except ValueError:
+                out["rank_num_sp"] = None
+            if len(variant_sp_parts) > 3 and variant_sp_parts[3]:
+                out["commune_sp"] = variant_sp_parts[3]
         if variant_1955_parts:
             if len(variant_1955_parts) > 0 and variant_1955_parts[0]:
                 out["officium_1955"] = variant_1955_parts[0]

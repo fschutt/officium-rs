@@ -771,15 +771,23 @@ fn pick_commune_for_rubric(m: &MassFile, rubric: Rubric) -> Option<String> {
         Rubric::Tridentine1570 => m.commune_1570.clone().or_else(|| m.commune.clone()),
         Rubric::Tridentine1910 => m.commune_1906.clone().or_else(|| m.commune.clone()),
         Rubric::DivinoAfflatu1911 => m.commune.clone().or_else(|| m.commune_1570.clone()),
+        // R55: prefer year-specific 1955 variant, then SP override
+        // (Gregory the Great 03-12 has `(sed communi Summorum
+        // Pontificum)` switching commune from C4a to C4b under
+        // R55), then default.
         Rubric::Reduced1955 => m
             .commune_1955
             .clone()
+            .or_else(|| m.commune_sp.clone())
             .or_else(|| m.commune.clone())
             .or_else(|| m.commune_1570.clone()),
+        // R60: 1960 > 1955 > SP > default. R60 typically has its
+        // own `(sed rubrica 196)` body that shadows SP.
         Rubric::Rubrics1960 => m
             .commune_1960
             .clone()
             .or_else(|| m.commune_1955.clone())
+            .or_else(|| m.commune_sp.clone())
             .or_else(|| m.commune.clone())
             .or_else(|| m.commune_1570.clone()),
         Rubric::Monastic => m.commune_1570.clone().or_else(|| m.commune.clone()),
@@ -1455,23 +1463,10 @@ fn resolve_sancti_for_tridentine_1570(
         }
         let commune = mass
             .and_then(|m| {
-                if prefer_r60 {
-                    m.commune_1960
-                        .clone()
-                        .or_else(|| m.commune_1955.clone())
-                        .or_else(|| m.commune.clone())
-                        .or_else(|| m.commune_1570.clone())
-                } else if prefer_r55 {
-                    m.commune_1955
-                        .clone()
-                        .or_else(|| m.commune.clone())
-                        .or_else(|| m.commune_1570.clone())
-                } else if prefer_t1910 {
-                    m.commune_1906.clone().or_else(|| m.commune.clone())
-                } else if prefer_1570_overrides {
+                if prefer_1570_overrides {
                     m.commune_1570.clone().or_else(|| m.commune.clone())
                 } else {
-                    m.commune.clone().or_else(|| m.commune_1570.clone())
+                    pick_commune_for_rubric(m, rubric)
                 }
             })
             .unwrap_or_default();

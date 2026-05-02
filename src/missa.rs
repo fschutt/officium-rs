@@ -58,6 +58,28 @@ pub struct MassFile {
     /// Tridentine 1910 variant of `commune`.
     #[serde(default)]
     pub commune_1906: Option<String>,
+    /// Summorum Pontificum (commune-of-supreme-pontiffs, instituted
+    /// 1942) variant of `officium`. Captured from inline
+    /// `(sed communi Summorum Pontificum [...])` predicates inside
+    /// a [Rank] block. Applies under R55 + R60 (their version
+    /// strings substring-match Perl's `/194[2-9]|195[45]|196/`
+    /// predicate); ignored by T1570/T1910/DA.
+    #[serde(default)]
+    pub officium_sp: Option<String>,
+    /// SP variant of `rank`.
+    #[serde(default)]
+    pub rank_sp: Option<String>,
+    /// SP variant of `rank_num`.
+    #[serde(default)]
+    pub rank_num_sp: Option<f32>,
+    /// SP variant of `commune`. Critical for Pope-Confessors
+    /// like Gregory the Great (03-12), where R55 routes through
+    /// the SP commune `vide C4b` (Confessor-Pope) — Perl shows
+    /// "Si diligis me, Simon Petre" — even though the file's
+    /// default is `vide C4a` (Doctor) and no `(rubrica 1955)`
+    /// variant exists.
+    #[serde(default)]
+    pub commune_sp: Option<String>,
     /// Reduced-1955 / Rubrics-1960 variant of `officium` from a
     /// `[Rank] (rubrica 196 aut rubrica 1955)` second header.
     /// Sancti/01-07, 01-12, 03-19, 06-23 etc. use this pattern to

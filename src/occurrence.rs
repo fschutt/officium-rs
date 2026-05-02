@@ -311,6 +311,18 @@ fn decide_sanctoral_wins_1570(
         return false;
     }
 
+    // Simplex demotion under 1955+: pre-1960 Simplex feasts (rank ≤ 1.1)
+    // become commemorations only. Mirrors `horascommon.pl:456`:
+    //   ($version =~ /19(?:55|6)|Monastic.*Divino/i && $srank[2] <= 1.1)
+    // → `$sanctoraloffice = 0`.
+    let is_simplex_demoted_rubric = matches!(
+        rubric,
+        Rubric::Reduced1955 | Rubric::Rubrics1960
+    );
+    if is_simplex_demoted_rubric && srank <= 1.1 {
+        return false;
+    }
+
     let temporal_name = tempora.officium.as_deref().unwrap_or("");
     let is_dominica = temporal_name.starts_with("Dominica");
 

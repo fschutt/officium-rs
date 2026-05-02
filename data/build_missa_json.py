@@ -471,6 +471,36 @@ def gather(missa_root: Path) -> dict:
     return out
 
 
+def _harvest_horas_dir(data: dict, root: Path, key_prefix: str) -> int:
+    """Scan a horas-side subtree (`Sancti`/`Tempora`) and pull files
+    whose missa equivalent is missing. Mirrors Perl
+    `SetupString.pl::checkfile`, which falls back from `missa/Latin`
+    to `horas/Latin` for any non-Commune file the missa tree lacks.
+
+    Used to capture entries like `Sancti/10-DP` (Solemnitas Rosarii
+    on the first Sunday of October — referenced by the Transfer
+    table under T1888/T1910/Cisterciensis) which only ship under the
+    horas tree."""
+    added = 0
+    if not root.is_dir():
+        return 0
+    for path in sorted(root.iterdir()):
+        if not BASE_FILE_RE.search(path.name):
+            continue
+        key = f"{key_prefix}/{path.stem}"
+        if key in data:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            text = path.read_text(encoding="latin-1")
+        parsed = parse_mass_file(text)
+        if parsed.get("sections") or parsed.get("officium") or parsed.get("parent"):
+            data[key] = parsed
+            added += 1
+    return added
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--missa-latin", required=True, type=Path,
@@ -479,6 +509,13 @@ def main():
                     help="Path to <upstream>/web/www/horas/Latin/Commune "
                          "(upstream stores Common files here, shared between "
                          "Office and Mass; @Commune/Cxx refs resolve here)")
+    ap.add_argument("--horas-latin", type=Path, default=None,
+                    help="Path to <upstream>/web/www/horas/Latin "
+                         "(parent of the horas Sancti/Tempora subtrees). "
+                         "When given, files present here but absent from "
+                         "missa/Latin/Sancti or missa/Latin/Tempora are "
+                         "added under their Sancti/<stem> or Tempora/<stem> "
+                         "key — matches Perl SetupString::checkfile cascade.")
     ap.add_argument("--out", required=True, type=Path,
                     help="Where to write missa_latin.json")
     args = ap.parse_args()
@@ -509,6 +546,14 @@ def main():
                 # from horas if missa didn't supply one.
                 if key not in data:
                     data[key] = parsed
+    if args.horas_latin is not None:
+        if not args.horas_latin.is_dir():
+            print(f"error: {args.horas_latin} is not a directory", file=sys.stderr)
+            sys.exit(1)
+        added_s = _harvest_horas_dir(data, args.horas_latin / "Sancti", "Sancti")
+        added_t = _harvest_horas_dir(data, args.horas_latin / "Tempora", "Tempora")
+        if added_s or added_t:
+            print(f"   horas-latin fallback: +{added_s} Sancti, +{added_t} Tempora")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(
         json.dumps(data, ensure_ascii=False, indent=0,

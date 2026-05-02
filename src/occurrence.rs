@@ -761,6 +761,63 @@ fn apply_transfer_sancti_1570(
 /// Trinity Sunday (`Pent01-0`) has no entry in the table — it
 /// already existed in 1570 — so the bare stem applies under all
 /// rubrics.
+/// Read the Sancti file's `commune` field with rubric-aware
+/// preference. Mirrors the dispatch used in
+/// `resolve_sancti_for_tridentine_1570`'s kalendar-lookup branch
+/// (the per-bucket `commune_*` accessors). Used by both the
+/// upstream-Transfer-table path and the heuristic walk-back.
+fn pick_commune_for_rubric(m: &MassFile, rubric: Rubric) -> Option<String> {
+    match rubric {
+        Rubric::Tridentine1570 => m.commune_1570.clone().or_else(|| m.commune.clone()),
+        Rubric::Tridentine1910 => m.commune_1906.clone().or_else(|| m.commune.clone()),
+        Rubric::DivinoAfflatu1911 => m.commune.clone().or_else(|| m.commune_1570.clone()),
+        Rubric::Reduced1955 => m
+            .commune_1955
+            .clone()
+            .or_else(|| m.commune.clone())
+            .or_else(|| m.commune_1570.clone()),
+        Rubric::Rubrics1960 => m
+            .commune_1960
+            .clone()
+            .or_else(|| m.commune_1955.clone())
+            .or_else(|| m.commune.clone())
+            .or_else(|| m.commune_1570.clone()),
+        Rubric::Monastic => m.commune_1570.clone().or_else(|| m.commune.clone()),
+    }
+}
+
+/// Sister of `pick_commune_for_rubric` for the `officium` field.
+fn pick_officium_for_rubric(m: &MassFile, rubric: Rubric) -> Option<String> {
+    match rubric {
+        Rubric::Tridentine1910 => m.officium_1906.clone().or_else(|| m.officium.clone()),
+        Rubric::Reduced1955 => m.officium_1955.clone().or_else(|| m.officium.clone()),
+        Rubric::Rubrics1960 => m
+            .officium_1960
+            .clone()
+            .or_else(|| m.officium_1955.clone())
+            .or_else(|| m.officium.clone()),
+        // T1570 / DA / Monastic: no canonical override slot stored —
+        // the parser keeps the bare `officium` for these. The 1570
+        // bucket only holds rank/commune deltas (no name change).
+        _ => m.officium.clone(),
+    }
+}
+
+/// Sister of `pick_commune_for_rubric` for the `rank` (class label)
+/// field.
+fn pick_rank_class_for_rubric(m: &MassFile, rubric: Rubric) -> Option<String> {
+    match rubric {
+        Rubric::Tridentine1910 => m.rank_1906.clone().or_else(|| m.rank.clone()),
+        Rubric::Reduced1955 => m.rank_1955.clone().or_else(|| m.rank.clone()),
+        Rubric::Rubrics1960 => m
+            .rank_1960
+            .clone()
+            .or_else(|| m.rank_1955.clone())
+            .or_else(|| m.rank.clone()),
+        _ => m.rank.clone(),
+    }
+}
+
 fn pick_tempora_variant(stem: &str, rubric: Rubric, corpus: &dyn Corpus) -> String {
     if let Some(target) = crate::divinum_officium::tempora_table::redirect(stem, rubric) {
         let key = FileKey {
@@ -1205,15 +1262,18 @@ fn resolve_sancti_for_tridentine_1570(
         let metadata_key = effective_tempora_key(&key, corpus);
         let mass = corpus.mass_file(&metadata_key);
         let name = mass
-            .and_then(|m| m.officium.clone())
+            .and_then(|m| pick_officium_for_rubric(m, rubric))
             .unwrap_or_else(|| stem.clone());
         let commune = mass
-            .and_then(|m| m.commune_1570.clone().or_else(|| m.commune.clone()))
+            .and_then(|m| pick_commune_for_rubric(m, rubric))
+            .unwrap_or_default();
+        let rank_class = mass
+            .and_then(|m| pick_rank_class_for_rubric(m, rubric))
             .unwrap_or_default();
         let entry = SanctiEntry {
-            rubric: "1570-transfer-table".into(),
+            rubric: "transfer-table".into(),
             name,
-            rank_class: mass.and_then(|m| m.rank.clone()).unwrap_or_default(),
+            rank_class,
             rank_num: Some(rank_num),
             commune,
         };
@@ -1276,12 +1336,15 @@ fn resolve_sancti_for_tridentine_1570(
             let metadata_key = effective_tempora_key(&key, corpus);
             let mass = corpus.mass_file(&metadata_key);
             let commune = mass
-                .and_then(|m| m.commune_1570.clone().or_else(|| m.commune.clone()))
+                .and_then(|m| pick_commune_for_rubric(m, rubric))
+                .unwrap_or_default();
+            let rank_class = mass
+                .and_then(|m| pick_rank_class_for_rubric(m, rubric))
                 .unwrap_or_default();
             let entry = SanctiEntry {
                 rubric: "1570-transferred".into(),
                 name,
-                rank_class: mass.and_then(|m| m.rank.clone()).unwrap_or_default(),
+                rank_class,
                 rank_num: Some(rank_num),
                 commune,
             };

@@ -151,7 +151,7 @@ pub struct MassFile {
     pub annotated_section_meta: std::collections::HashMap<String, String>,
 }
 
-static MISSA_JSON: &str = include_str!("../../data/missa_latin.json");
+static MISSA_JSON: &str = include_str!("../data/missa_latin.json");
 static PARSED: OnceLock<HashMap<String, MassFile>> = OnceLock::new();
 
 fn parsed() -> &'static HashMap<String, MassFile> {

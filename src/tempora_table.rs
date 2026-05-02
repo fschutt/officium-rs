@@ -25,11 +25,11 @@
 //! `DA` does not appear in the redirect file, so DA-1939 simply
 //! falls through (no redirects fire).
 
-use crate::divinum_officium::core::Rubric;
+use crate::core::Rubric;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-static TABLE_TXT: &str = include_str!("../../data/tempora_redirects.txt");
+static TABLE_TXT: &str = include_str!("../data/tempora_redirects.txt");
 
 /// Each `from` stem maps to a list of `(to_stem, rubric_tokens)`
 /// entries; we keep all rubric variants (e.g. `Pasc3-0` can redirect

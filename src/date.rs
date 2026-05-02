@@ -31,13 +31,13 @@
 //! day” numbering issue in February). For new usage, prefer a thorough date
 //! library, unless compatibility with the project’s original logic is required.
 
-// chrono removed: vendored copy uses only the non-chrono fallback paths
-// so md2json2 doesn't pull a date-library dep just for a fast path.
+// chrono removed: this crate uses only the non-chrono fallback paths
+// so consumers don't pull a date-library dep just for a fast path.
 
 /// Returns `true` if the given year is a leap year under the Gregorian rules.
 ///
 /// ```
-/// # use divinum_officium::date::leap_year;
+/// # use officium_rs::date::leap_year;
 /// assert!(leap_year(2000));  // divisible by 400
 /// assert!(!leap_year(1900)); // divisible by 100 but not 400
 /// assert!(leap_year(2024));  // divisible by 4 but not 100
@@ -56,7 +56,7 @@ pub fn leap_year(year: i32) -> bool {
 /// “Anonymous Gregorian Computus”:
 ///
 /// ```
-/// # use divinum_officium::date::geteaster;
+/// # use officium_rs::date::geteaster;
 /// let (eday, emonth, eyear) = geteaster(2024);
 /// // Easter 2024 is 03-31-2024
 /// assert_eq!((eday, emonth, eyear), (31, 3, 2024));
@@ -93,7 +93,7 @@ pub fn geteaster(year: i32) -> (u32, u32, i32) {
 /// by backing up from Christmas to the previous Sunday minus 21 days (3 weeks).
 ///
 /// ```
-/// # use divinum_officium::date::getadvent;
+/// # use officium_rs::date::getadvent;
 /// let advent_2023 = getadvent(2023);
 /// assert_eq!(getadvent(2023), 337);
 /// ```
@@ -123,7 +123,7 @@ pub fn getadvent(year: i32) -> u32 {
 /// `(year * 365 + floor((year-1)/4) - floor((year-1)/100) + floor((year-1)/400) - 1 + date_to_ydays(day,month,year)) mod 7`
 ///
 /// ```
-/// # use divinum_officium::date::day_of_week;
+/// # use officium_rs::date::day_of_week;
 /// let wday = day_of_week(25, 12, 2023); // 0=Sunday, 1=Monday, ...
 /// // 25 Dec 2023 is a Monday => 1
 /// assert_eq!(wday, 1);
@@ -149,7 +149,7 @@ pub fn day_of_week(day: u32, month: u32, year: i32) -> u32 {
 /// Converts a date to its day-of-year index (1-based).
 ///
 /// ```
-/// # use divinum_officium::date::date_to_ydays;
+/// # use officium_rs::date::date_to_ydays;
 /// assert_eq!(date_to_ydays(1, 1, 2023), 1);
 /// assert_eq!(date_to_ydays(31, 12, 2023), 365);
 /// // For a leap year:
@@ -169,7 +169,7 @@ pub fn date_to_ydays(day: u32, month: u32, year: i32) -> u32 {
 /// Converts a 1-based day-of-year index back into `(day, month, year)`.
 ///
 /// ```
-/// # use divinum_officium::date::ydays_to_date;
+/// # use officium_rs::date::ydays_to_date;
 /// let (day, month, year) = ydays_to_date(365, 2023);
 /// // 31 Dec 2023
 /// assert_eq!((day, month, year), (31, 12, 2023));
@@ -202,7 +202,7 @@ pub fn ydays_to_date(day_of_year: u32, year: i32) -> (u32, u32, i32) {
 /// Lent, Easter, Pentecost, or after Pentecost).
 ///
 /// ```
-/// # use divinum_officium::date::getweek;
+/// # use officium_rs::date::getweek;
 /// let week_label = getweek(20, 12, 2023, false, false);
 /// assert_eq!(week_label, "Adv3".to_string()); // third week of advent
 /// ```
@@ -324,7 +324,7 @@ pub fn getweek(
 /// ferias, bridging to an additional file like `Tempora/081-1.txt`.
 ///
 /// ```
-/// # use divinum_officium::date::monthday;
+/// # use officium_rs::date::monthday;
 /// let md = monthday(8, 9, 2023, false, false);
 /// // Might return "081-1-2" or similar. The original code returns "081-1" with a suffix day-of-week.
 /// if md.is_empty() {
@@ -427,7 +427,7 @@ pub fn monthday(
 /// keep their original distance from March 1).
 ///
 /// ```
-/// # use divinum_officium::date::get_sday;
+/// # use officium_rs::date::get_sday;
 /// assert_eq!(get_sday(2, 24, 2024), "02-29"); // real Feb 24 (leap) = bissextile
 /// assert_eq!(get_sday(2, 25, 2024), "02-24"); // real Feb 25 (leap) = Matthias day
 /// assert_eq!(get_sday(2, 24, 2025), "02-24"); // non-leap, unchanged
@@ -466,7 +466,7 @@ pub fn sday_pair(month: u32, day: u32, year: i32) -> (u32, u32) {
 /// “sancti day” string (which has special logic in leap years).
 ///
 /// ```
-/// # use divinum_officium::date::nextday;
+/// # use officium_rs::date::nextday;
 /// let next_s = nextday(2, 28, 2023); // => "03-01"
 /// let next_sl = nextday(2, 28, 2024); // => "02-30" due to leap day logic in DO
 /// ```
@@ -488,7 +488,7 @@ pub fn nextday(month: u32, day: u32, year: i32) -> String {
 /// in `prevnext`.
 ///
 /// ```
-/// # use divinum_officium::date::prevnext;
+/// # use officium_rs::date::prevnext;
 /// let shifted = prevnext("02-26-2024", 2);
 /// // => "02-28-2024", which is "02-30" in the Sancti sense, but here we keep the real calendar date.
 /// assert_eq!(&shifted, "02-28-2024");
@@ -530,7 +530,7 @@ pub fn prevnext(date_str: &str, inc: i32) -> String {
 /// also warns about the Gregorian calendar start.
 ///
 /// ```
-/// # use divinum_officium::date::days_to_date;
+/// # use officium_rs::date::days_to_date;
 /// let (sec, min, hour, dday, dmonth, dyear, wday, yday, isdst) = days_to_date(0);
 /// // This is 1970-01-01 in the original logic
 /// assert_eq!((dday, dmonth, dyear), (1, 0, 70));
@@ -677,7 +677,7 @@ fn days_to_date_fallback(days: i32) -> (u32, u32, i32) {
 /// timestamps for years < 1970 or > 2038, but suffices for the DO logic.
 ///
 /// ```
-/// # use divinum_officium::date::date_to_days;
+/// # use officium_rs::date::date_to_days;
 /// let days = date_to_days(1, 1, 1970);
 /// assert_eq!(days, 0);
 /// let days2 = date_to_days(2, 1, 1970);

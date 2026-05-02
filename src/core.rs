@@ -112,8 +112,8 @@ impl Rubric {
     /// site re-deciding the mapping.
     pub const fn kalendar_layer(
         self,
-    ) -> crate::divinum_officium::kalendaria_layers::Layer {
-        use crate::divinum_officium::kalendaria_layers::Layer;
+    ) -> crate::kalendaria_layers::Layer {
+        use crate::kalendaria_layers::Layer;
         match self {
             // Tridentine 1570 baseline.
             Rubric::Tridentine1570    => Layer::Pius1570,
@@ -503,7 +503,7 @@ mod tests {
 
     #[test]
     fn rubric_kalendar_layer_mapping() {
-        use crate::divinum_officium::kalendaria_layers::Layer;
+        use crate::kalendaria_layers::Layer;
         assert_eq!(Rubric::Tridentine1570.kalendar_layer(), Layer::Pius1570);
         assert_eq!(Rubric::Tridentine1910.kalendar_layer(), Layer::PiusX1906);
         assert_eq!(Rubric::DivinoAfflatu1911.kalendar_layer(), Layer::PiusXI1939);

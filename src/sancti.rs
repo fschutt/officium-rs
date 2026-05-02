@@ -1,8 +1,8 @@
 //! Sanctoral (fixed-date) feast lookup.
 //!
-//! Source data is `md2json2/data/sancti.json`, generated once from
+//! Source data is `data/sancti.json`, generated once from
 //! `divinum-officium-cgi-bin/data/horas/Latin/Sancti/` by
-//! `md2json2/data/build_sancti_json.py`. The JSON is included via
+//! `data/build_sancti_json.py`. The JSON is included via
 //! `include_str!` so the SSG binary stays self-contained.
 //!
 //! The shipped JSON has the shape:
@@ -38,7 +38,7 @@ pub struct SanctiEntry {
     pub commune: String,
 }
 
-static SANCTI_JSON: &str = include_str!("../../data/sancti.json");
+static SANCTI_JSON: &str = include_str!("../data/sancti.json");
 static PARSED: OnceLock<HashMap<String, Vec<SanctiEntry>>> = OnceLock::new();
 
 fn parsed() -> &'static HashMap<String, Vec<SanctiEntry>> {

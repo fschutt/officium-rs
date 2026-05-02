@@ -1,7 +1,7 @@
-use md2json2::divinum_officium::core::{Date, Locale, OfficeInput, Rubric};
-use md2json2::divinum_officium::corpus::BundledCorpus;
-use md2json2::divinum_officium::mass::mass_propers;
-use md2json2::divinum_officium::precedence;
+use officium_rs::core::{Date, Locale, OfficeInput, Rubric};
+use officium_rs::corpus::BundledCorpus;
+use officium_rs::mass::mass_propers;
+use officium_rs::precedence;
 
 fn main() {
     let input = OfficeInput {

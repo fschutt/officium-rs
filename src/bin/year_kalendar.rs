@@ -19,7 +19,7 @@
 //! extend the `Layer` enum, and this tool plus every other Sancti
 //! consumer picks it up automatically.
 
-use md2json2::divinum_officium::kalendaria_layers::{self, Cell, Layer};
+use officium_rs::kalendaria_layers::{self, Cell, Layer};
 
 fn usage() -> ! {
     eprintln!(

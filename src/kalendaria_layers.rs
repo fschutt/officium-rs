@@ -134,7 +134,7 @@ pub fn layer_for_year(year: i32) -> Layer {
     }
 }
 
-static KALENDARIA_JSON: &str = include_str!("../../data/kalendaria_by_rubric.json");
+static KALENDARIA_JSON: &str = include_str!("../data/kalendaria_by_rubric.json");
 static PARSED: OnceLock<HashMap<String, HashMap<String, Entry>>> = OnceLock::new();
 
 fn parsed() -> &'static HashMap<String, HashMap<String, Entry>> {

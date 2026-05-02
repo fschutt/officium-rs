@@ -20,7 +20,7 @@
 //! See `DIVINUM_OFFICIUM_PORT_PLAN.md` "Reform stack" for the
 //! Pope-by-Pope rationale.
 
-use crate::divinum_officium::core::Rubric;
+use crate::core::Rubric;
 
 // Empty in Phase 1; structure emerges in Phases 7-10. Named-field
 // empty structs (rather than unit) so adding fields later doesn't

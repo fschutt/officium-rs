@@ -9,7 +9,7 @@
 //! The 1962 typical edition is "1955 with 1960 applied on top". Anything
 //! the diffs don't mention keeps its Divino-Afflatu default.
 //!
-//! `md2json2/data/build_sancti_json.py` merges the two diffs into
+//! `data/build_sancti_json.py` merges the two diffs into
 //! `kalendaria_1962.json`. This module loads that file and exposes a
 //! single `resolve_1962(month, day)` that returns:
 //!
@@ -18,7 +18,7 @@
 //!   * `Resolution::Default(...)` — fall through to the Sancti file
 //!   * `Resolution::Ferial` — no Sancti file at all for that fixed date
 
-use crate::divinum_officium::sancti::{self, SanctiEntry};
+use crate::sancti::{self, SanctiEntry};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -36,7 +36,7 @@ pub struct KalendariaEntry {
     pub commemorations: Vec<KalendariaFeast>,
 }
 
-static KALENDARIA_JSON: &str = include_str!("../../data/kalendaria_1962.json");
+static KALENDARIA_JSON: &str = include_str!("../data/kalendaria_1962.json");
 static PARSED: OnceLock<HashMap<String, Option<KalendariaEntry>>> = OnceLock::new();
 
 fn parsed() -> &'static HashMap<String, Option<KalendariaEntry>> {

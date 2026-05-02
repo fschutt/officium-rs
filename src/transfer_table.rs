@@ -25,7 +25,7 @@
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
-use crate::divinum_officium::date::{geteaster, leap_year};
+use crate::date::{geteaster, leap_year};
 
 /// One transfer instruction for a date.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -44,7 +44,7 @@ type FileEntries = BTreeMap<String, Vec<(TransferTarget, Vec<String>)>>;
 /// Whole-corpus index: `file_name` -> per-date entries.
 type Combined = BTreeMap<String, FileEntries>;
 
-static TRANSFER_DATA: &str = include_str!("../../data/transfer_combined.txt");
+static TRANSFER_DATA: &str = include_str!("../data/transfer_combined.txt");
 
 fn parsed() -> &'static Combined {
     static PARSED: OnceLock<Combined> = OnceLock::new();

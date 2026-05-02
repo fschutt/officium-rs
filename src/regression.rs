@@ -23,9 +23,9 @@ use std::sync::OnceLock;
 use serde::Serialize;
 use unicode_normalization::UnicodeNormalization;
 
-use crate::divinum_officium::core::MassPropers;
-use crate::divinum_officium::mass::expand_macros;
-use crate::divinum_officium::missa;
+use crate::core::MassPropers;
+use crate::mass::expand_macros;
+use crate::missa;
 
 // ─── Public types ────────────────────────────────────────────────────
 

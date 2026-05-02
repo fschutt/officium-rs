@@ -1,0 +1,45 @@
+[package]
+name = "officium-rs"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Divinum Officium rubric core in pure Rust — calendar, occurrence, precedence, and mass-propers resolver across Tridentine 1570 → Rubrics 1960."
+repository = "https://github.com/fschutt/officium-rs"
+homepage = "https://fschutt.github.io/officium-rs/"
+keywords = ["liturgy", "calendar", "latin", "rubrics"]
+categories = ["text-processing"]
+readme = "README.md"
+
+[lib]
+crate-type = ["lib"]
+
+[features]
+default = ["regression"]
+# Native-only Rust↔Perl regression harness. Pulls in the Perl source
+# as a git submodule (vendor/divinum-officium-perl/) and shells out to
+# `perl5` to render reference HTML for diff. Hard-gated to non-WASM
+# targets — see compile_error! at the top of src/regression.rs.
+regression = []
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+unicode-normalization = "0.1"
+
+[[bin]]
+name = "year-sweep"
+path = "src/bin/year_sweep.rs"
+required-features = ["regression"]
+
+[[bin]]
+name = "year-kalendar"
+path = "src/bin/year_kalendar.rs"
+
+[[bin]]
+name = "getweek-check"
+path = "src/bin/getweek_check.rs"
+
+[[bin]]
+name = "debug-prelude"
+path = "src/bin/debug_prelude.rs"
+required-features = ["regression"]

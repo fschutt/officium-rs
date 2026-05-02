@@ -17,14 +17,14 @@
 //! Phase 11 wires the WIP pages to this module.
 
 #[allow(unused_imports)]
-use crate::divinum_officium::core::{
+use crate::core::{
     Color, DayKind, Locale, OfficeInput, OfficeOutput, Rank, RankClass, RankKind, ReformAction,
     RuleLine, Rubric, Season,
 };
-use crate::divinum_officium::corpus::Corpus;
-use crate::divinum_officium::date;
-use crate::divinum_officium::occurrence::{self, OccurrenceResult};
-use crate::divinum_officium::sancti;
+use crate::corpus::Corpus;
+use crate::date;
+use crate::occurrence::{self, OccurrenceResult};
+use crate::sancti;
 
 /// Phase 4 orchestrator. Calls `compute_occurrence`, parses the
 /// winner's rank string into a typed `Rank`, derives `DayKind` /
@@ -193,7 +193,7 @@ fn winner_officium(occ: &OccurrenceResult, _input: &OfficeInput, corpus: &dyn Co
             // (typical of `@`-only redirects like Sancti/12-24o that
             // forward everything to Sancti/12-24).
             if let Some(parent_path) = file.parent.as_deref() {
-                key = crate::divinum_officium::core::FileKey::parse(parent_path);
+                key = crate::core::FileKey::parse(parent_path);
                 continue;
             }
         }
@@ -292,8 +292,8 @@ fn enrich_reform_trace(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::divinum_officium::core::Date;
-    use crate::divinum_officium::corpus::BundledCorpus;
+    use crate::core::Date;
+    use crate::corpus::BundledCorpus;
 
     fn input(year: i32, month: u32, day: u32) -> OfficeInput {
         OfficeInput {

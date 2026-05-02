@@ -16,12 +16,12 @@
 //!
 //! See DIVINUM_OFFICIUM_PORT_PLAN.md Phase 5.
 
-use crate::divinum_officium::core::{
+use crate::core::{
     CommuneType, FileCategory, FileKey, MassPropers, OfficeOutput, ProperBlock, Rubric, Season,
 };
-use crate::divinum_officium::corpus::Corpus;
-use crate::divinum_officium::missa::MassFile;
-use crate::divinum_officium::prayers;
+use crate::corpus::Corpus;
+use crate::missa::MassFile;
+use crate::prayers;
 use unicode_normalization::UnicodeNormalization;
 
 /// Maximum `@`-chain hops. Three is enough for every multi-hop case
@@ -34,8 +34,8 @@ const MAX_AT_HOPS: u8 = 4;
 // shared body-rewrite helpers — threading explicit parameters
 // through every call site would be invasive).
 thread_local! {
-    static ACTIVE_RUBRIC: std::cell::Cell<crate::divinum_officium::core::Rubric> =
-        const { std::cell::Cell::new(crate::divinum_officium::core::Rubric::Tridentine1570) };
+    static ACTIVE_RUBRIC: std::cell::Cell<crate::core::Rubric> =
+        const { std::cell::Cell::new(crate::core::Rubric::Tridentine1570) };
 }
 
 /// Public entry point. For each Mass section, fetch the proper from
@@ -98,7 +98,7 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
     }
     let in_paschal_season_for_alleluja = matches!(
         office.season,
-        crate::divinum_officium::core::Season::Easter
+        crate::core::Season::Easter
     );
     // `(sed post Septuagesimam dicitur)` conditional flips a
     // trailing "alleluja" → alternative form on or after
@@ -106,9 +106,9 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
     // form drop, leaving the alleluja form.
     let in_post_septuagesima = matches!(
         office.season,
-        crate::divinum_officium::core::Season::Septuagesima
-            | crate::divinum_officium::core::Season::Lent
-            | crate::divinum_officium::core::Season::Passiontide
+        crate::core::Season::Septuagesima
+            | crate::core::Season::Lent
+            | crate::core::Season::Passiontide
     );
     // Defunctorum mode — winner [Rule] mentions "defunct" or "C9"
     // (votive of the Dead) or "Add Defunctorum" (Octave-of-All-Saints
@@ -286,7 +286,7 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             })
             .unwrap_or(false);
         let r60_with_commemoration = matches!(
-            office.rubric, crate::divinum_officium::core::Rubric::Rubrics1960
+            office.rubric, crate::core::Rubric::Rubrics1960
         ) && office.commemoratio.is_some()
             && body_ends_with_macro;
         let needs_strip = matches!(sect, "Oratio" | "Secreta" | "Postcommunio")
@@ -332,13 +332,13 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
     // Tractus / Graduale interplay — see `graduale_or_tractus`.
     let in_tractus_season = matches!(
         office.season,
-        crate::divinum_officium::core::Season::Septuagesima
-            | crate::divinum_officium::core::Season::Lent
-            | crate::divinum_officium::core::Season::Passiontide
+        crate::core::Season::Septuagesima
+            | crate::core::Season::Lent
+            | crate::core::Season::Passiontide
     );
     let in_paschal_season = matches!(
         office.season,
-        crate::divinum_officium::core::Season::Easter
+        crate::core::Season::Easter
     );
     let graduale = if let Some(prelude_body) = prelude_overrides.get("Graduale") {
         // Prelude `!!Graduale` overrides the Mass Graduale on
@@ -838,7 +838,7 @@ pub fn spell_classical_post1910(text: &str) -> String {
 /// `KNOWN_RUBRICS`).
 pub fn apply_spelling_for_active_rubric(text: &str) -> String {
     let active = ACTIVE_RUBRIC.with(|r| r.get());
-    use crate::divinum_officium::core::Rubric;
+    use crate::core::Rubric;
     // Perl `spell_var` is a hard if/else: the /196/ branch and the
     // pre-1960 branch are mutually exclusive. Under R60 the only
     // substitution is `tr/Jj/Ii/` (with the H-Jesu opt-out and
@@ -1051,7 +1051,7 @@ fn resolve_name_for_section(name_body: &str, section: &str) -> String {
 ///   active rubrics; treat as always-skip.
 pub(crate) fn annotation_applies_to_rubric(
     annotation: &str,
-    rubric: crate::divinum_officium::core::Rubric,
+    rubric: crate::core::Rubric,
 ) -> bool {
     let lc = annotation.trim().to_ascii_lowercase();
     if lc.is_empty() {
@@ -1121,7 +1121,7 @@ pub(crate) fn annotation_applies_to_rubric(
 /// "tridentina" doesn't substring-match "Tridentine - 1910" — the
 /// last letter differs).
 fn rubrica_predicate_matches(
-    active: crate::divinum_officium::core::Rubric,
+    active: crate::core::Rubric,
     predicate: &str,
 ) -> bool {
     let pred_lc = predicate.trim().to_ascii_lowercase();
@@ -1465,7 +1465,7 @@ fn graduale_or_tractus(
 /// time into `rank_num_*` slots.
 fn rubric_variant_section_for(
     base: &str,
-    rubric: crate::divinum_officium::core::Rubric,
+    rubric: crate::core::Rubric,
     winner_sections: &std::collections::HashMap<String, String>,
 ) -> Option<String> {
     let prefix = format!("{base} (");
@@ -1484,8 +1484,8 @@ fn rubric_variant_section_for(
     None
 }
 
-fn seasonal_variant_section(base: &str, season: crate::divinum_officium::core::Season) -> Option<String> {
-    use crate::divinum_officium::core::Season;
+fn seasonal_variant_section(base: &str, season: crate::core::Season) -> Option<String> {
+    use crate::core::Season;
     match season {
         Season::Advent => Some(format!("{base} (tempore Adventus)")),
         _ => None,
@@ -2072,7 +2072,7 @@ fn self_reference_sibling(
 fn apply_coronatio_oratio(
     body: &str,
     sect: &str,
-    date: crate::divinum_officium::core::Date,
+    date: crate::core::Date,
     corpus: &dyn Corpus,
 ) -> String {
     if date.month != 5 || date.day != 18 {
@@ -2397,9 +2397,9 @@ fn winner_has_sub_unica_concl(winner_file: Option<&MassFile>, corpus: &dyn Corpu
 ///     the `p.contains(r)` comparator still matches.
 fn strip_conclusion_macro_for_sub_unica(
     body: &str,
-    rubric: crate::divinum_officium::core::Rubric,
+    rubric: crate::core::Rubric,
 ) -> String {
-    let is_r60 = matches!(rubric, crate::divinum_officium::core::Rubric::Rubrics1960);
+    let is_r60 = matches!(rubric, crate::core::Rubric::Rubrics1960);
     let lines: Vec<&str> = body.split('\n').collect();
     let macro_idx_iter = lines
         .iter()
@@ -3502,13 +3502,13 @@ fn case_insensitive_lookup(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::divinum_officium::core::{Date, Locale, Rubric};
-    use crate::divinum_officium::corpus::BundledCorpus;
-    use crate::divinum_officium::precedence::compute_office;
+    use crate::core::{Date, Locale, Rubric};
+    use crate::corpus::BundledCorpus;
+    use crate::precedence::compute_office;
 
     fn office(year: i32, month: u32, day: u32) -> OfficeOutput {
         compute_office(
-            &crate::divinum_officium::core::OfficeInput {
+            &crate::core::OfficeInput {
                 date: Date::new(year, month, day),
                 rubric: Rubric::Tridentine1570,
                 locale: Locale::Latin,
@@ -3987,7 +3987,7 @@ mod tests {
 
     #[test]
     fn rubrica_predicate_matches_1570_baseline() {
-        use crate::divinum_officium::core::Rubric;
+        use crate::core::Rubric;
         // Tridentine 1570 accepts both `tridentina` and `1570` tokens.
         assert!(rubrica_predicate_matches(Rubric::Tridentine1570, "tridentina"));
         assert!(rubrica_predicate_matches(Rubric::Tridentine1570, "1570"));
@@ -4000,7 +4000,7 @@ mod tests {
 
     #[test]
     fn rubrica_predicate_matches_1910() {
-        use crate::divinum_officium::core::Rubric;
+        use crate::core::Rubric;
         // T1910 ("Tridentine - 1910") matches `tridentina`
         // (Perl /Trident/) and `1910`. Year-literal tokens that
         // don't substring its version-string fail.
@@ -4016,7 +4016,7 @@ mod tests {
 
     #[test]
     fn rubrica_predicate_matches_divino_afflatu() {
-        use crate::divinum_officium::core::Rubric;
+        use crate::core::Rubric;
         // DA "Divino Afflatu" — matches /divino/ and /afflatu/.
         // Multi-word predicate `divino afflatu` also substring-matches.
         assert!(rubrica_predicate_matches(Rubric::DivinoAfflatu1911, "divino"));
@@ -4032,7 +4032,7 @@ mod tests {
 
     #[test]
     fn rubrica_predicate_matches_rubrics_1960() {
-        use crate::divinum_officium::core::Rubric;
+        use crate::core::Rubric;
         // R60 ("Rubrics 1960 - 1960"): matches `1960`, `196`,
         // `rubrics`. Year-only `1962` / `1963` etc. don't substring
         // the version string.
@@ -4052,7 +4052,7 @@ mod tests {
 
     #[test]
     fn rubrica_predicate_matches_monastic() {
-        use crate::divinum_officium::core::Rubric;
+        use crate::core::Rubric;
         // Monastic ("pre-Trident Monastic"): matches `tridentina`
         // (because /Trident/i is in "pre-Trident Monastic") and
         // `monastica`. Year tokens fail.
@@ -4084,7 +4084,7 @@ mod tests {
 
     #[test]
     fn apply_spelling_for_active_rubric_dispatches_per_rubric() {
-        use crate::divinum_officium::core::Rubric;
+        use crate::core::Rubric;
         // Only Rubrics 1960 swaps j→i — that's the only rubric whose
         // upstream `$version` matches `spell_var`'s `/196/` regex.
         for r in [

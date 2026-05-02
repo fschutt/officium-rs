@@ -23,7 +23,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::process::Command;
 
-use md2json2::divinum_officium::date;
+use officium_rs::date;
 
 fn repo_root() -> PathBuf {
     let mut p = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

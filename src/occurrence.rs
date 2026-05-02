@@ -30,14 +30,14 @@
 //!   commemorations, the 11-02 All-Saints-vs-All-Souls collision.
 
 #[allow(unused_imports)]
-use crate::divinum_officium::core::{
+use crate::core::{
     CommuneType, FileCategory, FileKey, OfficeInput, ReformAction, Rubric,
 };
-use crate::divinum_officium::corpus::Corpus;
-use crate::divinum_officium::date;
-use crate::divinum_officium::kalendarium_1570;
-use crate::divinum_officium::missa::MassFile;
-use crate::divinum_officium::sancti::SanctiEntry;
+use crate::corpus::Corpus;
+use crate::date;
+use crate::kalendarium_1570;
+use crate::missa::MassFile;
+use crate::sancti::SanctiEntry;
 
 /// Output of a single `compute_occurrence` call. Captures every Perl
 /// global that `occurrence()` writes — `$winner`, `$commemoratio`,
@@ -690,7 +690,7 @@ fn apply_transfer_temporal_1570(
     day: u32,
     rubric_tag: &str,
 ) -> String {
-    let entries = crate::divinum_officium::transfer_table::transfers_for(
+    let entries = crate::transfer_table::transfers_for(
         year, rubric_tag, month, day,
     );
     for entry in entries {
@@ -716,7 +716,7 @@ fn apply_transfer_sancti_1570(
     rubric_tag: &str,
     corpus: &dyn Corpus,
 ) -> Option<(String, f32)> {
-    let entries = crate::divinum_officium::transfer_table::transfers_for(
+    let entries = crate::transfer_table::transfers_for(
         year, rubric_tag, month, day,
     );
     for entry in entries {
@@ -832,7 +832,7 @@ fn pick_rank_class_for_rubric(m: &MassFile, rubric: Rubric) -> Option<String> {
 }
 
 fn pick_tempora_variant(stem: &str, rubric: Rubric, corpus: &dyn Corpus) -> String {
-    if let Some(target) = crate::divinum_officium::tempora_table::redirect(stem, rubric) {
+    if let Some(target) = crate::tempora_table::redirect(stem, rubric) {
         let key = FileKey {
             category: FileCategory::Tempora,
             stem: target.to_string(),
@@ -868,7 +868,7 @@ fn transferred_sancti_for_1570(
     year: i32,
     month: u32,
     day: u32,
-    layer: crate::divinum_officium::kalendaria_layers::Layer,
+    layer: crate::kalendaria_layers::Layer,
     corpus: &dyn Corpus,
 ) -> Option<(String, String, f32)> {
     // Walk back up to 6 days looking for the most recent kalendar
@@ -1006,7 +1006,7 @@ fn previous_calendar_day(year: i32, month: u32, day: u32) -> (i32, u32, u32) {
         let last_day = match prev_month {
             1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
             4 | 6 | 9 | 11 => 30,
-            2 => if crate::divinum_officium::date::leap_year(year) { 29 } else { 28 },
+            2 => if crate::date::leap_year(year) { 29 } else { 28 },
             _ => 30,
         };
         return (year, prev_month, last_day);
@@ -1019,7 +1019,7 @@ fn next_calendar_day(year: i32, month: u32, day: u32) -> (i32, u32, u32) {
     let last_day = match month {
         1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
         4 | 6 | 9 | 11 => 30,
-        2 => if crate::divinum_officium::date::leap_year(year) { 29 } else { 28 },
+        2 => if crate::date::leap_year(year) { 29 } else { 28 },
         _ => 30,
     };
     if day < last_day {
@@ -1039,10 +1039,10 @@ fn was_sancti_preempted_1570(
     month: u32,
     day: u32,
     entry: &kalendarium_1570::Entry1570,
-    _layer: crate::divinum_officium::kalendaria_layers::Layer,
+    _layer: crate::kalendaria_layers::Layer,
     corpus: &dyn Corpus,
 ) -> bool {
-    use crate::divinum_officium::date;
+    use crate::date;
     let weekname = date::getweek(day, month, year, false, true);
     let dow = date::day_of_week(day, month, year);
     let tempora_stem_default = if dow == 0 {
@@ -1112,7 +1112,7 @@ fn was_sancti_preempted_1570(
     //     fall through to `1570` only when no default exists.
     let entries = corpus.sancti_entries(look_m, look_d);
     let prefer_1570 =
-        matches!(_layer, crate::divinum_officium::kalendaria_layers::Layer::Pius1570);
+        matches!(_layer, crate::kalendaria_layers::Layer::Pius1570);
     let corpus_rank = if prefer_1570 {
         entries
             .iter()
@@ -1258,7 +1258,7 @@ fn resolve_sancti_for_tridentine_1570(
     year: i32,
     month: u32,
     day: u32,
-    layer: crate::divinum_officium::kalendaria_layers::Layer,
+    layer: crate::kalendaria_layers::Layer,
     rubric: Rubric,
     corpus: &dyn Corpus,
 ) -> (FileKey, Option<SanctiEntry>) {
@@ -1315,7 +1315,7 @@ fn resolve_sancti_for_tridentine_1570(
     // Saturday and isn't preempted, so the Feb-3 transfer entry
     // should not activate.
     let suppressed_by_transfer =
-        crate::divinum_officium::transfer_table::stem_transferred_away(
+        crate::transfer_table::stem_transferred_away(
             year, rubric.transfer_rubric_tag(), look_m, look_d,
         ) && kalendarium_1570::lookup_for_layer(layer, look_m, look_d)
             .map(|e| was_sancti_preempted_1570(year, month, day, e, layer, corpus))
@@ -1417,7 +1417,7 @@ fn resolve_sancti_for_tridentine_1570(
         // Sancti/01-06`). Without this gate the 1955+ rank/commune was
         // being lost and the saint kept its DA-era 5.6 Semiduplex.
         let prefer_1570_overrides =
-            matches!(layer, crate::divinum_officium::kalendaria_layers::Layer::Pius1570);
+            matches!(layer, crate::kalendaria_layers::Layer::Pius1570);
         let prefer_t1910 = matches!(rubric, Rubric::Tridentine1910);
         let prefer_r55 = matches!(rubric, Rubric::Reduced1955);
         let prefer_r60 = matches!(rubric, Rubric::Rubrics1960);
@@ -1614,8 +1614,8 @@ fn parse_commune_target(target: &str, winner_category: &FileCategory) -> FileKey
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::divinum_officium::core::{Date, Locale};
-    use crate::divinum_officium::corpus::BundledCorpus;
+    use crate::core::{Date, Locale};
+    use crate::corpus::BundledCorpus;
 
     fn input(year: i32, month: u32, day: u32) -> OfficeInput {
         OfficeInput {

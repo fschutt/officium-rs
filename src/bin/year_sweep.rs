@@ -36,11 +36,11 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::time::Instant;
 
-use md2json2::divinum_officium::core::{Date, Locale, MassPropers, OfficeInput, Rubric};
-use md2json2::divinum_officium::corpus::BundledCorpus;
-use md2json2::divinum_officium::mass::mass_propers;
-use md2json2::divinum_officium::precedence::compute_office;
-use md2json2::divinum_officium::regression::{
+use officium_rs::core::{Date, Locale, MassPropers, OfficeInput, Rubric};
+use officium_rs::corpus::BundledCorpus;
+use officium_rs::mass::mass_propers;
+use officium_rs::precedence::compute_office;
+use officium_rs::regression::{
     compare_day, explain_divergence, extract_perl_sections, infer_perl_source, normalize,
     strip_perl_rubrics, DayReport, DivergenceCategory, InferredSource, SectionStatus,
     PROPER_SECTIONS,
@@ -318,7 +318,7 @@ fn main() {
     let out_dir = cfg
         .out_override
         .clone()
-        .unwrap_or_else(|| root.join(format!("md2json2/target/regression/{slug}-{}", cfg.year)));
+        .unwrap_or_else(|| root.join(format!("target/regression/{slug}-{}", cfg.year)));
     fs::create_dir_all(&out_dir).expect("create output dir");
 
     let total = dates.len();
@@ -882,7 +882,7 @@ fn subslice_find(haystack: &[char], needle: &[char], from: usize) -> Option<usiz
     None
 }
 
-fn rust_block<'a>(p: &'a MassPropers, name: &str) -> Option<&'a md2json2::divinum_officium::core::ProperBlock> {
+fn rust_block<'a>(p: &'a MassPropers, name: &str) -> Option<&'a officium_rs::core::ProperBlock> {
     match name {
         "Introitus" => p.introitus.as_ref(),
         "Oratio" => p.oratio.as_ref(),

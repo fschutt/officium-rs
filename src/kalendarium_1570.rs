@@ -13,7 +13,7 @@
 //! source-compat with `occurrence.rs`; new code should prefer the
 //! `Layer`-keyed API in `kalendaria_layers`.
 
-use crate::divinum_officium::kalendaria_layers::{self, Layer};
+use crate::kalendaria_layers::{self, Layer};
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
 

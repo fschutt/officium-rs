@@ -2,7 +2,7 @@
 //!
 //! The pure functions in `occurrence`, `precedence`, and `mass`
 //! consult `trait Corpus`; `BundledCorpus` wraps the JSON shipped
-//! under `md2json2/data/`. Keeping data access behind a trait means
+//! under `data/`. Keeping data access behind a trait means
 //! the core stays I/O-free and unit tests can swap in a `MockCorpus`
 //! that returns hand-rolled rows for fault-line dates.
 //!
@@ -16,10 +16,10 @@
 //! existing `OnceLock` data once `compute_office()` actually needs
 //! them.
 
-use crate::divinum_officium::core::{FileKey, Rubric};
-use crate::divinum_officium::kalendaria::KalendariaEntry;
-use crate::divinum_officium::missa::{self, MassFile};
-use crate::divinum_officium::sancti::{self, SanctiEntry};
+use crate::core::{FileKey, Rubric};
+use crate::kalendaria::KalendariaEntry;
+use crate::missa::{self, MassFile};
+use crate::sancti::{self, SanctiEntry};
 
 /// What the kalendaria diff says about `(month, day, rubric)`.
 /// Distinct from `kalendaria::Resolution` (which already folds in

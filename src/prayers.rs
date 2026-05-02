@@ -21,7 +21,7 @@
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
-static PRAYERS_TXT: &str = include_str!("../../data/prayers_latin.txt");
+static PRAYERS_TXT: &str = include_str!("../data/prayers_latin.txt");
 static PARSED: OnceLock<BTreeMap<String, String>> = OnceLock::new();
 static PARSED_CI: OnceLock<BTreeMap<String, String>> = OnceLock::new();
 

@@ -1197,7 +1197,7 @@ Tabulae files.
 
 ### Cross-rubric 2026 baseline — per-rubric pass-rates
 
-Snapshot at `18c0e7b` (post R60 annotation-bucket fix):
+Snapshot at `8d25189` (post R60 modernstyle monthday fix):
 
 | Rubric                  | Days passing | Section match |
 |-------------------------|--------------|---------------|
@@ -1205,7 +1205,7 @@ Snapshot at `18c0e7b` (post R60 annotation-bucket fix):
 | Tridentine 1910         | 357/365  97.8% |               |
 | Divino Afflatu 1939     | 359/365  98.4% |               |
 | Reduced 1955            | 336/365  92.1% |               |
-| Rubrics 1960            | 328/365  89.9% |               |
+| Rubrics 1960            | 334/365  91.5% |               |
 
 Earlier snapshot at `22343a1` (post R55/R60 second-[Rank] split):
 

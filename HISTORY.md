@@ -28,3 +28,28 @@ reverts, upstream bugs found.
 10. **Phase 7+** — Layered orthography, `(rubrica X)` predicates, Triduum
 11. **Phase 8-10** — Per-rubric reform layers (T1910 → DA → R55 → R60)
 12. **Phase 11** — Wire-in to dubia.cc /wip/calendar + /wip/missal
+13. **Spin-out / V1** — Extracted from the website monorepo via
+    `git filter-repo`; framed as a standalone crate with a WASM bindgen
+    surface and a GitHub Pages demo. 4-of-5 rubrics at 100% parity,
+    R60 at 99.7% (one known occurrence-resolution gap, see
+    [`docs/UPSTREAM_WEIRDNESSES.md`](docs/UPSTREAM_WEIRDNESSES.md) §35).
+
+## V2 backlog
+
+- **Postcard-encoded compressed corpus.** Replace
+  `include_str!("../data/*.json") + serde_json` with
+  `include_bytes!("../data/*.postcard") + postcard::from_bytes`.
+  Estimated WASM bundle drop: 3.3 MB → ~1.2 MB raw, ~250 KB brotli.
+- **`no_std` migration.** Most of the crate is already allocation-only;
+  the regression module is the one place that uses `std` heavily, and
+  it's already gated `cfg(not(target_arch = "wasm32"))`. Remaining
+  work is replacing `String` with `alloc::string::String` and
+  collections imports.
+- **Mass-propers body assembly over WASM.** V1 returns office winner
+  + commemoration codes only; full Latin body assembly via
+  `mass_propers` is the next WASM API addition.
+- **Office hours.** Currently Mass-only; Vespers / Lauds / Matins
+  resolution shares ~80% of the rubric layer but pulls from
+  `vendor/divinum-officium/web/cgi-bin/horas/officium.pl` not
+  `missa/missa.pl`.
+- **Monastic + non-Latin translations.** Both deferred from V1.

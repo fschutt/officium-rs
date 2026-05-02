@@ -197,7 +197,7 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             let latin = apply_post_septuagesima_conditional(
                 &block.latin, in_post_septuagesima,
             );
-            let latin = spell_var_pre1960(&do_expand_macros(&latin));
+            let latin = apply_spelling_for_active_rubric(&do_expand_macros(&latin));
             let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
             return Some(ProperBlock { latin, ..block });
         }
@@ -232,7 +232,7 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         let latin = apply_post_septuagesima_conditional(
             &coronatio_appended, in_post_septuagesima,
         );
-        let latin = spell_var_pre1960(&do_expand_macros(&latin));
+        let latin = apply_spelling_for_active_rubric(&do_expand_macros(&latin));
         let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
         Some(ProperBlock {
             latin,
@@ -262,7 +262,7 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         let block = substitute_name_with_corpus(block, "Graduale", winner_file, Some(corpus));
         let latin = apply_body_conditionals_1570(&block.latin);
         let latin = apply_post_septuagesima_conditional(&latin, in_post_septuagesima);
-        let latin = spell_var_pre1960(&do_expand_macros(&latin));
+        let latin = apply_spelling_for_active_rubric(&do_expand_macros(&latin));
         let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
         Some(ProperBlock { latin, ..block })
     } else if in_tractus_season {
@@ -277,7 +277,7 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             .map(|block| substitute_name_with_corpus(block, "Graduale", winner_file, Some(corpus)))
             .map(|block| {
                 let latin = apply_post_septuagesima_conditional(&block.latin, in_post_septuagesima);
-                let latin = spell_var_pre1960(&do_expand_macros(&latin));
+                let latin = apply_spelling_for_active_rubric(&do_expand_macros(&latin));
                 let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
                 ProperBlock { latin, ..block }
             })
@@ -293,7 +293,7 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             .map(|block| substitute_name_with_corpus(block, "Graduale", winner_file, Some(corpus)))
             .map(|block| {
                 let latin = apply_post_septuagesima_conditional(&block.latin, in_post_septuagesima);
-                let latin = spell_var_pre1960(&do_expand_macros(&latin));
+                let latin = apply_spelling_for_active_rubric(&do_expand_macros(&latin));
                 let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
                 ProperBlock { latin, ..block }
             })
@@ -670,6 +670,51 @@ pub fn spell_var_pre1960(text: &str) -> String {
         out = out.replace(n, &replacement);
     }
     out
+}
+
+/// Post-1910 (Divino Afflatu and later) Latin spelling: replace `j`
+/// with `i` and `J` with `I`. Pius X's 1910 reform to the Roman
+/// Breviary moved the Latin orthography from the older Tridentine
+/// `cujus`/`Jesum` style to the classical `cuius`/`Iesum`. Any Mass
+/// body rendered under a post-1910 rubric needs the swap; the
+/// corpus stores the older `j`-form.
+///
+/// Naive character-level swap (mirrors upstream's `tr/Jj/Ii/`).
+/// One known opt-out: the chant marker `H-Iesu` is restored to
+/// `H-Jesu` after the swap (per upstream's `s/H\-Iesu/H-Jesu/g`),
+/// since the chant key uses the older form even under post-1910
+/// rendering.
+pub fn spell_classical_post1910(text: &str) -> String {
+    let swapped: String = text.chars().map(|c| match c {
+        'J' => 'I',
+        'j' => 'i',
+        other => other,
+    }).collect();
+    swapped
+        .replace("H-Iesu", "H-Jesu")
+        .replace("er eúmdem", "er eúndem")
+}
+
+/// Layer-aware spelling pass: dispatches between `spell_var_pre1960`
+/// (older Tridentine spelling) and `spell_classical_post1910`
+/// (classical post-1910 spelling) based on the active rubric.
+pub fn apply_spelling_for_active_rubric(text: &str) -> String {
+    let active = ACTIVE_RUBRIC.with(|r| r.get());
+    use crate::divinum_officium::core::Rubric;
+    match active {
+        // Pre-1910 rubrics + Reduced-1955 keep older j/Génetrix
+        // spelling. (Empirically: Perl's `spell_var` j→i path fires
+        // only when `$version =~ /196/`; "Reduced - 1955" doesn't
+        // match that regex so j stays.)
+        Rubric::Tridentine1570
+        | Rubric::Tridentine1910
+        | Rubric::Reduced1955
+        | Rubric::Monastic => spell_var_pre1960(text),
+        // Divino Afflatu and Rubrics 1960 use classical `i` for `j`.
+        Rubric::DivinoAfflatu1911 | Rubric::Rubrics1960 => {
+            spell_classical_post1910(&spell_var_pre1960(text))
+        }
+    }
 }
 
 /// Substitute the saint's name into commune-template `N.` placeholders.

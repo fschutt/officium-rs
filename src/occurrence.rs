@@ -83,12 +83,15 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     } else {
         format!("{}-{}", weekname, dow)
     };
-    // Tridentine 1570 prefers `-a` suffix variants for Sunday Tempora
-    // files when they exist (e.g., Tempora/Epi1-0a is the 1570
-    // "Dominica infra Octavam Epiphaniae", whereas Tempora/Epi1-0 is
-    // the post-1911 "Sancta Familia"). The `-tt` and other suffixes
-    // map to other rubric layers; we only chase `-a` for 1570.
-    let tempora_stem = pick_tempora_variant_for_1570(&tempora_stem_default, corpus);
+    // Rubric-aware Tempora-stem redirect (mirrors upstream
+    // `Directorium::load_tempora` reading `Tabulae/Tempora/Generale.txt`):
+    //   * 1570 → `Epi1-0a`, `Quad3-3t`, `Pent02-5Feria`, etc.
+    //   * 1888/1906 (T1910) → `Epi1-0a`, `Pent02-5o` (Sacred Heart),
+    //     `Pasc3-0t` (3rd Sunday after Easter Tridentinum)
+    //   * 1960 (R55/R60) → `Pasc3-0r` (Patrocinii fallback), Pent
+    //     ferials → `…Feria`
+    //   * DA-1939 (no token in the table) → no redirects fire.
+    let tempora_stem = pick_tempora_variant(&tempora_stem_default, input.rubric, corpus);
     // September Embertide overlay: for Pent06+ ferias the upstream
     // `officestring` (SetupString.pl:720-779) overlays a monthday
     // file (e.g. `Tempora/093-6` for Sept Ember Saturday) onto the
@@ -707,26 +710,27 @@ fn apply_transfer_sancti_1570(
     None
 }
 
-/// Pick the Tridentine-1570 variant of a Tempora stem when one
-/// exists. The corpus uses the `-a` suffix to store the 1570 form of
-/// Sundays where a *post-1570* feast has since bumped the original
-/// Sunday Mass off the calendar:
+/// Pick the rubric-specific variant of a Tempora stem when one
+/// exists. Mirrors upstream `Directorium::load_tempora`, which reads
+/// `Tabulae/Tempora/Generale.txt` and keeps only the rules whose
+/// rubric-token column matches the active version's `transfer`
+/// token (per `Tabulae/data.txt`).
 ///
-///   * `Epi1-0`   = post-1911 Holy Family            → 1570: `Epi1-0a`
-///   * `Pent01-0` = post-1334 Trinity Sunday         → 1570: `Pent01-0`
-///                  (Trinity Sunday already existed in 1570; keep
-///                   the bare stem.)
+/// Examples:
+///   * `Epi1-0`   under 1570/1888/1906 → `Epi1-0a` (post-1911 Holy
+///                Family bumps the 1570 Dominica infra Octavam off
+///                the bare slot)
+///   * `Quad3-3`  under 1570 only       → `Quad3-3t` (T1910 keeps the
+///                bare Lectio; 1955+ also keeps it)
+///   * `Pent02-5` under 1888/1906       → `Pent02-5o` (Sacred Heart);
+///                under 1570            → `Pent02-5Feria` (no Sacred
+///                Heart yet — feria after Corpus Christi octave).
 ///
-/// Trinity Sunday is the only `-a` Sunday in the corpus where 1570
-/// uses the BARE form, so we encode a tiny explicit allowlist of
-/// `-a` chase candidates rather than a blanket "always chase if
-/// `-a` exists" rule (which would mis-direct Trinity).
-fn pick_tempora_variant_for_1570(stem: &str, corpus: &dyn Corpus) -> String {
-    // Authoritative: upstream `Tabulae/Tempora/Generale.txt` filtered
-    // to 1570 entries (vendored as `data/tempora_redirects_1570.txt`).
-    // Covers Adv*-* → Adv*-*o, Nat29..Nat31 → *o, Epi1-0 → Epi1-0a,
-    // Quad{2..5}-* → *t, Pasc*-* → various, Pent*-* → various.
-    if let Some(target) = crate::divinum_officium::tempora_table::redirect_1570(stem) {
+/// Trinity Sunday (`Pent01-0`) has no entry in the table — it
+/// already existed in 1570 — so the bare stem applies under all
+/// rubrics.
+fn pick_tempora_variant(stem: &str, rubric: Rubric, corpus: &dyn Corpus) -> String {
+    if let Some(target) = crate::divinum_officium::tempora_table::redirect(stem, rubric) {
         let key = FileKey {
             category: FileCategory::Tempora,
             stem: target.to_string(),
@@ -735,57 +739,16 @@ fn pick_tempora_variant_for_1570(stem: &str, corpus: &dyn Corpus) -> String {
             return target.to_string();
         }
     }
-    // Below: legacy ad-hoc fallbacks. Most overlap with the table now,
-    // but kept as a safety net while we audit the table coverage.
-    if TRIDENTINE_1570_TEMPORA_A_CHASE.contains(&stem) {
-        let candidate = format!("{stem}a");
-        let key = FileKey {
-            category: FileCategory::Tempora,
-            stem: candidate.clone(),
-        };
-        if corpus.mass_file(&key).is_some() {
-            return candidate;
-        }
-    }
-    if TRIDENTINE_1570_TEMPORA_R_CHASE.contains(&stem) {
-        let candidate = format!("{stem}r");
-        let key = FileKey {
-            category: FileCategory::Tempora,
-            stem: candidate.clone(),
-        };
-        if corpus.mass_file(&key).is_some() {
-            return candidate;
-        }
-    }
-    let feria_stem = format!("{stem}Feria");
-    let feria_key = FileKey {
-        category: FileCategory::Tempora,
-        stem: feria_stem.clone(),
-    };
-    if corpus.mass_file(&feria_key).is_some() {
-        return feria_stem;
-    }
     stem.to_string()
 }
 
-/// Tempora stems where the `-a` variant is the correct 1570 form.
-/// Audit any addition: Trinity Sunday (`Pent01-0`) is *not* in this
-/// list because Trinity already existed in 1570.
-const TRIDENTINE_1570_TEMPORA_A_CHASE: &[&str] = &[
-    "Epi1-0", // post-1911 Holy Family bumps the 1570 Dominica infra Octavam
-];
-
-/// Tempora stems where the `-0r` variant is the correct 1570 form.
-/// These are Sundays whose own propers (Dominica III/IV/V/VI post
-/// Pentecosten) were preempted by post-1856 octave-day feasts in
-/// the corpus's bare `<stem>-0` slot; the `-0r` suffix preserves the
-/// 1570 Sunday body.
-const TRIDENTINE_1570_TEMPORA_R_CHASE: &[&str] = &[
-    "Pent03-0", // bare `Pent03-0` is Sacred Heart Octave Day; -0r is the 1570 Sunday III post Pent
-    "Pent04-0", // similar for IV, V, VI as the calendar shifts
-    "Pent05-0",
-    "Pent06-0",
-];
+/// Backward-compat shim: equivalent to `pick_tempora_variant(stem,
+/// Rubric::Tridentine1570, corpus)`. Used by the precedence-side
+/// `decide_sanctoral_wins_1570` until that pathway gets the rubric
+/// threaded through.
+fn pick_tempora_variant_for_1570(stem: &str, corpus: &dyn Corpus) -> String {
+    pick_tempora_variant(stem, Rubric::Tridentine1570, corpus)
+}
 
 /// Transferred-feast lookup. Walk back up to 6 days. For each day,
 /// check if the kalendar 1570 entry there was preempted by its
@@ -1330,7 +1293,7 @@ fn resolve_sancti_for_tridentine_1570(
             matches!(layer, crate::divinum_officium::kalendaria_layers::Layer::Pius1570);
         let prefer_r55 = matches!(rubric, Rubric::Reduced1955);
         let prefer_r60 = matches!(rubric, Rubric::Rubrics1960);
-        let rank_num = mass
+        let mut rank_num = mass
             .and_then(|m| {
                 if prefer_r60 {
                     // 1960-only first, then 1955+ shared, then default.
@@ -1348,6 +1311,22 @@ fn resolve_sancti_for_tridentine_1570(
                 }
             })
             .unwrap_or(override_.main.rank_num);
+        // 1955+ Semiduplex demotion. Pius XII (Cum nostra hac aetate,
+        // 1955) abolished the Semiduplex rank — feasts in the 2.2..<2.9
+        // band become Simplex (1.2). Mirrors horascommon.pl:382-390.
+        // Without this Marcellus (01-16) keeps his pre-1955 Semiduplex
+        // 2.2 and beats the Lent feria, where Perl shows him as Simplex.
+        if (prefer_r55 || prefer_r60)
+            && rank_num >= 2.2
+            && rank_num < 2.9
+        {
+            let rank_class_str = mass
+                .and_then(|m| m.rank.as_deref())
+                .unwrap_or_default();
+            if rank_class_str.to_ascii_lowercase().contains("semiduplex") {
+                rank_num = 1.2;
+            }
+        }
         let commune = mass
             .and_then(|m| {
                 if prefer_r60 {

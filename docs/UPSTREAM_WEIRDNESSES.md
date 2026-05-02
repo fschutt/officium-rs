@@ -260,3 +260,240 @@ leave it as a known divergence (3 cells out of 4380).
 The deeper weirdness: the Perl rendering doubles up "Pro Papa"
 because the same Pope is commemorated by *two* different mechanisms
 that aren't deduplicated.
+
+## 17. `Sancti/10-07.txt` references `@Sancti/9-12:Evangelium` (single digit)
+
+`vendor/divinum-officium/web/www/missa/Latin/Sancti/10-07.txt`:
+
+```
+[Evangelium]
+@Sancti/9-12:Evangelium
+```
+
+The corpus filename is `Sancti/09-12.txt` (zero-padded month),
+but the reference is `9-12` (no padding). Perl's
+`SetupString::checkfile` does a literal filesystem lookup, finds
+no `Sancti/9-12.txt`, and renders the placeholder text:
+
+```
+Sancti/9-12:Evangelium is missing!
+```
+
+— literally inlined into the Latin Mass output. The English
+sibling file `English/Sancti/10-07.txt` ships the body inline
+(Luke 1:26-38, the Annunciation Gospel) so the English column
+renders correctly while Latin breaks.
+
+Affects October-DP (Solemnitas Rosarii on the 1st Sunday of
+October, which inherits via `@Sancti/10-07`) under every
+Tridentine version where the feast is celebrated. Last
+T1910/DA blocker for 100%.
+
+Fix would require either: (a) upstream patching the reference
+to `09-12`, (b) Rust normalising single-digit stems on the way
+into chase_at_reference (Rust would then render the *correct*
+gospel while Perl still prints the placeholder — diff persists),
+or (c) Rust mimicking Perl's "is missing" placeholder (silly).
+
+## 18. `[Rank] (rubrica Trident)` second-Rank header on horas Sancti/10-DP
+
+`vendor/divinum-officium/web/www/horas/Latin/Sancti/10-DP.txt`:
+
+```
+[Rank] (rubrica Trident)
+In Sollemnitate Rosarii Beatæ Mariæ Virginis;;Duplex 2 classis;;5.1;;ex C11
+(sed rubrica cisterciensis)
+Solemnitas SS. Rosarii Beatæ Mariæ Virginis;;Duplex 2 classis;;4.1;;ex C11
+```
+
+The annotation token `Trident` (no trailing -ina) is the regex
+predicate `$version =~ /Trident/i` — matches every "Tridentine -
+*" version (1570/1888/1906/1910) plus Monastic Tridentinum.
+Different from the more common `tridentina` token (named
+predicate). Both work but they aren't interchangeable across
+the corpus.
+
+## 19. `Sancti/10-DP.txt` is in `horas/` only, not `missa/`
+
+`vendor/divinum-officium/web/www/missa/Latin/Sancti/10-DP.txt`
+does NOT exist. Only `horas/Latin/Sancti/10-DP.txt` ships it.
+
+The Solemnitas Rosarii feast (Pius X 1888 reform: 1st Sunday of
+October) is invoked via the Transfer table:
+
+```
+Tabulae/Transfer/<letter>.txt:
+10-04=10-DP;;1888 1906 C1951
+```
+
+So the kalendar wants Sancti/10-DP. Perl's `SetupString::checkfile`
+cascade falls back from `missa/Latin` to `horas/Latin` when a
+non-Commune file is missing — that's how it finds 10-DP. A port
+that only walks `missa/Latin/Sancti/` will never see it, and the
+Mass on the 1st Sunday of October falls through to the Tempora
+Sunday Mass instead of the Rosary.
+
+Other horas-only Sancti files: `04-01C.txt`, `06-29oct.txt`,
+`07-16sab.txt`, `07-26n.txt`, `10-31v.txt`, `11-13n.txt`,
+`12-09-da.txt`, `Quad5-6-Septem.txt`. The horas-only Tempora
+tree is much larger — 158 files harvested, including Cisterciensis
+and Monastic variants.
+
+## 20. `(rubrica 1962)` doesn't apply to Rubrics 1960
+
+The naive substring check "if `196` is in the predicate, it
+applies to R60" is wrong. R60's `$version` is exactly "Rubrics
+1960 - 1960" — the regex `/1962/` against this string is FALSE.
+But the substring "196" *is* contained in "1962", so a port that
+checks `"196" in label` over-matches.
+
+Concretely, `(sed rubrica 1570 aut rubrica monastica aut rubrica
+1962)` (Sancti/01-24 Timothy) populates only the T1570 and
+Monastic Tridentinum 1617 buckets. Under R60 the default rank
+applies — Timothy's Duplex 3.0 stays Duplex (= III. classis
+under R60), beating the Saturday-of-BVM Marian Mass.
+
+The 1962 token in Generale.txt and these mass files is the
+Dominican rubric (`Ordo Praedicatorum - 1962`), which our port
+doesn't yet target. Same for `1963` (Monastic 1963), `1965` etc.
+
+Fix: per-predicate regex check against the active version
+string, not substring-of-token. `(sed rubrica X)` ⇒ `$version =~
+/X/i` exactly per Perl `SetupString::vero` line 299.
+
+## 21. Octave-Day Tempora ranks bake in post-1570 elevations
+
+Tempora files for octave days (`Pent02-5o` Sacred Heart,
+`Pent03-0r` post-Octave-of-Sacred-Heart Sunday, etc.) ship a
+SINGLE `[Rank]` line that reflects the LATEST status of the
+feast — Duplex majus 4.01 for Sacred Heart, etc. Pre-institution
+rubrics are expected to suppress these via *officium-string
+matching*, not via the data file.
+
+A port has to:
+1. Carry a list of post-1570 feast officium-strings (Sacred
+   Heart, Patrocinii Joseph, Christi Regis, …).
+2. Demote the temporal rank to feria (1.0) when (a) the active
+   rubric predates the institution AND (b) the file's officium
+   matches one of the post-1570 strings.
+3. Skip the file's in-file body sections in proper-block
+   resolution under the same gate (mass.rs:is_post_1570_octave_file).
+
+This is opposite to the usual pattern where pre-1570 rubrics
+read the bare body and post-1570 ones read a `(sed rubrica X)`
+override. For octave days, the *bare* body is the post-1570
+form, and pre-1570 rubrics need a programmatic suppression.
+
+## 22. Multiple `[Rank]` formats (post-1955 vs Trident)
+
+Most Sancti files use the standard format:
+
+```
+[Rank]
+;;Class;;Num;;Commune
+(sed rubrica X)
+;;ClassX;;NumX;;CommuneX
+```
+
+(Single header, multiple bodies separated by `(sed …)` predicates.)
+
+But Sancti/10-07 (Rosary feast) uses the *embedded-name* format:
+
+```
+[Rank]
+Sanctissimi Rosarii Beatæ Mariæ Virginis;;Duplex 2 classis;;5.1;;ex C11
+
+[Rank1960]
+Festum Beatae Mariae Virginis a Rosario;;Duplex 2 classis;;5;;ex C11
+```
+
+— the title is *inside* the [Rank] body (first column before
+`;;`), and a SEPARATE `[Rank1960]` header (no parenthesised
+annotation) carries the post-1960 variant. The embedded-name
+form usually replaces a missing `[Officium]` header. A port that
+only knows the standard format will mis-bucket these.
+
+## 23. Tempora redirect table (`Tabulae/Tempora/Generale.txt`) is rubric-tagged
+
+Each line in `Generale.txt` has a third column listing the
+rubric tokens it applies to:
+
+```
+Tempora/Pasc3-0=Tempora/Pasc3-0t;;1888 1906
+Tempora/Pasc3-0=Tempora/Pasc3-0r;;1570 1960 Newcal
+```
+
+The same `from` stem can have MULTIPLE redirects for different
+rubrics. Under T1910 (token `1906`), `Pasc3-0` redirects to
+`Pasc3-0t`; under T1570/R55/R60 it redirects to `Pasc3-0r`.
+
+The token in column 3 is the `transfer` column of `Tabulae/data.txt`
+keyed by version. NOT the version string itself. Mapping:
+
+| version                  | token  |
+|--------------------------|--------|
+| Tridentine - 1570        | 1570   |
+| Tridentine - 1910        | 1906   |
+| Divino Afflatu - 1939    | DA     |
+| Reduced - 1955           | 1960   |
+| Rubrics 1960 - 1960      | 1960   |
+| Monastic Tridentinum 1617| M1617  |
+
+Note: R55's token is `1960` (NOT 1955). And DA has its own
+unique `DA` token that doesn't match any line in `Generale.txt`,
+so DA-1939 *never* picks up a redirect — every Tempora stem
+keeps its bare form.
+
+A port that filters Generale.txt to "1570 lines only" (which
+is what the early Phase-7 scaffold did) silently mis-routes
+every Tempora redirect on every other rubric.
+
+## 24. `monthday(…, modernstyle, …)` flag is rubric-derived as `$version =~ /196/`
+
+`SetupString.pl:745`:
+
+```perl
+$monthday = monthday($day, $month, $year,
+                     ($version =~ /196/) + 0, $flag);
+```
+
+So `monthday`'s 4th argument flips ONLY for "Rubrics 1960 -
+1960" (and "Ordo Praedicatorum - 1962", "Rubrics 1960
+Newcalendar"). Pre-1960 rubrics — including R55 — use the
+pre-modern week numbering.
+
+Effect on the Sept Embertide week (`093-3 / 093-5 / 093-6`):
+- Pre-modern: Embertide is the week after Holy Cross (Sept 14).
+- Modern: Embertide is the week of the 3rd Sunday of September.
+
+In a year where the 1st Sunday of September is the 6th or 7th,
+the two formulas pick different weeks. Our port flagged this
+when it first wired R60 monthday — using `modernstyle=true`
+for both R55 and R60 broke R55 by 1 day; restricting to R60
+matched Perl.
+
+## 25. `transferred_sancti` heuristic vs. upstream Transfer table
+
+A port that simulates Tridentine transfer rules ("displaced
+Duplex+ moves to next free day") to avoid loading the upstream
+Transfer table will WRONGLY transfer feasts under post-1570
+rubrics. Concrete cases:
+
+- 02-03 (Blasius, Simplex 1.1): under T1910 in 2026, Ignatius
+  on 02-01 is preempted by Septuagesima Sunday. The heuristic
+  transfers him to 02-03, displacing Blasius. But the upstream
+  Transfer table for 2026 (letter d) only has
+  `02-03=02-01~02-03;;1570 M1617` — no 1888/1906 entry. So
+  T1910 keeps Blasius native.
+
+- 04-17 (Anicetus, Simplex): under T1910 in 2026 with Easter
+  Apr 5, Leo I (04-11) is preempted by Easter octave. The
+  heuristic transfers him forward to the first free day. The
+  upstream table has `04-17=04-11~04-17;;1906` — explicit
+  1906/T1910 entry. So the explicit transfer table is needed
+  for post-1570 rubrics; the heuristic is a 1570/M1617-only
+  approximation.
+
+A clean port gates the heuristic to T1570 and Monastic only,
+trusting the explicit Transfer/[letter+easter].txt files for
+everything else.

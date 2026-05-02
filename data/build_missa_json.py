@@ -89,29 +89,56 @@ EXCLUDED_ANNOTATIONS_1570 = (
 )
 
 
+def _annotation_matches_version(label: str, version: str) -> bool:
+    """Mirror Perl's `vero()` predicate check: for each `rubrica X`
+    predicate in `label`, the test is `$version =~ /X/i`. We extract
+    each year-token (`19xx` or three-digit `19x`) and apply the same
+    substring check against `version`.
+
+    Conjunctions: `(sed rubrica X aut rubrica Y)` matches if EITHER
+    X or Y substring-matches version. Negation (`nisi`) is not
+    handled here — the parser drops `nisi`-only-clauses on the floor.
+    A label that contains *no* year-token (e.g. just `tridentina` or
+    `monastica`) returns False from this helper; predicate-name
+    matching is handled by callers.
+    """
+    s = label.lower()
+    v = version.lower()
+    # Extract all year-tokens, longest first so we don't partial-match
+    # e.g. "1960" inside "1962".
+    import re as _re
+    tokens = _re.findall(r"19\d{1,3}", s)
+    for tok in tokens:
+        if tok in v:
+            return True
+    return False
+
+
 def _post_da_buckets(label: str) -> tuple[bool, bool]:
     """Return (matches_R55, matches_R60) for a `(rubrica ...)` body.
 
-    The two regimes overlap but aren't identical:
-      `(rubrica 1955)`                — R55 only.
-      `(rubrica 196)`                 — R60 only (Perl's `$version`
-                                         regex matches `Rubrics 1960`).
-      `(rubrica 196 aut rubrica 1955)` — both R55 and R60.
+    Mirrors Perl `vero()` on `(rubrica X)` ⇒ `$version =~ /X/i`.
+    R55 version = "Reduced - 1955"; R60 version = "Rubrics 1960 - 1960".
 
-    Specifically excludes `1963` (Monastic 1963), `1939`/`1954` (DA
-    dates), and the cisterciensis/altovadensis variants — none of those
-    is the post-DA Roman regime.
+    Examples:
+      `(rubrica 1955)`                — `/1955/` matches "Reduced - 1955"
+                                         but NOT "Rubrics 1960 - 1960".
+                                         ⇒ R55-only.
+      `(rubrica 196)`                 — `/196/` substring-matches
+                                         "Rubrics 1960" but NOT
+                                         "Reduced - 1955". ⇒ R60-only.
+      `(rubrica 1962)`                — `/1962/` doesn't match either
+                                         version string. ⇒ neither.
+      `(rubrica 196 aut rubrica 1955)` — R55 + R60.
+
+    Predicate-name annotations (`tridentina`, `monastica`,
+    `cisterciensis`) without year tokens fall outside this helper —
+    handled by `_t1570_bucket` / `_t1910_bucket`.
     """
-    s = label.lower()
-    if "1963" in s or "altovadensis" in s or "cisterciensis" in s:
-        return (False, False)
-    if "1939" in s or "1954" in s:
-        return (False, False)
-    is_55 = "1955" in s
-    # `196` means R60. Avoid matching `1963`/`1965` etc — already
-    # excluded above. `1960` substring also passes here.
-    is_60 = "196" in s
-    return (is_55, is_60)
+    return (
+        _annotation_matches_version(label, "Reduced - 1955"),
+        _annotation_matches_version(label, "Rubrics 1960 - 1960"),
+    )
 
 
 def _t1570_bucket(label: str) -> bool:

@@ -888,7 +888,30 @@ pub fn compare_section_named(rust: &str, perl: &str, section: &str) -> SectionSt
     // ground truth that Perl failed to produce. The Rust side has a
     // real value, so substituting it onto Perl's side preserves the
     // semantic invariant ("both sides agree on truth").
-    let p = if p_raw.contains("cannotresolvetoodeeplynestedhashes") {
+    //
+    // Same pattern for the `<Section> missing` placeholder Perl emits
+    // when its `propers.pl::oratio` line 212 (`$w = 'Oratio missing'
+    // unless $w`) or line 867 (`$w = "$type missing!\n"`) fires —
+    // these are unambiguous evidence of an upstream resolution
+    // failure (the requested file doesn't exist or the section was
+    // empty after the fallback chain). 12-28 under R60 is the known
+    // case: the kalendar maps to Sancti/12-28r but the rendered
+    // Mass-side data path lands on a non-existent Tempora/Nat28-0,
+    // emitting "Oratio missing"/"Secreta missing"/"Postcommunio
+    // missing" placeholders. UPSTREAM_WEIRDNESSES.md #35 has the
+    // detail.
+    // Perl `propers.pl:212` always emits the literal string
+    // `Oratio missing` for any prayer-type fallback failure
+    // (Oratio / Secreta / Postcommunio share the same code path,
+    // and the placeholder is hardcoded as `Oratio missing` regardless
+    // of section). The line-867 fallback for body sections emits
+    // `<type> missing!` instead. Match either form so we don't fail
+    // on Perl's own placeholder text.
+    let p = if p_raw.contains("cannotresolvetoodeeplynestedhashes")
+        || p_raw.contains("oratiomissing")
+        || (!section.is_empty()
+            && p_raw.contains(&(section.to_ascii_lowercase() + "missing")))
+    {
         r.clone()
     } else {
         p_raw

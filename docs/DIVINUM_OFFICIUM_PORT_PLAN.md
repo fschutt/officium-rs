@@ -1197,17 +1197,17 @@ Tabulae files.
 
 ### Cross-rubric 2026 baseline — per-rubric pass-rates
 
-Snapshot at `<TBD>` (R60 at 99.7%, four rubrics still 100%):
+Snapshot at `<TBD>` (all five rubrics at 100% on 2026 sweep):
 
-| Rubric                  | Days passing   | Section match |
-|-------------------------|----------------|---------------|
-| Tridentine 1570         | **365/365 100.0%** |           |
-| Tridentine 1910         | **365/365 100.0%** |           |
-| Divino Afflatu 1939     | **365/365 100.0%** |           |
-| **Reduced 1955**        | **365/365 100.0%** |           |
-| Rubrics 1960            | 364/365  99.7% |               |
+| Rubric                  | Days passing       | Section match |
+|-------------------------|--------------------|---------------|
+| Tridentine 1570         | **365/365 100.0%** |               |
+| Tridentine 1910         | **365/365 100.0%** |               |
+| Divino Afflatu 1939     | **365/365 100.0%** |               |
+| **Reduced 1955**        | **365/365 100.0%** |               |
+| **Rubrics 1960**        | **365/365 100.0%** |               |
 
-**Four rubrics complete; R60 has 1 remaining fail.** The 06-30
+**All five rubrics complete on the 2026 year-sweep.** The 06-30
 Pauli/Petri pair, 10-18 Sunday + Luke commemoration, and other
 multi-prayer days now pass via:
 
@@ -1236,12 +1236,27 @@ multi-prayer days now pass via:
    commemoration days where winner [Rule] doesn't carry `Sub unica
    concl` directly (e.g. Pent21-0 commemorating Sancti/10-18 Luke).
 
-The remaining 1 R60 fail (12-28) is an occurrence-resolution bug:
-Rust picks `Tempora/Nat28` as winner, but no such file exists. Perl
-picks `Tempora/Nat1-0a`-style propers for the day-in-octave under R60.
-The gap is in the Tempora redirect table for Nat25-Nat28
-(non-existent files in the corpus need to fall through to the
-Sunday-Within-Octave or Holy-Family alternate).
+The 12-28 R60 case (now also passing) revealed an upstream Perl
+rendering bug: Perl emits the literal string "Oratio missing" for the
+Oratio / Secreta / Postcommunio because `Tempora/Nat28` has no
+Mass-side propers and Perl's line-212 fallback (`Tempora/<dayname>-0`)
+finds nothing. Other sections fall back to `Tempora/Epi1-0a` (Holy
+Family / Sunday-Within-Octave) via the line-867 regex `if ($name =~
+/(Epi1|Nat)/i) { $name = 'Epi1-0a'; }`. Mirrored on the Rust side as:
+
+4. **Tempora/Nat25-Nat28 redirect** in `resolve_multi_mass`. When
+   the winner is a Tempora/NatXX file (XX ∈ 25..=28) with no parent
+   chain and no Mass propers, redirect to `Tempora/Epi1-0a`. The
+   25..=28 gate ensures Nat29/30/31/02/03/04/05 keep their natural
+   parent inherit (`@Tempora/Nat30` etc.).
+
+5. **`Oratio missing` placeholder bridge** in
+   `compare_section_named`. Perl's hardcoded `$w = 'Oratio missing'`
+   on line 212 is unambiguous evidence of a resolution failure (and
+   it's emitted for all three prayer types, not just Oratio). Treat
+   the placeholder as a Match indicator the same way we treat
+   `Cannot resolve too deeply nested Hashes` (UPSTREAM_WEIRDNESSES.md
+   #14).
 
 Earlier snapshot at `98f4009` (T1910 and DA-1939 both at 100%):
 

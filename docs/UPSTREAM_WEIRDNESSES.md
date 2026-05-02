@@ -789,3 +789,35 @@ Workaround: when `Tempora/NatXX` is requested for `XX ∈ {25..28}`,
 fall through to the matching `Sancti/12-XX` file and let the rubric-
 specific occurrence layer pick the right entry. This is the only
 known R60 fail at full-year sweep granularity (1 day out of 365).
+
+## 36. `Oratio missing` placeholder is hardcoded for all prayer types
+
+Date: 2026-05-02. Same date as #35 — the Perl rendering of 12-28 R60.
+
+`propers.pl::oratio` line 212 emits `$w = 'Oratio missing' unless $w`
+— a hardcoded English placeholder that fires for ANY prayer-type
+fallback failure (Oratio / Secreta / Postcommunio share the same code
+path; the placeholder string is always literally "Oratio missing"
+regardless of which `$type` is being resolved).
+
+`propers.pl::oratio` line 867 — `$w = "$type missing!\n"` — uses the
+section name in the placeholder, but it's reached on a different
+fallback path (the `$winner =~ /Tempora/i` body-section fallback) and
+uses a `!` terminator. Different placeholder, different code path.
+
+For 12-28 under R60:
+- Oratio / Secreta / Postcommunio all hit line 212 → emit "Oratio
+  missing" (English; SIX times across the rendered Mass — three for
+  Latin, three for English — because each section uses the same
+  placeholder).
+- Introitus / Lectio / Graduale / Evangelium / Offertorium / Communio
+  hit line 867 (which has the `Tempora/Epi1-0a` redirect at line
+  860-866) and resolve to Sunday-Within-Octave-of-Epiphany content.
+
+Comparator handling: `compare_section_named` treats any cell where
+the Perl-side normalised body contains `oratiomissing` (or `<section>
+missing` for other types) as a Match — Perl's placeholder is
+unambiguous evidence of an upstream resolution failure that has no
+liturgical meaning, and we shouldn't fail the regression on it. Same
+pattern as the existing `cannotresolvetoodeeplynestedhashes` bridge
+for the Pent01-0 self-reference bug (#14).

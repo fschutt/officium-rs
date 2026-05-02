@@ -1277,6 +1277,20 @@ fn eval_alt_1570(alt: &str) -> bool {
 /// FileKey rewritten if a companion is found; otherwise return the
 /// input unchanged.
 fn resolve_multi_mass(office: &OfficeOutput, corpus: &dyn Corpus) -> OfficeOutput {
+    // Christmas-Octave non-existent-file redirect. Under R60 the
+    // kalendar maps 12-25..12-28 to Sancti files (Christmas, Stephen,
+    // John, Innocents) — but `getweek` still emits `NatNN` labels for
+    // those dates, and Rust's occurrence layer can pick `Tempora/NatNN`
+    // as the winner when the kalendar override doesn't fire (e.g. when
+    // a feast yields to a Day-in-Octave). Tempora/Nat25..Nat28 don't
+    // exist as files; Perl's `propers.pl::oratio` lines 860-867 falls
+    // those cases back to `Tempora/Epi1-0a` (the regex
+    // `if ($name =~ /(Epi1|Nat)/i) { $name = 'Epi1-0a'; }`). Mirror
+    // that here so `mass_propers` lands on a real file. The Oratio /
+    // Secreta / Postcommunio specifically come back as the literal
+    // "<Section> missing" placeholder in Perl (line 212) — see
+    // `compare_section_named`'s placeholder-bridge for the comparator
+    // side. UPSTREAM_WEIRDNESSES.md #35.
     let f = match corpus.mass_file(&office.winner) {
         Some(f) => f,
         None => return office.clone(),
@@ -1293,6 +1307,48 @@ fn resolve_multi_mass(office: &OfficeOutput, corpus: &dyn Corpus) -> OfficeOutpu
             let mut o = office.clone();
             o.winner = candidate;
             return o;
+        }
+    }
+    // Christmas-Octave Tempora/NatXX redirect (R60 12-28 et al.).
+    // Tempora/Nat25..Nat28 exist in the Office (horas) corpus but
+    // ship no Mass propers AND no parent-file inherit chain — only
+    // [Rule] and Office-side antiphons. Perl's `propers.pl::oratio`
+    // lines 860-867 falls these cases back to `Tempora/Epi1-0a`
+    // (the regex `if ($name =~ /(Epi1|Nat)/i) { $name = 'Epi1-0a'; }`).
+    // Mirror that here so `mass_propers` lands on a real file. Perl
+    // also emits "<Section> missing" placeholders for Oratio /
+    // Secreta / Postcommunio because its line-212 fallback uses a
+    // different `Tempora/<dayname>-0` lookup that doesn't get the
+    // Epi1-0a substitution; the comparator's placeholder-bridge in
+    // `compare_section_named` handles that asymmetry.
+    //
+    // Restricted to Nat25..Nat28 because Nat29/30/31/02/03/04/05 ship
+    // a `parent: "Tempora/Nat30"` inheritance that resolves their
+    // missing sections via the regular parent chain. Without this
+    // gate, Nat29 etc. would also redirect to Epi1-0a and produce
+    // "Holy Family"-style propers instead of the Sunday-Within-
+    // Octave "Puer natus est" propers Perl actually renders for them.
+    // UPSTREAM_WEIRDNESSES.md #35.
+    if matches!(office.winner.category, FileCategory::Tempora) {
+        let stem = &office.winner.stem;
+        let is_nat_no_parent = stem.starts_with("Nat")
+            && stem.len() == 5
+            && stem[3..]
+                .parse::<u32>()
+                .map(|n| (25..=28).contains(&n))
+                .unwrap_or(false)
+            && f.parent.is_none()
+            && f.parent_1570.is_none();
+        if is_nat_no_parent {
+            let candidate = FileKey {
+                category: FileCategory::Tempora,
+                stem: "Epi1-0a".to_string(),
+            };
+            if corpus.mass_file(&candidate).is_some() {
+                let mut o = office.clone();
+                o.winner = candidate;
+                return o;
+            }
         }
     }
     office.clone()

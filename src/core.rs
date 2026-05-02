@@ -83,14 +83,19 @@ impl Rubric {
     /// The rubric tag used in upstream `Tabulae/Transfer/<letter>.txt`
     /// and `Tabulae/Tempora/Generale.txt` for filtering rubric-
     /// specific entries. Each Rubric has one canonical tag matching
-    /// the upstream `;;<rubrics>` column.
+    /// the `transfer` column in upstream's `Tabulae/data.txt`:
+    ///   Tridentine - 1570 → 1570
+    ///   Tridentine - 1910 → 1906
+    ///   Divino Afflatu (1939+1954) → DA
+    ///   Reduced - 1955    → 1960  (yes, uses 1960's transfer rules)
+    ///   Rubrics 1960      → 1960
+    ///   Monastic          → M1617
     pub const fn transfer_rubric_tag(self) -> &'static str {
         match self {
             Rubric::Tridentine1570    => "1570",
-            // Tridentine 1910 reuses 1888-era transfer rules.
-            Rubric::Tridentine1910    => "1888",
+            Rubric::Tridentine1910    => "1906",
             Rubric::DivinoAfflatu1911 => "DA",
-            Rubric::Reduced1955       => "1955",
+            Rubric::Reduced1955       => "1960",
             Rubric::Rubrics1960       => "1960",
             Rubric::Monastic          => "M1617",
         }

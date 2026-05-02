@@ -928,7 +928,7 @@ pub fn compare_day(
 
     let mut sections: Vec<SectionReport> = Vec::with_capacity(PROPER_SECTIONS.len());
     for &name in PROPER_SECTIONS {
-        let rust_body = rust_section(rust_propers, name).map(str::to_string).unwrap_or_default();
+        let rust_body = rust_section(rust_propers, name).unwrap_or_default();
         let perl_body = perl_sections.get(name).cloned().unwrap_or_default();
         let status = compare_section_named(&rust_body, &perl_body, name);
         let perl_clean = strip_perl_rubrics(&normalize(&perl_body), name);
@@ -1234,7 +1234,7 @@ fn next_char_boundary_n(s: &str, from: usize, n: usize) -> usize {
     i.min(s.len())
 }
 
-fn rust_section<'a>(p: &'a MassPropers, name: &str) -> Option<&'a str> {
+fn rust_section(p: &MassPropers, name: &str) -> Option<String> {
     let block = match name {
         "Introitus" => p.introitus.as_ref(),
         "Oratio" => p.oratio.as_ref(),
@@ -1250,7 +1250,7 @@ fn rust_section<'a>(p: &'a MassPropers, name: &str) -> Option<&'a str> {
         "Postcommunio" => p.postcommunio.as_ref(),
         _ => None,
     };
-    block.map(|b| b.latin.as_str())
+    block.map(|b| b.latin.clone())
 }
 
 /// True when Rust's winner FileKey appears (loosely) in Perl's

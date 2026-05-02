@@ -678,3 +678,114 @@ prefix-match comparator was hiding. The prefix-match is itself
 a hack; the proper fix is the full rendering pipeline.
 
 Tracked in `RUST_PERL_UNIFICATION_AUDIT.md` Steps 1+2.
+
+## 33. SCOPE_NEST fence + `hæc versus omittuntur` predicate parsing
+
+Date: 2026-05-02. R60 Holy Week (Quad6-2 / Quad6-3) Evangelium.
+
+Tempora/Quad6-2 [Evangelium] body has the structure:
+
+```
+(rubrica 1955 aut rubrica 1960 dicitur)
+@Tempora/Quad6-0r:Munda Cor Passionis
+_
+(deinde dicuntur semper)         ← opens SCOPE_NEST fence #1
+v. Pássio Dómini ...
+!Marc 14:32-72; 15, 1-46
+(deinde dicuntur)                ← opens SCOPE_NEST fence #2
+In illo témpore: Erat Pascha,...
+[long Passion narrative]
+(sed rubrica 1955 aut rubrica 1960 hæc versus omittuntur)   ← truncates to fence #2 under R55/R60
+[continuation of Passion]
+_
+[Munda cor + Iube domne ...]
+_
+(sed rubrica 1955 aut rubrica 1960 hæc versus omittuntur)   ← truncates again
+Et cum jam sero esset factum...   ← burial paragraph (Perl emits this verbatim)
+```
+
+Two issues hit the original `apply_body_conditionals_1570`:
+
+1. The simplified single-line `omittuntur` drop only popped one
+   preceding line, missing Perl's SCOPE_NEST chunk-truncation back to
+   the most recent `(deinde X)` fence. Net effect: under R60 our body
+   was 13262 chars (full Passion), Perl was 1623 chars (Munda cor +
+   header + burial paragraph only).
+
+2. The `eval_alt_1570` predicate parser greedily consumed `hæc` as
+   part of the multi-word predicate (`rubrica 1960 hæc`), which never
+   matched the active version string. The conditional evaluated to
+   FALSE under R60 even though Perl evaluates it TRUE.
+
+Fix: track a `fence: usize` in `apply_body_conditionals_1570` updated
+by every `(deinde X)` line; on TRUE `omittuntur`, `out.truncate(fence)`
+instead of single-line pop. Add `hæc`/`hac`/`haec` to the
+`is_scope_kw` table in `eval_alt_1570` so `hæc versus omittuntur`
+parses as scope marker, not predicate.
+
+This is a partial implementation of Perl's full
+`process_conditional_lines` stack machine (`SetupString.pl:363-474`).
+It handles the cases the corpus actually uses today; H1 in
+`RUST_PERL_UNIFICATION_AUDIT.md` proposes a faithful port for the
+general case.
+
+## 34. `Sub unica conclusione` + R60 multi-prayer macro stripping
+
+Date: 2026-05-02. Sancti/01-18, 02-22, 06-30, 01-25 (Petri/Pauli pair
+Masses) + Pent21-0 / Pent05-2 commemoration days.
+
+When a Mass [Oratio] / [Secreta] / [Postcommunio] is composed of
+multiple prayers (via the `@:Oratio Pauli`-style multi-line @-ref
+pattern), or when the day has a commemoration of another office, Perl
+applies one of two strip transforms before final rendering:
+
+1. **`Sub unica concl(usione)?` rule** (`propers.pl:218-235`): when
+   the winner's [Rule] (or chained `ex <Path>;` ancestor's [Rule])
+   carries this directive:
+   - Pre-1960: strip the FINAL `$Per/$Qui` macro line, save to
+     `$addconclusio`, re-append after all commemorations.
+   - R60: strip the FIRST `$Per/$Qui` macro line entirely
+     (`s/\$(Per|Qui) .*?\n//i`) — keeps the trailing prayer's
+     terminator so Pauli-then-Petri renders as
+     `Pauli...patrocinia sentiamus.\n!Pro S. Petro\nPetri body...
+     Qui vivis... Amen`.
+
+2. **R60 commemoration delconclusio** (`propers.pl:752-776`): when a
+   commemoration is appended via `getcc`, `delconclusio` strips
+   `$Per/$Qui` from the commemoration body and updates
+   `$addconclusio` to the LAST stripped macro. Net effect under R60:
+   the main body's `$Per Dominum` macro is dropped (Perl's loop
+   processes it), the commemorations are appended without macros, and
+   a single final `$Per Dominum` is emitted at the very end.
+
+Rust mirrors both via the `winner_has_sub_unica_concl` (chained
+`ex X` + parent walk) helper and a `r60_with_commemoration` catch
+that fires when winner has commemoratio set AND body ends with a
+`$Per/$Qui` macro. `strip_conclusion_macro_for_sub_unica` does the
+actual line removal.
+
+Without commemoration support on the Rust side, the strip leaves
+Rust's body as a strict prefix of Perl's `main + commems + final-macro`
+output, so `compare_section_named`'s `p.contains(r)` check still
+matches.
+
+## 35. `Tempora/Nat28` non-existent file under R60
+
+Date: 2026-05-02. R60 12-28 (when 12-28 is a weekday).
+
+When `getweek(28, 12, year)` returns `Nat28`, Rust looks up
+`Tempora/Nat28` as winner. The corpus has no such file (Christmas
+Octave files exist for Nat29/Nat30/Nat31 and the Sunday Nat1-0/Nat2-0,
+but Nat25-Nat28 are filed under `Sancti/12-25` through `Sancti/12-28`
+since they're proper feasts of Christmas / Stephen / John / Innocents).
+
+Under R60 with Holy Family on Sunday Within Octave (12-27 in 2026),
+Perl picks Holy Family Mass propers (resolved via `Tempora/Epi1-0a`)
+on Monday 12-28 — labelling the day "Diei IV infra Octavam
+Nativitatis ~ II. classis". Rust's occurrence resolution lacks this
+redirect, so all Mass propers come back blank.
+
+Workaround: when `Tempora/NatXX` is requested for `XX ∈ {25..28}`,
+fall through to the matching `Sancti/12-XX` file and let the rubric-
+specific occurrence layer pick the right entry. This is the only
+known R60 fail at full-year sweep granularity (1 day out of 365).

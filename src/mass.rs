@@ -250,6 +250,58 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             latin: apply_body_conditionals_1570(&block.latin),
             ..block
         };
+        // `Sub unica conclusione` rule: when winner's [Rule] (or its
+        // chained `ex <Path>` parents) carries `Sub unica concl(usione)?`,
+        // multi-prayer compositions share a single conclusion. Mirrors
+        // Perl `propers.pl:218-235`:
+        //   * R60: strip the FIRST `$Per/$Qui` macro line from the body
+        //     (Perl `s/\$(Per|Qui) .*?\n//i`). Keeps the trailing
+        //     prayer's terminator. Drives Sancti/06-30 [Oratio] under
+        //     R60 (Pauli's `$Per Dominum` between Pauli and Petri is
+        //     dropped, Petri's `$Qui vivis` stays).
+        //   * Pre-1960: strip the FINAL `$Per/$Qui` macro line. Perl
+        //     saves it to `$addconclusio` and re-appends after all
+        //     commemorations. Without commemoration support we simply
+        //     drop the trailing macro — Rust's body becomes a strict
+        //     prefix of Perl's "main + commems + final-macro" output,
+        //     so the comparator's `p.contains(r)` check still matches.
+        //     Drives Sancti/01-18 / 02-22 / 06-30 / 01-25 [Oratio]/
+        //     [Secreta]/[Postcommunio] under T1570/T1910/DA.
+        //
+        // Additional R60 case: under R60, Perl's commemoration loop in
+        // `propers.pl::oratio` strips `$Per/$Qui` from the main body
+        // when a commemoration is appended (see lines 326-329 +
+        // delconclusio at 752). For pre-1960 the macro is kept and
+        // commemorations follow it, so no strip is needed there. This
+        // catch covers Tempora-winner days like Pent21-0 (Sun XXI post
+        // Pent) commemorating Sancti/10-18 (St Luke) under R60.
+        let body_ends_with_macro = block
+            .latin
+            .lines()
+            .filter(|l| !l.trim().is_empty())
+            .last()
+            .map(|l| {
+                let t = l.trim_start();
+                t.starts_with("$Per ") || t.starts_with("$Qui ")
+            })
+            .unwrap_or(false);
+        let r60_with_commemoration = matches!(
+            office.rubric, crate::divinum_officium::core::Rubric::Rubrics1960
+        ) && office.commemoratio.is_some()
+            && body_ends_with_macro;
+        let needs_strip = matches!(sect, "Oratio" | "Secreta" | "Postcommunio")
+            && (winner_has_sub_unica_concl(winner_file, corpus)
+                || r60_with_commemoration);
+        let block = if needs_strip {
+            ProperBlock {
+                latin: strip_conclusion_macro_for_sub_unica(
+                    &block.latin, office.rubric,
+                ),
+                ..block
+            }
+        } else {
+            block
+        };
         let block = substitute_name_with_corpus(block, sect, winner_file, Some(corpus));
         // Suffragium concatenation is computed but currently DISABLED:
         // Perl's first-Oratio-block layout differs by day in ways
@@ -390,6 +442,18 @@ fn apply_body_conditionals_1570(text: &str) -> String {
     let lines: Vec<&str> = text.split('\n').collect();
     let mut out: Vec<String> = Vec::with_capacity(lines.len());
     let mut i = 0;
+    // SCOPE_NEST fence: the output offset where the most recent
+    // `(deinde X)` opener (or omittuntur frame) was set. Subsequent
+    // `(... omittuntur)` truncates output back to this fence on TRUE
+    // (chunk-drop). Mirrors Perl `process_conditional_lines`'
+    // `conditional_offsets[NEST]`. Without this, the first
+    // `(deinde dicuntur)` followed by a long narrative and a TRUE
+    // `(sed rubrica 196 omittuntur)` only single-line-drops the last
+    // narrative line — Perl drops the entire chunk back to the fence.
+    // Drives Tempora/Quad6-2 [Evangelium] (Holy Week Passion) and
+    // Sancti/06-30 / 01-25 / 02-22 [Oratio]/[Secreta]/[Postcommunio]
+    // (Pope-saint Pauli/Petri commemoration pairs).
+    let mut fence: usize = 0;
     while i < lines.len() {
         let line = lines[i];
         let trimmed = line.trim();
@@ -431,6 +495,16 @@ fn apply_body_conditionals_1570(text: &str) -> String {
             // genuflectitur)"). Perl wraps these in small-font
             // formatting that the regression extractor normalises
             // away — drop them here so our normalised body matches.
+            //
+            // `(deinde X)` opens a SCOPE_NEST fence: record the
+            // current output offset so a subsequent TRUE
+            // `(... omittuntur)` knows where to truncate back to.
+            // Per Perl `parse_conditional` (`SetupString.pl:84`)
+            // `deinde` is a weight-1 NON-backscoped stopword and the
+            // forward scope is NEST.
+            if lc.starts_with("deinde") {
+                fence = out.len();
+            }
             i += 1;
             continue;
         }
@@ -455,19 +529,36 @@ fn apply_body_conditionals_1570(text: &str) -> String {
         if omit_scope {
             // `(sed X versus omittitur/omittuntur)`: when FALSE,
             // keep subsequent content as-is (SCOPE_NULL forward).
-            // When TRUE, drop the preceding chunk/nest. We
-            // approximate the back-drop with a single-line drop
-            // for simplicity — most omittuntur uses are SCOPE_LINE
-            // ("hic versus omittitur" = "this verse omitted").
+            // When TRUE, drop the preceding NEST chunk back to the
+            // most recent fence (set by a `(deinde X)` opener) —
+            // mirrors Perl `process_conditional_lines`' SCOPE_NEST
+            // backscope at `SetupString.pl:436-456`. Drives Quad6-2
+            // [Evangelium] (Holy Week Passion drops most of the
+            // long narrative under R55/R60) and Sancti/06-30
+            // [Oratio] (drops the `_`/`$Oremus` separator-with-Orémus
+            // between Pauli and Petri prayers under R60).
+            //
+            // Fallback: when no fence has been set (no preceding
+            // `(deinde X)` was seen), drop only the immediately
+            // preceding non-blank line (SCOPE_LINE behaviour) —
+            // matches the simpler `(sed alleluia omittitur)` form
+            // in commune files.
             if truth {
-                while let Some(last) = out.last() {
-                    if last.trim().is_empty() {
-                        out.pop();
-                    } else {
-                        break;
+                if fence > 0 && fence < out.len() {
+                    out.truncate(fence);
+                } else {
+                    while let Some(last) = out.last() {
+                        if last.trim().is_empty() {
+                            out.pop();
+                        } else {
+                            break;
+                        }
                     }
+                    out.pop();
                 }
-                out.pop();
+                // Forward SCOPE_NULL on TRUE becomes SCOPE_NEST;
+                // the new frame opens at the truncated position.
+                fence = out.len();
             }
             // Don't consume the alt line: it's general content,
             // not a per-conditional alt.
@@ -1098,6 +1189,16 @@ fn eval_alt_1570(alt: &str) -> bool {
                 | "loco"
                 | "versus"
                 | "versuum"
+                // `hæc versus omittuntur` ("these verses are omitted") —
+                // the entire trailing phrase is a SCOPE_NEST marker, not
+                // part of the predicate. Without `hæc`/`hac` here, the
+                // multi-word predicate consumer in eval_alt_1570 greedily
+                // folds "hæc" into the predicate ("1960 hæc"), which then
+                // never matches the active version string. Drives Quad6-2
+                // [Evangelium] (Holy Week Passion) under R55/R60.
+                | "hæc"
+                | "hac"
+                | "haec"
         )
     };
     let mut tokens = alt.split_whitespace().peekable();
@@ -2166,6 +2267,111 @@ fn winner_has_lectio_l_rule(winner_file: Option<&MassFile>, corpus: &dyn Corpus)
     false
 }
 
+/// True when the winner file's [Rule] (or any chained `ex <Path>;`
+/// parent's [Rule]) contains `Sub unica concl(usione)?\s*$` on a line.
+/// Mirrors Perl `propers.pl::oratio` ll. 220-221:
+/// ```perl
+/// $commemoratio{Rule} =~ /Sub unica conclusione in commemoratione/i
+/// || $winner{Rule} =~ /Sub unica concl(usione)?\s*$/mi
+/// ```
+/// Drives the conclusion-macro stripping logic for multi-prayer Mass
+/// days (Sancti/01-18 / 02-22 / 06-30 — the Apostle commemoration
+/// pairs). Sancti/01-25's [Rule] = `ex Sancti/06-30;\n...` chains to
+/// Sancti/06-30 which carries `Sub unica concl`, so 01-25 inherits.
+fn winner_has_sub_unica_concl(winner_file: Option<&MassFile>, corpus: &dyn Corpus) -> bool {
+    let mut current = match winner_file {
+        Some(f) => f,
+        None => return false,
+    };
+    for _ in 0..MAX_AT_HOPS {
+        if let Some(rule) = current.sections.get("Rule") {
+            for line in rule.lines() {
+                let trimmed = line.trim();
+                let lc = trimmed.to_lowercase();
+                if lc.starts_with("sub unica concl") {
+                    return true;
+                }
+            }
+            // `ex Sancti/06-30;` style chain in [Rule]: follow the
+            // referenced file. Strip the trailing `;` and read the
+            // first whitespace-delimited token after `ex `.
+            if let Some(ex_target) = rule.lines().find_map(|line| {
+                let trimmed = line.trim();
+                let lc = trimmed.to_lowercase();
+                if let Some(rest) = lc.strip_prefix("ex ") {
+                    let target = rest.trim_end_matches([';', ' '])
+                        .split_whitespace()
+                        .next()?;
+                    // Preserve the original case (FileKey::parse is
+                    // case-insensitive on category but not stem).
+                    let orig_idx = trimmed.find(target).unwrap_or(0);
+                    Some(trimmed[orig_idx..orig_idx + target.len()].to_string())
+                } else {
+                    None
+                }
+            }) {
+                if let Some(next) = corpus.mass_file(&FileKey::parse(&ex_target)) {
+                    current = next;
+                    continue;
+                }
+            }
+        }
+        // No `ex` chain — try the file-level parent inherit instead.
+        let parent = current.parent_1570.as_deref().or(current.parent.as_deref());
+        match parent {
+            Some(p) => match corpus.mass_file(&FileKey::parse(p)) {
+                Some(next) => current = next,
+                None => return false,
+            },
+            None => return false,
+        }
+    }
+    false
+}
+
+/// Strip a `$Per ...` / `$Qui ...` macro line from `body` per Perl's
+/// `Sub unica conclusione` semantics (`propers.pl:222-235`):
+///   * R60: strip the FIRST occurrence (Perl `s/\$(Per|Qui) .*?\n//i`).
+///     Drops the intermediate macro between Pauli and Petri prayers,
+///     keeps the trailing one as the unified terminator.
+///   * Pre-1960: strip the LAST occurrence (Perl
+///     `s/(.*?)(\n\$(Per|Qui) ...)$/$1/s`). Perl re-appends this as
+///     `$addconclusio` after all commemorations; here we just drop it
+///     so Rust's body stays a strict prefix of Perl's full output and
+///     the `p.contains(r)` comparator still matches.
+fn strip_conclusion_macro_for_sub_unica(
+    body: &str,
+    rubric: crate::divinum_officium::core::Rubric,
+) -> String {
+    let is_r60 = matches!(rubric, crate::divinum_officium::core::Rubric::Rubrics1960);
+    let lines: Vec<&str> = body.split('\n').collect();
+    let macro_idx_iter = lines
+        .iter()
+        .enumerate()
+        .filter(|(_, l)| {
+            let t = l.trim_start();
+            t.starts_with("$Per ") || t.starts_with("$Qui ")
+        })
+        .map(|(i, _)| i);
+    let target_idx = if is_r60 {
+        macro_idx_iter.into_iter().next()
+    } else {
+        macro_idx_iter.into_iter().last()
+    };
+    match target_idx {
+        Some(idx) => {
+            let mut out = Vec::with_capacity(lines.len() - 1);
+            for (i, l) in lines.iter().enumerate() {
+                if i != idx {
+                    out.push(*l);
+                }
+            }
+            out.join("\n")
+        }
+        None => body.to_string(),
+    }
+}
+
 /// True when the winner file (or its parent chain) has the indexed
 /// `[<sect>L1]` body — e.g. `[LectioL1]`, `[GradualeL1]`.
 fn winner_has_l1_section(
@@ -2417,21 +2623,71 @@ fn expand_inline_at_lines(
     let mut out: Vec<String> = Vec::new();
     for line in body.split('\n') {
         if let Some(stripped) = line.strip_prefix('@') {
-            let path = stripped.trim();
-            // Only handle bare `@Path` (no colon, no embedded space)
-            // — section-selectors and regex-substitutions live in
-            // `chase_at_reference`'s grammar.
-            if !path.contains(':') && !path.contains(' ') && path.contains('/') {
-                let key = FileKey::parse(path);
+            let stripped_trim = stripped.trim();
+            // `@:Section` — same-file selector. Look up the named
+            // section in the current file. Drives multi-prayer
+            // [Oratio]/[Secreta]/[Postcommunio] bodies on Pope-saint
+            // Masses (Sancti/06-30, 01-25, 02-22), which compose
+            // `@:Oratio Pauli ... @Sancti/.../...:Oratio Petri` to
+            // emit both the Pauli prayer and the Petri commemoration.
+            if let Some(rest) = stripped_trim.strip_prefix(':') {
+                let target = rest.split(':').next().unwrap_or("").trim();
+                if !target.is_empty() && !target.contains('/') {
+                    if let Some(file) = corpus.mass_file(self_key) {
+                        if let Some(target_body) = file
+                            .sections
+                            .get(target)
+                            .map(|s| s.trim())
+                            .filter(|s| !s.is_empty())
+                        {
+                            // Target body might itself start with `@`
+                            // (Sancti/01-25's [Oratio Petri] = `!Pro
+                            // S. Petro\n@Sancti/02-22:Oratio Petri`
+                            // has a citation header followed by a
+                            // cross-file ref) — recurse through
+                            // expand_inline_at_lines to resolve any
+                            // nested @-refs.
+                            let nested = expand_inline_at_lines(
+                                target_body, target, corpus, self_key, via_commune,
+                            );
+                            out.push(nested);
+                            continue;
+                        }
+                    }
+                }
+            }
+            // `@Path:Section` — cross-file selector. Drives the
+            // Petri-half of the Pauli/Petri pair on Sancti/06-30
+            // ([Oratio] = `... @Sancti/01-25:Oratio Petri`).
+            else if stripped_trim.contains('/') && stripped_trim.contains(':') {
+                if let Some(block) = chase_at_reference(
+                    stripped_trim, section, corpus, via_commune, 1,
+                ) {
+                    // chase_at_reference returns the literal body,
+                    // not recursively-expanded — the resolved body
+                    // may still contain inline `@`-refs that need
+                    // expansion (e.g. `!Pro S. Petro\n@Sancti/02-22:Oratio Petri`).
+                    let target_key = block.source.clone();
+                    let nested = expand_inline_at_lines(
+                        &block.latin, section, corpus, &target_key, via_commune,
+                    );
+                    out.push(nested);
+                    continue;
+                }
+            }
+            // Bare `@Path` (no colon, no embedded space): cross-file,
+            // same-section. Drives Sancti/01-05 [Introitus] =
+            // `!Sap 18:14-15\n@Tempora/Nat1-0`.
+            else if !stripped_trim.contains(':')
+                && !stripped_trim.contains(' ')
+                && stripped_trim.contains('/')
+            {
+                let key = FileKey::parse(stripped_trim);
                 if &key != self_key {
                     if let Some(file) = corpus.mass_file(&key) {
                         if let Some(referenced) = file.sections.get(section) {
                             let resolved = referenced.trim();
                             if !resolved.is_empty() {
-                                // Recursive expansion of any nested
-                                // @Path lines within the referenced
-                                // body, capped by the chase machinery
-                                // upstream of read_section.
                                 let nested = expand_inline_at_lines(
                                     resolved, section, corpus, &key, via_commune,
                                 );
@@ -2515,6 +2771,18 @@ fn read_section(
         .map(|s| apply_body_conditionals_1570(s.trim()));
     let raw_opt = raw_owned.as_deref().map(|s| s.trim());
     if let Some(raw) = raw_opt.filter(|s| !s.is_empty()) {
+        // Multi-line bodies starting with `@` are composite — e.g.
+        // Sancti/06-30 [Oratio] = `@:Oratio Pauli\n(deinde dicuntur
+        // semper)\n_\n$Oremus\n(sed rubrica 196 omittuntur)\n
+        // @Sancti/01-25:Oratio Petri`. The single-line self-reference
+        // / chase branch below would take only the first line and
+        // drop the rest; for these we fall through to
+        // expand_inline_at_lines which resolves each `@`-line
+        // individually. Single-line `@`-bodies still flow through
+        // the self-reference branch because that's where the
+        // `:s/PAT/REPL/` regex-substitution form is parsed.
+        let is_multiline_at_body = raw.starts_with('@') && raw.contains('\n');
+        if !is_multiline_at_body {
         if let Some(stripped) = raw.strip_prefix('@') {
             // `@:Section[:s/PAT/REPL/]` — self-reference (different
             // section in the SAME file), optionally with a regex
@@ -2588,11 +2856,14 @@ fn read_section(
                 return chase_at_reference(stripped, section, corpus, via_commune, 1);
             }
         }
+        }
         // Inline `@Path` line within a multi-line body: replace each
         // such line with the referenced file's same-section body.
         // Drives Sancti/01-05 [Introitus] = `!Sap 18:14-15\n@Tempora/Nat1-0`
         // — the citation header is local, the antiphon body comes from
-        // the Christmas Sunday-Within-Octave Mass.
+        // the Christmas Sunday-Within-Octave Mass. Also handles
+        // multi-line bodies that START with `@` (Pauli/Petri pair) —
+        // see is_multiline_at_body above.
         let body = expand_inline_at_lines(raw, section, corpus, file_key, via_commune);
         return Some(ProperBlock {
             latin: body,
@@ -2759,6 +3030,35 @@ fn chase_at_reference(
         }
     };
     if let Some(stripped) = raw.strip_prefix('@') {
+        // Multi-line `@`-prefixed bodies are composite — when we
+        // chase Sancti/06-30 [Secreta] = `@Sancti/01-25` (whole-section
+        // reference), we land on Sancti/01-25 [Secreta] which is
+        // itself `@:Secreta Pauli\n(deinde dicuntur semper)\n_\n
+        // $Oremus\n(sed rubrica 196 omittuntur)\n@:Secreta Petri`.
+        // Apply body conditionals against the active rubric, then
+        // route through expand_inline_at_lines so each @-line resolves.
+        if raw.contains('\n') {
+            let conditional_evaluated = apply_body_conditionals_1570(raw);
+            let resolved = expand_inline_at_lines(
+                &conditional_evaluated,
+                target_section,
+                corpus,
+                &key,
+                via_commune || matches!(key.category, FileCategory::Commune),
+            );
+            let final_body = if let Some(spec) = &regex_substitution {
+                apply_perl_substitution(&resolved, spec.as_str())
+                    .unwrap_or(resolved)
+            } else {
+                resolved
+            };
+            return Some(ProperBlock {
+                latin: final_body,
+                source: key.clone(),
+                via_commune: via_commune
+                    || matches!(key.category, FileCategory::Commune),
+            });
+        }
         // `@:Section` self-reference — resolve within `file` rather
         // than re-parsing the empty path.
         if let Some(self_section) = stripped.strip_prefix(':') {

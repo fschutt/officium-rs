@@ -1545,7 +1545,7 @@ fn parse_commune(s: &str) -> (Option<FileKey>, CommuneType) {
     parse_commune_in_context(s, &FileCategory::Commune)
 }
 
-fn parse_commune_in_context(
+pub fn parse_commune_in_context(
     s: &str,
     winner_category: &FileCategory,
 ) -> (Option<FileKey>, CommuneType) {

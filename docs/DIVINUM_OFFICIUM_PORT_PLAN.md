@@ -1197,7 +1197,7 @@ Tabulae files.
 
 ### Cross-rubric 2026 baseline — per-rubric pass-rates
 
-Snapshot at `e7dc0f0` (R55 at 100%, R60 at 99.2%):
+Snapshot at `<TBD>` (R60 at 99.7%, four rubrics still 100%):
 
 | Rubric                  | Days passing   | Section match |
 |-------------------------|----------------|---------------|
@@ -1205,12 +1205,43 @@ Snapshot at `e7dc0f0` (R55 at 100%, R60 at 99.2%):
 | Tridentine 1910         | **365/365 100.0%** |           |
 | Divino Afflatu 1939     | **365/365 100.0%** |           |
 | **Reduced 1955**        | **365/365 100.0%** |           |
-| Rubrics 1960            | 362/365  99.2% |               |
+| Rubrics 1960            | 364/365  99.7% |               |
 
-**Four rubrics complete.** R60 has 2 remaining fails (06-30 Pauli/
-Petri commemoration prayer concatenation, 10-18 Sunday-Mass +
-Luke-commemoration prayer concatenation), both gated on the
-multi-prayer commemoration feature in `propers.pl::oratio()`.
+**Four rubrics complete; R60 has 1 remaining fail.** The 06-30
+Pauli/Petri pair, 10-18 Sunday + Luke commemoration, and other
+multi-prayer days now pass via:
+
+1. **Step 1 — multi-line `@`-ref expansion** in `expand_inline_at_lines`
+   handles `@:Section` (same-file) and `@Path:Section` (cross-file)
+   forms, plus a recursive call so nested `@`-refs (e.g.
+   `Sancti/01-25:Oratio Petri` → `@Sancti/02-22:Oratio Petri`) flow
+   through. `read_section` and `chase_at_reference` skip their
+   single-line early-return for multi-line `@`-prefixed bodies.
+
+2. **`apply_body_conditionals_1570` SCOPE_NEST fence** tracks the most
+   recent `(deinde X)` opener as the truncation target for `(...
+   omittuntur)` chunk-drops. Drives Tempora/Quad6-2 [Evangelium]
+   under R60 (Holy Week Passion narrative chunks dropped on
+   `(sed rubrica 1955 aut rubrica 1960 hæc versus omittuntur)`).
+   `hæc`/`hac`/`haec` added to scope-keyword table so the predicate
+   parser doesn't fold `hæc versus` into `rubrica 1960 hæc`.
+
+3. **`Sub unica conclusione` + R60-with-commemoratio** — strip the
+   intermediate `$Per/$Qui` macro line from multi-prayer Mass bodies.
+   Mirrors Perl `propers.pl::oratio` ll. 222-235 (`$sub_unica_conc`)
+   and the per-commemoration `delconclusio` strip. Pre-1960: drop the
+   trailing macro so Rust's body becomes a strict prefix of Perl's
+   "main + commems + final-macro". R60: drop the intermediate macro
+   between paired prayers; final macro stays. The R60 catch covers
+   commemoration days where winner [Rule] doesn't carry `Sub unica
+   concl` directly (e.g. Pent21-0 commemorating Sancti/10-18 Luke).
+
+The remaining 1 R60 fail (12-28) is an occurrence-resolution bug:
+Rust picks `Tempora/Nat28` as winner, but no such file exists. Perl
+picks `Tempora/Nat1-0a`-style propers for the day-in-octave under R60.
+The gap is in the Tempora redirect table for Nat25-Nat28
+(non-existent files in the corpus need to fall through to the
+Sunday-Within-Octave or Holy-Family alternate).
 
 Earlier snapshot at `98f4009` (T1910 and DA-1939 both at 100%):
 

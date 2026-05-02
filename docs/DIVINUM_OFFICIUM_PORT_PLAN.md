@@ -1038,28 +1038,32 @@ Adding a new reform layer is a *config-only* change: drop the
 the `Layer` enum. No saint or year breakpoint is hard-coded in
 the business logic.
 
-### Phase 7 in flight: Tridentine 1910 11-year aggregate at 90.4 %
+### Phase 7 in flight: Tridentine 1910 11-year aggregate at 94.15 %
 
-11-year sweep for Tridentine 1910 (post-rubric-aware-conditional):
+11-year sweep for Tridentine 1910 (with rubric-aware transfer
+table per upstream's `data.txt`: kalendar 1906, transfer 1906):
 
 | Year  | Days passing  |
 |-------|---------------|
-| 2020  | 332/366 90.7 %|
-| 2021  | 334/365 91.5 %|
-| 2022  | 327/365 89.6 %|
-| 2023  | 327/365 89.6 %|
-| 2024  | 331/366 90.4 %|
-| 2025  | 332/365 91.0 %|
-| 2026  | 327/365 89.6 %|
-| 2027  | 333/365 91.2 %|
-| 2028  | 328/366 89.6 %|
-| 2029  | 331/365 90.7 %|
-| 2030  | 329/365 90.1 %|
+| 2020  | 346/366 94.5 %|
+| 2021  | 343/365 94.0 %|
+| 2022  | 344/365 94.2 %|
+| 2023  | 343/365 94.0 %|
+| 2024  | 341/366 93.2 %|
+| 2025  | 346/365 94.8 %|
+| 2026  | 345/365 94.5 %|
+| 2027  | 343/365 94.0 %|
+| 2028  | 342/366 93.4 %|
+| 2029  | 345/365 94.5 %|
+| 2030  | 345/365 94.5 %|
 
-**Aggregate: 90.36 % across 4018 days** (3631 passing). The 9.5 %
-gap vs Tridentine 1570 (99.70 %) is in genuine rubric-rule deltas
-that the 1570-shape precedence/transferred-feast logic doesn't yet
-model — the load-bearing fixes to land are:
+**Aggregate: 94.15 % across 4018 days** (3783 passing) — up from
+90.4 % through the rubric-tag fix (Tridentine 1910 now consults
+the `1906` transfer-table column instead of `1570`, per the
+upstream `data.txt` mapping). The 5.85 % gap vs Tridentine 1570
+(99.70 %) is in genuine rubric-rule deltas that the 1570-shape
+precedence/transferred-feast logic doesn't yet model — the load-
+bearing fixes to land are:
 
 - Pius X 1908-10 elevations of saints to Duplex II classis
   (Cathedra Petri Rom. & Antioch., Holy Name of Jesus, etc.)

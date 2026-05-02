@@ -160,14 +160,24 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             sect
         };
         // Prefer seasonal variant `<Section> (tempore Adventus)` etc.
-        // when in the matching season AND the variant exists in any
-        // file we'd reach. Used by Sancti/12-08o (Immaculate Conception
-        // in Advent) which inherits C11's [Graduale] (tempore Adventus)
-        // — "invenia" form instead of the default "invénta".
+        // when in the matching season AND the WINNER's local section
+        // is missing — then we should fall back to the seasonal
+        // variant from the commune chain rather than the regular
+        // commune body.
+        //
+        // BUT when the winner has its own [Graduale] (e.g. 12-08
+        // Immaculate Conception ships local "Judith 13:23 Benedicta
+        // es tu" / "Tota pulchra es"), we MUST honour that instead
+        // of jumping to the commune's seasonal variant. Perl's
+        // `getitem` resolves the winner's body before any commune
+        // fallback fires; the season-variant swap belongs at the
+        // commune-fallback level only.
+        let winner_has_local = winner_file
+            .and_then(|f| f.sections.get(effective_sect))
+            .map(|s: &String| !s.trim().is_empty())
+            .unwrap_or(false);
         let final_sect: &str = if let Some(variant) = seasonal_variant_section(effective_sect, season) {
-            // Only use the variant if it actually resolves somewhere.
-            // Check up-front by trying proper_block on the variant.
-            if proper_block(&resolved, &variant, corpus).is_some() {
+            if !winner_has_local && proper_block(&resolved, &variant, corpus).is_some() {
                 effective_sect_str = variant;
                 effective_sect_str.as_str()
             } else {
@@ -2302,18 +2312,28 @@ fn read_section(
     let raw_opt = raw_owned.as_deref().map(|s| s.trim());
     if let Some(raw) = raw_opt.filter(|s| !s.is_empty()) {
         if let Some(stripped) = raw.strip_prefix('@') {
-            // `@:Section` — self-reference (different section in the
-            // SAME file). Resolve directly here so we keep `file` in
-            // scope; chase_at_reference parses path-prefixed forms.
+            // `@:Section[:s/PAT/REPL/]` — self-reference (different
+            // section in the SAME file), optionally with a regex
+            // substitution applied. Resolve directly here so we
+            // keep `file` in scope; chase_at_reference parses
+            // path-prefixed forms.
             if let Some(self_section) = stripped.strip_prefix(':') {
-                let target = self_section.lines().next()?.trim();
-                // Skip the regex-substitution form (`s/PAT/REPL/`)
-                // — handled elsewhere — and any line that turned out
-                // to be a path. The `in N loco` form is fine here:
-                // the section name as parsed by build_missa_json.py
-                // already includes the suffix.
-                let unmodelled = target.is_empty()
-                    || target.contains('/');
+                let line = self_section.lines().next()?.trim();
+                // Detect the optional `:s/PAT/REPL/[FLAGS]` suffix.
+                // The section name itself never contains an `s/`,
+                // so the first occurrence of `:s/` is the substitution
+                // delimiter. Sancti/06-13 [Oratio] uses
+                // `@:Oratio_:s/atque\ Doctóris//` to strip the
+                // post-1946 "atque Doctóris" from Antony of Padua's
+                // collect for pre-1946 rubrics.
+                let (target, sub_spec) = match line.find(":s/") {
+                    Some(idx) => (
+                        line[..idx].trim(),
+                        Some(line[idx + 1..].to_string()),
+                    ),
+                    None => (line, None),
+                };
+                let unmodelled = target.is_empty() || target.contains('/');
                 if !unmodelled {
                     if let Some(body) = file
                         .sections
@@ -2324,8 +2344,13 @@ fn read_section(
                         if let Some(rest) = body.strip_prefix('@') {
                             return chase_at_reference(rest, target, corpus, via_commune, 1);
                         }
+                        let resolved = match &sub_spec {
+                            Some(spec) => apply_perl_substitution(body, spec)
+                                .unwrap_or_else(|| body.to_string()),
+                            None => body.to_string(),
+                        };
                         return Some(ProperBlock {
-                            latin: body.to_string(),
+                            latin: resolved,
                             source: file_key.clone(),
                             via_commune,
                         });
@@ -2422,43 +2447,32 @@ fn chase_at_reference(
         Some((p, s)) => (p.trim(), Some(s.trim())),
         None => (first_line, None),
     };
-    // Detect regex-substitution form `Path::s/PAT/REPL/` and the
-    // indexed `Section in N loco` form. Both arrive with the
-    // section_spec starting with `:s/` (because split_once(':') ate
-    // only the first colon of `::s/...`) or containing ` in `.
-    //
-    // For `::s/PAT/REPL/[FLAGS]`, the intent is "take Path's
-    // default-section body and apply the substitution". We resolve
-    // the default section then apply the regex via
-    // `apply_perl_substitution`. Drives Pasc5-5's
-    // `@Tempora/Pasc5-4::s/\!(?!M).*//` which strips the
-    // `!Dicto Evangelio` rubric from the Ascension Gospel.
-    let regex_substitution: Option<String> = section_spec.and_then(|spec| {
-        // Forms we recognise (after split_once ate one colon):
-        //   `:s/PAT/REPL/`            — `Path::s/PAT/REPL/`
-        //   `: s/PAT/REPL/`           — `Path:: s/PAT/REPL/`
-        //   `s/PAT/REPL/`             — `Path:s/PAT/REPL/` (no double colon)
+    // Three forms with regex substitution:
+    //   `Path::s/PAT/REPL/`        — empty section, default-section body
+    //   `Path:s/PAT/REPL/`         — same (single colon, body starts with s/)
+    //   `Path:Section:s/PAT/REPL/` — explicit section + regex
+    // After split_once(':') ate the first colon, the section_spec
+    // for the third form looks like `Section:s/PAT/REPL/`. Detect
+    // both layouts.
+    let (target_section, regex_substitution): (&str, Option<String>) = if let Some(spec) = section_spec {
         let inner = spec.trim_start_matches(|c: char| c == ':' || c.is_whitespace());
         if inner.starts_with("s/") {
-            Some(inner.to_string())
-        } else {
-            None
-        }
-    });
-    if let Some(spec) = section_spec {
-        if regex_substitution.is_none() && spec.is_empty() {
+            // `::s/...` or `:s/...` — empty section, default applies
+            (default_section, Some(inner.to_string()))
+        } else if let Some(idx) = spec.find(":s/") {
+            // `Section:s/PAT/REPL/`
+            let sec = spec[..idx].trim();
+            let regex = spec[idx + 1..].to_string();
+            let sec_str: &str = if sec.is_empty() { default_section } else { sec };
+            (sec_str, Some(regex))
+        } else if spec.is_empty() {
             return None;
+        } else {
+            // Bare section name (or `Section in N loco`)
+            (spec, None)
         }
-    }
-    // The `in N loco` form (e.g. `Evangelium in 2 loco`) is recorded
-    // in our corpus as a literal section name with the suffix —
-    // build_missa_json.py does no special handling, so pass the
-    // section_spec through verbatim and let the section lookup find
-    // the matching key.
-    let target_section = if regex_substitution.is_some() {
-        default_section
     } else {
-        section_spec.unwrap_or(default_section)
+        (default_section, None)
     };
     let key = FileKey::parse(path);
     let file = corpus.mass_file(&key)?;

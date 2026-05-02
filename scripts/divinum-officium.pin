@@ -1,0 +1,7 @@
+b0c1c717143b4b092c6861fe4c33b97092a852f8
+# Upstream commit pinned for the Divinum Officium → Rust port regression
+# oracle. Bumping this file forces a vendor-tree refresh + full year-sweep
+# rerun. See DIVINUM_OFFICIUM_PORT_PLAN.md.
+#
+# date  : 2026-04-30 14:55:30 -0400
+# subject: Merge pull request #5153 from tjrandall/hotfix/fix-plack-405-error

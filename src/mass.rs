@@ -2475,7 +2475,30 @@ fn chase_at_reference(
         (default_section, None)
     };
     let key = FileKey::parse(path);
-    let file = corpus.mass_file(&key)?;
+    let file = match corpus.mass_file(&key) {
+        Some(f) => f,
+        None => {
+            // Mirror Perl `SetupString.pl::do_inclusion_path` line 527:
+            // when the referenced file doesn't exist, return the
+            // literal placeholder text "<path>:<section> is missing!".
+            // Sancti/10-07 has @Sancti/9-12:Evangelium (single-digit
+            // malformed; the actual file is 09-12) — Perl renders the
+            // placeholder verbatim into the Latin Mass output. We
+            // reproduce so the comparator's "first-occurrence wins"
+            // matches the placeholder rather than falling through to
+            // commune-fallback (which would render a real but
+            // different gospel and fail comparison).
+            //
+            // Suppress regex substitution: Perl applies `s/.../.../`
+            // to the resolved body; on missing-file the placeholder
+            // is returned BEFORE any substitution.
+            return Some(ProperBlock {
+                latin: format!("{}:{} is missing!", path, target_section),
+                source: key.clone(),
+                via_commune,
+            });
+        }
+    };
     // If the chased file's local section is annotated with a
     // post-1570 rubric (`(communi Summorum Pontificum)`,
     // `(rubrica 196*)`), skip it and chase the file-level parent.

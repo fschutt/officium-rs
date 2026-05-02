@@ -89,6 +89,27 @@ EXCLUDED_ANNOTATIONS_1570 = (
 )
 
 
+def _is_post_da_rubric(label: str) -> bool:
+    """True when the conditional label matches Reduced 1955 or
+    Rubrics 1960 (the post-DA Roman regime). Specifically excludes
+    `1963` (Monastic 1963), `1939`/`1954` (DA dates — those use
+    different, non-1955+ semantics), and the cisterciensis/altovadensis
+    variants. Match is loose-prefix on the conditional body text.
+    """
+    s = label.lower()
+    # Hard exclusions
+    if "1963" in s or "altovadensis" in s or "cisterciensis" in s:
+        return False
+    if "1939" in s or "1954" in s:
+        return False
+    # Inclusions
+    if "1955" in s:
+        return True
+    if "196" in s:
+        return True
+    return False
+
+
 def is_excluded_annotation(annotation: str) -> bool:
     """True when this annotation marks a post-1570 rubric variant we
     should drop from the 1570 baseline corpus.
@@ -171,11 +192,10 @@ def parse_mass_file(text: str) -> dict:
                 # `rank_num` / `rank_num_1955` matches that for
                 # post-DA only, so we keep 1570 out of the second-
                 # header path.)
-                ann_lower = annotation.lower() if annotation else ""
                 is_post_da_variant = (
                     base_name == "Rank"
                     and annotation
-                    and ("196" in ann_lower or "1955" in ann_lower)
+                    and _is_post_da_rubric(annotation)
                 )
                 if is_post_da_variant:
                     sections[current].append(f"({annotation})")
@@ -251,11 +271,13 @@ def parse_mass_file(text: str) -> dict:
                 variant_1570_parts = parts
             elif (
                 current_label
-                and ("1955" in current_label or "196" in current_label)
+                and _is_post_da_rubric(current_label)
                 and variant_1955_parts is None
             ):
                 # `(rubrica 196 aut rubrica 1955)` covers both R55 and
                 # R60; bare `(rubrica 196)` is 1960-only — same bucket.
+                # `(rubrica 1963)` is Monastic 1963 — explicitly
+                # excluded; it's not a Roman 1955/60 variant.
                 variant_1955_parts = parts
             current_label = None
         if default_parts:

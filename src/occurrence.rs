@@ -176,8 +176,38 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     // ── Build result ─────────────────────────────────────────────────
     if sanctoral_office {
         let sancti = sancti_entry.expect("sanctoral_office=true ⇒ entry exists");
-        let (commune, commune_type) =
+        let (mut commune, mut commune_type) =
             parse_commune_in_context(&sancti.commune, &sancti_key.category);
+        // Pius XII (1955) suppressed the Octave of the Epiphany —
+        // Sancti/01-07 .. 01-12 are now bare class IV ferias. On those
+        // weekdays the Mass is always the Sunday-after-Epiphany
+        // ("In excelso throno"); on weekday 01-07 itself it stays the
+        // Epiphany Mass ("Ecce advenit"), but the rest of that week
+        // routes through `Tempora/Epi1-0a`. Mirrors
+        // `horascommon.pl:1613-1622`:
+        //
+        //   if ($version =~ /19(?:55|6)/
+        //     && $missa
+        //     && $dayname[0] =~ /Epi1/i
+        //     && $winner =~ /01\-([0-9]+)/
+        //     && $1 < 13
+        //     && $dayofweek != 0)
+        //   { $communetype='ex'; $commune='Tempora/Epi1-0a.txt'; }
+        let is_post_da = matches!(
+            input.rubric,
+            Rubric::Reduced1955 | Rubric::Rubrics1960
+        );
+        let in_former_epi_octave = matches!(input.date.month, 1)
+            && (input.date.day < 13)
+            && weekname.starts_with("Epi1")
+            && dow != 0;
+        if is_post_da && in_former_epi_octave && matches!(sancti_key.category, FileCategory::Sancti) {
+            commune = Some(FileKey {
+                category: FileCategory::Tempora,
+                stem: "Epi1-0a".into(),
+            });
+            commune_type = CommuneType::Ex;
+        }
         let commemoratio = if commemorate_temporal_under_sanctoral_1570(
             sanctoral_rank,
             temporal_rank,

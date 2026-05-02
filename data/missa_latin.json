@@ -266,9 +266,6 @@
 "commune":"vide C4a",
 "rank_num_1570":2.2,
 "commune_1570":"vide C4",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C4a",
 "sections":{
 "Rule":"vide C4a;\nGloria\nCredoDA",
 "Name":"Hilárium\n(sed rubrica 1570 aut rubrica 1617)\nHilárii\nSecreta=Hilárii\nPostcommunio=Hilárius\n(sed rubrica 1570 aut rubrica 1617)\nPostcommunio=Hilário"
@@ -293,9 +290,6 @@
 "commune":"vide C5",
 "rank_num_1570":2.2,
 "commune_1570":"vide C5",
-"rank_1955":"Memoria",
-"rank_num_1955":1.1,
-"commune_1955":"vide C5",
 "sections":{
 "Rule":"vide C5;\nGloria",
 "Name":"Pauli",
@@ -601,9 +595,6 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C4a",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C4a",
 "sections":{
 "Rule":"vide C4a;\nGloria\nCredoDA",
 "Name":"Francíscum\nSecreta=Francísci\nPostcommunio=Francíscus",
@@ -628,9 +619,6 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C5",
-"rank_1955":"Memoria",
-"rank_num_1955":1.1,
-"commune_1955":"vide C5",
 "sections":{
 "Rule":"vide C5;\nGloria",
 "Introitus":"!3 Reg 4:29\nv. Dedit illi Deus sapiéntiam, et prudéntiam multam nimis, et latitúdinem cordis, quasi arénam quæ est in líttore maris.\n!Ps 112:1.\nLaudáte, púeri, Dóminum, laudáte nomen Dómini.\n&Gloria\nv. Dedit illi Deus sapiéntiam, et prudéntiam multam nimis, et latitúdinem cordis, quasi arénam quæ est in líttore maris.",
@@ -823,9 +811,6 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C6a",
-"rank_1955":"Duplex II Class",
-"rank_num_1955":5.0,
-"commune_1955":"vide C6a",
 "sections":{
 "Rule":"vide C6a;\nGloria",
 "Oratio":"Deus, qui ánimam beátæ Vírginis tuæ Scholásticæ ad ostendéndam innocéntiæ viam in colúmbæ spécie cœlum penetráre fecísti: da nobis ejus méritis et précibus ita innocénter vívere; ut ad ætérna mereámur gáudia perveníre.\n$Per Dominum"
@@ -1119,9 +1104,9 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C4a",
-"rank_1955":"II Class",
-"rank_num_1955":5.0,
-"commune_1955":"ex C4a",
+"rank_1955":"Duplex",
+"rank_num_1955":2.1,
+"commune_1955":"vide C4a",
 "sections":{
 "Rule":"vide C4b;\n(sed rubrica tridentina)\nvide C4a;\nGloria\nCredoDA",
 "Oratio":"Deus, qui ánimæ fámuli tui Gregórii ætérnæ beatitúdinis prǽmia contulísti: concéde propítius; ut, qui peccatórum nostrórum póndere prémimur, ejus apud te précibus sublevémur.\n$Per Dominum",
@@ -1548,9 +1533,6 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C5a",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C5a",
 "sections":{
 "Rule":"vide C5a;\nGloria\nCredoDA",
 "Name":"Petrum\nSecreta=Petri\nPostcommunio=Petrus",
@@ -1798,9 +1780,6 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C4b",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C4b",
 "sections":{
 "Rule":"Gloria",
 "Name":"Pium\nPostcommunio=Pio",
@@ -2059,9 +2038,6 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C4b",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C4b",
 "sections":{
 "Rule":"vide C4b;\nGloria",
 "Name":"Petrum Cœlestínum\nPostcommunio=Petro Cœlestíno",
@@ -2564,9 +2540,6 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C5a",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C5a",
 "sections":{
 "Rule":"vide C5a;\nGloria\nCredoDA",
 "Name":"Ephræm",
@@ -2761,9 +2734,6 @@
 "commune":"vide C3",
 "rank_num_1570":2.2,
 "commune_1570":"vide C3",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C3",
 "sections":{
 "Rule":"vide C3;\nGloria",
 "Introitus":"@Sancti/06-15",
@@ -3241,9 +3211,6 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C5",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C5",
 "sections":{
 "Rule":"vide C5;\nGloria",
 "Name":"Joánnis\nSecreta=Joánnes\nPostcommunio=Joánnes",
@@ -3509,9 +3476,6 @@
 "commune":"vide C2-1",
 "rank_num_1570":2.2,
 "commune_1570":"vide C2-1",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C2-1",
 "sections":{
 "Rule":"vide C2-1;\nGloria",
 "Introitus":"@Commune/C2a-1",
@@ -3765,9 +3729,6 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C4a",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C4a",
 "sections":{
 "Rule":"vide C4a\nGloria\nCredoDA",
 "Introitus":"!Luc 4:18\nv. Spíritus Dómini super me: propter quod unxit me: evangelizáre paupéribus misit me, sanáre contrítos corde.\n!Ps 77:1\nAtténdite, pópule meus, legem meam: inclináte aurem vestram in verba oris mei.\n&Gloria\nv. Spíritus Dómini super me: propter quod unxit me: evangelizáre paupéribus misit me, sanáre contrítos corde.",
@@ -3825,9 +3786,6 @@
 "rank":"Duplex majus",
 "rank_num":4.0,
 "commune":"vide C5",
-"rank_1955":"Duplex",
-"rank_num_1955":3.0,
-"commune_1955":"vide C5",
 "sections":{
 "Rule":"vide C5\nGloria",
 "Introitus":"@Commune/C5b",
@@ -4907,9 +4865,6 @@
 "rank":"Semiduplex",
 "rank_num":2.2,
 "commune":"vide C3",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C3",
 "sections":{
 "Rule":"vide C3;\n9 lectiones",
 "Name":"Cornélii et Cypriáni"
@@ -5061,9 +5016,6 @@
 "rank":"Semiduplex",
 "rank_num":2.2,
 "commune":"vide C2b-1",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C2b-1",
 "sections":{
 "Rule":"vide C2b-1;\nGloria",
 "Name":"Lini\n(sed communi Summorum Pontificum)\nLinum\nSecreta=Lino\nPostcommunio=Lino"
@@ -5145,9 +5097,6 @@
 "rank":"Semiduplex",
 "rank_num":2.2,
 "commune":"vide C3a",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C3a",
 "sections":{
 "Rule":"vide C3a;\nGloria",
 "Introitus":"!Eccli 44:15 et 14\nv. Sapiéntiam Sanctórum narrent pópuli, et laudes eórum núntiet ecclésia: nómina autem eórum vivent in sǽculum sǽculi.\n!Ps 32:1\nExsultáte, justi, in Dómino: rectos decet collaudátio.\n&Gloria\nv. Sapiéntiam Sanctórum narrent pópuli, et laudes eórum núntiet ecclésia: nómina autem eórum vivent in sǽculum sǽculi.",
@@ -5247,9 +5196,6 @@
 "rank":"Duplex majus",
 "rank_num":4.0,
 "commune":"vide C4",
-"rank_1955":"Duplex",
-"rank_num_1955":3.0,
-"commune_1955":"vide C4",
 "sections":{
 "Rule":"Gloria\nCredoDA",
 "Introitus":"@Sancti/09-29",
@@ -5290,9 +5236,6 @@
 "rank":"Duplex majus",
 "rank_num":4.0,
 "commune":"vide C5",
-"rank_1955":"Duplex",
-"rank_num_1955":3.0,
-"commune_1955":"vide C5",
 "sections":{
 "Rule":"vide C5;\nGloria",
 "Introitus":"@Sancti/09-17",
@@ -5326,9 +5269,6 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C5",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C5",
 "sections":{
 "Rule":"vide C5;\nGloria",
 "Name":"Brunónis\nPostcommunio=Brunóne",
@@ -5495,9 +5435,6 @@
 "commune":"vide C2b",
 "rank_num_1570":2.2,
 "commune_1570":"vide C2b",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C2b",
 "sections":{
 "Rule":"vide C2b;\nGloria",
 "Oratio":"Deus, qui nos cónspicis ex nostra infirmitáte defícere: ad amórem tuum nos misericórditer per Sanctórum tuórum exémpla restáura.\n$Per Dominum",
@@ -6334,9 +6271,6 @@
 "commune":"vide C5a",
 "rank_num_1570":3.0,
 "commune_1570":"vide C5",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C5a",
 "sections":{
 "Rule":"vide C5a;\n(sed rubrica tridentina)\nvide C5;\nGloria\nCredoDA",
 "Name":"Joánnem\nSecreta=Joánnis\nPostcommunio=Joánnes",
@@ -6370,9 +6304,6 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C6",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C6",
 "sections":{
 "Rule":"vide C6;\nGloria",
 "Name":"Catharínæ\nPostcommunio=Catharína",
@@ -6384,9 +6315,6 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C5b",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C5b",
 "sections":{
 "Rule":"vide C5b;\nGloria",
 "Oratio":"Clementíssime Deus, qui sanctum Silvéstrum Abbátem, sǽculi hujus vanitátem in apérto túmulo pie meditántem, ad erémum vocáre et præcláris vitæ méritis decoráre dignátus es: te súpplices exorámus; ut, ejus exémplo terréna despiciéntes, tui consórtio perfruámur ætérno.\n$Per Dominum",
@@ -6491,9 +6419,6 @@
 "rank":"Duplex",
 "rank_num":3.0,
 "commune":"vide C4a",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C4a",
 "sections":{
 "Rule":"vide C4a;\nGloria\nCredoDA",
 "Name":"Petrum Chrysólogum\nSecreta=Petri Chrysólogi\nPostcommunio=Petrus Chrysólogus",
@@ -6546,9 +6471,6 @@
 "commune":"vide C4",
 "rank_num_1570":2.2,
 "commune_1570":"vide C4",
-"rank_1955":"Simplex",
-"rank_num_1955":1.1,
-"commune_1955":"vide C4",
 "sections":{
 "Rule":"vide C4;\nGloria",
 "Introitus":"@Commune/C2a",

@@ -1241,6 +1241,17 @@ fn resolve_sancti_for_tridentine_1570(
         kalendarium_1570::lookup_for_layer(layer, look_m, look_d)
     };
     let native_rank = native_entry.map(|e| e.main.rank_num).unwrap_or(0.0);
+    // The heuristic transfer-walk simulates Tridentine 1570
+    // transfer rules ("displaced Duplex+ moves to next free day").
+    // Post-1570 rubrics use the upstream Transfer tables for
+    // explicit per-rubric transfers — falling back to the
+    // heuristic would wrongly transfer (e.g.) Ignatius from Feb 1
+    // to Feb 3 under T1910, where Perl keeps Blasius. Restrict the
+    // heuristic to rubrics that share the 1570/M1617 transfer
+    // semantics.
+    let heuristic_transfer_active =
+        matches!(rubric, Rubric::Tridentine1570 | Rubric::Monastic);
+    if heuristic_transfer_active {
     if let Some((stem, name, rank_num)) =
         transferred_sancti_for_1570(year, month, day, layer, corpus)
     {
@@ -1264,6 +1275,7 @@ fn resolve_sancti_for_tridentine_1570(
             };
             return (key, Some(entry));
         }
+    }
     }
     let kalendar_lookup = if suppressed_by_transfer {
         None

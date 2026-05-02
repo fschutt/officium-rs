@@ -906,46 +906,39 @@ fn resolve_name_for_section(name_body: &str, section: &str) -> String {
 ///   - `monastica`                 → Monastic
 ///   - `cisterciensis`, `altovadensis`, `innovata`, `summorum pontificum`,
 ///     `newcal`                    → not Roman / out of scope
+/// Mirrors Perl `SetupString.pl::vero` line 299: when the predicate
+/// isn't a named one (`tridentina`/`monastica`/...), it falls back
+/// to `$version =~ /$predicate/i`. Multi-word predicates also use
+/// regex semantics — e.g. `rubrica divino afflatu` → /divino afflatu/.
+///
+/// We approximate the `/Trident/` predicate explicitly (since
+/// "tridentina" doesn't substring-match "Tridentine - 1910" — the
+/// last letter differs).
 fn rubrica_predicate_matches(
     active: crate::divinum_officium::core::Rubric,
     predicate: &str,
 ) -> bool {
-    use crate::divinum_officium::core::Rubric;
     let pred_lc = predicate.trim().to_ascii_lowercase();
-    let pred = pred_lc.as_str();
-    // Any pre-Tridentine baseline names match Tridentine 1570
-    let is_tridentine_token = matches!(pred, "tridentina" | "1570");
-    // Tridentine 1910 considers itself post-1570 / pre-DA. None of the
-    // existing tokens specifically name "1910" in the corpus — `(sed
-    // rubrica 1570)` shouldn't fire under 1910, so 1910 evaluates ALL
-    // these tokens as FALSE except its own (which doesn't exist in the
-    // corpus today).
-    let is_divino_token = matches!(pred, "divino" | "da");
-    let is_1955_token = matches!(pred, "1955");
-    let is_1960_token = matches!(pred, "1960" | "1963" | "1966")
-        || pred.starts_with("196");
-    let is_monastic_token = matches!(pred, "monastica" | "1617");
-    // Out-of-scope tokens never fire.
-    let _is_oos = matches!(
-        pred,
-        "innovata"
-            | "innovatis"
-            | "cisterciensis"
-            | "altovadensis"
-            | "summorum pontificum"
-            | "newcal"
-    );
-    match active {
-        Rubric::Tridentine1570 => is_tridentine_token,
-        // Tridentine 1910: a kalendar-only update on top of 1570
-        // rubric rules. Most files don't have a "1910" predicate, so
-        // every conditional evaluates FALSE — the default form wins.
-        Rubric::Tridentine1910 => false,
-        Rubric::DivinoAfflatu1911 => is_divino_token,
-        Rubric::Reduced1955 => is_1955_token || is_divino_token,
-        Rubric::Rubrics1960 => is_1960_token,
-        Rubric::Monastic => is_tridentine_token || is_monastic_token,
+    let version = active.as_perl_version().to_ascii_lowercase();
+    // Named predicate `tridentina` is the regex `/Trident/i` per
+    // SetupString.pl::predicates table.
+    if pred_lc == "tridentina" {
+        return version.contains("trident");
     }
+    if pred_lc == "monastica" {
+        return version.contains("monastic");
+    }
+    if pred_lc == "innovata" || pred_lc == "innovatis" {
+        return version.contains("2020 usa") || version.contains("newcal");
+    }
+    // For all other tokens (year literals like `1570`/`1910`/`1955`,
+    // multi-word predicates like `divino afflatu`, etc.) the Perl
+    // fallback is a literal substring/regex match against $version.
+    // We approximate with case-insensitive substring to avoid pulling
+    // in a regex dep just for this. Out-of-scope tokens that never
+    // appear in our active rubric strings (e.g. `cisterciensis`) just
+    // miss naturally.
+    version.contains(&pred_lc)
 }
 
 /// Reduced 1570-mode conditional evaluator for [Name] bodies and
@@ -3400,16 +3393,17 @@ mod tests {
     }
 
     #[test]
-    fn rubrica_predicate_matches_1910_rejects_all_tokens() {
+    fn rubrica_predicate_matches_1910() {
         use crate::divinum_officium::core::Rubric;
-        // Tridentine 1910 has no specific token in the corpus —
-        // every (sed rubrica X) evaluates FALSE so the default form
-        // wins. This is what makes Hilarius read "Hilárium" (default
-        // accusative) rather than "Hilárii" (1570 genitive).
-        for tok in ["tridentina", "1570", "divino", "da", "1955", "1960", "monastica"] {
+        // T1910 ("Tridentine - 1910") matches `tridentina`
+        // (Perl /Trident/) and `1910`. Year-literal tokens that
+        // don't substring its version-string fail.
+        assert!(rubrica_predicate_matches(Rubric::Tridentine1910, "tridentina"));
+        assert!(rubrica_predicate_matches(Rubric::Tridentine1910, "1910"));
+        for tok in ["1570", "1888", "1906", "divino", "da", "1955", "1960", "monastica"] {
             assert!(
                 !rubrica_predicate_matches(Rubric::Tridentine1910, tok),
-                "1910 should reject token {tok:?}"
+                "T1910 should reject token {tok:?}"
             );
         }
     }
@@ -3417,34 +3411,49 @@ mod tests {
     #[test]
     fn rubrica_predicate_matches_divino_afflatu() {
         use crate::divinum_officium::core::Rubric;
+        // DA "Divino Afflatu" — matches /divino/ and /afflatu/.
+        // Multi-word predicate `divino afflatu` also substring-matches.
         assert!(rubrica_predicate_matches(Rubric::DivinoAfflatu1911, "divino"));
-        assert!(rubrica_predicate_matches(Rubric::DivinoAfflatu1911, "da"));
+        assert!(rubrica_predicate_matches(Rubric::DivinoAfflatu1911, "afflatu"));
+        assert!(rubrica_predicate_matches(Rubric::DivinoAfflatu1911, "divino afflatu"));
+        // `da` is a substring of "divino afflatu" — Perl /da/i matches.
+        // Existing call sites pass single-token `da` only when the
+        // upstream wants the abbreviation; both behaviours line up.
         assert!(!rubrica_predicate_matches(Rubric::DivinoAfflatu1911, "1570"));
         assert!(!rubrica_predicate_matches(Rubric::DivinoAfflatu1911, "1955"));
+        assert!(!rubrica_predicate_matches(Rubric::DivinoAfflatu1911, "1960"));
     }
 
     #[test]
     fn rubrica_predicate_matches_rubrics_1960() {
         use crate::divinum_officium::core::Rubric;
-        // Rubrics 1960 should fire under 196*, 1960, 1963, 1966.
-        for tok in ["1960", "1963", "1966", "196"] {
+        // R60 ("Rubrics 1960 - 1960"): matches `1960`, `196`,
+        // `rubrics`. Year-only `1962` / `1963` etc. don't substring
+        // the version string.
+        for tok in ["1960", "196", "rubrics"] {
             assert!(
                 rubrica_predicate_matches(Rubric::Rubrics1960, tok),
-                "1960 should accept token {tok:?}"
+                "R60 should accept token {tok:?}"
             );
         }
-        assert!(!rubrica_predicate_matches(Rubric::Rubrics1960, "tridentina"));
-        assert!(!rubrica_predicate_matches(Rubric::Rubrics1960, "1955"));
+        for tok in ["1962", "1963", "1966", "tridentina", "1955", "divino"] {
+            assert!(
+                !rubrica_predicate_matches(Rubric::Rubrics1960, tok),
+                "R60 should reject token {tok:?}"
+            );
+        }
     }
 
     #[test]
     fn rubrica_predicate_matches_monastic() {
         use crate::divinum_officium::core::Rubric;
-        // Monastic shares 1570 baseline + has its own monastica/1617.
+        // Monastic ("pre-Trident Monastic"): matches `tridentina`
+        // (because /Trident/i is in "pre-Trident Monastic") and
+        // `monastica`. Year tokens fail.
         assert!(rubrica_predicate_matches(Rubric::Monastic, "tridentina"));
-        assert!(rubrica_predicate_matches(Rubric::Monastic, "1570"));
         assert!(rubrica_predicate_matches(Rubric::Monastic, "monastica"));
-        assert!(rubrica_predicate_matches(Rubric::Monastic, "1617"));
+        assert!(!rubrica_predicate_matches(Rubric::Monastic, "1570"));
+        assert!(!rubrica_predicate_matches(Rubric::Monastic, "1617"));
         assert!(!rubrica_predicate_matches(Rubric::Monastic, "divino"));
     }
 

@@ -1289,11 +1289,24 @@ fn resolve_sancti_for_tridentine_1570(
         // and later layers the `(sed rubrica 1570)` annotated values
         // are the wrong choice — they represent the pre-1570 reading
         // for an already-post-1570 universe.
+        //
+        // Mirrors the upstream `(rubrica 196 aut rubrica 1955)` second
+        // [Rank] header on Sancti files like 01-07, 01-12, 03-19,
+        // 06-23 — under R55/R60 these become a Feria of class IV with
+        // a different commune (`vide Sancti/01-06` instead of `ex
+        // Sancti/01-06`). Without this gate the 1955+ rank/commune was
+        // being lost and the saint kept its DA-era 5.6 Semiduplex.
         let prefer_1570_overrides =
             matches!(layer, crate::divinum_officium::kalendaria_layers::Layer::Pius1570);
+        let prefer_1955_overrides = matches!(
+            rubric,
+            Rubric::Reduced1955 | Rubric::Rubrics1960
+        );
         let rank_num = mass
             .and_then(|m| {
-                if prefer_1570_overrides {
+                if prefer_1955_overrides {
+                    m.rank_num_1955.or(m.rank_num).or(m.rank_num_1570)
+                } else if prefer_1570_overrides {
                     m.rank_num_1570.or(m.rank_num)
                 } else {
                     m.rank_num.or(m.rank_num_1570)
@@ -1302,17 +1315,41 @@ fn resolve_sancti_for_tridentine_1570(
             .unwrap_or(override_.main.rank_num);
         let commune = mass
             .and_then(|m| {
-                if prefer_1570_overrides {
+                if prefer_1955_overrides {
+                    m.commune_1955
+                        .clone()
+                        .or_else(|| m.commune.clone())
+                        .or_else(|| m.commune_1570.clone())
+                } else if prefer_1570_overrides {
                     m.commune_1570.clone().or_else(|| m.commune.clone())
                 } else {
                     m.commune.clone().or_else(|| m.commune_1570.clone())
                 }
             })
             .unwrap_or_default();
+        // Officium / rank_class follow the same dispatch.
+        let name = mass
+            .and_then(|m| {
+                if prefer_1955_overrides {
+                    m.officium_1955.clone()
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_else(|| override_.main.name.clone());
+        let rank_class = mass
+            .and_then(|m| {
+                if prefer_1955_overrides {
+                    m.rank_1955.clone().or_else(|| m.rank.clone())
+                } else {
+                    m.rank.clone()
+                }
+            })
+            .unwrap_or_default();
         let entry = SanctiEntry {
             rubric: "1570".into(),
-            name: override_.main.name.clone(),
-            rank_class: mass.and_then(|m| m.rank.clone()).unwrap_or_default(),
+            name,
+            rank_class,
             rank_num: Some(rank_num),
             commune,
         };

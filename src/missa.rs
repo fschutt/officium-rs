@@ -40,6 +40,23 @@ pub struct MassFile {
     /// Tridentine 1570 variant of `commune` (parallel to `rank_num_1570`).
     #[serde(default)]
     pub commune_1570: Option<String>,
+    /// Reduced-1955 / Rubrics-1960 variant of `officium` from a
+    /// `[Rank] (rubrica 196 aut rubrica 1955)` second header.
+    /// Sancti/01-07, 01-12, 03-19, 06-23 etc. use this pattern to
+    /// rename their feast for the post-DA rubrics (e.g. "Septima die
+    /// infra Octavam Epiphaniae" → "Die Duodecima Januarii").
+    #[serde(default)]
+    pub officium_1955: Option<String>,
+    /// Reduced-1955 / Rubrics-1960 variant of `rank` (the printed
+    /// class label).
+    #[serde(default)]
+    pub rank_1955: Option<String>,
+    /// Reduced-1955 / Rubrics-1960 variant of `rank_num`.
+    #[serde(default)]
+    pub rank_num_1955: Option<f32>,
+    /// Reduced-1955 / Rubrics-1960 variant of `commune`.
+    #[serde(default)]
+    pub commune_1955: Option<String>,
     /// Section name -> raw body. Sections are kept in upstream
     /// order via `serde`'s default behavior on `BTreeMap` is
     /// alphabetic; we lose stable order here, so the renderer

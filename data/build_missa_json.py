@@ -6,8 +6,15 @@ keyed JSON we ship as a build asset for /wip/missal.
 Run once when the upstream Mass data changes:
 
     python3 md2json2/data/build_missa_json.py \
-        --missa-latin /tmp/do-upstream/web/www/missa/Latin \
-        --out         md2json2/data/missa_latin.json
+        --missa-latin   vendor/divinum-officium/web/www/missa/Latin \
+        --horas-commune vendor/divinum-officium/web/www/horas/Latin/Commune \
+        --out           md2json2/data/missa_latin.json
+
+The `--missa-latin` argument MUST point at the same vendor tree the
+Perl regression oracle uses (`scripts/do_render.sh` → `missa.pl`).
+A different upstream (e.g. `divinum-officium-cgi-bin`) ships an older
+file format with diverging `[Rank]` line bodies and would silently
+poison every comparison.
 
 Output shape:
 
@@ -145,8 +152,36 @@ def parse_mass_file(text: str) -> dict:
                 annotations[current] = annotation
                 collecting = True
             else:
-                # Later occurrence — first-occurrence-wins, drop body.
-                collecting = False
+                # Later occurrence. For [Rank] specifically, surface an
+                # annotated second header carrying a *post-DA* variant
+                # — `[Rank] (rubrica 196 aut rubrica 1955)`,
+                # `[Rank] (rubrica 196)`, etc. — so the walker below
+                # can read it as a 1955+ override.
+                #
+                # `[Rank] (rubrica 1570)` second headers are
+                # intentionally NOT captured: they replicate via the
+                # already-handled inline `(sed rubrica 1570)` form on
+                # other files, and ingesting them here would inject a
+                # 1570-variant rank where Perl actually keeps the
+                # default body for non-1570 rubrics. (The Perl
+                # SetupString re-opens the second header under T1570
+                # and discards the first body via the
+                # section-conditional branch — but then in non-T1570
+                # the first body is what survives. Our two-bucket
+                # `rank_num` / `rank_num_1955` matches that for
+                # post-DA only, so we keep 1570 out of the second-
+                # header path.)
+                ann_lower = annotation.lower() if annotation else ""
+                is_post_da_variant = (
+                    base_name == "Rank"
+                    and annotation
+                    and ("196" in ann_lower or "1955" in ann_lower)
+                )
+                if is_post_da_variant:
+                    sections[current].append(f"({annotation})")
+                    collecting = True
+                else:
+                    collecting = False
             continue
         if current is not None and collecting:
             sections[current].append(raw)
@@ -180,12 +215,18 @@ def parse_mass_file(text: str) -> dict:
         #   <default>;;Class;;Rank;;Commune
         #   (sed rubrica 1570 aut rubrica monastica)
         #   <1570 variant>;;Class;;Rank;;Commune
-        #   (sed rubrica cisterciensis)
-        #   <cist variant>;;Class;;Rank;;Commune
-        # We capture the default (rank_num/rank/commune) plus the
-        # rubrica-1570 variant (rank_num_1570) when one exists.
+        #   (rubrica 196 aut rubrica 1955)
+        #   <1955+ variant>;;Class;;Rank;;Commune
+        # Three buckets:
+        #   default → rank_num / commune (applies when no other
+        #     variant matches)
+        #   1570/tridentina → rank_num_1570 / commune_1570
+        #   196/1955 → rank_num_1955 / commune_1955 (also surfaces as
+        #     the "post-DA" variant; a few files use just `(rubrica 196)`
+        #     which is 1960-only — we still bucket those here)
         default_parts = None
         variant_1570_parts = None
+        variant_1955_parts = None
         current_label = None
         for raw in rank_lines:
             line = raw.strip()
@@ -208,6 +249,14 @@ def parse_mass_file(text: str) -> dict:
                 # Both "(sed rubrica 1570)" and "(sed rubrica
                 # tridentina)" describe the Tridentine 1570 baseline.
                 variant_1570_parts = parts
+            elif (
+                current_label
+                and ("1955" in current_label or "196" in current_label)
+                and variant_1955_parts is None
+            ):
+                # `(rubrica 196 aut rubrica 1955)` covers both R55 and
+                # R60; bare `(rubrica 196)` is 1960-only — same bucket.
+                variant_1955_parts = parts
             current_label = None
         if default_parts:
             if not out.get("officium") and default_parts[0]:
@@ -234,6 +283,21 @@ def parse_mass_file(text: str) -> dict:
             # changes between rubrics.
             if len(variant_1570_parts) > 3 and variant_1570_parts[3]:
                 out["commune_1570"] = variant_1570_parts[3]
+        if variant_1955_parts:
+            if len(variant_1955_parts) > 0 and variant_1955_parts[0]:
+                out["officium_1955"] = variant_1955_parts[0]
+            if len(variant_1955_parts) > 1 and variant_1955_parts[1]:
+                out["rank_1955"] = variant_1955_parts[1]
+            try:
+                out["rank_num_1955"] = (
+                    float(variant_1955_parts[2])
+                    if len(variant_1955_parts) > 2 and variant_1955_parts[2]
+                    else None
+                )
+            except ValueError:
+                out["rank_num_1955"] = None
+            if len(variant_1955_parts) > 3 and variant_1955_parts[3]:
+                out["commune_1955"] = variant_1955_parts[3]
     # Keep all remaining sections as joined strings so the renderer can
     # treat `\n` as a soft separator (matching the upstream convention).
     out["sections"] = {

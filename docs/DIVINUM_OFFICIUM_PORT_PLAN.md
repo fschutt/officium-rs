@@ -1197,13 +1197,28 @@ Tabulae files.
 
 ### Cross-rubric 2026 baseline — per-rubric pass-rates
 
-Snapshot at `98f4009` (T1910 and DA-1939 both at 100%):
+Snapshot at `e7dc0f0` (R55 at 100%, R60 at 99.2%):
+
+| Rubric                  | Days passing   | Section match |
+|-------------------------|----------------|---------------|
+| Tridentine 1570         | **365/365 100.0%** |           |
+| Tridentine 1910         | **365/365 100.0%** |           |
+| Divino Afflatu 1939     | **365/365 100.0%** |           |
+| **Reduced 1955**        | **365/365 100.0%** |           |
+| Rubrics 1960            | 362/365  99.2% |               |
+
+**Four rubrics complete.** R60 has 2 remaining fails (06-30 Pauli/
+Petri commemoration prayer concatenation, 10-18 Sunday-Mass +
+Luke-commemoration prayer concatenation), both gated on the
+multi-prayer commemoration feature in `propers.pl::oratio()`.
+
+Earlier snapshot at `98f4009` (T1910 and DA-1939 both at 100%):
 
 | Rubric                  | Days passing   | Section match |
 |-------------------------|----------------|---------------|
 | Tridentine 1570         | 365/365 100.0% | 75.2%         |
-| **Tridentine 1910**     | **365/365 100.0%** |           |
-| **Divino Afflatu 1939** | **365/365 100.0%** |           |
+| Tridentine 1910         | 365/365 100.0% |               |
+| Divino Afflatu 1939     | 365/365 100.0% |               |
 | Reduced 1955            | 339/365  92.9% |               |
 | Rubrics 1960            | 336/365  92.1% |               |
 

@@ -40,6 +40,24 @@ pub struct MassFile {
     /// Tridentine 1570 variant of `commune` (parallel to `rank_num_1570`).
     #[serde(default)]
     pub commune_1570: Option<String>,
+    /// Tridentine 1910 variant of `officium` from a `[Rank] (rubrica
+    /// 1888)` / `(rubrica 1906)` second header. Tempora/Pent02-5o
+    /// (Sacred Heart) uses this to elevate from "Duplex majus" (4.01)
+    /// to "Duplex I. classis" (6.5) under T1910 — Pius X's
+    /// Quamquam pluries / 1888 calendar reform raised several
+    /// post-Tridentine feasts before Divino Afflatu reshaped the
+    /// kalendar.
+    #[serde(default)]
+    pub officium_1906: Option<String>,
+    /// Tridentine 1910 variant of `rank`.
+    #[serde(default)]
+    pub rank_1906: Option<String>,
+    /// Tridentine 1910 variant of `rank_num`.
+    #[serde(default)]
+    pub rank_num_1906: Option<f32>,
+    /// Tridentine 1910 variant of `commune`.
+    #[serde(default)]
+    pub commune_1906: Option<String>,
     /// Reduced-1955 / Rubrics-1960 variant of `officium` from a
     /// `[Rank] (rubrica 196 aut rubrica 1955)` second header.
     /// Sancti/01-07, 01-12, 03-19, 06-23 etc. use this pattern to

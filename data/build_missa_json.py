@@ -114,11 +114,48 @@ def _post_da_buckets(label: str) -> tuple[bool, bool]:
     return (is_55, is_60)
 
 
-def _is_post_da_rubric(label: str) -> bool:
-    """Compatibility shim — true if either bucket matches. Used for
-    deciding whether to emit a second-header [Rank] body at all."""
+def _t1570_bucket(label: str) -> bool:
+    """Return True if a `(sed rubrica …)` annotation applies to T1570.
+
+    The Perl SetupString predicates work like:
+      * `tridentina` ⇒ `$version =~ /Trident/`  (matches T1570 *and*
+                                                  T1910; also Monastic
+                                                  Tridentinum 1617).
+      * `1570`       ⇒ `$version =~ /1570/`     (matches only T1570).
+
+    A bare `1570`-only annotation is T1570-specific; a `tridentina`
+    annotation also fires for T1910 (handled in `_t1910_bucket`).
+    """
+    s = label.lower()
+    return "1570" in s or "tridentina" in s
+
+
+def _t1910_bucket(label: str) -> bool:
+    """Return True if a `(rubrica …)` annotation applies to T1910
+    (Perl version "Tridentine - 1910").
+
+    T1910 matches Perl predicates that test against the version string
+    `"Tridentine - 1910"`:
+      * `tridentina`  — Perl `/Trident/` ⇒ TRUE
+      * literal `1910` — `/1910/` ⇒ TRUE
+      * literal `1570/1888/1906` — those years don't appear in
+                       "Tridentine - 1910", so FALSE.
+      * post-DA tokens — also FALSE.
+
+    So `(sed rubrica tridentina)` activates the variant under T1910,
+    but `(rubrica 1906 aut rubrica cisterciensis)` does NOT — T1910
+    keeps the bare default in that case (Tempora/Pent02-5o stays
+    Duplex majus 4.01, doesn't elevate to Duplex I classis 6.5).
+    """
+    s = label.lower()
+    return "tridentina" in s or "1910" in s
+
+
+def _is_t1910_or_post_da_rubric(label: str) -> bool:
+    """Compatibility shim — true if any of T1910 / R55 / R60 matches.
+    Used for deciding whether to emit a second-header [Rank] body."""
     a, b = _post_da_buckets(label)
-    return a or b
+    return a or b or _t1910_bucket(label)
 
 
 def is_excluded_annotation(annotation: str) -> bool:
@@ -206,7 +243,7 @@ def parse_mass_file(text: str) -> dict:
                 is_post_da_variant = (
                     base_name == "Rank"
                     and annotation
-                    and _is_post_da_rubric(annotation)
+                    and _is_t1910_or_post_da_rubric(annotation)
                 )
                 if is_post_da_variant:
                     sections[current].append(f"({annotation})")
@@ -257,6 +294,7 @@ def parse_mass_file(text: str) -> dict:
         #     which is 1960-only — we still bucket those here)
         default_parts = None
         variant_1570_parts = None
+        variant_1906_parts = None
         variant_1955_parts = None
         variant_1960_parts = None
         current_label = None
@@ -273,20 +311,15 @@ def parse_mass_file(text: str) -> dict:
             parts = [p.strip() for p in line.split(";;")]
             if current_label is None and default_parts is None:
                 default_parts = parts
-            elif (
-                current_label
-                and ("1570" in current_label or "tridentina" in current_label)
-                and variant_1570_parts is None
-            ):
-                # Both "(sed rubrica 1570)" and "(sed rubrica
-                # tridentina)" describe the Tridentine 1570 baseline.
-                variant_1570_parts = parts
             elif current_label:
-                # Post-DA Roman regimes — bucket per (matches_R55,
-                # matches_R60). Bare `(rubrica 1955)` populates only
-                # `*_1955`; bare `(rubrica 196)` only `*_1960`;
-                # disjunctive `(rubrica 196 aut rubrica 1955)` populates
-                # both.
+                # Each rubric is bucketed independently — a single
+                # annotation line can populate multiple variants when
+                # its predicate is a disjunction or a generic
+                # `tridentina` (which matches T1570 + T1910 alike).
+                if _t1570_bucket(current_label) and variant_1570_parts is None:
+                    variant_1570_parts = parts
+                if _t1910_bucket(current_label) and variant_1906_parts is None:
+                    variant_1906_parts = parts
                 m55, m60 = _post_da_buckets(current_label)
                 if m55 and variant_1955_parts is None:
                     variant_1955_parts = parts
@@ -318,6 +351,21 @@ def parse_mass_file(text: str) -> dict:
             # changes between rubrics.
             if len(variant_1570_parts) > 3 and variant_1570_parts[3]:
                 out["commune_1570"] = variant_1570_parts[3]
+        if variant_1906_parts:
+            if len(variant_1906_parts) > 0 and variant_1906_parts[0]:
+                out["officium_1906"] = variant_1906_parts[0]
+            if len(variant_1906_parts) > 1 and variant_1906_parts[1]:
+                out["rank_1906"] = variant_1906_parts[1]
+            try:
+                out["rank_num_1906"] = (
+                    float(variant_1906_parts[2])
+                    if len(variant_1906_parts) > 2 and variant_1906_parts[2]
+                    else None
+                )
+            except ValueError:
+                out["rank_num_1906"] = None
+            if len(variant_1906_parts) > 3 and variant_1906_parts[3]:
+                out["commune_1906"] = variant_1906_parts[3]
         if variant_1955_parts:
             if len(variant_1955_parts) > 0 and variant_1955_parts[0]:
                 out["officium_1955"] = variant_1955_parts[0]

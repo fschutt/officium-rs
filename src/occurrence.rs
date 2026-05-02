@@ -126,13 +126,22 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     // to find the file that actually carries the rank/officium.
     let effective_tempora_key = effective_tempora_key(&tempora_key, corpus);
     let tempora_file = corpus.mass_file(&effective_tempora_key);
-    // Prefer `rank_num_1570` when the corpus has a 1570-specific
-    // override (e.g. Pent02-1: default 5.6 Semiduplex II classis,
-    // 1570 2.9 Semiduplex IIS classis). Without this the temporal
-    // rank carries a post-1570 promotion that distorts precedence.
+    // Rubric-aware rank pick. The corpus carries up to four
+    // alternative `rank_num_*` slots populated from per-rubric `[Rank]
+    // (rubrica …)` second-headers (Tempora/Pent02-5o elevates Sacred
+    // Heart from 4.01 to 6.5 under T1910; Pent02-1 has 1570-only 2.9
+    // override; etc.). Pick the slot that matches the active rubric,
+    // then fall back to the bare default.
     let temporal_rank = tempora_file
-        .and_then(|f| f.rank_num_1570.or(f.rank_num))
-        .map(|r| downgrade_post_1570_octave(r, tempora_file.unwrap()))
+        .and_then(|f| match input.rubric {
+            Rubric::Tridentine1570 => f.rank_num_1570.or(f.rank_num),
+            Rubric::Tridentine1910 => f.rank_num_1906.or(f.rank_num),
+            Rubric::DivinoAfflatu1911 => f.rank_num,
+            Rubric::Reduced1955 => f.rank_num_1955.or(f.rank_num),
+            Rubric::Rubrics1960 => f.rank_num_1960.or(f.rank_num_1955).or(f.rank_num),
+            Rubric::Monastic => f.rank_num_1570.or(f.rank_num),
+        })
+        .map(|r| downgrade_post_1570_octave(r, tempora_file.unwrap(), input.rubric))
         .unwrap_or(0.0);
 
     // ── Sanctoral side ───────────────────────────────────────────────
@@ -485,34 +494,49 @@ fn commemorate_sanctoral_under_temporal_1570(
     true
 }
 
-/// Downgrade post-1570 Octave-day Tempora ranks to feria for the
-/// 1570 occurrence pipeline. The corpus carries Sacred Heart Octave
-/// (post-1856) and Christ the King Octave (post-1925) entries with
-/// elevated `rank_num` (e.g. 2.1 Semiduplex). Under 1570 those days
-/// were ordinary ferias of the Pentecost cycle. We detect them via
-/// officium-string match: `Cordis Jesu` (Sacred Heart) and `Christi
-/// Regis` (Christ the King) are the recognised post-1570 octaves.
-fn downgrade_post_1570_octave(rank: f32, file: &MassFile) -> f32 {
+/// Downgrade post-1570 Octave-day Tempora ranks to feria *for rubrics
+/// that predate the feast's institution*. The corpus carries elevated
+/// `rank_num` for several feasts that were added to the calendar
+/// after Trent — but the Tempora file is reused under all rubrics, so
+/// we have to suppress the elevation for older rubrics.
+///
+///   * Sacred Heart (Sacratissimi Cordis): instituted 1856 (Pius IX).
+///     Demote under T1570 only.
+///   * Patrocinii Sancti Joseph: instituted 1847 (Pius IX).
+///     Demote under T1570 only.
+///   * Christ the King (Christi Regis): instituted 1925 (Pius XI,
+///     *Quas primas*). Demote under T1570 + T1910.
+///
+/// Corpus Christi octave already existed in 1570, so no demotion for
+/// `infra octavam Corporis Christi` — the Friday's Semiduplex II
+/// classis rank is correct under every rubric.
+fn downgrade_post_1570_octave(rank: f32, file: &MassFile, rubric: Rubric) -> f32 {
     let officium = file.officium.as_deref().unwrap_or("");
-    // Post-1856 Sacred Heart octave + post-1925 Christ-the-King.
-    // Corpus Christi octave existed in 1570 (Tridentine), so no
-    // downgrade for `octavam Corporis Christi` — the Friday's
-    // Semiduplex II classis rank is correct under 1570 too.
-    let has_post_1570_octave = officium.contains("Cordis Jesu")
+
+    // Sacred Heart and Patrocinii Joseph: pre-1856/1847 → only T1570
+    // and Monastic 1617 demote.
+    let is_pre_1856_demoter = matches!(rubric, Rubric::Tridentine1570 | Rubric::Monastic);
+    let has_pre_1856_feast = officium.contains("Cordis Jesu")
         || officium.contains("Cordis Iesu")
         || officium.contains("Sacratissimi")
-        || officium.contains("Christi Regis")
-        // Patrocinii Sancti Joseph (Pius IX, 1856) — added an
-        // octave to the Easter cycle. In 1570 these days were
-        // regular Easter ferias. Match permissively because upstream
-        // is inconsistent about dot/case ("Patrocinii St. Joseph",
-        // "Patrocinii St Joseph", "Patrocínii"). See
+        // Match permissively — upstream is inconsistent about dot/
+        // case ("Patrocinii St. Joseph", "Patrocínii"). See
         // UPSTREAM_WEIRDNESSES.md #4.
         || officium.contains("Patrocinii")
         || officium.contains("Patrocínii");
-    if has_post_1570_octave {
-        return 1.0; // ordinary feria
+    if is_pre_1856_demoter && has_pre_1856_feast {
+        return 1.0;
     }
+
+    // Christ the King: pre-1925 → T1570, T1910 demote.
+    let is_pre_1925_demoter = matches!(
+        rubric,
+        Rubric::Tridentine1570 | Rubric::Tridentine1910 | Rubric::Monastic
+    );
+    if is_pre_1925_demoter && officium.contains("Christi Regis") {
+        return 1.0;
+    }
+
     rank
 }
 
@@ -961,7 +985,10 @@ fn was_sancti_preempted_1570(
     let tempora_file = corpus.mass_file(&effective_key);
     let mut trank = tempora_file
         .and_then(|f| f.rank_num)
-        .map(|r| downgrade_post_1570_octave(r, tempora_file.unwrap()))
+        // The transfer-eligibility check operates on the 1570 baseline
+        // (was the feast bumped *under 1570*?). Always demote the
+        // post-1570 octaves here, regardless of the active rubric.
+        .map(|r| downgrade_post_1570_octave(r, tempora_file.unwrap(), Rubric::Tridentine1570))
         .unwrap_or(0.0);
     // Mirror the `decide_sanctoral_wins_1570` precedence model so the
     // transfer-or-not decision matches what compute_office actually
@@ -1291,6 +1318,7 @@ fn resolve_sancti_for_tridentine_1570(
         // being lost and the saint kept its DA-era 5.6 Semiduplex.
         let prefer_1570_overrides =
             matches!(layer, crate::divinum_officium::kalendaria_layers::Layer::Pius1570);
+        let prefer_t1910 = matches!(rubric, Rubric::Tridentine1910);
         let prefer_r55 = matches!(rubric, Rubric::Reduced1955);
         let prefer_r60 = matches!(rubric, Rubric::Rubrics1960);
         let mut rank_num = mass
@@ -1304,6 +1332,12 @@ fn resolve_sancti_for_tridentine_1570(
                     // for /196/, so under R55 the default Duplex 3
                     // applies.
                     m.rank_num_1955.or(m.rank_num).or(m.rank_num_1570)
+                } else if prefer_t1910 {
+                    // T1910 picks up the `(rubrica 1888)` /
+                    // `(rubrica 1906)` second-Rank elevation —
+                    // Sacred Heart Pent02-5o goes from Duplex majus
+                    // (4.01) to Duplex I classis (6.5).
+                    m.rank_num_1906.or(m.rank_num)
                 } else if prefer_1570_overrides {
                     m.rank_num_1570.or(m.rank_num)
                 } else {
@@ -1340,6 +1374,8 @@ fn resolve_sancti_for_tridentine_1570(
                         .clone()
                         .or_else(|| m.commune.clone())
                         .or_else(|| m.commune_1570.clone())
+                } else if prefer_t1910 {
+                    m.commune_1906.clone().or_else(|| m.commune.clone())
                 } else if prefer_1570_overrides {
                     m.commune_1570.clone().or_else(|| m.commune.clone())
                 } else {
@@ -1353,6 +1389,8 @@ fn resolve_sancti_for_tridentine_1570(
                     m.officium_1960.clone().or_else(|| m.officium_1955.clone())
                 } else if prefer_r55 {
                     m.officium_1955.clone()
+                } else if prefer_t1910 {
+                    m.officium_1906.clone()
                 } else {
                     None
                 }
@@ -1364,6 +1402,8 @@ fn resolve_sancti_for_tridentine_1570(
                     m.rank_1960.clone().or_else(|| m.rank_1955.clone()).or_else(|| m.rank.clone())
                 } else if prefer_r55 {
                     m.rank_1955.clone().or_else(|| m.rank.clone())
+                } else if prefer_t1910 {
+                    m.rank_1906.clone().or_else(|| m.rank.clone())
                 } else {
                     m.rank.clone()
                 }

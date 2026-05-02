@@ -1197,7 +1197,17 @@ Tabulae files.
 
 ### Cross-rubric 2026 baseline — per-rubric pass-rates
 
-Snapshot at `22343a1` (post R55/R60 second-[Rank] split):
+Snapshot at `18c0e7b` (post R60 annotation-bucket fix):
+
+| Rubric                  | Days passing | Section match |
+|-------------------------|--------------|---------------|
+| Tridentine 1570         | 365/365 100.0% | 75.2%         |
+| Tridentine 1910         | 357/365  97.8% |               |
+| Divino Afflatu 1939     | 359/365  98.4% |               |
+| Reduced 1955            | 336/365  92.1% |               |
+| Rubrics 1960            | 328/365  89.9% |               |
+
+Earlier snapshot at `22343a1` (post R55/R60 second-[Rank] split):
 
 | Rubric                  | Days passing | Section match |
 |-------------------------|--------------|---------------|
@@ -1206,6 +1216,46 @@ Snapshot at `22343a1` (post R55/R60 second-[Rank] split):
 | Divino Afflatu 1939     | 337/365  92.3% | 71.8%         |
 | Reduced 1955            | 308/365  84.4% | 68.0%         |
 | Rubrics 1960            | 308/365  84.4% | 68.5%         |
+
+Net deltas this iteration: T1910 +3.3pp, DA +6.1pp, R55 +7.7pp,
+R60 +5.5pp. Five gating fixes landed:
+
+  8. **Tempora redirect table is now rubric-aware.** Replaced the
+     1570-only filtered `tempora_redirects_1570.txt` with the full
+     upstream `Tabulae/Tempora/Generale.txt`, keyed by rubric token
+     per `Tabulae/data.txt` (T1570→1570, T1910→1906, DA→DA,
+     R55→1960, R60→1960, M→M1617). T1910 was wrongly applying the
+     1570-only `Quad3-3 → Quad3-3t` redirect; now it keeps the
+     bare base file (where Perl reads it).
+  9. **`temporal_rank` reads per-rubric variants.** `f.rank_num_1906`
+     under T1910 (from `(sed rubrica tridentina)` blocks),
+     `rank_num_1955` under R55, `rank_num_1960` under R60.
+     Pent01-5 (Friday in Octave of Corpus Christi) now reads as
+     Semiduplex IIS 2.9 under T1910 (instead of Semiduplex II 5.6
+     default), so Bonifatius (Duplex 3.0) wins as Perl shows.
+ 10. **`downgrade_post_1570_octave` and `is_post_1570_octave_file`
+     gated by rubric.** Sacred Heart (1856) and Patrocinii Joseph
+     (1847) only suppressed under T1570/Monastic; Christ the King
+     (1925) only under T1570/T1910/Monastic. Mass-side
+     proper-block fallback chain follows the same gates so
+     Pent02-5o's bodies are read under T1910/DA, not skipped.
+ 11. **Heuristic transfer-walk gated to T1570/Monastic.** The
+     "displaced Duplex+ moves to next free day" simulation in
+     `transferred_sancti_for_1570` was firing for every rubric.
+     Under T1910/DA the upstream Transfer table covers per-rubric
+     transfers explicitly (`02-03=02-01~02-03;;1570 M1617`); the
+     heuristic was wrongly transferring Ignatius and Leo I where
+     Perl keeps the native saint or Embertide.
+ 12. **Annotation bucket uses Perl-style version regex.** The old
+     `_post_da_buckets` matched `196` substring too greedily —
+     `(rubrica 1962)` (Dominican rubric) was wrongly populating
+     R60. Replaced with `_annotation_matches_version(label,
+     version)` that mirrors `SetupString.pl::vero` line 299:
+     extract each `19xx` token from the annotation, check
+     substring against the rubric's version string. So
+     `(rubrica 1962)` now correctly matches NEITHER R55 nor R60
+     (`1962` isn't a substring of `Reduced - 1955` or
+     `Rubrics 1960 - 1960`).
 
 Headline gains landed this session (DA went from 0% to 92.3%):
 

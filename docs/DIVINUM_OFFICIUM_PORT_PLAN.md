@@ -1195,4 +1195,64 @@ Tabulae files.
     * 1870-04-04 (S. Joseph Patrocinii, instituted 1870 — pre-1870
       April Sundays unaffected by post-Pasch Joseph octave)
 
+### Cross-rubric 2026 baseline — per-rubric pass-rates
+
+Snapshot at `22343a1` (post R55/R60 second-[Rank] split):
+
+| Rubric                  | Days passing | Section match |
+|-------------------------|--------------|---------------|
+| Tridentine 1570         | 365/365 100.0% | 75.2%         |
+| Tridentine 1910         | 345/365  94.5% | 73.2%         |
+| Divino Afflatu 1939     | 337/365  92.3% | 71.8%         |
+| Reduced 1955            | 308/365  84.4% | 68.0%         |
+| Rubrics 1960            | 308/365  84.4% | 68.5%         |
+
+Headline gains landed this session (DA went from 0% to 92.3%):
+
+  1. **DA regression fix.** `year_sweep` was passing `'Divino
+     Afflatu'` as Perl version — `missa.pl::check_version` rejects
+     it (ambiguous between -1939 and -1954) and silently downgrades
+     to `'Rubrics 1960 - 1960'`. Every DA cell was being compared
+     against a 1960-rendered Mass. Switched to `'Divino Afflatu -
+     1939'` (the variant our `Rubric::DivinoAfflatu1911` resolves to
+     per `Tabulae/data.txt`).
+  2. **Spelling-layer correction.** `apply_spelling_for_active_rubric`
+     was applying `tr/Jj/Ii/` to DA *and* to R60 (composed with the
+     pre-1960 `Génetrix→Génitrix` substitution). Perl's `spell_var`
+     is a hard if/else: `/196/` is the ONLY trigger for the `j→i`
+     swap, and `Génetrix→Génitrix` only fires in the else branch
+     (so R60 keeps "Génetrix" verbatim). Fixed dispatch: pre-1960
+     for T1570/T1910/DA/R55/M, classical-only for R60.
+  3. **DA Sunday-rank uplift.** `decide_sanctoral_wins_1570` was
+     applying the Tridentine `Dominica-minor → 2.9` downgrade
+     unconditionally. DA's rule is the opposite (`< 5.1 → 4.9`,
+     raising minor Sundays so they beat Duplex maius). Made the
+     function rubric-aware.
+  4. **1955+ Simplex demotion.** Under R55/R60, sanctoral with rank
+     ≤ 1.1 is reduced to commemoration only — mirrors
+     `horascommon.pl:456`.
+  5. **R60 Epiphany-octave commune override.** Pius XII's 1955
+     reform suppressed the Octave of the Epiphany; Sancti/01-07..
+     01-12 become bare class IV ferias whose Mass routes through
+     `Tempora/Epi1-0a`. Mirrors `horascommon.pl:1613-1622`.
+  6. **Post-DA second-`[Rank]` corpus capture.** Files like
+     Sancti/01-12, 01-07, 03-19, 06-23 carry a `[Rank] (rubrica
+     196 …)` second header for the post-DA Roman regimes. Parser
+     now buckets per disjunct: `(rubrica 1955)` → R55 only,
+     `(rubrica 196)` → R60 only, `(rubrica 196 aut rubrica 1955)`
+     → both. `(rubrica 1963)` (Monastic) is explicitly excluded.
+  7. **Corpus source pinned.** `build_missa_json.py` docstring now
+     points at the same vendor tree the Perl oracle uses
+     (`vendor/divinum-officium/web/www/missa/Latin`). A different
+     upstream (e.g. `divinum-officium-cgi-bin`) ships an older file
+     format with diverging `[Rank]` line bodies and would silently
+     poison every comparison.
+
+Remaining 16% gap on R55 splits across (a) Lent ferials (`Quad*t`
+variants), (b) post-1955 vigil class-demotion edge cases, (c)
+Saturday-of-BVM Marian Communio (`Génetrix` orthographic variant
+unique to a few sections), and (d) post-1911 movable Sundays
+(Holy Family, Christ the King) that we already render but with
+slightly different propers. The R60 gap is similar but smaller.
+
 (Empty until Phase 6.)

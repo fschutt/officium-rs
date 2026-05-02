@@ -3423,4 +3423,46 @@ mod tests {
         assert!(rubrica_predicate_matches(Rubric::Monastic, "1617"));
         assert!(!rubrica_predicate_matches(Rubric::Monastic, "divino"));
     }
+
+    // ─── Pius X classical-spelling tests ──────────────────────────
+
+    #[test]
+    fn spell_classical_post1910_swaps_jj_to_ii() {
+        // Bare j/J → i/I.
+        assert_eq!(spell_classical_post1910("cujus ejus Jesum"), "cuius eius Iesum");
+        // Words without j unchanged.
+        assert_eq!(spell_classical_post1910("Deus quaesumus"), "Deus quaesumus");
+    }
+
+    #[test]
+    fn spell_classical_post1910_keeps_chant_marker() {
+        // The chant key `H-Iesu` stays (Perl does the same restore).
+        assert_eq!(
+            spell_classical_post1910("H-Jesu intende mihi"),
+            "H-Jesu intende mihi"
+        );
+    }
+
+    #[test]
+    fn apply_spelling_for_active_rubric_dispatches_per_rubric() {
+        use crate::divinum_officium::core::Rubric;
+        // Tridentine 1570 keeps j.
+        ACTIVE_RUBRIC.with(|r| r.set(Rubric::Tridentine1570));
+        assert_eq!(apply_spelling_for_active_rubric("cujus ejus"), "cujus ejus");
+        // Tridentine 1910 keeps j.
+        ACTIVE_RUBRIC.with(|r| r.set(Rubric::Tridentine1910));
+        assert_eq!(apply_spelling_for_active_rubric("cujus ejus"), "cujus ejus");
+        // Reduced 1955 keeps j (its $version doesn't match /196/ in
+        // upstream's spell_var).
+        ACTIVE_RUBRIC.with(|r| r.set(Rubric::Reduced1955));
+        assert_eq!(apply_spelling_for_active_rubric("cujus Jesum"), "cujus Jesum");
+        // Divino Afflatu swaps to i.
+        ACTIVE_RUBRIC.with(|r| r.set(Rubric::DivinoAfflatu1911));
+        assert_eq!(apply_spelling_for_active_rubric("cujus Jesum"), "cuius Iesum");
+        // Rubrics 1960 swaps to i.
+        ACTIVE_RUBRIC.with(|r| r.set(Rubric::Rubrics1960));
+        assert_eq!(apply_spelling_for_active_rubric("cujus Jesum"), "cuius Iesum");
+        // Reset to default to avoid bleed-through into other tests.
+        ACTIVE_RUBRIC.with(|r| r.set(Rubric::Tridentine1570));
+    }
 }

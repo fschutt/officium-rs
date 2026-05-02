@@ -938,6 +938,14 @@ pub(crate) fn annotation_applies_to_rubric(
     if lc.is_empty() {
         return true;
     }
+    // `nisi <X>` — the inverse semantic. Section applies UNLESS
+    // <X> applies. Sancti/11-23 [Oratio] (nisi communi Summorum
+    // Pontificum): under R55/R60 SP is active so this body is
+    // SKIPPED (fall through to commune); under T1570/T1910/DA SP
+    // is not active so this body is USED.
+    if let Some(rest) = lc.strip_prefix("nisi ") {
+        return !annotation_applies_to_rubric(rest, rubric);
+    }
     // `communi summorum pontificum` — post-1942 commune. Matches
     // /194[2-9]|195[45]|196/ on the version string.
     if lc.starts_with("communi summorum pontificum") {

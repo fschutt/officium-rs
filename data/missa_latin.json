@@ -1406,6 +1406,12 @@
 "Rule":"vide C4b-2;mtv\n(sed rubrica 1570 aut rubrica 1617)\nvide C4;mtv\nGloria\nCredoDA",
 "Name":"Leónem\n(sed nisi communi Summorum Pontificum)\nLeónis\nSecreta=Leónis\nPostcommunio=Leo\n(sed rubrica 1570 but rubrica 1617)\nPostcommunio=Leónis",
 "Oratio":"@Commune/C4-1"
+},
+"annotated_sections":[
+"Oratio"
+],
+"annotated_section_meta":{
+"Oratio":"nisi communi Summorum Pontificum"
 }
 },
 "Sancti/04-13":{
@@ -1808,6 +1814,12 @@
 "Oratio":"Deus, mæréntium consolátor et in te sperántium salus, qui beátæ Mónicæ pias lácrimas in conversióne fílii sui Augustíni misericórditer suscepísti: da nobis utriúsque intervéntu; peccáta nostra deploráre, et grátiæ tuæ indulgéntiam inveníre.\n$Per Dominum",
 "Lectio":"@Commune/C7a:Lectio in 2 loco",
 "Evangelium":"@Tempora/Quad4-4"
+},
+"annotated_sections":[
+"Oratio"
+],
+"annotated_section_meta":{
+"Oratio":"nisi rubrica cisterciensis"
 }
 },
 "Sancti/05-04pl":{
@@ -1833,6 +1845,14 @@
 "Oratio":"Deus, qui, ad conteréndos Ecclésiæ tuæ hostes et ad divínum cultum reparándum, beátum Pium Pontíficem Máximum elígere dignátus es: fac nos ipsíus deféndi præsídiis et ita tuis inhærére obséquiis; ut, ómnium hóstium superátis insídiis, perpétua pace lætémur.\n$Per Dominum",
 "Secreta":"@Commune/C4",
 "Postcommunio":"@Commune/C4"
+},
+"annotated_sections":[
+"Postcommunio",
+"Secreta"
+],
+"annotated_section_meta":{
+"Postcommunio":"nisi rubrica 196",
+"Secreta":"nisi rubrica 196"
 }
 },
 "Sancti/05-06":{
@@ -2094,6 +2114,14 @@
 "Oratio":"Deus, qui beátum Petrum Cœlestínum ad summi pontificátus ápicem sublimásti, quique illum humilitáti postpónere docuísti: concéde propítius; ut ejus exémplo cuncta mundi despícere, et ad promíssa humílibus præmia perveníre felíciter mereámur.\n$Per Dominum",
 "Secreta":"@Commune/C4",
 "Postcommunio":"@Commune/C4"
+},
+"annotated_sections":[
+"Postcommunio",
+"Secreta"
+],
+"annotated_section_meta":{
+"Postcommunio":"nisi rubrica 196",
+"Secreta":"nisi rubrica 196"
 }
 },
 "Sancti/05-19o":{
@@ -2182,6 +2210,14 @@
 "Oratio":"Deus, in te sperántium fortitúdo, qui beátum Gregórium Confessórem tuum atque Pontíficem, pro tuénda Ecclésiæ libertáte, virtúte constántiæ roborásti: da nobis, ejus exémplo et intercessióne, ómnia adversántia fórtiter superáre.\n$Per Dominum",
 "Secreta":"@Commune/C4",
 "Postcommunio":"@Commune/C4"
+},
+"annotated_sections":[
+"Postcommunio",
+"Secreta"
+],
+"annotated_section_meta":{
+"Postcommunio":"nisi rubrica 196",
+"Secreta":"nisi rubrica 196"
 }
 },
 "Sancti/05-25o":{
@@ -2233,6 +2269,12 @@
 "Rule":"vide C2b;\nGloria",
 "Name":"Eleuthérii\n(sed communi Summorum Pontificum)\nEleuthérium\nSecreta=Eleuthérii\nPostcommunio=Eleuthério",
 "Postcommunio":"@Commune/C2a-1"
+},
+"annotated_sections":[
+"Postcommunio"
+],
+"annotated_section_meta":{
+"Postcommunio":"nisi communi Summorum Pontificum"
 }
 },
 "Sancti/05-27":{
@@ -4495,6 +4537,12 @@
 "Rule":"vide C2-1b;\nGloria",
 "Name":"Zephyrínum\nSecreta=Zephyríni\nPostcommunio=Zephyríno",
 "Oratio":"Præsta, quǽsumus, omnipotens Deus: ut beati Zephyrini Martyris tui atque Pontificis, cujus gaudemus meritis, instruamur exemplis.\n$Per Dominum"
+},
+"annotated_sections":[
+"Oratio"
+],
+"annotated_section_meta":{
+"Oratio":"nisi communi Summorum Pontificum"
 }
 },
 "Sancti/08-26pl":{
@@ -5396,6 +5444,16 @@
 "Oratio":"Exáudi, Dómine, preces nostras: et, interveniénte beáto Marco Confessóre tuo atque Pontífice, indulgéntiam nobis tríbue placátus et pacem.\n$Per Dominum",
 "Secreta":"@Commune/C6a",
 "Postcommunio":"Da, quǽsumus, Dómine, fidélibus pópulis Sanctórum tuórum semper veneratióne lætari: et eórum perpétua supplicatióne muníri.\n$Per Dominum"
+},
+"annotated_sections":[
+"Oratio",
+"Postcommunio",
+"Secreta"
+],
+"annotated_section_meta":{
+"Oratio":"nisi rubrica 196",
+"Postcommunio":"nisi rubrica 196",
+"Secreta":"nisi rubrica 196"
 }
 },
 "Sancti/10-08":{
@@ -6332,6 +6390,16 @@
 "Lectio":"@Tempora/Pent23-0",
 "Secreta":"Múnera tibi, Dómine, obláta sanctífica: et, intercedénte beáto Cleménte Mártyre tuo atque Pontífice, per hæc nos a peccatórum nostrórum máculis emúnda.\n$Per Dominum",
 "Postcommunio":"Córporis sacri et pretiósi Sánguinis repléti libámine, quǽsumus, Dómine, Deus noster: ut, quod pia devotióne gérimus; intercedénte beáto Cleménte Mártyre tuo atque Pontífice, certa redemptióne capiámus.\n$Per Dominum"
+},
+"annotated_sections":[
+"Oratio",
+"Postcommunio",
+"Secreta"
+],
+"annotated_section_meta":{
+"Oratio":"nisi communi Summorum Pontificum",
+"Postcommunio":"nisi communi Summorum Pontificum",
+"Secreta":"nisi communi Summorum Pontificum"
 }
 },
 "Sancti/11-23cc":{
@@ -6671,6 +6739,12 @@
 "Rule":"vide C4b;\nGloria",
 "Name":"Dámaso\n(sed communi Summorum Pontificum)\nDámasum",
 "Oratio":"Exáudi, Dómine, preces nostras: et interveniénte beáto Dámaso Confessóre tuo atque Pontífice, indulgéntiam nobis tríbue placátus et pacem.\n$Per Dominum"
+},
+"annotated_sections":[
+"Oratio"
+],
+"annotated_section_meta":{
+"Oratio":"nisi communi Summorum Pontificum"
 }
 },
 "Sancti/12-11bmv":{
@@ -8230,6 +8304,16 @@
 "Communio":"!Matt 2:20\nTolle Púerum et Matrem ejus, et vade in terram Israël: defúncti sunt enim, qui quærébant ánimam Púeri.",
 "Postcommunio":"Per hujus, Dómine, operatiónem mystérii, et vitia nostra purgéntur, et justa desidéria compleántur.\n$Per Dominum",
 "Commemoratio Postcommunio":"!Pro Octava Nativitatis.\n@Sancti/12-25m3:Postcommunio"
+},
+"annotated_sections":[
+"Commemoratio Oratio",
+"Commemoratio Postcommunio",
+"Commemoratio Secreta"
+],
+"annotated_section_meta":{
+"Commemoratio Oratio":"nisi rubrica 1960",
+"Commemoratio Postcommunio":"nisi rubrica 1960",
+"Commemoratio Secreta":"nisi rubrica 1960"
 }
 },
 "Tempora/Nat1-0a":{
@@ -15801,7 +15885,13 @@
 "Communio":"!Matt 25:4-6\nQuinque prudéntes vírgines accepérunt óleum in vasis suis cum lampádibus: média autem nocte clamor factus est: Ecce, sponsus venit: exíte óbviam Christo Dómino. (Allelúja.)",
 "Postcommunio":"Satiásti, Dómine, famíliam tuam munéribus sacris: ejus, quǽsumus, semper interventióne nos réfove, cujus sollémnia celebrámus.\n$Per Dominum"
 },
-"parent":"Commune/C6"
+"parent":"Commune/C6",
+"annotated_sections":[
+"HymnusM Matutinum"
+],
+"annotated_section_meta":{
+"HymnusM Matutinum":"nisi rubrica cisterciensis"
+}
 },
 "Commune/C6b":{
 "officium":"Commune Plurium Virginum Martyrum",

@@ -208,6 +208,12 @@ def is_excluded_annotation(annotation: str) -> bool:
     """True when this annotation marks a post-1570 rubric variant we
     should drop from the 1570 baseline corpus.
 
+    Also captures `(nisi communi Summorum Pontificum)` and similar
+    "skip when X applies" forms — those are the inverse semantic
+    (drop under R55+, KEEP under T1570/T1910/DA). The consumer
+    re-evaluates the annotation against the active rubric, so the
+    "drop" decision happens at runtime.
+
     Disjunctive predicates (`rubrica Divino aut rubrica Tridentina aut
     rubrica Monastica`) include 1570 if any disjunct mentions
     Tridentina/1570 — keep the section in that case so the consumer
@@ -221,6 +227,12 @@ def is_excluded_annotation(annotation: str) -> bool:
     a_lower = annotation.strip().lower()
     if "tridentina" in a_lower or "1570" in a_lower:
         return False
+    # `nisi <X>` forms: capture if the inner predicate is one we
+    # know how to evaluate (SP / rubrica). The runtime negates.
+    if a_lower.startswith("nisi "):
+        inner = a_lower[5:]
+        if any(inner.startswith(n) for n in EXCLUDED_ANNOTATIONS_1570):
+            return True
     return any(a_lower.startswith(needle) for needle in EXCLUDED_ANNOTATIONS_1570)
 
 

@@ -1432,15 +1432,20 @@ fn resolve_sancti_for_tridentine_1570(
                 }
             })
             .unwrap_or(override_.main.rank_num);
-        // 1955+ Semiduplex demotion. Pius XII (Cum nostra hac aetate,
-        // 1955) abolished the Semiduplex rank — feasts in the 2.2..<2.9
-        // band become Simplex (1.2). Mirrors horascommon.pl:382-390.
-        // Without this Marcellus (01-16) keeps his pre-1955 Semiduplex
-        // 2.2 and beats the Lent feria, where Perl shows him as Simplex.
-        if (prefer_r55 || prefer_r60)
-            && rank_num >= 2.2
-            && rank_num < 2.9
-        {
+        // 1955-only Semiduplex demotion. Pius XII (Cum nostra hac
+        // aetate, 1955) abolished the Semiduplex rank — feasts in
+        // the 2.2..<2.9 band become Simplex (1.2). Mirrors
+        // horascommon.pl:382-390:
+        //   if ($version =~ /1955|Monastic.*Divino|1963/
+        //       && $srank[2] >= 2.2 && $srank[2] < 2.9
+        //       && $srank[1] =~ /Semiduplex/i)
+        //   { $srank[2] = 1.2; }
+        // R60 (Rubrics 1960) is NOT in that regex — under John XXIII's
+        // 1960 reform, Semiduplex feasts merged with Duplex/III
+        // classis (kept at 2.2). Without restricting the demotion to
+        // R55 only, Saturday-BVM beats III-classis Pope-saints under
+        // R60 (Ubaldus 05-16 etc.).
+        if prefer_r55 && rank_num >= 2.2 && rank_num < 2.9 {
             let rank_class_str = mass
                 .and_then(|m| m.rank.as_deref())
                 .unwrap_or_default();

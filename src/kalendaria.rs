@@ -19,28 +19,16 @@
 //!   * `Resolution::Ferial` — no Sancti file at all for that fixed date
 
 use crate::sancti::{self, SanctiEntry};
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct KalendariaFeast {
-    pub name: String,
-    pub rank_num: Option<f32>,
-    pub sancti_key: Option<String>,
-}
+pub use crate::data_types::{KalendariaEntry, KalendariaFeast};
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct KalendariaEntry {
-    pub main: KalendariaFeast,
-    pub commemorations: Vec<KalendariaFeast>,
-}
-
-static KALENDARIA_JSON: &str = include_str!("../data/kalendaria_1962.json");
+static KALENDARIA_BIN: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/kalendaria_1962.postcard"));
 static PARSED: OnceLock<HashMap<String, Option<KalendariaEntry>>> = OnceLock::new();
 
 fn parsed() -> &'static HashMap<String, Option<KalendariaEntry>> {
-    PARSED.get_or_init(|| serde_json::from_str(KALENDARIA_JSON).unwrap_or_default())
+    PARSED.get_or_init(|| postcard::from_bytes(KALENDARIA_BIN).unwrap_or_default())
 }
 
 #[derive(Debug)]

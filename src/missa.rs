@@ -6,156 +6,23 @@
 //! filenames (`Sancti/04-29`, `Tempora/Pasc3-0`, `Commune/C2a-1`, …).
 //! Mass files reference each other via `@Commune/Cxx-y` markers inside
 //! section bodies; `resolve_section()` chases those one hop.
+//!
+//! The on-disk format is postcard-encoded (built by `build.rs` from
+//! the source `data/missa_latin.json`); the runtime decoder is
+//! `postcard::from_bytes`, which is `no_std`-friendly. The struct
+//! definition lives in [`crate::data_types::MassFile`] so that
+//! `build.rs` and the lib agree on shape.
 
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-#[derive(Debug, Clone, Deserialize, Default)]
-pub struct MassFile {
-    /// Display name from `[Officium]` (newer convention) or — when
-    /// the upstream file has no [Officium] — the legacy first-column
-    /// name from [Rank].
-    #[serde(default)]
-    pub officium: Option<String>,
-    /// Rank class as printed in the rubrics (e.g. "Duplex",
-    /// "Semiduplex", "Duplex I classis").
-    #[serde(default)]
-    pub rank: Option<String>,
-    /// Numeric precedence rank (Sancti convention: 1=Simple,
-    /// 2=Semiduplex, 3=Duplex, 5=II classis, 6=I classis, etc.).
-    #[serde(default)]
-    pub rank_num: Option<f32>,
-    /// Tridentine 1570 variant of `rank_num` when the corpus's
-    /// `[Rank]` section carries a `(sed rubrica 1570)` annotation.
-    /// E.g. Bibiana (Sancti/12-02): default 2.2 (Semiduplex), 1570
-    /// 1.1 (Simplex). When `None`, the file has no 1570 variant —
-    /// `rank_num` applies under all rubrics.
-    #[serde(default)]
-    pub rank_num_1570: Option<f32>,
-    /// Common reference (e.g. "vide C2a-1") — what the rubrics
-    /// section pointed at.
-    #[serde(default)]
-    pub commune: Option<String>,
-    /// Tridentine 1570 variant of `commune` (parallel to `rank_num_1570`).
-    #[serde(default)]
-    pub commune_1570: Option<String>,
-    /// Tridentine 1910 variant of `officium` from a `[Rank] (rubrica
-    /// 1888)` / `(rubrica 1906)` second header. Tempora/Pent02-5o
-    /// (Sacred Heart) uses this to elevate from "Duplex majus" (4.01)
-    /// to "Duplex I. classis" (6.5) under T1910 — Pius X's
-    /// Quamquam pluries / 1888 calendar reform raised several
-    /// post-Tridentine feasts before Divino Afflatu reshaped the
-    /// kalendar.
-    #[serde(default)]
-    pub officium_1906: Option<String>,
-    /// Tridentine 1910 variant of `rank`.
-    #[serde(default)]
-    pub rank_1906: Option<String>,
-    /// Tridentine 1910 variant of `rank_num`.
-    #[serde(default)]
-    pub rank_num_1906: Option<f32>,
-    /// Tridentine 1910 variant of `commune`.
-    #[serde(default)]
-    pub commune_1906: Option<String>,
-    /// Summorum Pontificum (commune-of-supreme-pontiffs, instituted
-    /// 1942) variant of `officium`. Captured from inline
-    /// `(sed communi Summorum Pontificum [...])` predicates inside
-    /// a [Rank] block. Applies under R55 + R60 (their version
-    /// strings substring-match Perl's `/194[2-9]|195[45]|196/`
-    /// predicate); ignored by T1570/T1910/DA.
-    #[serde(default)]
-    pub officium_sp: Option<String>,
-    /// SP variant of `rank`.
-    #[serde(default)]
-    pub rank_sp: Option<String>,
-    /// SP variant of `rank_num`.
-    #[serde(default)]
-    pub rank_num_sp: Option<f32>,
-    /// SP variant of `commune`. Critical for Pope-Confessors
-    /// like Gregory the Great (03-12), where R55 routes through
-    /// the SP commune `vide C4b` (Confessor-Pope) — Perl shows
-    /// "Si diligis me, Simon Petre" — even though the file's
-    /// default is `vide C4a` (Doctor) and no `(rubrica 1955)`
-    /// variant exists.
-    #[serde(default)]
-    pub commune_sp: Option<String>,
-    /// Reduced-1955 / Rubrics-1960 variant of `officium` from a
-    /// `[Rank] (rubrica 196 aut rubrica 1955)` second header.
-    /// Sancti/01-07, 01-12, 03-19, 06-23 etc. use this pattern to
-    /// rename their feast for the post-DA rubrics (e.g. "Septima die
-    /// infra Octavam Epiphaniae" → "Die Duodecima Januarii").
-    #[serde(default)]
-    pub officium_1955: Option<String>,
-    /// Reduced-1955 / Rubrics-1960 variant of `rank` (the printed
-    /// class label).
-    #[serde(default)]
-    pub rank_1955: Option<String>,
-    /// Reduced-1955 / Rubrics-1960 variant of `rank_num`.
-    #[serde(default)]
-    pub rank_num_1955: Option<f32>,
-    /// Reduced-1955 / Rubrics-1960 variant of `commune`.
-    #[serde(default)]
-    pub commune_1955: Option<String>,
-    /// Rubrics-1960-only variant of `officium` from a `[Rank]
-    /// (rubrica 196)` second header. Patrick (Sancti/03-17) etc. use
-    /// this — without splitting from the 1955 bucket the same body
-    /// would also fire under R55, where Perl actually keeps the
-    /// default rank.
-    #[serde(default)]
-    pub officium_1960: Option<String>,
-    /// Rubrics-1960-only variant of `rank`.
-    #[serde(default)]
-    pub rank_1960: Option<String>,
-    /// Rubrics-1960-only variant of `rank_num`.
-    #[serde(default)]
-    pub rank_num_1960: Option<f32>,
-    /// Rubrics-1960-only variant of `commune`.
-    #[serde(default)]
-    pub commune_1960: Option<String>,
-    /// Section name -> raw body. Sections are kept in upstream
-    /// order via `serde`'s default behavior on `BTreeMap` is
-    /// alphabetic; we lose stable order here, so the renderer
-    /// imposes one (see `MASS_SECTION_ORDER` in `missal.rs`).
-    #[serde(default)]
-    pub sections: HashMap<String, String>,
-    /// File-level `@Commune/X` inherit captured from the upstream
-    /// file's leading line — the consumer chases this for any
-    /// section the file doesn't carry locally. Mirrors what the Perl
-    /// `setupstring` does at runtime.
-    #[serde(default)]
-    pub parent: Option<String>,
-    /// Tridentine 1570 conditional parent inherit. Captured from
-    /// `(rubrica tridentina)@Path` or `(rubrica 1570)@Path` lines at
-    /// the top of upstream Sancti files. When in 1570 mode, this
-    /// takes precedence over `parent` for body-section lookups.
-    #[serde(default)]
-    pub parent_1570: Option<String>,
-    /// Sections whose header carried a post-1570 rubric annotation
-    /// (`(communi Summorum Pontificum)`, `(rubrica 1960)`, etc.).
-    /// In Tridentine 1570 commune-fallback context the consumer
-    /// should treat these as if absent — see
-    /// `mass::proper_block`. The list is sorted; binary search is
-    /// fine.
-    #[serde(default)]
-    pub annotated_sections: Vec<String>,
-    /// Per-section annotation text (lowercased), keyed by section
-    /// name. Used by the consumer to evaluate the annotation
-    /// against the active rubric: `(communi Summorum Pontificum)`
-    /// is a no-op for T1570/T1910/DA but TRUE under R55/R60 (where
-    /// the SP commune was instituted), so those bodies SHOULD fire
-    /// as winner-sections rather than being skipped. Mirrors Perl
-    /// `SetupString::vero` evaluating the conditional inside the
-    /// section header.
-    #[serde(default)]
-    pub annotated_section_meta: std::collections::HashMap<String, String>,
-}
+pub use crate::data_types::MassFile;
 
-static MISSA_JSON: &str = include_str!("../data/missa_latin.json");
+static MISSA_BIN: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/missa_latin.postcard"));
 static PARSED: OnceLock<HashMap<String, MassFile>> = OnceLock::new();
 
 fn parsed() -> &'static HashMap<String, MassFile> {
-    PARSED.get_or_init(|| serde_json::from_str(MISSA_JSON).unwrap_or_default())
+    PARSED.get_or_init(|| postcard::from_bytes(MISSA_BIN).unwrap_or_default())
 }
 
 /// Look up a Mass file by key (e.g. `"Sancti/04-29"`,

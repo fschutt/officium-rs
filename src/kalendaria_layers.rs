@@ -25,32 +25,10 @@
 //! code change is required for a pure kalendar diff (rubric-rule
 //! changes still need rules-side wiring).
 
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-/// One Sancti cell within a layer's resolved kalendar — `main` or
-/// `commemoratio` of a date.
-#[derive(Debug, Clone, Deserialize)]
-pub struct Cell {
-    /// Sancti file stem (`01-01`, `02-23o`, `08-09cc`, …). The
-    /// `Sancti/<stem>` is the lookup key into the Mass / Office corpus.
-    pub stem: String,
-    /// Officium label as it appears in the upstream kalendar
-    /// (e.g. `"In Circumcisione Domini"`). When the same stem appears
-    /// in multiple layers with different officium strings, this is
-    /// the layer-specific value.
-    pub officium: String,
-    /// Numeric rank as a string (`"1"`..`"7"`, `"1.5"`). Native f32
-    /// form is exposed via `Cell::rank_num()`.
-    pub rank: String,
-    /// Human-readable rank class label (`"Simplex"`, `"Vigilia"`,
-    /// `"Duplex II classis"`, …) — empty when no label is known.
-    #[serde(default)]
-    pub rank_label: String,
-    /// `"main"` or `"commemoratio"`.
-    pub kind: String,
-}
+pub use crate::data_types::Cell;
 
 impl Cell {
     /// Convert the rank string to f32 (`Some` when parseable,
@@ -134,11 +112,11 @@ pub fn layer_for_year(year: i32) -> Layer {
     }
 }
 
-static KALENDARIA_JSON: &str = include_str!("../data/kalendaria_by_rubric.json");
+static KALENDARIA_BIN: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/kalendaria_by_rubric.postcard"));
 static PARSED: OnceLock<HashMap<String, HashMap<String, Entry>>> = OnceLock::new();
 
 fn parsed() -> &'static HashMap<String, HashMap<String, Entry>> {
-    PARSED.get_or_init(|| serde_json::from_str(KALENDARIA_JSON).unwrap_or_default())
+    PARSED.get_or_init(|| postcard::from_bytes(KALENDARIA_BIN).unwrap_or_default())
 }
 
 /// Look up the resolved entry for `(month, day)` under `layer`.

@@ -19,7 +19,8 @@ default = ["regression"]
 # as a git submodule (vendor/divinum-officium/) and shells out to
 # `perl5` to render reference HTML for diff. Hard-gated to non-WASM
 # targets — see compile_error! at the top of src/regression.rs.
-regression = []
+# Pulls in serde_json for the manifest writer.
+regression = ["dep:serde_json"]
 # wasm-bindgen surface (browser/Node). Use with
 # `cargo build --target wasm32-unknown-unknown --release --features wasm
 # --no-default-features` or wasm-pack.
@@ -27,11 +28,27 @@ wasm = ["dep:wasm-bindgen"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+# postcard is the runtime decoder for our embedded corpus. Built from
+# the source JSON by `build.rs` at compile time and shipped as
+# OUT_DIR/*.postcard files; lib reads via `include_bytes!`. Pure-rust,
+# `no_std`-friendly, much smaller than serde_json at runtime.
+postcard = { version = "1", default-features = false, features = ["alloc"] }
+# serde_json is gated behind `regression` — only the regression
+# harness + native binaries write JSON manifests. Lib runtime path
+# uses postcard exclusively, so WASM bundles drop this dep entirely.
+serde_json = { version = "1", optional = true }
 unicode-normalization = "0.1"
 # Pinned to match the installed wasm-bindgen-cli version. Bump in
 # lockstep with the CI tooling (`wasm-bindgen-cli --version`).
 wasm-bindgen = { version = "=0.2.92", optional = true }
+
+[build-dependencies]
+serde = { version = "1", features = ["derive"] }
+# build.rs reads `data/*.json` (serde_json) and writes
+# `OUT_DIR/*.postcard` (postcard). The lib runtime decoder doesn't
+# need serde_json — only the build does.
+serde_json = "1"
+postcard = { version = "1", features = ["alloc"] }
 
 [profile.release]
 opt-level = "z"   # optimize for size on wasm; minor pessimization on native, acceptable

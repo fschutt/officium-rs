@@ -24,6 +24,7 @@
 
 pub mod core;
 pub mod corpus;
+pub mod data_types;
 pub mod date;
 pub mod kalendaria;
 pub mod kalendaria_layers;

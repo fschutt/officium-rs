@@ -25,24 +25,16 @@
 //! suppress entirely. This is acceptable for the WIP page; before
 //! promoting the calendar out of /wip we need to ship the diff.
 
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct SanctiEntry {
-    pub rubric: String,
-    pub name: String,
-    pub rank_class: String,
-    pub rank_num: Option<f32>,
-    pub commune: String,
-}
+pub use crate::data_types::SanctiEntry;
 
-static SANCTI_JSON: &str = include_str!("../data/sancti.json");
+static SANCTI_BIN: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/sancti.postcard"));
 static PARSED: OnceLock<HashMap<String, Vec<SanctiEntry>>> = OnceLock::new();
 
 fn parsed() -> &'static HashMap<String, Vec<SanctiEntry>> {
-    PARSED.get_or_init(|| serde_json::from_str(SANCTI_JSON).unwrap_or_default())
+    PARSED.get_or_init(|| postcard::from_bytes(SANCTI_BIN).unwrap_or_default())
 }
 
 /// Raw entries for `(month, day)` — all rubric variants. Empty

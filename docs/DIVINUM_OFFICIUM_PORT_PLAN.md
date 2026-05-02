@@ -1038,7 +1038,38 @@ Adding a new reform layer is a *config-only* change: drop the
 the `Layer` enum. No saint or year breakpoint is hard-coded in
 the business logic.
 
-### Phase 7 in flight: Tridentine 1910 wired to 89.3 %
+### Phase 7 in flight: Tridentine 1910 11-year aggregate at 90.4 %
+
+11-year sweep for Tridentine 1910 (post-rubric-aware-conditional):
+
+| Year  | Days passing  |
+|-------|---------------|
+| 2020  | 332/366 90.7 %|
+| 2021  | 334/365 91.5 %|
+| 2022  | 327/365 89.6 %|
+| 2023  | 327/365 89.6 %|
+| 2024  | 331/366 90.4 %|
+| 2025  | 332/365 91.0 %|
+| 2026  | 327/365 89.6 %|
+| 2027  | 333/365 91.2 %|
+| 2028  | 328/366 89.6 %|
+| 2029  | 331/365 90.7 %|
+| 2030  | 329/365 90.1 %|
+
+**Aggregate: 90.36 % across 4018 days** (3631 passing). The 9.5 %
+gap vs Tridentine 1570 (99.70 %) is in genuine rubric-rule deltas
+that the 1570-shape precedence/transferred-feast logic doesn't yet
+model — the load-bearing fixes to land are:
+
+- Pius X 1908-10 elevations of saints to Duplex II classis
+  (Cathedra Petri Rom. & Antioch., Holy Name of Jesus, etc.)
+- Septem Dolorum BMV (Friday before Palm Sun) special treatment
+- Lenten ferial-precedence delta (Lent week 1+ feria privilegiata
+  blocks Cathedra Petri transfers in 1910 specifically)
+- A handful of Mass-body conditionals tagged `(sed rubrica 196)`
+  / `(sed rubrica DA)` that 1910 should now consume correctly
+  (the conditional evaluator handles them; the gap is in helpers
+  that don't yet read the active rubric).
 
 Initial 1910 wiring landed:
 

@@ -1209,6 +1209,7 @@
 "rank_num_1570":3.0,
 "rank_1960":"Duplex I classis",
 "rank_num_1960":6.0,
+"commune_1960":"",
 "sections":{
 "Rule":"Gloria\nCredo\nPrefatio=Joseph=Festivitáte;",
 "Introitus":"@Commune/C5-1",
@@ -2726,6 +2727,7 @@
 "commune":null,
 "rank_1960":"Duplex II classis",
 "rank_num_1960":5.0,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Introitus":"!Luc 1:13; 1:15; 1:14\nv. Ne tímeas, Zacharía, exaudíta est orátio tua: et Elísabeth uxor tua páriet tibi fílium, et vocábis nomen ejus Joánnem: et erit magnus coram Dómino: et Spíritu Sancto replébitur adhuc ex útero matris suæ: et multi in nativitáte ejus gaudébunt.\n!Ps 20:2\nDómine, in virtúte tua lætábitur rex: et super salutáre tuum exsultábit veheménter.\n&Gloria\nv. Ne tímeas, Zacharía, exaudíta est orátio tua: et Elísabeth uxor tua páriet tibi fílium, et vocábis nomen ejus Joánnem: et erit magnus coram Dómino: et Spíritu Sancto replébitur adhuc ex útero matris suæ: et multi in nativitáte ejus gaudébunt.",
@@ -2746,6 +2748,7 @@
 "commune":"",
 "rank_1960":"Duplex I classis",
 "rank_num_1960":6.0,
+"commune_1960":"",
 "sections":{
 "Rule":"Gloria\nno Credo\n(sed tempore Octava aut rubrica 196)\nCredo\nPrefatio=Baptista",
 "Introitus":"!Isa 49:1; 49:2\nv. De ventre matris meæ vocávit me Dóminus in nómine meo: et pósuit os meum ut gládium acútum: sub teguménto manus suæ protéxit me, et pósuit me quasi sagíttam eléctam.\n!Ps 91:2\nBonum est confitéri Dómino: et psállere nómini tuo, Altíssime.\n&Gloria\nv. De ventre matris meæ vocávit me Dóminus in nómine meo: et pósuit os meum ut gládium acútum: sub teguménto manus suæ protéxit me, et pósuit me quasi sagíttam eléctam.",
@@ -2855,6 +2858,7 @@
 "commune":null,
 "rank_1960":"Duplex II classis",
 "rank_num_1960":5.0,
+"commune_1960":"",
 "sections":{
 "Rule":"ex C1a;\nno Gloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Introitus":"!Joannes 21:18-19\nv. Dicit Dóminus Petro: Cum esses júnior, cingébas te et ambulábas, ubi volébas: cum autem senúeris, exténdes manus tuas, et álius te cinget et ducet, quo tu non vis: hoc autem dixit, signíficans, qua morte clarificatúrus esset Deum.\n!Ps 18:2. \nCœli enárrant glóriam Dei: et ópera mánuum ejus annúntiat firmaméntum.\n&Gloria\nv. Dicit Dóminus Petro: Cum esses júnior, cingébas te et ambulábas, ubi volébas: cum autem senúeris, exténdes manus tuas, et álius te cinget et ducet, quo tu non vis: hoc autem dixit, signíficans, qua morte clarificatúrus esset Deum.",
@@ -4009,6 +4013,7 @@
 "commune":null,
 "rank_1960":"Vigilia",
 "rank_num_1960":3.0,
+"commune_1960":"",
 "sections":{
 "Rule":"vide C2b;\nno Gloria\nSuffragium=Maria3;Papa,Ecclesiæ;;",
 "Introitus":"!Ps 111:9\nv. Dispérsit, dedit paupéribus: justítia ejus manet in sǽculum sǽculi: cornu ejus exaltábitur in glória.\n!Ps 111:1.\nBeátus vir, qui timet Dóminum: in mandátis ejus cupit nimis.\n&Gloria\nv. Dispérsit, dedit paupéribus: justítia ejus manet in sǽculum sǽculi: cornu ejus exaltábitur in glória. Non dicitur Glória in excélsis.",
@@ -7098,6 +7103,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":4.9,
+"commune_1960":"",
 "sections":{
 "Rule":"LectioL1",
 "Introitus":"!Ps 80:2; 80:3; 80:4; 80:5\nv. Exsultáte Deo, adjutóri nostro: jubiláte Deo Jacob: súmite psalmum jucúndum cum cíthara: cánite in inítio mensis tuba, quia præcéptum in Israël est, et judícium Deo Jacob.\n!Ps 80:6\nTestimónium in Joseph pósuit illud, cum exíret de terra Ægýpti: linguam, quam non nóverat, audívit. \n&Gloria\nv. Exsultáte Deo, adjutóri nostro: jubiláte Deo Jacob: súmite psalmum jucúndum cum cíthara: cánite in inítio mensis tuba, quia præcéptum in Israël est, et judícium Deo Jacob.",
@@ -7121,6 +7127,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":4.9,
+"commune_1960":"",
 "sections":{
 "Introitus":"!Ps 104:3-4\nv. Lætétur cor quæréntium Dóminum: quǽrite Dóminum, et confirmámini: quǽrite fáciem ejus semper.\n!Ps 104:1\nConfitémini Dómino et invocáte nomen ejus: annuntiáte inter gentes ópera ejus.\n&Gloria\nv. Lætétur cor quæréntium Dóminum: quǽrite Dóminum, et confirmámini: quǽrite fáciem ejus semper.",
 "Oratio":"@Tempora/Quad4-1:Oratio",
@@ -7140,6 +7147,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":4.9,
+"commune_1960":"",
 "sections":{
 "Rule":"(rubrica 1960) celebranda aut forma longior aut forma brevior\n(si missa brevior et rubrica 1960) LectioL1 \nLectioL5",
 "Introitus":"!Ps 94:6-7\nv. Veníte, adorémus Deum et procidámus ante Dóminum, plorémus ante eum, qui fecit nos: quia ipse est Dóminus, Deus noster.\n!Ps 94:1\nVeníte, exsultémus Dómino: jubilémus Deo, salutári nostro.\n&Gloria\nv. Veníte, adorémus Deum et procidámus ante Dóminum, plorémus ante eum, qui fecit nos: quia ipse est Dóminus, Deus noster.",
@@ -7292,6 +7300,7 @@
 "commune":null,
 "rank_1960":"Semiduplex",
 "rank_num_1960":6.01,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nCredo\nSuffr=Maria1;Ecclesiæ,Papa;;",
 "Introitus":"!Is 30:30\nv. Pópulus Sion, ecce, Dóminus véniet ad salvándas gentes: et audítam fáciet Dóminus glóriam vocis suæ in lætítia cordis vestri.\n!Ps 79:2\nQui regis Israël, inténde: qui dedúcis, velut ovem, Joseph.\n&Gloria\nv. Pópulus Sion, ecce, Dóminus véniet ad salvándas gentes: et audítam fáciet Dóminus glóriam vocis suæ in lætítia cordis vestri.",
@@ -7395,6 +7404,7 @@
 "commune":null,
 "rank_1960":"Semiduplex",
 "rank_num_1960":6.01,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nCredo\nSuffr=Maria1;Ecclesiæ,Papa;;",
 "Introitus":"!Phil 4:4-6\nv. Gaudéte in Dómino semper: íterum dico, gaudéte. Modéstia vestra nota sit ómnibus homínibus: Dóminus enim prope est. Nihil sollíciti sitis: sed in omni oratióne petitiónes vestræ innotéscant apud Deum.\n!Ps 84:2\nBenedixísti, Dómine, terram tuam: avertísti captivitátem Jacob.\n&Gloria\nv. Gaudéte in Dómino semper: íterum dico, gaudéte. Modéstia vestra nota sit ómnibus homínibus: Dóminus enim prope est. Nihil sollíciti sitis: sed in omni oratióne petitiónes vestræ innotéscant apud Deum.",
@@ -7446,6 +7456,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":4.9,
+"commune_1960":"",
 "sections":{
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nLectioL1\nSuffr=Maria1;Ecclesiæ,Papa;;",
 "Introitus":"!Is 45:8\nv. Roráte, cœli, désuper, et nubes pluant justum: aperiátur terra, et gérminet Salvatórem\n!Ps 18:2.\nCœli enárrant glóriam Dei: et ópera mánuum ejus annúntiat firmaméntum.\n&Gloria\nv. Roráte, cœli, désuper, et nubes pluant justum: aperiátur terra, et gérminet Salvatórem",
@@ -7486,6 +7497,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":4.9,
+"commune_1960":"",
 "sections":{
 "Rule":"Oratio Dominica\nno Gloria\nno Credo\nSuffr=Maria1;Ecclesiæ,Papa;;",
 "Introitus":"!Ps 118:151-152\nv. Prope es tu, Dómine, et omnes viæ tuæ véritas: inítio cognóvi de testimóniis tuis, quia in ætérnum tu es.\n!Ps 118:1\nBeati immaculáti in via: qui ámbulant in lege Dómini.\n&Gloria\nv. Prope es tu, Dómine, et omnes viæ tuæ véritas: inítio cognóvi de testimóniis tuis, quia in ætérnum tu es.",
@@ -7546,6 +7558,7 @@
 "commune":null,
 "rank_1960":"Semiduplex",
 "rank_num_1960":6.01,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nCredo\nSuffr=Maria1;Ecclesiæ,Papa;;",
 "Introitus":"!Isa 45:8\nv. Roráte, cœli, désuper, et nubes pluant justum: aperiátur terra, et gérminet Salvatórem\n!Ps 18:2\nCœli enárrant glóriam Dei: et ópera mánuum ejus annúntiat firmaméntum.\n&Gloria\nv. Roráte, cœli, désuper, et nubes pluant justum: aperiátur terra, et gérminet Salvatórem",
@@ -7636,6 +7649,7 @@
 "commune":null,
 "rank_1960":"Duplex II classis",
 "rank_num_1960":5.0,
+"commune_1960":"",
 "sections":{
 "Rule":"Gloria\nCredo\nPrefatio=Epi\nNo Sunday Commemoratio",
 "Introitus":"!Prov 23:24; 23:25\nv. Exsúltet gáudio pater Justi, gáudeat Pater tuus et Mater tua, et exsúltet quæ génuit te.\n!Ps 83:2-3\nQuam dilécta tabernácula tua, Dómine virtútum! Concupíscit, et déficit ánima mea in átria Dómini.\n&Gloria\nv. Exsúltat gáudio pater Justi, gáudeat Pater tuus et Mater tua, et exsúltet quæ génuit te.",
@@ -9086,6 +9100,7 @@
 "commune":null,
 "rank_1960":"Feria",
 "rank_num_1960":5.0,
+"commune_1960":"",
 "sections":{
 "Rule":"Oratio Dominica\nGloria\nno Credo\nSuffr=Maria3",
 "Introitus":"!Is 48:20\nv. Vocem jucunditátis annuntiáte, et audiátur, allelúja: annuntiáte usque ad extrémum terræ: liberávit Dóminus pópulum suum, allelúja, allelúja\n!Ps 65:1-2\nJubiláte Deo, omnis terra, psalmum dícite nómini ejus: date glóriam laudi ejus.\n&Gloria\nv. Vocem jucunditátis annuntiáte, et audiátur, allelúja: annuntiáte usque ad extrémum terræ: liberávit Dóminus pópulum suum, allelúja, allelúja",
@@ -9115,6 +9130,7 @@
 "commune":null,
 "rank_1960":"Duplex I classis",
 "rank_num_1960":7.0,
+"commune_1960":"",
 "sections":{
 "Rule":"Gloria\nCredo\nPrefatio=Asc",
 "Introitus":"!Acta 1:11\nv. Viri Galilǽi, quid admirámini aspiciéntes in cœlum? allelúja: quemádmodum vidístis eum ascendéntem in cœlum, ita véniet, allelúja, allelúja, allelúja.\n!Ps 46:2\nOmnes gentes, pláudite mánibus: jubiláte Deo in voce exsultatiónis.\n&Gloria\nv. Viri Galilǽi, quid admirámini aspiciéntes in cœlum? allelúja: quemádmodum vidístis eum ascendéntem in cœlum, ita véniet, allelúja, allelúja, allelúja.",
@@ -9731,8 +9747,10 @@
 "commune_1906":"ex Tempora/Pent01-4",
 "rank_1955":"Feria",
 "rank_num_1955":1.0,
+"commune_1955":"",
 "rank_1960":"Feria",
 "rank_num_1960":1.0,
+"commune_1960":"",
 "sections":{
 "Rule":"Suffragium=Maria3;Ecclesiæ,Papa;;\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis",
 "Oratio":"@Tempora/Pent01-1:Oratio",
@@ -9762,8 +9780,10 @@
 "commune_1906":"ex Tempora/Pent01-4",
 "rank_1955":"Feria",
 "rank_num_1955":1.0,
+"commune_1955":"",
 "rank_1960":"Feria",
 "rank_num_1960":1.0,
+"commune_1960":"",
 "sections":{
 "Rule":"Suffragium=Maria3;Ecclesiæ,Papa;;\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis",
 "Oratio":"@Tempora/Pent01-1:Oratio",
@@ -9793,8 +9813,10 @@
 "commune_1906":"ex Tempora/Pent01-4",
 "rank_1955":"Feria",
 "rank_num_1955":1.0,
+"commune_1955":"",
 "rank_1960":"Feria",
 "rank_num_1960":1.0,
+"commune_1960":"",
 "sections":{
 "Rule":"Suffr=Sanctorum;Maria3,Ecclesiæ,Papa;;"
 }
@@ -9806,8 +9828,10 @@
 "commune":"ex Tempora/Pent01-4",
 "rank_1955":"Semiduplex I classis",
 "rank_num_1955":5.0,
+"commune_1955":"",
 "rank_1960":"Semiduplex I classis",
 "rank_num_1960":5.0,
+"commune_1960":"",
 "sections":{
 "Rule":"ex Tempora/Pent01-4\nGloria\nCredo\nPrefatio=Nat\nPrefatio1960=Trinitate",
 "Introitus":"!Ps 17:19-20\nv. Factus est Dóminus protéctor meus, et edúxit me in latitúdinem: salvum me fecit, quóniam vóluit me.\n!Ps 17:2-3\nDíligam te. Dómine, virtus mea: Dóminus firmaméntum meum et refúgium meum et liberátor meus.\n&Gloria\nv. Factus est Dóminus protéctor meus, et edúxit me in latitúdinem: salvum me fecit, quóniam vóluit me.",
@@ -9844,8 +9868,10 @@
 "commune_1906":"ex Tempora/Pent01-4",
 "rank_1955":"Feria",
 "rank_num_1955":1.0,
+"commune_1955":"",
 "rank_1960":"Feria",
 "rank_num_1960":1.0,
+"commune_1960":"",
 "sections":{
 "Rule":"ex Tempora/Pent01-4;\nOratio Dominica\nSuffragium=Maria3;Ecclesiæ,Papa;;\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis"
 }
@@ -9862,8 +9888,10 @@
 "commune_1906":"ex Tempora/Pent01-4",
 "rank_1955":"Feria",
 "rank_num_1955":1.0,
+"commune_1955":"",
 "rank_1960":"Feria",
 "rank_num_1960":1.0,
+"commune_1960":"",
 "sections":{
 "Rule":"ex Tempora/Pent01-4;\nOratio Dominica\nSuffragium=Maria3;Ecclesiæ,Papa;;\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis"
 }
@@ -9880,8 +9908,10 @@
 "commune_1906":"ex Tempora/Pent01-4",
 "rank_1955":"Feria",
 "rank_num_1955":1.0,
+"commune_1955":"",
 "rank_1960":"Feria",
 "rank_num_1960":1.0,
+"commune_1960":"",
 "sections":{
 "Rule":"ex Tempora/Pent01-4;\nOratio Dominica\nSuffragium=Maria3;Ecclesiæ,Papa;;\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis"
 }
@@ -9893,8 +9923,10 @@
 "commune":"ex Tempora/Pent01-4",
 "rank_1955":"Feria",
 "rank_num_1955":1.0,
+"commune_1955":"",
 "rank_1960":"Feria",
 "rank_num_1960":1.0,
+"commune_1960":"",
 "sections":{
 "Rule":"ex Tempora/Pent01-4;\nOratio Dominica\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis\nComkey=20"
 }
@@ -9915,6 +9947,7 @@
 "commune":null,
 "rank_1960":"Duplex I classis",
 "rank_num_1960":6.0,
+"commune_1960":"",
 "sections":{
 "Rule":"Gloria\nCredo\nPrefatio=Cord\nNo Commemoratio",
 "Introitus":"!Ps 32:11; 32:19\nv. Cogitatiónes Cordis ejus in generatióne et generatiónem: ut éruat a morte ánimas eórum et alat eos in fame. (Allelúja, allelúja.)\n!Ps 32:1\nExsultáte, justi, in Dómino: rectos decet collaudátio.\n&Gloria\nv. Cogitatiónes Cordis ejus in generatióne et generatiónem: ut éruat a morte ánimas eórum et alat eos in fame. (Alleluia, alleluia.)",
@@ -12037,6 +12070,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper populum",
 "Introitus":"!Ps 122:2\nv. Sicut óculi servórum in mánibus dominórum suórum: ita óculi nostri ad Dóminum, Deum nostrum, donec misereátur nobis: miserére nobis, Dómine, miserére nobis.\n!Ps 122:1\nAd te levávi óculos meos: qui hábitas in cœlis,\n&Gloria\nv. Sicut óculi servórum in mánibus dominórum suórum: ita óculi nostri ad Dóminum, Deum nostrum, donec misereátur nobis: miserére nobis, Dómine, miserére nobis.",
@@ -12099,6 +12133,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 95:6\nv. Conféssio et pulchritúdo in conspéctu ejus: sánctitas et magnificéntia in sanctificatióne eius.\n!Ps 95:1\nCantáte Dómino cánticum novum: cantáte Dómino, omnis terra.\n&Gloria\nv. Conféssio et pulchritúdo in conspéctu ejus: sánctitas et magnificéntia in sanctificatióne eius.",
@@ -12120,6 +12155,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":4.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 24:17; 24:18\nv. De necessitátibus meis éripe me, Dómine: vide humilitátem meam et labórem meum, et dimítte ómnia peccáta mea.\n!Ps 24:1-2\nAd te, Dómine, levávi ánimam meam: Deus meus, in te confído, non erubéscam.\n&Gloria\nv. De necessitátibus meis éripe me, Dómine: vide humilitátem meam et labórem meum, et dimítte ómnia peccáta mea.",
@@ -12141,6 +12177,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":4.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul\n(si rubrica 1960) celebranda aut forma longior aut forma brevior\n(si rubrica 1960 et missa brevior) LectioL1\nLectioL5",
 "Introitus":"!Ps 87:3\nv. Intret orátio mea in conspéctu tuo: inclína aurem tuam ad precem meam, Dómine.\n!Ps 87:2\nDómine, Deus salútis meæ: in die clamávi, et nocte coram te.\n&Gloria\nv. Intret orátio mea in conspéctu tuo: inclína aurem tuam ad precem meam, Dómine.",
@@ -12194,6 +12231,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 25:11-12.\nv. Rédime me, Dómine, et miserére mei: pes enim meus stetit in via recta: in ecclésiis benedícam Dóminum.\n!Ps 25:1\nJúdica me, Dómine, quóniam ego in innocéntia mea ingréssus sum: et in Dómino sperans, non infirmábor.\n&Gloria\nv. Rédime me, Dómine, et miserére mei: pes enim meus stetit in via recta: in ecclésiis benedícam Dóminum.",
@@ -12215,6 +12253,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 26:8; 26:9\nv. Tibi dixit cor meum, quæsívi vultum tuum. vultum tuum, Dómine, requíram: ne avértas fáciem tuam a me.\n!Ps 26:1\nDóminus illuminátio mea, et salus mea: quem timébo?\n&Gloria\nv. Tibi dixit cor meum, quæsívi vultum tuum. vultum tuum, Dómine, requíram: ne avértas fáciem tuam a me.",
@@ -12236,6 +12275,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 37:22-23.\nv. Ne derelínquas me, Dómine, Deus meus, ne discédas a me: inténde in adjutórium meum, Dómine, virtus salútis meæ.\n!Ps 37:2\nDómine, ne in furóre tuo árguas me: neque in ira tua corrípias me.\n&Gloria\nv. Ne derelínquas me, Dómine, Deus meus, ne discédas a me: inténde in adjutórium meum, Dómine, virtus salútis meæ.",
@@ -12257,6 +12297,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 69:2; 69:3\nv. Deus, in adjutórium meum inténde: Dómine, ad adjuvándum me festína: confundántur et revereántur inimíci mei, qui quærunt ánimam meam.\n!Ps 69:4\nAvertántur retrórsum et erubéscant: qui cógitant mihi mala.\n&Gloria\nv. Deus, in adjutórium meum inténde: Dómine, ad adjuvándum me festína: confundántur et revereántur inimíci mei, qui quærunt ánimam meam.",
@@ -12278,6 +12319,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 16:15\nv. Ego autem cum justítia apparébo in conspéctu tuo: satiábor, dum manifestábitur glória tua.\n!Ps 16:1\nExáudi, Dómine, justitiam meam: inténde deprecatióni meæ.\n&Gloria\nv. Ego autem cum justítia apparébo in conspéctu tuo: satiábor, dum manifestábitur glória tua.",
@@ -12299,6 +12341,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 18:8.\nv. Lex Dómini irreprehensíbilis, convértens ánimas: testimónium Dómini fidéle, sapiéntiam præstans párvulis.\n!Ps 18:2\nCœli enárrant glóriam Dei: et ópera mánuum ejus annúntiat firmaméntum.\n&Gloria\nv. Lex Dómini irreprehensíbilis, convértens ánimas: testimónium Dómini fidéle, sapiéntiam præstans párvulis.",
@@ -12338,6 +12381,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 55:5.\nv. In Deo laudábo verbum, in Dómino laudábo sermónem: in Deo sperábo, non timebo, quid fáciat mihi homo.\n!Ps 55:2\nMiserére mei, Deus, quóniam conculcávit me homo: tota die bellans tribulávit me.\n&Gloria\nv. In Deo laudábo verbum, in Dómino laudábo sermónem: in Deo sperábo, non timebo, quid fáciat mihi homo.",
@@ -12359,6 +12403,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 16:6, 8\nv. Ego clamávi, quóniam exaudísti me, Deus: inclína aurem tuam, et exáudi verba mea: custódi me, Dómine, ut pupíllam óculi: sub umbra alárum tuárum prótege me.\n!Ps 16:1\nExáudi, Dómine, justítiam meam: inténde deprecatiónem meam.\n&Gloria\nv. Ego clamávi, quóniam exaudísti me, Deus: inclína aurem tuam, et exáudi verba mea: custódi me, Dómine, ut pupíllam óculi: sub umbra alárum tuárum prótege me.",
@@ -12380,6 +12425,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 30:7-8.\nv. Ego autem in Dómino sperábo: exsultábo et lætábor in tua misericórdia: quia respexísti humilitátem meam.\n!Ps 39:2\nIn te, Dómine, sperávi, non confúndar in ætérnum: in justítia tua líbera me et éripe me.\n&Gloria\nv. Ego autem in Dómino sperábo: exsultábo et lætábor in tua misericórdia: quia respexísti humilitátem meam.",
@@ -12401,6 +12447,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 30:7-8.\nv. Ego autem in Dómino sperábo: exsultábo et lætábor in tua misericórdia: quia respexísti humilitátem meam.\n!Ps 39:2\nIn te, Dómine, sperávi, non confúndar in ætérnum: in justítia tua líbera me et éripe me.\n&Gloria\nv. Ego autem in Dómino sperábo: exsultábo et lætábor in tua misericórdia: quia respexísti humilitátem meam.",
@@ -12422,6 +12469,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"v. Salus pópuli ego sum, dicit Dóminus: de quacúmque tribulatióne clamáverint ad me, exáudiam eos: et ero illórum Dóminus in perpétuum\n!Ps 77:1\nAtténdite, pópule meus, legem meam: inclináte aurem vestram in verba oris mei.\n&Gloria\nv. Salus pópuli ego sum, dicit Dóminus: de quacúmque tribulatióne clamáverint ad me, exáudiam eos: et ero illórum Dóminus in perpétuum",
@@ -12443,6 +12491,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!  \nv. Salus pópuli ego sum, dicit Dóminus: de quacúmque tribulatióne clamáverint ad me, exáudiam eos: et ero illórum Dóminus in perpétuum\n!Ps 77:1\nAtténdite, pópule meus, legem meam: inclináte aurem vestram in verba oris mei.\n&Gloria\nv. Salus pópuli ego sum, dicit Dóminus: de quacúmque tribulatióne clamáverint ad me, exáudiam eos: et ero illórum Dóminus in perpétuum",
@@ -12464,6 +12513,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 85:17.\nv. Fac mecum, Dómine, signum in bonum: ut vídeant, qui me oderunt, et confundántur: quóniam tu, Dómine, adjuvísti me et consolátus es me.\n!Ps 85:1\nInclína, Dómine, aurem tuam, et exáudi me: quóniam inops et pauper sum ego.\n&Gloria\nv. Fac mecum, Dómine, signum in bonum: ut vídeant, qui me oderunt, et confundántur: quóniam tu, Dómine, adjuvísti me et consolátus es me.",
@@ -12485,6 +12535,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 85:17.\nv. Fac mecum, Dómine, signum in bonum: ut vídeant, qui me oderunt, et confundántur: quóniam tu, Dómine, adjuvísti me et consolátus es me.\n!Ps 85:1\nInclína, Dómine, aurem tuam, et exáudi me: quóniam inops et pauper sum ego.\n&Gloria\nv. Fac mecum, Dómine, signum in bonum: ut vídeant, qui me oderunt, et confundántur: quóniam tu, Dómine, adjuvísti me et consolátus es me.",
@@ -12506,6 +12557,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 5:2-3.\nv. Verba mea áuribus pércipe, Dómine, intéllege clamórem meum: inténde voci oratiónis meæ, Rex meus et Deus meus.\n!Ps 5:4\nQuóniam ad te orábo, Dómine: mane exáudies vocem meam.\n&Gloria\nv. Verba mea áuribus pércipe, Dómine, intéllege clamórem meum: inténde voci oratiónis meæ, Rex meus et Deus meus.",
@@ -12527,6 +12579,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 5:2-3.\nv. Verba mea áuribus pércipe, Dómine, intéllege clamórem meum: inténde voci oratiónis meæ, Rex meus et Deus meus.\n!Ps 5:4\nQuóniam ad te orábo, Dómine: mane exáudies vocem meam.\n&Gloria\nv. Verba mea áuribus pércipe, Dómine, intéllege clamórem meum: inténde voci oratiónis meæ, Rex meus et Deus meus.",
@@ -12584,6 +12637,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 53:3-4\nv. Deus, in nómine tuo salvum me fac, et in virtúte tua líbera me: Deus, exáudi oratiónem meam: áuribus pércipe verba oris mei.\n!Ps 53:5\nQuóniam aliéni insurrexérunt in me: et fortes quæsiérunt ánimam meam.\n&Gloria\nv. Deus, in nómine tuo salvum me fac, et in virtúte tua líbera me: Deus, exáudi oratiónem meam: áuribus pércipe verba oris mei.",
@@ -12605,6 +12659,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 54:2-3\nv. Exáudi, Deus, oratiónem meam, et ne despéxeris deprecatiónem meam: inténde in me et exáudi me.\n!Ps 54:3-4\nContristátus sum in exercitatióne mea: et conturbátus sum a voce inimíci et a tribulatióne peccatóris.\n&Gloria\nv. Exáudi, Deus, oratiónem meam, et ne despéxeris deprecatiónem meam: inténde in me et exáudi me.",
@@ -12626,6 +12681,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"@Tempora/Quad4-2:Introitus",
@@ -12647,6 +12703,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul\nLectioL1",
 "Introitus":"!Ezech 36:23-26\nv. Cum sanctificátus fúero in vobis, congregábo vos de univérsis terris: et effúndam super vos aquam mundam, et mundabímini ab ómnibus inquinaméntis vestris: et dabo vobis spíritum novum.\n!Ps 33:2\nBenedícam Dóminum in omni témpore: semper laus ejus in ore meo.\n&Gloria\nv. Cum sanctificátus fúero in vobis, congregábo vos de univérsis terris: et effúndam super vos aquam mundam, et mundabímini ab ómnibus inquinaméntis vestris: et dabo vobis spíritum novum.",
@@ -12671,6 +12728,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul\nLectioL1",
 "Introitus":"@Tempora/Quad4-3:Introitus",
@@ -12695,6 +12753,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 104:3-4.\nv. Lætétur cor quæréntium Dóminum: quǽrite Dóminum, et confirmámini: quǽrite fáciem ejus semper.\n!Ps 104:1\nConfitémini Dómino, et invocáte nomen ejus: annuntiáte inter gentes ópera ejus.\n&Gloria\nv. Lætétur cor quæréntium Dóminum: quǽrite Dóminum, et confirmámini: quǽrite fáciem ejus semper.",
@@ -12716,6 +12775,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 104:3-4.\nv. Lætétur cor quæréntium Dóminum: quǽrite Dóminum, et confirmámini: quǽrite fáciem ejus semper.\n!Ps 104:1\nConfitémini Dómino, et invocáte nomen ejus: annuntiáte inter gentes ópera ejus.\n&Gloria\nv. Lætétur cor quæréntium Dóminum: quǽrite Dóminum, et confirmámini: quǽrite fáciem ejus semper.",
@@ -12737,6 +12797,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Ps 18:15\nv. Meditátio cordis mei in conspéctu tuo semper: Dómine, adjútor meus, et redémptor meus.\n!Ps 18:2\nCœli enárrant glóriam Dei: et ópera mánuum ejus annúntiat firmaméntum.\n&Gloria\nv. Meditátio cordis mei in conspéctu tuo semper: Dómine, adjútor meus, et redémptor meus.",
@@ -12758,6 +12819,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"@Tempora/Quad4-5:Introitus",
@@ -12779,6 +12841,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Isa 55:1\nv. Sitiéntes, veníte ad aquas, dicit Dóminus: et qui non habétis prétium, veníte et bíbite cum lætítia.\n!Ps 77:1.\nAtténdite, pópule meus, legem meam: inclináte aurem vestram in verba oris mei.\n&Gloria\nv. Sitiéntes, veníte ad aquas, dicit Dóminus: et qui non habétis prétium, veníte et bíbite cum lætítia.",
@@ -12800,6 +12863,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Sanctorum;Vivis;;\nSuper popul",
 "Introitus":"!Isa 55:1\nv. Sitiéntes, veníte ad aquas, dicit Dóminus: et qui non habétis prétium, veníte et bíbite cum lætítia.\n!Ps 77:1.\nAtténdite, pópule meus, legem meam: inclináte aurem vestram in verba oris mei.\n&Gloria\nv. Sitiéntes, veníte ad aquas, dicit Dóminus: et qui non habétis prétium, veníte et bíbite cum lætítia.",
@@ -12843,6 +12907,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul",
 "Introitus":"!Ps 55:2\nv. Miserére mihi, Dómine, quóniam conculcávit me homo: tota die bellans tribulávit me.\n!Ps 55:3\nConculcavérunt me inimíci mei tota die: quóniam multi bellántes advérsum me.\nv. Miserére mihi, Dómine, quóniam conculcávit me homo: tota die bellans tribulávit me.",
@@ -12864,6 +12929,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul",
 "Introitus":"!Ps 26:14\nv. Exspécta Dóminum, viríliter age: et confortétur cor tuum, et sústine Dóminum.\n!Ps 26:1\nDóminus illuminátio mea et salus mea: quem timebo?\nv. Exspécta Dóminum, viríliter age: et confortétur cor tuum, et sústine Dóminum.",
@@ -12885,6 +12951,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul",
 "Introitus":"!Ps 26:14\nv. Exspécta Dóminum, viríliter age: et confortétur cor tuum, et sústine Dóminum.\n!Ps 26:1\nDóminus illuminátio mea et salus mea: quem timebo?\nv. Exspécta Dóminum, viríliter age: et confortétur cor tuum, et sústine Dóminum.",
@@ -12906,6 +12973,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul",
 "Introitus":"!Ps 17:48-49\nv. Liberátor meus de géntibus iracúndis: ab insurgéntibus in me exaltábis me: a viro iníquo erípies me, Dómine.\n!Ps 17:2-3\nDíligam te, Dómine, virtus mea: Dóminus firmaméntum meum, et refúgium meum, et liberátor meus.\nv. Liberátor meus de géntibus iracúndis: ab insurgéntibus in me exaltábis me: a viro iníquo erípies me, Dómine.",
@@ -12927,6 +12995,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul",
 "Introitus":"!Ps 17:48-49\nv. Liberátor meus de géntibus iracúndis: ab insurgéntibus in me exaltábis me: a viro iníquo erípies me, Dómine.\n!Ps 17:2-3\nDíligam te, Dómine, virtus mea: Dóminus firmaméntum meum, et refúgium meum, et liberátor meus.\nv. Liberátor meus de géntibus iracúndis: ab insurgéntibus in me exaltábis me: a viro iníquo erípies me, Dómine.",
@@ -12948,6 +13017,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul",
 "Introitus":"!Dan 3:31\nv. Omnia, quæ fecísti nobis, Dómine, in vero judício fecísti: quia peccávimus tibi, et mandátis tuis non obedívimus: sed da glóriam nómini tuo, et fac nobíscum secúndum multitúdinem misericórdiæ tuæ.\n!Ps 118:1\nBeáti immaculáti in via: qui ámbulant in lege Dómini.\nv. Omnia, quæ fecísti nobis, Dómine, in vero judício fecísti: quia peccávimus tibi, et mandátis tuis non obedívimus: sed da glóriam nómini tuo, et fac nobíscum secúndum multitúdinem misericórdiæ tuæ.",
@@ -12969,6 +13039,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul",
 "Introitus":"!Dan 3:31\nv. Omnia, quæ fecísti nobis, Dómine, in vero judício fecísti: quia peccávimus tibi, et mandátis tuis non obedívimus: sed da glóriam nómini tuo, et fac nobíscum secúndum multitúdinem misericórdiæ tuæ.\n!Ps 118:1\nBeáti immaculáti in via: qui ámbulant in lege Dómini.\nv. Omnia, quæ fecísti nobis, Dómine, in vero judício fecísti: quia peccávimus tibi, et mandátis tuis non obedívimus: sed da glóriam nómini tuo, et fac nobíscum secúndum multitúdinem misericórdiæ tuæ.",
@@ -13014,6 +13085,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul",
 "Introitus":"!Ps 30:10, 16, 18\nv. Miserére mihi, Dómine, quóniam tríbulor: líbera me, et éripe me de mánibus inimicórum meórum et a persequéntibus me: Dómine, non confúndar, quóniam invocávi te.\n!Ps 30:2\nIn te, Dómine, sperávi, non confúndar in ætérnum: in justítia tua libera me.\nv. Miserére mihi, Dómine, quóniam tríbulor: líbera me, et éripe me de mánibus inimicórum meórum et a persequéntibus me: Dómine, non confúndar, quóniam invocávi te.",
@@ -13052,6 +13124,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul",
 "Introitus":"!Ps 30:10,16, 18\nv. Miserére mihi, Dómine, quóniam tríbulor: líbera me, et éripe me de mánibus inimicórum meórum et a persequéntibus me: Dómine, non confúndar, quóniam invocávi te.\n!Ps 30:2\nIn te, Dómine, sperávi, non confúndar in ætérnum: in justítia tua líbera me.\nv. Miserére mihi, Dómine, quóniam tríbulor: líbera me, et éripe me de mánibus inimicórum meórum et a persequéntibus me: Dómine, non confúndar, quóniam invocávi te.",
@@ -13121,8 +13194,10 @@
 "commune":null,
 "rank_1955":"Feria privilegiata",
 "rank_num_1955":7.0,
+"commune_1955":"",
 "rank_1960":"Feria privilegiata",
 "rank_num_1960":7.0,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul",
 "Introitus":"!Ps 34:1-2.\nv. Júdica, Dómine, nocéntes me, expúgna impugnántes me: apprehénde arma et scutum, et exsúrge in adjutórium meum, Dómine, virtus salútis meæ.\n!Ps 34:3\nEffúnde frámeam, et conclúde advérsus eos, qui persequúntur me: dic ánimæ meæ: Salus tua ego sum.\nv. Júdica, Dómine, nocéntes me, expúgna impugnántes me: apprehénde arma et scutum, et exsúrge in adjutórium meum, Dómine, virtus salútis meæ.",
@@ -13148,8 +13223,10 @@
 "commune":null,
 "rank_1955":"Feria privilegiata",
 "rank_num_1955":7.0,
+"commune_1955":"",
 "rank_1960":"Feria privilegiata",
 "rank_num_1960":7.0,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul\nPassio",
 "Introitus":"!Gal 6:14\nv. Nos autem gloriári opórtet in Cruce Dómini nostri Jesu Christi: in quo est salus, vita et resurréctio nostra: per quem salváti et liberáti sumus.\n!Ps 66:2\nDeus misereátur nostri, et benedícat nobis: illúminet vultum suum super nos, et misereátur nostri.\nv. Nos autem gloriári opórtet in Cruce Dómini nostri Jesu Christi: in quo est salus, vita et resurréctio nostra: per quem salváti et liberáti sumus.",
@@ -13171,8 +13248,10 @@
 "commune":null,
 "rank_1955":"Feria privilegiata",
 "rank_num_1955":7.0,
+"commune_1955":"",
 "rank_1960":"Feria privilegiata",
 "rank_num_1960":7.0,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul\nPassio\nLectioL1",
 "Introitus":"!Phil 2:10, 8 et 11\nv. In nómine Jesu omne genu flectátur, cœléstium, terréstrium et infernórum: quia Dóminus factus est obœ́diens usque ad mortem, mortem autem crucis: ideo Dóminus Jesus Christus in glória est Dei Patris.\n!Ps 101:2\nDómine, exáudi oratiónem meam: et clamor meus ad te véniat.\nv. In nómine Jesu omne genu flectátur, cœléstium, terréstrium et infernórum: quia Dóminus factus est obœ́diens usque ad mortem, mortem autem crucis: ideo Dóminus Jesus Christus in glória est Dei Patris.",
@@ -13351,6 +13430,7 @@
 "commune":null,
 "rank_1960":"Semiduplex",
 "rank_num_1960":5.0,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nCredo\nPrefatio=Trinitate\nSuffr=Maria2;Papa,Ecclesiæ;;",
 "Introitus":"!Ps 17:5; 17:6; 17:7\nv. Circumdedérunt me gémitus mortis, dolóres inférni circumdedérunt me: et in tribulatióne mea invocávi Dóminum, et exaudívit de templo sancto suo vocem meam.\n!Ps 17:2-3\nDíligam te, Dómine, fortitúdo mea: Dóminus firmaméntum meum, et refúgium meum, et liberátor meus.\n&Gloria\nv. Circumdedérunt me gémitus mortis, dolóres inférni circumdedérunt me: et in tribulatióne mea invocávi Dóminum, et exaudívit de templo sancto suo vocem meam.",
@@ -13432,6 +13512,7 @@
 "commune":null,
 "rank_1960":"Semiduplex",
 "rank_num_1960":5.0,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nCredo\nPrefatio=Trinitate\nSuffr=Maria2;Papa,Ecclesiæ;;",
 "Introitus":"!Ps 43:23-26\nv. Exsúrge, quare obdórmis, Dómine? exsúrge, et ne repéllas in finem: quare fáciem tuam avértis, oblivísceris tribulatiónem nostram? adhæsit in terra venter noster: exsúrge, Dómine, ádjuva nos, et líbera nos.\n!Ps 43:2\nDeus, áuribus nostris audívimus: patres nostri annuntiavérunt nobis.\n&Gloria\nv. Exsúrge, quare obdórmis, Dómine? exsúrge, et ne repéllas in finem: quare fáciem tuam avértis, oblivísceris tribulatiónem nostram? adhæsit in terra venter noster: exsúrge, Dómine, ádjuva nos, et líbera nos.",
@@ -13513,6 +13594,7 @@
 "commune":null,
 "rank_1960":"Semiduplex",
 "rank_num_1960":5.0,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nCredo\nPrefatio=Trinitate\nSuffr=Maria2;Papa,Ecclesiæ;;",
 "Introitus":"!Ps 30:3-4\nv. Esto mihi in Deum protectórem, et in locum refúgii, ut salvum me fácias: quóniam firmaméntum meum et refúgium meum es tu: et propter nomen tuum dux mihi eris, et enútries me.\n!Ps 30:2\nIn te, Dómine, sperávi, non confúndar in ætérnum: in justítia tua líbera me et éripe me.\n&Gloria\nv. Esto mihi in Deum protectórem, et in locum refúgii, ut salvum me fácias: quóniam firmaméntum meum et refúgium meum es tu: et propter nomen tuum dux mihi eris, et enútries me.",
@@ -13554,6 +13636,7 @@
 "commune":null,
 "rank_1960":"Feria privilegiata",
 "rank_num_1960":7.0,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nPrefatio=Quad\nSuffragium=Sanctorum;Vivis;;\nSuper populum\nPrelude\n(rubrica 1960) omit incipit",
 "Prelude":"#Benedictio cinerum\n!Antiphona.\n!Ps 68:17\nv. Exáudi nos, Dómine, quóniam benígna est misericórdia tua: secúndum multitúdinem miseratiónum tuárum réspice nos, Dómine.\n!Ps 68:2\nSalvum me fac, Deus: quóniam intravérunt aquæ usque ad ánimam meam.\n&Gloria\nv. Exáudi nos, Dómine, quóniam benígna est misericórdia tua: secúndum multitúdinem miseratiónum tuárum réspice nos, Dómine.\n_\n_\n!Deinde Sacerdos in cornu Epistolæ, non vertens se ad populum, manibus junctis (quod servatur etiam in orationibus omnium benedictionum quoad manus junctas) dicit:\nV. Dóminus vobíscum.\nR. Et cum spíritu tuo.\nv. Orémus.\nOmnípotens sempitérne Deus, parce pæniténtibus, propitiáre supplicántibus: et míttere dignéris sanctum Angelum tuum de coelis, qui bene + dícat et sanctí + ficet hos cíneres, ut sint remédium salúbre ómnibus nomen sanctum tuum humilíter implorántibus, ac semetípsos pro consciéntia delictórum suórum accusántibus, ante conspéctum divínæ cleméntiæ tuæ facínora sua deplorántibus, vel sereníssimam pietátem tuam supplíciter obnixéque flagitántibus: et præsta per invocatiónem sanctíssimi nóminis tui; ut, quicúmque per eos aspérsi fúerint, pro redemptióne peccatórum suórum, córporis sanitátem et ánimæ tutélam percípiant. Per Christum, Dóminum nostrum.\nR. Amen.\n_\n_\nv. Orémus.\nDeus, qui non mortem, sed pæniténtiam desíderas peccatórum: fragilitátem condiciónis humánæ benigníssime réspice; et hos cíneres, quos, causa proferéndæ humilitátis atque promeréndæ véniæ, capítibus nostris impóni decérnimus, bene + dícere pro tua pietáte dignáre: ut, qui nos cínerem esse, et ob pravitátis nostræ deméritum in púlverem reversúros cognóscimus; peccatórum ómnium véniam, et præmia pæniténtibus repromíssa, misericórditer cónsequi mereámur. Per Christum, Dóminum nostrum.\nR. Amen.\n_\n_\nv. Orémus.\nDeus, qui humiliatióne flécteris, et satisfactióne placáris: aurem tuæ pietátis inclína précibus nostris; et capítibus servórum tuórum, horum cínerum aspersióne contáctis, effúnde propítius grátiam tuæ benedictiónis: ut eos et spíritu compunctiónis répleas et, quæ juste postuláverint, efficáciter tríbuas; et concéssa perpétuo stabilíta et intácta manére decérnas. Per Christum, Dóminum nostrum.\nR. Amen.\n_\n_\nv. Orémus.\nOmnípotens sempitérne Deus, qui Ninivítis, in cínere et cilício pæniténtibus, indulgéntiæ tuæ remédia præstitísti: concéde propítius; ut sic eos imitémur hábitu, quaténus véniæ prosequámur obténtu.\n$Per Dominum\n(sed rubrica 1960 dicuntur)\nPer Christum, Dóminum nostrum.\nR. Amen.\n_\n_\n!Postea Celebrans, imposito incenso in thuribulo, ter aspergit cineres aqua benedícta, dicendo Antiphonam Aspérges, sine cantu et sine Psalmo, et ter adolet incenso. Deinde dignior Sacerdos ex Clero accedens ad Altare, imponit cineres Celebranti non genuflexo. Si vero non adsit alius Sacerdos, ipsemet Celebrans, genibus flexis coram Altari, sibi ipsi cineres imponit in capite, nihil dicens, et cantatur statim a choro:\n!Antiphona.\n!Joël 2:13\nImmutémur habitu, in cínere et cilício: jejunémus, et plorémus ante Dóminum: quia multum miséricors est dimíttere peccáta nostra Deus noster.\n_\n_\n!Alia Antiph.\n!Joël 2:17\nInter vestíbulum et altáre plorábunt sacerdótes minístri Dómini, et dicent: Parce, Dómine, parce pópulo tuo: et ne claudas ora canéntium te, Dómine.\n_\n_\n!Responsorium\n!Esther 13; Joël 2\nEmendémus in mélius, quæ ignoránter peccávimus: ne, subito præoccupáti die mortis, quærámus spátium pæniténtiæ, et inveníre non possímus. Atténde, Dómine, et miserére: quia peccávimus tibi.\n!Ps 78:9\nV. Adjuva nos, Deus, salutáris noster: et propter honórem nóminis tui, Dómine, líbera nos. Atténde, Dómine, et miserére: quia peccávimus tibi.\nV. Glória Patri, et Fílio, et Spirítui Sancto. Atténde, Dómine, et miserére: quia peccávimus tibi.\n!Sacerdos vero, dum cantantur Antiphonæ et Responsorium, detecto capite, primo imponit cineres digniori Sacerdoti, a quo ipse accepit, deinde Ministris paratis, genibus flexis coram Altari, dicens:\n!Genesis 3:19\nMemento, homo, quia pulvis es, et in púlverem revertéris.\n_\n_\n!Postea veniunt alii, primo Clerus per ordinem, deinde populus: et genibus flexis ante Altare, singulatim recipiunt cinerem a Sacerdote, ut dictum est de Ministris. Completa cinerum impositione, Sacerdos dicit:\nV. Dóminus vobíscum.\nR. Et cum spíritu tuo.\nv. Orémus.\nConcéde nobis, Dómine, præsídia milítiæ christiánæ sanctis inchoáre jejúniis: ut, contra spiritáles nequítias pugnatúri, continéntiæ muniámur auxíliis. Per Christum, Dóminum nostrum.\nR. Amen.",
@@ -13576,6 +13659,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nPrefatio=Quad\nSuffragium=Sanctorum;Vivis;;\nSuper populum",
 "Introitus":"!Ps 54:17-20; 54:23\nv. Dum clamárem ad Dóminum, exaudívit vocem meam ab his, qui appropínquant mihi, et humiliávit eos, qui est ante sǽcula et manet in ætérnum: jacta cogitátum tuum in Dómino, et ipse te enútriet.\n!Ps 54:2-3\nExáudi, Deus, oratiónem meam, et ne despéxeris deprecatiónem meam: inténde mihi et exáudi me.\n&Gloria\nv. Dum clamárem ad Dóminum, exaudívit vocem meam ab his, qui appropínquant mihi, et humiliávit eos, qui est ante sǽcula et manet in ætérnum: jacta cogitátum tuum in Dómino, et ipse te enútriet.",
@@ -13597,6 +13681,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nPrefatio=Quad\nSuffragium=Sanctorum;Vivis;;\nSuper populum",
 "Introitus":"!Ps 29:11.\nv. Audívit Dóminus, et misértus est mihi: Dóminus factus est adjútor meus.\n!Ps 29:2\nExaltábo te, Dómine, quóniam suscepísti me: nec delectásti inimícos meos super me.\n&Gloria\nv. Audívit Dóminus, et misértus est mihi: Dóminus factus est adjútor meus.",
@@ -13618,6 +13703,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":3.9,
+"commune_1960":"",
 "sections":{
 "Rule":"no Gloria\nPrefatio=Quad\nSuffragium=Sanctorum;Vivis;;\nSuper populum",
 "Introitus":"@Tempora/Quadp3-5:Introitus",
@@ -13659,6 +13745,7 @@
 "officium_1960":"Pro Propagatione Fidei",
 "rank_1960":"Duplex II. classis",
 "rank_num_1960":5.0,
+"commune_1960":"",
 "sections":{
 "Rule":"Sub unica conclusione in commemoratione",
 "Introitus":"!Ps 66:2-3\nv. Deus misereátur nostri, et benedícat nobis: illúminet vultum suum super nos, et misereátur nostri: ut cognoscámus in terra viam tuam, in ómnibus géntibus salutáre tuum. (Allelúja, allelúja.)\n!Ps ibid., 4\nConfiteántur tibi pópuli, Deus: confiteántur tibi pópuli omnes.\n&Gloria\nv. Deus misereátur nostri, et benedícat nobis: illúminet vultum suum super nos, et misereátur nostri: ut cognoscámus in terra viam tuam, in ómnibus géntibus salutáre tuum. (Allelúja, allelúja.)",
@@ -17665,6 +17752,7 @@
 "commune":null,
 "rank_1960":"Feria major",
 "rank_num_1960":4.9,
+"commune_1960":"",
 "sections":{
 "Ant Laudes":"@Tempora/Adv4-0"
 },
@@ -17871,8 +17959,10 @@
 "commune":"vide Sancti/01-06",
 "officium_1955":"@Tempora/Epi1-0b",
 "rank_num_1955":null,
+"commune_1955":"",
 "officium_1960":"@Tempora/Epi1-0b",
 "rank_num_1960":null,
+"commune_1960":"",
 "sections":{
 "Rule":"vide Sancti/01-06\nFeria Te Deum\nInfra octavam Epiphaniæ Domini",
 "Lectio1":"De Epístola ad Romános\n!Rom 16:1-5\n1 Comméndo autem vobis Phœben sorórem nostram, quæ est in ministério ecclésiæ, quæ est in Cenchris:\n2 ut eam suscipiátis in Dómino digne sanctis: et assistátis ei in quocúmque negótio vestri indigúerit: étenim ipsa quoque ásstitit multis, et mihi ipsi.\n3 Salutáte Priscam et Aquilam, adjutóres meos in Christo Jesu\n4 (qui pro ánima mea suas cervíces supposuérunt: quibus non solus ego grátias ago, sed et cunctæ ecclésiæ géntium),\n5 et domésticam ecclésiam eórum. Salutáte Epǽnetum diléctum mihi, qui est primitívus Asiæ in Christo.",

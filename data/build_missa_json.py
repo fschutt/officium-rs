@@ -428,8 +428,16 @@ def parse_mass_file(text: str) -> dict:
                 )
             except ValueError:
                 out["rank_num_sp"] = None
+            # Explicit "no commune" sentinel when the variant body
+            # has fewer fields than the commune column. Tells the
+            # runtime not to fall through to the default commune
+            # (otherwise R55+SP would pick up the Mass-of-default-
+            # commune for ferial bodies that legitimately have no
+            # commune).
             if len(variant_sp_parts) > 3 and variant_sp_parts[3]:
                 out["commune_sp"] = variant_sp_parts[3]
+            else:
+                out["commune_sp"] = ""
         if variant_1955_parts:
             if len(variant_1955_parts) > 0 and variant_1955_parts[0]:
                 out["officium_1955"] = variant_1955_parts[0]
@@ -445,6 +453,8 @@ def parse_mass_file(text: str) -> dict:
                 out["rank_num_1955"] = None
             if len(variant_1955_parts) > 3 and variant_1955_parts[3]:
                 out["commune_1955"] = variant_1955_parts[3]
+            else:
+                out["commune_1955"] = ""
         if variant_1960_parts:
             if len(variant_1960_parts) > 0 and variant_1960_parts[0]:
                 out["officium_1960"] = variant_1960_parts[0]
@@ -460,6 +470,8 @@ def parse_mass_file(text: str) -> dict:
                 out["rank_num_1960"] = None
             if len(variant_1960_parts) > 3 and variant_1960_parts[3]:
                 out["commune_1960"] = variant_1960_parts[3]
+            else:
+                out["commune_1960"] = ""
     # Keep all remaining sections as joined strings so the renderer can
     # treat `\n` as a soft separator (matching the upstream convention).
     out["sections"] = {

@@ -244,21 +244,26 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
             reform_trace: vec![],
         }
     } else {
-        // Prefer the `commune_1570` annotation when present (e.g.
-        // Pent02-1's `(sed rubrica tridentina nisi rubrica
-        // cisterciensis) ;;Semiduplex IIS class;;2.9;;ex
-        // Tempora/Pent01-4`). This is what makes the Octave of
-        // Corpus Christi weekdays use Pent01-4 (Corpus Christi)
-        // propers under 1570 — the bare `commune` field carries the
-        // post-1570 default which differs.
+        // Pick the commune slot that matches the active rubric, the
+        // same way the kalendar-side resolver does. Pent02-1's
+        // [Rank] block has:
+        //   ;;Semiduplex II class;;5.6;;ex Tempora/Pent01-4
+        //   (sed rubrica tridentina nisi rubrica cisterciensis)
+        //   ;;Semiduplex IIS class;;2.9;;ex Tempora/Pent01-4
+        //   (sed rubrica 196 aut rubrica 1955)
+        //   ;;Feria;;1                       <- no commune column!
+        //
+        // Under R55/R60 the variant fires and the explicit-empty
+        // commune sentinel propagates here — Pent02-1 winner has
+        // NO commune chain, so proper-block falls through to the
+        // Tempora-feria-Sunday-fallback (Pent02-0). Without this
+        // dispatch the bare `commune` "ex Tempora/Pent01-4" leaked
+        // through and Mass propers came from Corpus Christi.
         let (commune, commune_type) = match tempora_file {
-            Some(f) => parse_commune_in_context(
-                f.commune_1570
-                    .as_deref()
-                    .or(f.commune.as_deref())
-                    .unwrap_or(""),
-                &tempora_key.category,
-            ),
+            Some(f) => {
+                let raw = pick_commune_for_rubric(f, input.rubric).unwrap_or_default();
+                parse_commune_in_context(&raw, &tempora_key.category)
+            }
             None => (None, CommuneType::None),
         };
         let commemoratio = if sancti_entry.is_some()

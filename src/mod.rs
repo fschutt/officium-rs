@@ -14,9 +14,6 @@
 pub mod date;
 pub mod sancti;
 pub mod kalendaria;
-// TODO Phase 11: delete precedence_legacy when /wip/calendar and /wip/missal
-// switch to the canonical precedence::compute_office pipeline.
-pub mod precedence_legacy;
 pub mod missa;
 pub mod translation;
 

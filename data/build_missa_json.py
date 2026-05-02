@@ -266,11 +266,27 @@ def parse_mass_file(text: str) -> dict:
             # variant key so the runtime can pick the right body when
             # it knows the current season. Other annotations follow
             # the original first-wins / dropped-if-excluded rule.
+            # Variants we model as a distinct section key so the
+            # runtime can prefer the rubric-specific body without
+            # losing the default. Two cases:
+            # - `(tempore X)` — seasonal variant (used by Commune
+            #   Adventus/Pasch/etc.); already handled.
+            # - `(rubrica X)` on non-Rank sections — second-header
+            #   per-rubric body (Pasc5-4 [Evangelium](rubrica 1960)
+            #   strips the pre-1960 Paschal-candle rubric).
             seasonal_variant = (
                 annotation
                 and annotation.lower().startswith("tempore ")
             )
-            if seasonal_variant:
+            rubric_variant = (
+                base_name != "Rank"
+                and annotation
+                and (
+                    annotation.lower().startswith("rubrica ")
+                    or annotation.lower().startswith("rubricis ")
+                )
+            )
+            if seasonal_variant or rubric_variant:
                 current = f"{base_name} ({annotation})"
             else:
                 current = base_name

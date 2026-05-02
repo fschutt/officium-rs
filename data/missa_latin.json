@@ -12,16 +12,16 @@
 "Rule":"ex Sancti/12-25m3;\nGloria\nCredo\nPrefatio=Nat",
 "Introitus":"@Tempora/Nat30",
 "Oratio":"Deus, qui salútis ætérnæ, beátæ Maríæ virginitáte fecúnda, humáno generi præmia præstitísti: tríbue, quǽsumus; ut ipsam pro nobis intercédere sentiámus, per quam merúimus auctórem vitæ suscípere, Dóminum nostrum Jesum Christum, Fílium tuum:\n$Qui tecum",
-"Commemoratio Oratio":"!Pro S. Stephano Protomartyre\n@Sancti/08-03:Oratio\n!Pro S. Joanne Evangelista\n@Sancti/12-27:Oratio\n!Pro Ss. Innocentibus\n@Sancti/12-28:Oratio",
+"Commemoratio Oratio (rubrica tridentina)":"!Pro S. Stephano Protomartyre\n@Sancti/08-03:Oratio\n!Pro S. Joanne Evangelista\n@Sancti/12-27:Oratio\n!Pro Ss. Innocentibus\n@Sancti/12-28:Oratio",
 "Lectio":"Léctio Epístolæ beati Pauli Apóstoli ad Titum\n!Tit 2:11-15\nCaríssime: Appáruit grátia Dei Salvatóris nostri ómnibus homínibus, erúdiens nos, ut, abnegántes impietátem et sæculária desidéria, sóbrie et juste et pie vivámus in hoc sǽculo, exspectántes beátam spem et advéntum glóriæ magni Dei et Salvatóris nostri Jesu Christi: qui dedit semetípsum pro nobis: ut nos redímeret ab omni iniquitáte, et mundáret sibi pópulum acceptábilem, sectatórem bonórum óperum. Hæc lóquere et exhortáre: in Christo Jesu, Dómino nostro.",
 "Graduale":"!Ps 97:3; 97:2\nVidérunt omnes fines terræ salutare Dei nostri: jubiláte Deo, omnis terra.\nV. Notum fecit Dominus salutare suum: ante conspéctum géntium revelávit justitiam suam. \nAllelúja, allelúja.\n!Heb 1:1-2\nMultifárie olim Deus loquens pátribus in Prophétis, novíssime diébus istis locútus est nobis in Fílio. Allelúja.",
 "Evangelium":"@Tempora/Nat2-0",
 "Offertorium":"@Tempora/Nat30",
 "Secreta":"@Commune/C2a",
-"Commemoratio Secreta":"!Pro S. Stephano Protomartyre\n@Sancti/08-03:Secreta\n!Pro S. Joanne Evangelista\n@Sancti/12-27:Secreta\n!Pro Ss. Innocentibus\n@Sancti/12-28:Secreta",
+"Commemoratio Secreta (rubrica tridentina)":"!Pro S. Stephano Protomartyre\n@Sancti/08-03:Secreta\n!Pro S. Joanne Evangelista\n@Sancti/12-27:Secreta\n!Pro Ss. Innocentibus\n@Sancti/12-28:Secreta",
 "Communio":"@Tempora/Nat30",
 "Postcommunio":"@Commune/C10b",
-"Commemoratio Postcommunio":"!Pro S. Stephano protomartire\n@Sancti/08-03:Postcommunio\n!Pro S. Joanne Evangelista\n@Commune/C5:Postcommunio\n!Pro Ss. Innocentibus\n@Sancti/12-28:Postcommunio"
+"Commemoratio Postcommunio (rubrica tridentina)":"!Pro S. Stephano protomartire\n@Sancti/08-03:Postcommunio\n!Pro S. Joanne Evangelista\n@Commune/C5:Postcommunio\n!Pro Ss. Innocentibus\n@Sancti/12-28:Postcommunio"
 }
 },
 "Sancti/01-02":{
@@ -36,10 +36,11 @@
 "commune_1906":"ex Sancti/12-26",
 "sections":{
 "Rule":"vide Sancti/12-26;\nFeria Te Deum\nComkey=70\nLectio1 TempNat\nGloria\nPrefatio=Nat",
-"Oratio":"@Sancti/12-26:Oratio1",
-"Commemoratio Oratio":"!Pro S. Joanne Evangelista\n@Sancti/12-27:Oratio\n!Pro Ss. Innocentibus\n@Sancti/12-28:Oratio",
-"Commemoratio Secreta":"!Pro S. Joanne Evangelista\n@Sancti/12-27:Secreta\n!Pro Ss. Innocentibus\n@Sancti/12-28:Secreta",
-"Commemoratio Postcommunio":"!Pro S. Joanne Evangelista\n@Commune/C5:Postcommunio\n!Pro Ss. Innocentibus\n@Sancti/12-28:Postcommunio"
+"Rule (rubrica tridentina)":"ex Sancti/12-26;\n9 lectiones\nPsalmi Dominica\nAntiphonas Horas\nFeria Te Deum\nPsalm5 Vespera3=115\nGloria\nPrefatio=Nat\nCredo",
+"Oratio (rubrica Divino aut rubrica Tridentina aut rubrica Monastica)":"@Sancti/12-26:Oratio1",
+"Commemoratio Oratio (rubrica tridentina)":"!Pro S. Joanne Evangelista\n@Sancti/12-27:Oratio\n!Pro Ss. Innocentibus\n@Sancti/12-28:Oratio",
+"Commemoratio Secreta (rubrica tridentina)":"!Pro S. Joanne Evangelista\n@Sancti/12-27:Secreta\n!Pro Ss. Innocentibus\n@Sancti/12-28:Secreta",
+"Commemoratio Postcommunio (rubrica tridentina)":"!Pro S. Joanne Evangelista\n@Commune/C5:Postcommunio\n!Pro Ss. Innocentibus\n@Sancti/12-28:Postcommunio"
 }
 },
 "Sancti/01-03":{
@@ -54,9 +55,10 @@
 "commune_1906":"ex Sancti/12-27",
 "sections":{
 "Rule":"vide Sancti/12-27;\nFeria Te Deum\nComkey=70\n9 lectiones\nno secunda Vespera\nLectio1 TempNat\nGloria\nPrefatio=Apostolis",
-"Commemoratio Oratio":"!Pro Ss. Innocentibus\n@Sancti/12-28:Oratio",
-"Commemoratio Secreta":"!Pro Ss. Innocentibus\n@Sancti/12-28:Secreta",
-"Commemoratio Postcommunio":"!Pro Ss. Innocentibus\n@Sancti/12-28:Postcommunio"
+"Rule (rubrica tridentina)":"ex Sancti/12-27;\n9 lectiones\nPsalmi Dominica\nAntiphonas Horas\nFeria Te Deum\nGloria\nPrefatio=Apostolis\nCredo",
+"Commemoratio Oratio (rubrica tridentina)":"!Pro Ss. Innocentibus\n@Sancti/12-28:Oratio",
+"Commemoratio Secreta (rubrica tridentina)":"!Pro Ss. Innocentibus\n@Sancti/12-28:Secreta",
+"Commemoratio Postcommunio (rubrica tridentina)":"!Pro Ss. Innocentibus\n@Sancti/12-28:Postcommunio"
 }
 },
 "Sancti/01-03n":{
@@ -706,7 +708,8 @@
 "commune":"ex C11",
 "sections":{
 "Rule":"Gloria\nCredo\nPrefatio=Nat\n(rubrica 1960) omit commemoratio incipit\n(rubrica 1960) Festum Domini\nPrelude",
-"Prelude":"!! Benedictio Candelarum\n! Finita Tertia, Sacerdos indutus Pluviali violaceo, vel sine Casula, cum Ministris similiter indutis, procedit ad benedicendum Candelas, in medio ante Altare vel ad cornu Epistolæ positas, et ipse, ibidem stans versus ad Altare, dicit manibus junctis in tono Orationis Missæ ferialis:\nV. Dóminus vobíscum.\nR. Et cum spíritu tuo.\nv. Orémus. Domine sancte, Pater omnípotens, ætérne Deus, qui ómnia ex níhilo creásti, et jussu tuo per ópera apum hunc liquorem ad perfectionem cérei veníre fecísti: et qui hodiérna die petitiónem justi Simeónis implésti: te humíliter deprecámur; ut has candélas ad usus hóminum et sanitátem córporum et animárum, sive in terra sive in aquis, per invocatiónem tui sanctíssimi nóminis et per intercessiónem beátæ Maríæ semper Vírginis, cujus hódie festa devóte celebrántur, et per preces ómnium Sanctórum tuórum, bene + dícere et sancti + ficáre dignéris: et hujus plebis tuæ, quæ illas honorífice in mánibus desíderat portare teque cantando laudare, exáudias voces de cœlo sancto tuo et de sede majestátis tuæ: et propítius sis ómnibus clamántibus ad te, quos redemísti pretióso Sánguine Fílii tui:\n$Qui tecum.\n_\n_\nv. Orémus. Omnípotens sempitérne Deus, qui hodiérna die Unigénitum tuum ulnis sancti Simeónis in templo sancto tuo suscipiéndum præsentásti: tuam súpplices deprecámur cleméntiam; ut has candélas, quas nos fámuli tui, in tui nóminis magnificéntiam suscipiéntes, gestáre cúpimus luce accénsas, bene + dícere et sancti + ficáre atque lúmine supérnæ benedictiónis accéndere dignéris: quaténus eas tibi Dómino, Deo nostro, offeréndo digni, et sancto igne dulcíssimæ caritátis tuæ succénsi, in templo sancto glóriæ tuæ repræsentári mereámur.\n$Per eundem\n_\n_\nv. Orémus. Dómine Jesu Christe, lux vera, quæ illúminas omnem hóminem veniéntem in hunc mundum: effúnde bene + dictiónem tuam super hos céreos, et sancti + fica eos lúmine grátiæ tuæ, et concéde propítius; ut, sicut hæc luminária igne visíbili accénsa noctúrnas depéllunt ténebras; ita corda nostra invisíbili igne, id est, Sancti Spíritus splendóre illustráta, ómnium vitiórum cæcitáte cáreant: ut, purgáto mentis óculo, ea cérnere possímus, quæ tibi sunt plácita et nostræ salúti utília; quaténus post hujus sǽculi caliginósa discrímina ad lucem indeficiéntem perveníre mereámur. Per te, Christe Jesu, Salvátor mundi, qui in Trinitáte perfécta vivis et regnas Deus, per ómnia sǽcula sæculórum.\nR. Amen.\n_\n_\nv. Orémus. Omnípotens sempitérne Deus, qui per Móysen fámulum tuum puríssimum ólei liquórem ad luminária ante conspéctum tuum júgiter concinnánda præparári jussísti: bene + dictiónis tuæ grátiam super hos céreos benígnus infúnde; quaténus sic adminístrent lumen extérius, ut, te donánte, lumen Spíritus tui nostris non desit méntibus intérius.\n$Per Dominum eiusdem\n_\n_\nv. Orémus. Dómine Jesu Christe, qui hodiérna die, in nostræ carnis substántia inter hómines appárens, a paréntibus in templo es præsentátus: quem Símeon venerábilis senex, lúmine Spíritus tui irradiátus, agnóvit, suscépit et benedíxit: præsta propítius; ut, ejúsdem Spíritus Sancti grátia illumináti atque edócti, te veráciter agnoscámus et fidéliter diligámus: Qui cum Deo Patre in unitáte ejúsdem Spíritus Sancti vivis et regnas Deus, per ómnia sǽcula sæculórum.\nR. Amen.\n_\n_\n! Finitis Orationibus, Celebrans ponit incensum in thuríbulum: deinde ter aspergit Candelas aqua benedícta, dicendo Antiphonam Aspérges me, sine cantu et sine Psalmo: et ter adolet incenso. Tum dignior ex Clero accedit ad Altare, et ab eo Celebrans accipit Candelam, non genuflectens nec osculans manum illius. Postea Celebrans stans in medio ante Altare versus ad populum, distríbuit Candelas, primum digniori, a quo ipse acceperat; deinde Diacono et Subdiacono paratis, et aliis Clericis singulatim per ordinem, ultimo laicis: omnibus genuflectentibus, Candelam et manum Celebrantis osculantibus, exceptis Prælatis, si adsint. Et cum inceperit distribuere Candelas, a Choro cantatur:\n_\n!Antiphona Luc 2:32.\nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\n!Luc 2:29-31.\nv. Nunc dimíttis servum tuum, Dómine, secúndum verbum tuum in pace\n! Deinde repetitur tota Antiphona “Lumen ad revelatiónem géntium” quæ similiter repetitur post quemlibet Versum.\nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\nv. Quia vidérunt óculi mei salutáre tuum. \nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\nv. Quod parásti ante fáciem ómnium populorum. \nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\nv. Glória Patri, et Fílio, et Spirítui Sancto. \nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\nv. Sicut erat in princípio, et nunc, et semper, et in sǽcula sæculórum. Amen. \nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\n_\n_\n! His expletis, cantatur:\n!Antiph Ps 43:26.\nAnt. Exsúrge, Dómine, ádjuva nos: et líbera nos propter nomen tuum.\n!Ps 43:2.\nDeus, áuribus nostris audívimus: patres nostri annuntiavérunt nobis.\n&Gloria\nAnt. Exsúrge, Dómine, ádjuva nos: et líbera nos propter nomen tuum.\n_\n_\n! Deinde Sacerdos dicit:\nv. Orémus.\n! Et si fuerit post Septuagesimam, et non in die Dominica, Diaconus dicit:\nV. Flectámus génua.\nR. Leváte.\nv. Exáudi, quǽsumus, Dómine, plebem tuam: et, quæ extrinsécus ánnua tríbuis devotióne venerári, intérius asséqui grátiæ tuæ luce concéde. Per Christum, Dóminum nostrum.\nR. Amen.\n_\n_\n! Deinde fit Processio. Et primo Celebrans ponit incensum in thuribulum: postea Diaconus vertens se ad populum, dicit:\nV. Procedámus in pace.\nR. In nómine Christi. Amen.\n! Præcedit Thuriferarius cum thuribulo fumiganti: deinde Subdiaconus paratus, deferens Crucem, medius inter duos Acolythos cum candelabris accensis: sequitur Clerus per ordinem, ultimo Celebrans cum Diacono a sinistris, omnes cum Candelis accensis in manibus: et cantantur Antiphonæ sequentes:\nAnt. Adórna thálamum tuum, Sion, et súscipe Regem Christum: ampléctere Maríam, quæ est cœléstis porta: ipsa enim portat Regem glóriæ novi lúminis: subsístit Virgo, addúcens mánibus Fílium ante lucíferum génitum: quem accípiens Símeon in ulnas suas, prædicávit pópulis, Dóminum eum esse vitæ et mortis et Salvatórem mundi.\n_\n!Luc 2:26, 27 et 28-29.\nAnt. Respónsum accépit Símeon a Spíritu Sancto, non visúrum se mortem, nisi vidéret Christum Dómini: et cum indúcerent Púerum in templum, accépit eum in ulnas suas, et benedíxit Deum, et dixit: Nunc dimíttis servum tuum, Dómine, in pace.\nV. Cum indúcerent púerum Jesum parentes ejus, ut fácerent secúndum consuetúdinem legis pro eo, ipse accépit eum in ulnas suas. \n!Et ingrediendo Ecclesiam, cantatur:\nV. Obtulérunt pro eo Dómino par túrturum, aut duos pullos columbárum: * Sicut scriptum est in lege Dómini.\nV. Postquam impléti sunt dies purgatiónis Maríæ, secúndum legem Moysi, tulérunt Jesum in Jerúsalem, ut sísterent eum Sicut scriptum est in lege Dómini.\nV. Glória Patri, et Fílio, et Spirítui Sancto.\nR. Sicut scriptum est in lege Dómini.\n!  Finita Processione, Celebrans et Ministri, depositis violaceis, accipiunt paramenta alba pro Missa. Et Candelæ tenentur in manibus accensæ, dum legitur Evangelium, et iterum ab incepto Canone usque ad expletam Communionem.\n! Hodie prohibetur quælibet Missa votiva, etiam sollemnis, de Christo Domino.",
+"Prelude (rubrica 1570 aut rubrica divino)":"!! Benedictio Candelarum\n! Finita Tertia, Sacerdos indutus Pluviali violaceo, vel sine Casula, cum Ministris similiter indutis, procedit ad benedicendum Candelas, in medio ante Altare vel ad cornu Epistolæ positas, et ipse, ibidem stans versus ad Altare, dicit manibus junctis in tono Orationis Missæ ferialis:\nV. Dóminus vobíscum.\nR. Et cum spíritu tuo.\nv. Orémus. Domine sancte, Pater omnípotens, ætérne Deus, qui ómnia ex níhilo creásti, et jussu tuo per ópera apum hunc liquorem ad perfectionem cérei veníre fecísti: et qui hodiérna die petitiónem justi Simeónis implésti: te humíliter deprecámur; ut has candélas ad usus hóminum et sanitátem córporum et animárum, sive in terra sive in aquis, per invocatiónem tui sanctíssimi nóminis et per intercessiónem beátæ Maríæ semper Vírginis, cujus hódie festa devóte celebrántur, et per preces ómnium Sanctórum tuórum, bene + dícere et sancti + ficáre dignéris: et hujus plebis tuæ, quæ illas honorífice in mánibus desíderat portare teque cantando laudare, exáudias voces de cœlo sancto tuo et de sede majestátis tuæ: et propítius sis ómnibus clamántibus ad te, quos redemísti pretióso Sánguine Fílii tui:\n$Qui tecum.\n_\n_\nv. Orémus. Omnípotens sempitérne Deus, qui hodiérna die Unigénitum tuum ulnis sancti Simeónis in templo sancto tuo suscipiéndum præsentásti: tuam súpplices deprecámur cleméntiam; ut has candélas, quas nos fámuli tui, in tui nóminis magnificéntiam suscipiéntes, gestáre cúpimus luce accénsas, bene + dícere et sancti + ficáre atque lúmine supérnæ benedictiónis accéndere dignéris: quaténus eas tibi Dómino, Deo nostro, offeréndo digni, et sancto igne dulcíssimæ caritátis tuæ succénsi, in templo sancto glóriæ tuæ repræsentári mereámur.\n$Per eundem\n_\n_\nv. Orémus. Dómine Jesu Christe, lux vera, quæ illúminas omnem hóminem veniéntem in hunc mundum: effúnde bene + dictiónem tuam super hos céreos, et sancti + fica eos lúmine grátiæ tuæ, et concéde propítius; ut, sicut hæc luminária igne visíbili accénsa noctúrnas depéllunt ténebras; ita corda nostra invisíbili igne, id est, Sancti Spíritus splendóre illustráta, ómnium vitiórum cæcitáte cáreant: ut, purgáto mentis óculo, ea cérnere possímus, quæ tibi sunt plácita et nostræ salúti utília; quaténus post hujus sǽculi caliginósa discrímina ad lucem indeficiéntem perveníre mereámur. Per te, Christe Jesu, Salvátor mundi, qui in Trinitáte perfécta vivis et regnas Deus, per ómnia sǽcula sæculórum.\nR. Amen.\n_\n_\nv. Orémus. Omnípotens sempitérne Deus, qui per Móysen fámulum tuum puríssimum ólei liquórem ad luminária ante conspéctum tuum júgiter concinnánda præparári jussísti: bene + dictiónis tuæ grátiam super hos céreos benígnus infúnde; quaténus sic adminístrent lumen extérius, ut, te donánte, lumen Spíritus tui nostris non desit méntibus intérius.\n$Per Dominum eiusdem\n_\n_\nv. Orémus. Dómine Jesu Christe, qui hodiérna die, in nostræ carnis substántia inter hómines appárens, a paréntibus in templo es præsentátus: quem Símeon venerábilis senex, lúmine Spíritus tui irradiátus, agnóvit, suscépit et benedíxit: præsta propítius; ut, ejúsdem Spíritus Sancti grátia illumináti atque edócti, te veráciter agnoscámus et fidéliter diligámus: Qui cum Deo Patre in unitáte ejúsdem Spíritus Sancti vivis et regnas Deus, per ómnia sǽcula sæculórum.\nR. Amen.\n_\n_\n! Finitis Orationibus, Celebrans ponit incensum in thuríbulum: deinde ter aspergit Candelas aqua benedícta, dicendo Antiphonam Aspérges me, sine cantu et sine Psalmo: et ter adolet incenso. Tum dignior ex Clero accedit ad Altare, et ab eo Celebrans accipit Candelam, non genuflectens nec osculans manum illius. Postea Celebrans stans in medio ante Altare versus ad populum, distríbuit Candelas, primum digniori, a quo ipse acceperat; deinde Diacono et Subdiacono paratis, et aliis Clericis singulatim per ordinem, ultimo laicis: omnibus genuflectentibus, Candelam et manum Celebrantis osculantibus, exceptis Prælatis, si adsint. Et cum inceperit distribuere Candelas, a Choro cantatur:\n_\n!Antiphona Luc 2:32.\nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\n!Luc 2:29-31.\nv. Nunc dimíttis servum tuum, Dómine, secúndum verbum tuum in pace\n! Deinde repetitur tota Antiphona “Lumen ad revelatiónem géntium” quæ similiter repetitur post quemlibet Versum.\nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\nv. Quia vidérunt óculi mei salutáre tuum. \nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\nv. Quod parásti ante fáciem ómnium populorum. \nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\nv. Glória Patri, et Fílio, et Spirítui Sancto. \nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\nv. Sicut erat in princípio, et nunc, et semper, et in sǽcula sæculórum. Amen. \nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\n_\n_\n! His expletis, cantatur:\n!Antiph Ps 43:26.\nAnt. Exsúrge, Dómine, ádjuva nos: et líbera nos propter nomen tuum.\n!Ps 43:2.\nDeus, áuribus nostris audívimus: patres nostri annuntiavérunt nobis.\n&Gloria\nAnt. Exsúrge, Dómine, ádjuva nos: et líbera nos propter nomen tuum.\n_\n_\n! Deinde Sacerdos dicit:\nv. Orémus.\n! Et si fuerit post Septuagesimam, et non in die Dominica, Diaconus dicit:\nV. Flectámus génua.\nR. Leváte.\nv. Exáudi, quǽsumus, Dómine, plebem tuam: et, quæ extrinsécus ánnua tríbuis devotióne venerári, intérius asséqui grátiæ tuæ luce concéde. Per Christum, Dóminum nostrum.\nR. Amen.\n_\n_\n! Deinde fit Processio. Et primo Celebrans ponit incensum in thuribulum: postea Diaconus vertens se ad populum, dicit:\nV. Procedámus in pace.\nR. In nómine Christi. Amen.\n! Præcedit Thuriferarius cum thuribulo fumiganti: deinde Subdiaconus paratus, deferens Crucem, medius inter duos Acolythos cum candelabris accensis: sequitur Clerus per ordinem, ultimo Celebrans cum Diacono a sinistris, omnes cum Candelis accensis in manibus: et cantantur Antiphonæ sequentes:\nAnt. Adórna thálamum tuum, Sion, et súscipe Regem Christum: ampléctere Maríam, quæ est cœléstis porta: ipsa enim portat Regem glóriæ novi lúminis: subsístit Virgo, addúcens mánibus Fílium ante lucíferum génitum: quem accípiens Símeon in ulnas suas, prædicávit pópulis, Dóminum eum esse vitæ et mortis et Salvatórem mundi.\n_\n!Luc 2:26, 27 et 28-29.\nAnt. Respónsum accépit Símeon a Spíritu Sancto, non visúrum se mortem, nisi vidéret Christum Dómini: et cum indúcerent Púerum in templum, accépit eum in ulnas suas, et benedíxit Deum, et dixit: Nunc dimíttis servum tuum, Dómine, in pace.\nV. Cum indúcerent púerum Jesum parentes ejus, ut fácerent secúndum consuetúdinem legis pro eo, ipse accépit eum in ulnas suas. \n!Et ingrediendo Ecclesiam, cantatur:\nV. Obtulérunt pro eo Dómino par túrturum, aut duos pullos columbárum: * Sicut scriptum est in lege Dómini.\nV. Postquam impléti sunt dies purgatiónis Maríæ, secúndum legem Moysi, tulérunt Jesum in Jerúsalem, ut sísterent eum Sicut scriptum est in lege Dómini.\nV. Glória Patri, et Fílio, et Spirítui Sancto.\nR. Sicut scriptum est in lege Dómini.\n!  Finita Processione, Celebrans et Ministri, depositis violaceis, accipiunt paramenta alba pro Missa. Et Candelæ tenentur in manibus accensæ, dum legitur Evangelium, et iterum ab incepto Canone usque ad expletam Communionem.\n! Hodie prohibetur quælibet Missa votiva, etiam sollemnis, de Christo Domino.",
+"Prelude (rubrica 1960)":"!!De Benedictione Candelarum\n! Si candelarum benedictio et processio, ob defectum ministrorum sacrorum, forma solemni fieri nequeat, licet formam simplicem adhibere, etiam absque cantu, dummodo tres saltem ministrantes celebranti inserviant.\n! Celebrans indutus pluviali albo, vel sine Casula, cum ministris similiter indutis, procedit ad benedicendum Candelas, in medio ante Altare vel ad latus Epistolæ positas, et ipse ibidem stans versus ad Altare, dicit manibus junctis in tono feriali:\n_\nV. Dóminus vobíscum.\nR. Et cum spíritu tuo.\nv. Orémus. Domine sancte, Pater omnípotens, ætérne Deus, qui ómnia ex níhilo creásti, et jussu tuo per ópera apum hunc liquorem ad perfectionem cérei veníre fecísti: et qui hodiérna die petitiónem justi Simeónis implésti: te humíliter deprecámur; ut has candélas ad usus hóminum et sanitátem córporum et animárum, sive in terra sive in aquis, per invocatiónem tui sanctíssimi nóminis et per intercessiónem beátæ Maríæ semper Vírginis, cujus hódie festa devóte celebrántur, et per preces ómnium Sanctórum tuórum, bene + dícere et sancti + ficáre dignéris: et hujus plebis tuæ, quæ illas honorífice in mánibus desíderat portare teque cantando laudare, exáudias voces de cœlo sancto tuo et de sede majestátis tuæ: et propítius sis ómnibus clamántibus ad te, quos redemísti pretióso Sánguine Fílii tui: Qui tecum vivit et regnat in sǽcula sæculórum.\nR. Amen.\n_\n_\nv. Orémus. Omnípotens sempitérne Deus, qui hodiérna die Unigénitum tuum ulnis sancti Simeónis in templo sancto tuo suscipiéndum præsentásti: tuam súpplices deprecámur cleméntiam; ut has candélas, quas nos fámuli tui, in tui nóminis magnificéntiam suscipiéntes, gestáre cúpimus luce accénsas, bene + dícere et sancti + ficáre atque lúmine supérnæ benedictiónis accéndere dignéris: quaténus eas tibi Dómino, Deo nostro, offeréndo digni, et sancto igne dulcíssimæ caritátis tuæ succénsi, in templo sancto glóriæ tuæ repræsentári mereámur. Per eundem Christum Dominum nostrum.\nR. Amen.\n_\n_\nv. Orémus. Dómine Jesu Christe, lux vera, quæ illúminas omnem hóminem veniéntem in hunc mundum: effúnde bene + dictiónem tuam super hos céreos, et sancti + fica eos lúmine grátiæ tuæ, et concéde propítius; ut, sicut hæc luminária igne visíbili accénsa noctúrnas depéllunt ténebras; ita corda nostra invisíbili igne, id est, Sancti Spíritus splendóre illustráta, ómnium vitiórum cæcitáte cáreant: ut, purgáto mentis óculo, ea cérnere possímus, quæ tibi sunt plácita et nostræ salúti utília; quaténus post hujus sǽculi caliginósa discrímina ad lucem indeficiéntem perveníre mereámur. Per te, Christe Jesu, Salvátor mundi, qui in Trinitáte perfécta vivis et regnas Deus, in sǽcula sæculórum.\nR. Amen.\n_\n_\nv. Orémus. Omnípotens sempitérne Deus, qui per Móysen fámulum tuum puríssimum ólei liquórem ad luminária ante conspéctum tuum júgiter concinnánda præparári jussísti: bene + dictiónis tuæ grátiam super hos céreos benígnus infúnde; quaténus sic adminístrent lumen extérius, ut, te donánte, lumen Spíritus tui nostris non desit méntibus intérius. Per Christum Dominum nostrum.\nR. Amen.\n_\n_\nv. Orémus. Dómine Jesu Christe, qui hodiérna die, in nostræ carnis substántia inter hómines appárens, a paréntibus in templo es præsentátus: quem Símeon venerábilis senex, lúmine Spíritus tui irradiátus, agnóvit, suscépit et benedíxit: præsta propítius; ut, ejúsdem Spíritus Sancti grátia illumináti atque edócti, te veráciter agnoscámus et fidéliter diligámus: Qui cum Deo Patre in unitáte ejúsdem Spíritus Sancti vivis et regnas Deus in sǽcula sæculórum.\nR. Amen.\n! Finitis Orationibus, celebrans ponit incensum in thuríbulum: deinde ter aspergit candelas aqua benedícta, dicendo Antiphonam “Aspérges me”, sine cantu et sine Psalmo: et ter adolet incenso. \n_\n_\n!! De Distributione Candelarum\n! Tum dignior ex Clero accedit ad Altare, et ab eo Celebrans accipit Candelam, non genuflectens nec osculans manum illius. Postea Celebrans stans in medio ante Altare versus ad populum, distríbuit Candelas, primum digniori, a quo ipse acceperat; deinde Diacono et Subdiacono paratis, et aliis Clericis singulatim per ordinem, ultimo laicis: omnibus genuflectentibus, Candelam et manum Celebrantis osculantibus, exceptis Prælatis, si adsint. Et cum inceperit distribuere Candelas, a Choro cantatur:\n_\n!Antiphona Luc 2:32.\nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\n!Luc 2:29-31.\nv. Nunc dimíttis servum tuum, Dómine, secúndum verbum tuum in pace\n! Deinde repetitur tota Antiphona “Lumen ad revelatiónem géntium” quæ similiter repetitur post quemlibet Versum.\nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\nv. Quia vidérunt óculi mei salutáre tuum. \nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\nv. Quod parásti ante fáciem ómnium populorum. \nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\nv. Glória Patri, et Fílio, et Spirítui Sancto. \nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\nv. Sicut erat in princípio, et nunc, et semper, et in sǽcula sæculórum. Amen. \nAnt. Lumen ad revelatiónem géntium et glóriam plebis tuæ Israël.\n_\n_\n! Deinde Sacerdos dicit:\nv. Orémus.\nExáudi, quǽsumus, Dómine, plebem tuam: et, quæ extrinsécus ánnua tríbuis devotióne venerári, intérius asséqui grátiæ tuæ luce concéde. Per Christum, Dóminum nostrum.\nR. Amen.\n_\n_\n!! De Processione\n! Primo Celebrans ponit incensum in thuribulum: postea Diaconus vertens se ad populum, dicit:\nV. Procedámus in pace.\nR. In nómine Christi. Amen.\n! Præcedit thuriferarius cum thuribulo fumiganti: deinde Subdiaconus paratus, deferens Crucem, medius inter duos Acolythos cum candelabris accensis: sequitur Clerus per ordinem, ultimo Celebrans cum Diacono a sinistris, omnes cum Candelis accensis in manibus: et cantantur Antiphonæ sequentes:\nAnt. Adórna thálamum tuum, Sion, et súscipe Regem Christum: ampléctere Maríam, quæ est cœléstis porta: ipsa enim portat Regem glóriæ novi lúminis: subsístit Virgo, addúcens mánibus Fílium ante lucíferum génitum: quem accípiens Símeon in ulnas suas, prædicávit pópulis, Dóminum eum esse vitæ et mortis et Salvatórem mundi.\n_\n!Luc 2:26, 27 et 28-29.\nAnt. Respónsum accépit Símeon a Spíritu Sancto, non visúrum se mortem, nisi vidéret Christum Dómini: et cum indúcerent Púerum in templum, accépit eum in ulnas suas, et benedíxit Deum, et dixit: Nunc dimíttis servum tuum, Dómine, in pace.\nV. Cum indúcerent púerum Jesum parentes ejus, ut fácerent secúndum consuetúdinem legis pro eo, ipse accépit eum in ulnas suas. \n_\n!Et ingrediendo Ecclesiam, cantatur:\nV. Obtulérunt pro eo Dómino par túrturum, aut duos pullos columbárum: * Sicut scriptum est in lege Dómini.\nV. Postquam impléti sunt dies purgatiónis Maríæ, secúndum legem Moysi, tulérunt Jesum in Jerúsalem, ut sísterent eum Sicut scriptum est in lege Dómini.\nV. Glória Patri, et Fílio, et Spirítui Sancto.\nR. Sicut scriptum est in lege Dómini.\n!  Finita Processione, celebrans et ministri accipiunt paramenta pro Missa. In Missa quæ benedictionem candelarum sequitur, omittuntur psalmus “Iudica me, Deus” cum sua antiphona, necnon confessio cum absolutione, versibus sequentibus atque orationibus “Aufer a nobis” et “Oramus te, Domine”. Sacerdos igitur cum ad altare accesserit, statim illud ascendit et osculatur in medio. Candelæ in manibus tenentur ad Evangelium et toto Canone.",
 "Introitus":"@Tempora/Pent08-0",
 "Oratio":"Omnípotens sempitérne Deus, majestátem tuam súpplices exorámus: ut, sicut unigénitus Fílius tuus hodiérna die cum nostræ carnis substántia in templo est præsentátus; ita nos fácias purificátis tibi méntibus præsentári.\n$Per eundem",
 "Lectio":"Léctio Malachíæ Prophétæ\n!Malach 3:1-4\nHæc dicit Dóminus Deus: Ecce, ego mitto Angelum meum, et præparábit viam ante fáciem meam. Et statim véniet ad templum suum Dominátor, quem vos quæritis, et Angelus testaménti, quem vos vultis. Ecce, venit, dicit Dóminus exercítuum: et quis póterit cogitáre diem advéntus ejus, et quis stabit ad vidéndum eum? Ipse enim quasi ignis conflans et quasi herba fullónum: et sedébit conflans et emúndans argéntum, et purgábit fílios Levi et colábit eos quasi aurum et quasi argéntum: et erunt Dómino offeréntes sacrifícia in justítia. Et placébit Dómino sacrifícium Juda et Jerúsalem, sicut dies sǽculi et sicut anni antíqui: dicit Dóminus omnípotens.",
@@ -717,6 +720,12 @@
 "Secreta":"Exáudi, Dómine, preces nostras: et, ut digna sint múnera, quæ óculis tuæ majestátis offérimus, subsídium nobis tuæ pietátis impénde.\n$Per Dominum",
 "Communio":"!Luc 2:26\nRespónsum accépit Símeon a Spíritu Sancto, non visúrum se mortem, nisi vidéret Christum Dómini.",
 "Postcommunio":"Quǽsumus, Dómine, Deus noster: ut sacrosáncta mystéria, quæ pro reparatiónis nostræ munímine contulísti, intercedénte beáta María semper Vírgine, et præsens nobis remédium esse fácias et futúrum.\n$Per Dominum"
+},
+"annotated_sections":[
+"Prelude (rubrica 1960)"
+],
+"annotated_section_meta":{
+"Prelude (rubrica 1960)":"rubrica 1960"
 }
 },
 "Sancti/02-03":{
@@ -944,6 +953,7 @@
 "rank_num_1960":5.0,
 "commune_1960":"ex C4",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1930)":"In Cathedra S. Petri Apostoli",
 "Rule":"ex C4;\nGloria\nCredo\nPrefatio=Apostolis\nSub unica conclusione",
 "Introitus":"@Commune/C2a",
 "Oratio Pauli":"!Commemoratio S. Pauli\nDeus, qui multitúdinem géntium beáti Pauli Apóstoli prædicatióne docuísti: da nobis, quǽsumus; ut, cujus commemoratiónem cólimus, ejus apud te patrocínia sentiámus.\n$Per Dominum",
@@ -962,6 +972,12 @@
 "Postcommunio Pauli":"!Pro S. Paulo\n@Sancti/01-25:Postcommunio Pauli",
 "Postcommunio Petri":"Lætíficet nos, Dómine, munus oblátum: ut, sicut in Apóstolo tuo Petro te mirábilem prædicámus; sic per illum tuæ sumámus indulgéntiæ largitátem.\n$Per Dominum",
 "Postcommunio":"@:Postcommunio Petri\n(deinde dicuntur semper)\n_\n$Oremus\n(sed rubrica 196 omittuntur)\n@:Postcommunio Pauli"
+},
+"annotated_sections":[
+"Officium (rubrica 196 aut rubrica 1930)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 196 aut rubrica 1930)":"rubrica 196 aut rubrica 1930"
 }
 },
 "Sancti/02-23o":{
@@ -1066,20 +1082,20 @@
 "sections":{
 "Rule":"vide C7b;\nGloria",
 "Name":"Perpétuæ et Felicitátis",
-"Graduale":"@Commune/C6-1",
-"Tractus":"@Commune/C6-1",
-"Communio":"@Commune/C6-1",
+"Graduale (rubrica 1960)":"@Commune/C6-1",
+"Tractus (rubrica 1960)":"@Commune/C6-1",
+"Communio (rubrica 1960)":"@Commune/C6-1",
 "Postcommunio":"Mýsticis, Dómine, repléti sumus votis et gáudiis: præsta, quǽsumus; ut intercessiónibus sanctárum Mártyrum tuárum Perpétuæ et Felicitátis, quæ temporáliter ágimus, spirituáliter consequámur.\n$Per Dominum"
 },
 "annotated_sections":[
-"Communio",
-"Graduale",
-"Tractus"
+"Communio (rubrica 1960)",
+"Graduale (rubrica 1960)",
+"Tractus (rubrica 1960)"
 ],
 "annotated_section_meta":{
-"Communio":"rubrica 1960",
-"Graduale":"rubrica 1960",
-"Tractus":"rubrica 1960"
+"Communio (rubrica 1960)":"rubrica 1960",
+"Graduale (rubrica 1960)":"rubrica 1960",
+"Tractus (rubrica 1960)":"rubrica 1960"
 }
 },
 "Sancti/03-07":{
@@ -3029,15 +3045,15 @@
 "sections":{
 "Comment":"In Divino Afflatu, when Pretiossisimi Sanguinis is transferred, in case of the Dies Octava Corp. Christi (e.g. 2038), the proper last gospel from the Octave of the Apostels is said on this day.",
 "Oratio":"@Sancti/06-29",
-"Evangelium":"@Commune/C5b",
+"Evangelium (rubrica divino et feria 5 et tempore Octava Corpus)":"@Commune/C5b",
 "Secreta":"@Sancti/07-04oct",
 "Postcommunio":"@Sancti/06-29"
 },
 "annotated_sections":[
-"Evangelium"
+"Evangelium (rubrica divino et feria 5 et tempore Octava Corpus)"
 ],
 "annotated_section_meta":{
-"Evangelium":"rubrica divino et feria 5 et tempore Octava Corpus"
+"Evangelium (rubrica divino et feria 5 et tempore Octava Corpus)":"rubrica divino et feria 5 et tempore Octava Corpus"
 }
 },
 "Sancti/07-01t":{
@@ -3108,16 +3124,16 @@
 "Rule":"ex Sancti/06-29;\nGloria\nCredoDA\nPrefatio=Apostolis\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Comment":"In Divino Afflatu, when the next day is impeded by the Octave of SSmi Cordis (e.g. 2025) or a Sunday, the proper last gospel from the Octave of the Apostels is said on this day.",
 "Oratio":"@Sancti/06-29",
-"Evangelium":"@Commune/C5b",
+"Evangelium (rubrica divino et feria 7 aut rubrica divino et feria 5 et tempore Octava SSmi Cordis)":"@Commune/C5b",
 "Secreta":"@Sancti/07-04oct",
 "Postcommunio":"@Sancti/06-29"
 },
 "parent_1570":"Sancti/07-04oct",
 "annotated_sections":[
-"Evangelium"
+"Evangelium (rubrica divino et feria 7 aut rubrica divino et feria 5 et tempore Octava SSmi Cordis)"
 ],
 "annotated_section_meta":{
-"Evangelium":"rubrica divino et feria 7 aut rubrica divino et feria 5 et tempore Octava SSmi Cordis"
+"Evangelium (rubrica divino et feria 7 aut rubrica divino et feria 5 et tempore Octava SSmi Cordis)":"rubrica divino et feria 7 aut rubrica divino et feria 5 et tempore Octava SSmi Cordis"
 }
 },
 "Sancti/07-03r":{
@@ -3187,15 +3203,15 @@
 "Rule":"Gloria\nCredoDA\nPrefatio=Apostolis\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Comment":"In Divino Afflatu, when Pretiossisimi Sanguinis is transferred (to Monday the 4th), in case of SSmi Cordis (e.g. 2011), the proper last gospel from the Octave of the Apostels is said on this day.",
 "Oratio":"@Sancti/06-29",
-"Evangelium":"@Commune/C5b",
+"Evangelium (rubrica divino et feria 3 et tempore Octava SSmi Cordis)":"@Commune/C5b",
 "Secreta":"@Sancti/07-04oct",
 "Postcommunio":"@Sancti/06-29"
 },
 "annotated_sections":[
-"Evangelium"
+"Evangelium (rubrica divino et feria 3 et tempore Octava SSmi Cordis)"
 ],
 "annotated_section_meta":{
-"Evangelium":"rubrica divino et feria 3 et tempore Octava SSmi Cordis"
+"Evangelium (rubrica divino et feria 3 et tempore Octava SSmi Cordis)":"rubrica divino et feria 3 et tempore Octava SSmi Cordis"
 }
 },
 "Sancti/07-06":{
@@ -6914,6 +6930,7 @@
 "commune":null,
 "sections":{
 "Rule":"no Gloria",
+"Rule (rubrica 196)":"no Gloria\nTempora none",
 "Introitus":"@Sancti/12-24:Introitus",
 "Oratio":"Deus, qui nos redemptiónis nostræ ánnua exspectatióne lætíficas: præsta; ut Unigénitum tuum, quem Redemptórem læti suscípimus, veniéntem quoque Júdicem secúri videámus, Dóminum nostrum Jesum Christum, Fílium tuum:\n$Qui tecum",
 "Lectio":"Lectio Epístolæ beati Pauli Apostoli ad Romános\n!Rom 1:1-6\nPaulus, servus Jesu Christi, vocátus Apóstolus, segregátus in Evangélium Dei, quod ante promíserat per Prophétas suos in Scriptúris sanctis de Fílio suo, qui factus est ei ex sémine David secúndum carnem: qui prædestinátus est Fílius Dei in virtúte secúndum spíritum sanctificatiónis ex resurrectióne mortuórum Jesu Christi, Dómini nostri: per quem accépimus grátiam, et apostolátum ad obœdiéndum fídei in ómnibus géntibus pro nómine ejus, in quibus estis et vos vocáti Jesu Christi, Dómini nostri.",
@@ -6923,6 +6940,12 @@
 "Secreta":"Da nobis, quǽsumus, omnípotens Deus: ut, sicut adoránda Fílii tui natalítia prævenímus, sic ejus múnera capiámus sempitérna gaudéntes:\n$Qui tecum",
 "Communio":"!Isa 40:5\nRevelábitur glória Dómini: et vidébit omnis caro salutáre Dei nostri.",
 "Postcommunio":"Da nobis, quǽsumus, Dómine: unigéniti Fílii tui recensíta nativitáte respiráre; cujus cœlésti mystério páscimur et potámur.\n$Per eundem"
+},
+"annotated_sections":[
+"Rule (rubrica 196)"
+],
+"annotated_section_meta":{
+"Rule (rubrica 196)":"rubrica 196"
 }
 },
 "Sancti/12-24so":{
@@ -7251,19 +7274,19 @@
 },
 "Tempora/104-0":{
 "sections":{
-"Commemoratio Oratio":"!Pro fidei propagatione\n@Commune/Propaganda:Oratio",
-"Commemoratio Secreta":"!Pro fidei propagatione\n@Commune/Propaganda:Secreta",
-"Commemoratio Postcommunio":"!Pro fidei propagatione\n@Commune/Propaganda:Postcommunio"
+"Commemoratio Oratio (rubrica divino aut rubrica 196)":"!Pro fidei propagatione\n@Commune/Propaganda:Oratio",
+"Commemoratio Secreta (rubrica divino aut rubrica 196)":"!Pro fidei propagatione\n@Commune/Propaganda:Secreta",
+"Commemoratio Postcommunio (rubrica divino aut rubrica 196)":"!Pro fidei propagatione\n@Commune/Propaganda:Postcommunio"
 },
 "annotated_sections":[
-"Commemoratio Oratio",
-"Commemoratio Postcommunio",
-"Commemoratio Secreta"
+"Commemoratio Oratio (rubrica divino aut rubrica 196)",
+"Commemoratio Postcommunio (rubrica divino aut rubrica 196)",
+"Commemoratio Secreta (rubrica divino aut rubrica 196)"
 ],
 "annotated_section_meta":{
-"Commemoratio Oratio":"rubrica divino aut rubrica 196",
-"Commemoratio Postcommunio":"rubrica divino aut rubrica 196",
-"Commemoratio Secreta":"rubrica divino aut rubrica 196"
+"Commemoratio Oratio (rubrica divino aut rubrica 196)":"rubrica divino aut rubrica 196",
+"Commemoratio Postcommunio (rubrica divino aut rubrica 196)":"rubrica divino aut rubrica 196",
+"Commemoratio Secreta (rubrica divino aut rubrica 196)":"rubrica divino aut rubrica 196"
 }
 },
 "Tempora/Adv1-0":{
@@ -9186,6 +9209,7 @@
 "rank_num_1960":5.0,
 "commune_1960":"",
 "sections":{
+"Officium (rubrica 196)":"In Vigilia Ascensionis",
 "Rule":"Oratio Dominica\nGloria\nno Credo\nSuffr=Maria3",
 "Introitus":"!Is 48:20\nv. Vocem jucunditátis annuntiáte, et audiátur, allelúja: annuntiáte usque ad extrémum terræ: liberávit Dóminus pópulum suum, allelúja, allelúja\n!Ps 65:1-2\nJubiláte Deo, omnis terra, psalmum dícite nómini ejus: date glóriam laudi ejus.\n&Gloria\nv. Vocem jucunditátis annuntiáte, et audiátur, allelúja: annuntiáte usque ad extrémum terræ: liberávit Dóminus pópulum suum, allelúja, allelúja",
 "Oratio":"Deus, a quo bona cuncta procédunt, largíre supplícibus tuis: ut cogitémus, te inspiránte, quæ recta sunt; et, te gubernánte, eadem faciámus.\n$Per Dominum",
@@ -9201,6 +9225,12 @@
 "Postcommunio Mariæ":"@Commune/C10:Postcommunio",
 "Postcommunio":"Tríbue nobis, Dómine, cœléstis mensæ virtúte satiátis: et desideráre, quæ recta sunt, et desideráta percípere.\n$Per Dominum",
 "Commemoratio Postcommunio":"!de Rogationibus\nVota nostra, quǽsumus, Dómine, pio favóre proséquere: ut, dum dona tua in tribulatióne percípimus, de consolatióne nostra in tuo amóre crescámus.\n$Per Dominum"
+},
+"annotated_sections":[
+"Officium (rubrica 196)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 196)":"rubrica 196"
 }
 },
 "Tempora/Pasc5-3t":{
@@ -9222,10 +9252,17 @@
 "Lectio":"Léctio Actuum Apostólorum\n!Act 1:1-11\nPrimum quidem sermónem feci de ómnibus, o Theóphile, quæ cœpit Jesus facere et docére usque in diem, qua, præcípiens Apóstolis per Spíritum Sanctum, quos elégit, assúmptus est: quibus et prǽbuit seípsum vivum post passiónem suam in multas arguméntis, per dies quadragínta appárens eis et loquens de regno Dei. Et convéscens, præcépit eis, ab Jerosólymis ne discéderent, sed exspectárent promissiónem Patris, quam audístis - inquit - per os meum: quia Joánnes quidem baptizávit aqua, vos autem baptizabímini Spíritu Sancto non post multos hos dies. Igitur qui convénerant, interrogábant eum, dicéntes: Dómine, si in témpore hoc restítues regnum Israël? Dixit autem eis: Non est vestrum nosse témpora vel moménta, quæ Pater pósuit in sua potestáte: sed accipiétis virtútem superveniéntis Spíritus Sancti in vos, et éritis mihi testes in Jerúsalem et in omni Judǽa et Samaría et usque ad últimum terræ. Et cum hæc dixísset, vidéntibus illis, elevátus est, et nubes suscépit eum ab óculis eórum. Cumque intueréntur in cœlum eúntem illum, ecce, duo viri astitérunt juxta illos in véstibus albis, qui et dixérunt: Viri Galilǽi, quid statis aspiciéntes in cœlum? Hic Jesus, qui assúmptus est a vobis in cœlum, sic véniet, quemádmodum vidístis eum eúntem in cœlum.",
 "Graduale":"Allelúja, allelúja.\n!Ps 46:6\nAscéndit Deus in jubilatióne, et Dóminus in voce tubæ. Allelúja.\n!Ps 67:18-19\nV. Dóminus in Sina in sancto, ascéndens in altum, captívam duxit captivitátem. Allelúja.",
 "Evangelium":"Sequéntia ++ sancti Evangélii secúndum Marcum\n!Marc 16:14-20\nIn illo témpore: Recumbéntibus úndecim discípulis, appáruit illis Jesus: et exprobrávit incredulitátem eórum et durítiam cordis: quia iis, qui víderant eum resurrexísse, non credidérunt. Et dixit eis: Eúntes in mundum univérsum, prædicáte Evangélium omni creatúræ. Qui credíderit et baptizátus fúerit, salvus erit: qui vero non credíderit, condemnábitur. Signa autem eos, qui credíderint, hæc sequéntur: In nómine meo dæmónia ejícient: linguis loquentur novis: serpentes tollent: et si mortíferum quid bíberint, non eis nocébit: super ægros manus impónent, et bene habébunt. Et Dóminus quidem Jesus, postquam locútus est eis, assúmptus est in cœlum, et sedet a dextris Dei. Illi autem profécti, prædicavérunt ubíque, Dómino cooperánte et sermónem confirmánte, sequéntibus signis.\n!Dicto Evangelio exstinguitur Cereus paschalis, nec ulterius accenditur, nisi in Sabbato Pentecostes ad benedictionem Fontis.",
+"Evangelium (rubrica 1960)":"Sequéntia ++ sancti Evangélii secúndum Marcum.\n!Marc 16:14-20\nIn illo témpore: Recumbéntibus úndecim discípulis, appáruit illis Jesus: et exprobrávit incredulitátem eórum et durítiam cordis: quia iis, qui víderant eum resurrexísse, non credidérunt. Et dixit eis: Eúntes in mundum univérsum, prædicáte Evangélium omni creatúræ. Qui credíderit et baptizátus fúerit, salvus erit: qui vero non credíderit, condemnábitur. Signa autem eos, qui credíderint, hæc sequéntur: In nómine meo dæmónia ejícient: linguis loquentur novis: serpentes tollent: et si mortíferum quid bíberint, non eis nocébit: super ægros manus impónent, et bene habébunt. Et Dóminus quidem Jesus, postquam locútus est eis, assúmptus est in cœlum, et sedet a dextris Dei. Illi autem profécti, prædicavérunt ubíque, Dómino cooperánte et sermónem confirmánte, sequéntibus signis.\n!Dicto Evangelio exstinguitur Cereus paschalis.",
 "Offertorium":"!Ps 46:6\nAscéndit Deus in jubilatióne, et Dóminus in voce tubæ, allelúja.",
 "Secreta":"Súscipe, Dómine, múnera, quæ pro Fílii tui gloriósa Ascensióne deférimus: et concéde propítius; ut a præséntibus perículis liberémur, et ad vitam perveniámus ætérnam.\n$Per eundem",
 "Communio":"!Ps 67:33-34\nPsállite Dómino, qui ascéndit super cœlos cœlórum ad Oriéntem, allelúja.",
 "Postcommunio":"Præsta nobis, quǽsumus, omnípotens et miséricors Deus: ut, quæ visibílibus mystériis suménda percépimus, invisíbili consequámur efféctu.\n$Per Dominum."
+},
+"annotated_sections":[
+"Evangelium (rubrica 1960)"
+],
+"annotated_section_meta":{
+"Evangelium (rubrica 1960)":"rubrica 1960"
 }
 },
 "Tempora/Pasc5-5":{
@@ -9245,10 +9282,17 @@
 "rank_num_1960":1.0,
 "commune_1960":"vide Tempora/Pasc5-4",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1955)":"Feria VI post Ascensionem",
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-4::s/\\!(?!M).*//"
 },
-"parent":"Tempora/Pasc5-4"
+"parent":"Tempora/Pasc5-4",
+"annotated_sections":[
+"Officium (rubrica 196 aut rubrica 1955)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 196 aut rubrica 1955)":"rubrica 196 aut rubrica 1955"
+}
 },
 "Tempora/Pasc5-6":{
 "officium":"Sabbato infra Octavam Ascensionis",
@@ -9267,10 +9311,17 @@
 "rank_num_1960":1.0,
 "commune_1960":"vide Tempora/Pasc5-4",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1955)":"Sabbato post Ascensionem",
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-5"
 },
-"parent":"Tempora/Pasc5-4"
+"parent":"Tempora/Pasc5-4",
+"annotated_sections":[
+"Officium (rubrica 196 aut rubrica 1955)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 196 aut rubrica 1955)":"rubrica 196 aut rubrica 1955"
+}
 },
 "Tempora/Pasc5-6t":{
 "officium":"Sabbato infra Octavam Ascensionis",
@@ -9287,6 +9338,7 @@
 "rank_num":5.0,
 "commune":"ex Tempora/Pasc5-4",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1955)":"Dominica post Ascensionem",
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nCredo",
 "Introitus":"!Ps 26:7; 26:8; 26:9\nv. Exáudi, Dómine, vocem meam, qua clamávi ad te, allelúja: tibi dixit cor meum, quæsívi vultum tuum, vultum tuum, Dómine, requíram: ne avértas fáciem tuam a me, allelúja, allelúja.\n!Ps 26:1\nDóminus illuminátio mea et salus mea: quem timébo?\n&Gloria\nv. Exáudi, Dómine, vocem meam, qua clamávi ad te, allelúja: tibi dixit cor meum, quæsívi vultum tuum, vultum tuum, Dómine, requíram: ne avértas fáciem tuam a me, allelúja, allelúja.",
 "Oratio":"Omnípotens sempitérne Deus: fac nos tibi semper et devótam gérere voluntátem; et majestáti tuæ sincéro corde servíre.\n$Per Dominum",
@@ -9300,6 +9352,12 @@
 "Communio":"!Joannes 17:12-13; 17:15\n Pater, cum essem cum eis, ego servábam eos, quos dedísti mihi, allelúja: nunc autem ad te vénio: non rogo, ut tollas eos de mundo, sed ut serves eos a malo, allelúja, allelúja.",
 "Postcommunio":"Repléti, Dómine, munéribus sacris: da, quǽsumus; ut in gratiárum semper actióne maneámus.\n$Per Dominum",
 "Commemoratio Postcommunio":"!Pro Octava Ascensionis.\nPræsta nobis, quǽsumus, omnípotens et miséricors Deus: ut, quæ visibílibus mystériis suménda percépimus, invisíbili consequámur efféctu.\n$Per Dominum"
+},
+"annotated_sections":[
+"Officium (rubrica 196 aut rubrica 1955)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 196 aut rubrica 1955)":"rubrica 196 aut rubrica 1955"
 }
 },
 "Tempora/Pasc6-1":{
@@ -9319,10 +9377,17 @@
 "rank_num_1960":1.0,
 "commune_1960":"vide Tempora/Pasc5-4",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1955)":"Feria II post Ascensionem",
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-5"
 },
-"parent":"Tempora/Pasc5-4"
+"parent":"Tempora/Pasc5-4",
+"annotated_sections":[
+"Officium (rubrica 196 aut rubrica 1955)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 196 aut rubrica 1955)":"rubrica 196 aut rubrica 1955"
+}
 },
 "Tempora/Pasc6-2":{
 "officium":"Feria III infra Octavam Ascensionis",
@@ -9341,10 +9406,17 @@
 "rank_num_1960":1.0,
 "commune_1960":"vide Tempora/Pasc5-4",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1955)":"Feria III post Ascensionem",
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-5"
 },
-"parent":"Tempora/Pasc5-4"
+"parent":"Tempora/Pasc5-4",
+"annotated_sections":[
+"Officium (rubrica 196 aut rubrica 1955)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 196 aut rubrica 1955)":"rubrica 196 aut rubrica 1955"
+}
 },
 "Tempora/Pasc6-2t":{
 "officium":"Feria III infra Octavam Ascensionis",
@@ -9372,10 +9444,17 @@
 "rank_num_1960":1.0,
 "commune_1960":"vide Tempora/Pasc5-4",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1955)":"Feria IV post Ascensionem",
 "Rule":"Evangelium non appropriatum\nex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-5"
 },
-"parent":"Tempora/Pasc5-4"
+"parent":"Tempora/Pasc5-4",
+"annotated_sections":[
+"Officium (rubrica 196 aut rubrica 1955)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 196 aut rubrica 1955)":"rubrica 196 aut rubrica 1955"
+}
 },
 "Tempora/Pasc6-4":{
 "officium":"In Octava Ascensionis",
@@ -9391,10 +9470,17 @@
 "rank_num_1960":1.0,
 "commune_1960":"vide Tempora/Pasc5-4",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1955)":"Feria V post Ascensionem",
 "Rule":"ex Tempora/Pasc5-4;\nGloria\nSuffr=Maria3;Ecclesiæ,Papa;;",
 "Evangelium":"@Tempora/Pasc5-5"
 },
-"parent":"Tempora/Pasc5-4"
+"parent":"Tempora/Pasc5-4",
+"annotated_sections":[
+"Officium (rubrica 196 aut rubrica 1955)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 196 aut rubrica 1955)":"rubrica 196 aut rubrica 1955"
+}
 },
 "Tempora/Pasc6-4r":{
 "officium":"Feria V infra Hebdomadam post Ascensionem",
@@ -9427,7 +9513,14 @@
 "rank_num_1960":1.0,
 "commune_1960":"vide Tempora/Pasc6-0",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1955)":"Feria VI infra Hebdomadam post Ascensionem",
 "Rule":"ex Tempora/Pasc6-0;\n(rubrica 1960)ex Tempora/Pasc5-4;\nGloria\n(rubrica 1960 aut rubrica 1955)no Credo\nSuffr=Maria3;Ecclesiæ,Papa;;"
+},
+"annotated_sections":[
+"Officium (rubrica 196 aut rubrica 1955)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 196 aut rubrica 1955)":"rubrica 196 aut rubrica 1955"
 }
 },
 "Tempora/Pasc6-6":{
@@ -9836,20 +9929,23 @@
 "rank_num_1960":1.0,
 "commune_1960":"",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1955)":"Feria VI infra Hebdomadam I post Octavam Pentecostes",
 "Rule":"Suffragium=Maria3;Ecclesiæ,Papa;;\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis",
-"Oratio":"@Tempora/Pent01-1:Oratio",
-"Secreta":"@Tempora/Pent01-1:Secreta",
-"Postcommunio":"@Tempora/Pent01-1:Postcommunio"
+"Oratio (rubrica 1960)":"@Tempora/Pent01-1:Oratio",
+"Secreta (rubrica 1960)":"@Tempora/Pent01-1:Secreta",
+"Postcommunio (rubrica 1960)":"@Tempora/Pent01-1:Postcommunio"
 },
 "annotated_sections":[
-"Oratio",
-"Postcommunio",
-"Secreta"
+"Officium (rubrica 196 aut rubrica 1955)",
+"Oratio (rubrica 1960)",
+"Postcommunio (rubrica 1960)",
+"Secreta (rubrica 1960)"
 ],
 "annotated_section_meta":{
-"Oratio":"rubrica 1960",
-"Postcommunio":"rubrica 1960",
-"Secreta":"rubrica 1960"
+"Officium (rubrica 196 aut rubrica 1955)":"rubrica 196 aut rubrica 1955",
+"Oratio (rubrica 1960)":"rubrica 1960",
+"Postcommunio (rubrica 1960)":"rubrica 1960",
+"Secreta (rubrica 1960)":"rubrica 1960"
 }
 },
 "Tempora/Pent01-6":{
@@ -9869,20 +9965,23 @@
 "rank_num_1960":1.0,
 "commune_1960":"",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1955)":"Sabbato infra Hebdomadam I post Octavam Pentecostes",
 "Rule":"Suffragium=Maria3;Ecclesiæ,Papa;;\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis",
-"Oratio":"@Tempora/Pent01-1:Oratio",
-"Secreta":"@Tempora/Pent01-1:Secreta",
-"Postcommunio":"@Tempora/Pent01-1:Postcommunio"
+"Oratio (rubrica 1960)":"@Tempora/Pent01-1:Oratio",
+"Secreta (rubrica 1960)":"@Tempora/Pent01-1:Secreta",
+"Postcommunio (rubrica 1960)":"@Tempora/Pent01-1:Postcommunio"
 },
 "annotated_sections":[
-"Oratio",
-"Postcommunio",
-"Secreta"
+"Officium (rubrica 196 aut rubrica 1955)",
+"Oratio (rubrica 1960)",
+"Postcommunio (rubrica 1960)",
+"Secreta (rubrica 1960)"
 ],
 "annotated_section_meta":{
-"Oratio":"rubrica 1960",
-"Postcommunio":"rubrica 1960",
-"Secreta":"rubrica 1960"
+"Officium (rubrica 196 aut rubrica 1955)":"rubrica 196 aut rubrica 1955",
+"Oratio (rubrica 1960)":"rubrica 1960",
+"Postcommunio (rubrica 1960)":"rubrica 1960",
+"Secreta (rubrica 1960)":"rubrica 1960"
 }
 },
 "Tempora/Pent01-6o":{
@@ -9902,7 +10001,14 @@
 "rank_num_1960":1.0,
 "commune_1960":"",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1955)":"Sabbato infra Hebdomadam I post Octavam Pentecostes",
 "Rule":"Suffr=Sanctorum;Maria3,Ecclesiæ,Papa;;"
+},
+"annotated_sections":[
+"Officium (rubrica 196 aut rubrica 1955)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 196 aut rubrica 1955)":"rubrica 196 aut rubrica 1955"
 }
 },
 "Tempora/Pent02-0":{
@@ -9957,7 +10063,14 @@
 "rank_num_1960":1.0,
 "commune_1960":"",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1955)":"Feria II infra Hebdomadam II post Octavam Pentecostes",
 "Rule":"ex Tempora/Pent01-4;\nOratio Dominica\nSuffragium=Maria3;Ecclesiæ,Papa;;\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis"
+},
+"annotated_sections":[
+"Officium (rubrica 196 aut rubrica 1955)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 196 aut rubrica 1955)":"rubrica 196 aut rubrica 1955"
 }
 },
 "Tempora/Pent02-2":{
@@ -9977,7 +10090,14 @@
 "rank_num_1960":1.0,
 "commune_1960":"",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1955)":"Feria III infra Hebdomadam II post Octavam Pentecostes",
 "Rule":"ex Tempora/Pent01-4;\nOratio Dominica\nSuffragium=Maria3;Ecclesiæ,Papa;;\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis"
+},
+"annotated_sections":[
+"Officium (rubrica 196 aut rubrica 1955)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 196 aut rubrica 1955)":"rubrica 196 aut rubrica 1955"
 }
 },
 "Tempora/Pent02-3":{
@@ -9997,7 +10117,14 @@
 "rank_num_1960":1.0,
 "commune_1960":"",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1955)":"Feria IV infra Hebdomadam II post Octavam Pentecostes",
 "Rule":"ex Tempora/Pent01-4;\nOratio Dominica\nSuffragium=Maria3;Ecclesiæ,Papa;;\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis"
+},
+"annotated_sections":[
+"Officium (rubrica 196 aut rubrica 1955)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 196 aut rubrica 1955)":"rubrica 196 aut rubrica 1955"
 }
 },
 "Tempora/Pent02-4":{
@@ -10012,7 +10139,14 @@
 "rank_num_1960":1.0,
 "commune_1960":"",
 "sections":{
+"Officium (rubrica 196 aut rubrica 1955)":"Feria V infra Hebdomadam II post Octavam Pentecostes",
 "Rule":"ex Tempora/Pent01-4;\nOratio Dominica\nPrefatio=Nat\n(sed rubrica 1960)\nPrefatio=Communis\nComkey=20"
+},
+"annotated_sections":[
+"Officium (rubrica 196 aut rubrica 1955)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 196 aut rubrica 1955)":"rubrica 196 aut rubrica 1955"
 }
 },
 "Tempora/Pent02-4o":{
@@ -13174,27 +13308,27 @@
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul",
 "Introitus":"!Ps 30:10, 16, 18\nv. Miserére mihi, Dómine, quóniam tríbulor: líbera me, et éripe me de mánibus inimicórum meórum et a persequéntibus me: Dómine, non confúndar, quóniam invocávi te.\n!Ps 30:2\nIn te, Dómine, sperávi, non confúndar in ætérnum: in justítia tua libera me.\nv. Miserére mihi, Dómine, quóniam tríbulor: líbera me, et éripe me de mánibus inimicórum meórum et a persequéntibus me: Dómine, non confúndar, quóniam invocávi te.",
 "Oratio":"Córdibus nostris, quǽsumus, Dómine, grátiam tuam benígnus infúnde: ut peccáta nostra castigatióne voluntária cohibéntes, temporáliter pótius macerémur, quam supplíciis deputémur ætérnis.\n$Per Dominum",
-"Commemoratio Oratio":"!Commemoratio Septem Dolorum B. M. V.\nDeus, in cujus passióne, secúndum Simeónis prophetíam, dulcíssimam ánimam gloriósæ Vírginis et Matris Maríæ dolóris gladius pertransívit: concéde propítius; ut, qui transfixiónem ejus et passiónem venerándo recólimus, gloriósis méritis et précibus ómnium Sanctórum Cruci fidéliter astántium intercedéntibus, passiónis tuæ efféctum felícem consequámur:\n$Qui vivis",
+"Commemoratio Oratio (rubrica 1955 aut rubrica 1960 aut rubrica innovata)":"!Commemoratio Septem Dolorum B. M. V.\nDeus, in cujus passióne, secúndum Simeónis prophetíam, dulcíssimam ánimam gloriósæ Vírginis et Matris Maríæ dolóris gladius pertransívit: concéde propítius; ut, qui transfixiónem ejus et passiónem venerándo recólimus, gloriósis méritis et précibus ómnium Sanctórum Cruci fidéliter astántium intercedéntibus, passiónis tuæ efféctum felícem consequámur:\n$Qui vivis",
 "Lectio":"Léctio Jeremíæ Prophétæ\n!Jer 17:13-18\nIn diébus illis: Dixit Jeremías: Dómine, omnes, qui te derelínquunt, confundéntur: recedéntes a te in terra scribéntur: quóniam dereliquérunt venam aquárum vivéntium Dóminum. Sana me. Dómine, et sanábor: salvum me fac, et salvus ero: quóniam laus mea tu es. Ecce, ipsi dicunt ad me: Ubi est verbum Dómini? Véniat. Et ego non sum turbátus, te pastórem sequens: et diem hóminis non desiderávi, tu scis. Quod egréssum est de lábiis meis, rectum in conspéctu tuo fuit. Non sis tu mihi formídini, spes mea tu in die afflictiónis. Confundántur, qui me persequúntur, et non confúndar ego: páveant illi, et non páveam ego. Induc super eos diem afflictiónis, et dúplici contritióne cóntere eos, Dómine, Deus noster.",
 "Graduale":"!Ps 34:20, 22\nPacífice loquebántur mihi inimíci mei: et in ira molésti erant mihi.\nV. Vidísti, Dómine, ne síleas: ne discédas a me.\n_\n!Tractus\n!Ps 102:10\nDómine, non secúndum peccáta nostra, quæ fécimus nos: neque secúndum iniquitátes nostras retríbuas nobis.\n!Ps 78:8-9\nV. Dómine, ne memíneris iniquitátum nostrárum antiquárum: cito antícipent nos misericórdiæ tuæ, quia páuperes facti sumus nimis. (Hic genuflectitur)\nV. Adjuva nos, Deus, salutáris noster: et propter glóriam nóminis tui, Dómine, líbera nos: et propítius esto peccátis nostris, propter nomen tuum.",
 "Evangelium":"Sequéntia ++ sancti Evangélii secúndum Joánnem\n!Joann 11:47-54\nIn illo témpore: Collegérunt pontífices et pharisǽi concílium advérsus Jesum, et dicébant: Quid fácimus, quia hic homo multa signa facit? Si dimíttimus eum sic, omnes credent in eum: et vénient Románi, et tollent nostrum locum et gentem. Unus autem ex ipsis, Cáiphas nómine, cum esset póntifex anni illíus, dixit eis: Vos nescítis quidquam, nec cogitátis, quia éxpedit vobis, ut unus moriátur homo pro pópulo, et non tota gens péreat. Hoc autem a semetípso non dixit: sed cum esset póntifex anni illíus, prophetávit, quod Jesus moritúrus erat pro gente, et non tantum pro gente, sed ut fílios Dei, qui erant dispérsi, congregáret in unum. Ab illo ergo die cogitavérunt, ut interfícerent eum. Jesus ergo jam non in palam ambulábat apud Judǽos: sed ábiit in regiónem juxta desértum, in civitátem, quæ dícitur Ephrem, et ibi morabátur cum discípulis suis.",
 "Offertorium":"!Ps 118:12, 121, 42\nBenedíctus es, Dómine, doce me justificatiónes tuas: et non tradas calumniántibus me supérbis: et respondébo exprobrántibus mihi verbum.",
 "Secreta":"Præsta nobis, miséricors Deus: ut digne tuis servíre semper altáribus mereámur; et eórum perpétua participatióne salvári.\n$Per Dominum",
-"Commemoratio Secreta":"!Commemoratio Septem Dolorum B. M. V.\nOfférimus tibi preces et hóstias, Dómine Jesu Christe, humíliter supplicántes: ut, qui Transfixiónem dulcíssimi spíritus beátæ Maríæ, Matris tuæ, précibus recensémus; suo suorúmque sub Cruce Sanctórum consórtium multiplicáto piíssimo intervéntu, méritis mortis tuæ, méritum cum beátis habeámus:\n$Qui vivis",
+"Commemoratio Secreta (rubrica 1955 aut rubrica 1960 aut rubrica innovata)":"!Commemoratio Septem Dolorum B. M. V.\nOfférimus tibi preces et hóstias, Dómine Jesu Christe, humíliter supplicántes: ut, qui Transfixiónem dulcíssimi spíritus beátæ Maríæ, Matris tuæ, précibus recensémus; suo suorúmque sub Cruce Sanctórum consórtium multiplicáto piíssimo intervéntu, méritis mortis tuæ, méritum cum beátis habeámus:\n$Qui vivis",
 "Communio":"!Ps 26:12\nNe tradíderis me, Dómine, in animas persequéntium me: quóniam insurrexérunt in me testes iníqui, et mentíta est iníquitas sibi.",
 "Postcommunio":"Sumpti sacrifícii, Dómine, perpetua nos tuítio non derelínquat: et nóxia semper a nobis cuncta depéllat.\n$Per Dominum",
-"Commemoratio Postcommunio":"!Commemoratio Septem Dolorum B. M. V.\nSacrifícia, quæ súmpsimus, Dómine Jesu Christe, Transfixiónem Matris tuæ et Vírginis devóte celebrántes: nobis ímpetrent apud cleméntiam tuam omnis boni salutáris efféctum:\n$Qui vivis",
+"Commemoratio Postcommunio (rubrica 1955 aut rubrica 1960 aut rubrica innovata)":"!Commemoratio Septem Dolorum B. M. V.\nSacrifícia, quæ súmpsimus, Dómine Jesu Christe, Transfixiónem Matris tuæ et Vírginis devóte celebrántes: nobis ímpetrent apud cleméntiam tuam omnis boni salutáris efféctum:\n$Qui vivis",
 "Super populum":"!Oratio super populum\nv. Orémus.\nv. Humiliáte cápita vestra Deo.\nv. Concéde, quǽsumus, omnípotens Deus: ut, qui protectiónis tuæ grátiam quǽrimus, liberáti a malis ómnibus, secúra tibi mente serviámus.\n$Per Dominum"
 },
 "annotated_sections":[
-"Commemoratio Oratio",
-"Commemoratio Postcommunio",
-"Commemoratio Secreta"
+"Commemoratio Oratio (rubrica 1955 aut rubrica 1960 aut rubrica innovata)",
+"Commemoratio Postcommunio (rubrica 1955 aut rubrica 1960 aut rubrica innovata)",
+"Commemoratio Secreta (rubrica 1955 aut rubrica 1960 aut rubrica innovata)"
 ],
 "annotated_section_meta":{
-"Commemoratio Oratio":"rubrica 1955 aut rubrica 1960 aut rubrica innovata",
-"Commemoratio Postcommunio":"rubrica 1955 aut rubrica 1960 aut rubrica innovata",
-"Commemoratio Secreta":"rubrica 1955 aut rubrica 1960 aut rubrica innovata"
+"Commemoratio Oratio (rubrica 1955 aut rubrica 1960 aut rubrica innovata)":"rubrica 1955 aut rubrica 1960 aut rubrica innovata",
+"Commemoratio Postcommunio (rubrica 1955 aut rubrica 1960 aut rubrica innovata)":"rubrica 1955 aut rubrica 1960 aut rubrica innovata",
+"Commemoratio Secreta (rubrica 1955 aut rubrica 1960 aut rubrica innovata)":"rubrica 1955 aut rubrica 1960 aut rubrica innovata"
 }
 },
 "Tempora/Quad5-5Feriat":{
@@ -13283,6 +13417,7 @@
 "rank_num_1960":7.0,
 "commune_1960":"",
 "sections":{
+"Officium (rubrica 1955 aut rubrica 196)":"Feria Secunda Hebdomadæ Sanctæ",
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul",
 "Introitus":"!Ps 34:1-2.\nv. Júdica, Dómine, nocéntes me, expúgna impugnántes me: apprehénde arma et scutum, et exsúrge in adjutórium meum, Dómine, virtus salútis meæ.\n!Ps 34:3\nEffúnde frámeam, et conclúde advérsus eos, qui persequúntur me: dic ánimæ meæ: Salus tua ego sum.\nv. Júdica, Dómine, nocéntes me, expúgna impugnántes me: apprehénde arma et scutum, et exsúrge in adjutórium meum, Dómine, virtus salútis meæ.",
 "Oratio":"Da, quǽsumus, omnípotens Deus: ut, qui in tot advérsis ex nostra infirmitáte defícimus; intercedénte unigéniti Fílii tui passióne respirémus:\n$Qui tecum",
@@ -13294,6 +13429,12 @@
 "Communio":"!Ps 34:26\nErubéscant et revereántur simul, qui gratulántur malis meis: induántur pudóre et reveréntia, qui malígna loquúntur advérsus me.",
 "Postcommunio":"Prǽbeant nobis, Dómine, divínum tua sancta fervórem: quo eórum páriter et actu delectémur et fructu.\n$Per Dominum",
 "Super populum":"!Oratio super populum\nv. Orémus.\nv. Humiliáte cápita vestra Deo.\nv. Adjuva nos, Deus, salutáris noster: et ad benefícia recolénda, quibus nos instauráre dignátus es, tríbue veníre gaudéntes.\n$Per Dominum"
+},
+"annotated_sections":[
+"Officium (rubrica 1955 aut rubrica 196)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 1955 aut rubrica 196)":"rubrica 1955 aut rubrica 196"
 }
 },
 "Tempora/Quad6-1t":{
@@ -13312,6 +13453,7 @@
 "rank_num_1960":7.0,
 "commune_1960":"",
 "sections":{
+"Officium (rubrica 1955 aut rubrica 196)":"Feria Tertia Hebdomadæ Sanctæ",
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul\nPassio",
 "Introitus":"!Gal 6:14\nv. Nos autem gloriári opórtet in Cruce Dómini nostri Jesu Christi: in quo est salus, vita et resurréctio nostra: per quem salváti et liberáti sumus.\n!Ps 66:2\nDeus misereátur nostri, et benedícat nobis: illúminet vultum suum super nos, et misereátur nostri.\nv. Nos autem gloriári opórtet in Cruce Dómini nostri Jesu Christi: in quo est salus, vita et resurréctio nostra: per quem salváti et liberáti sumus.",
 "Oratio":"Omnípotens sempitérne Deus: da nobis ita Domínicæ passiónis sacraménta perágere; ut indulgéntiam percípere mereámur.\n$Per eumdem",
@@ -13323,6 +13465,12 @@
 "Communio":"!Ps 68:13-14\nAdvérsum me exercebántur, qui sedébant in porta: et in me psallébant, qui bibébant vinum: ego vero oratiónem meam ad te, Dómine: tempus benepláciti, Deus, in multitúdine misericórdiæ tuæ.",
 "Postcommunio":"Sanctificatiónibus tuis, omnípotens Deus: et vítia nostra curéntur, et remédia nobis sempitérna provéniant.\n$Per Dominum",
 "Super populum":"!Oratio super populum\nv. Orémus.\nv. Humiliáte cápita vestra Deo.\nv. Tua nos misericórdia, Deus, et ab omni subreptióne vetustátis expúrget, et capáces sanctæ novitátis effíciat.\n$Per Dominum"
+},
+"annotated_sections":[
+"Officium (rubrica 1955 aut rubrica 196)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 1955 aut rubrica 196)":"rubrica 1955 aut rubrica 196"
 }
 },
 "Tempora/Quad6-3":{
@@ -13337,6 +13485,7 @@
 "rank_num_1960":7.0,
 "commune_1960":"",
 "sections":{
+"Officium (rubrica 1955 aut rubrica 196)":"Feria Quarta Hebdomadæ Sanctæ",
 "Rule":"no Gloria\nSuffragium=Ecclesiæ,Papa;;\nPrefatio=Quad5\nSuper popul\nPassio\nLectioL1",
 "Introitus":"!Phil 2:10, 8 et 11\nv. In nómine Jesu omne genu flectátur, cœléstium, terréstrium et infernórum: quia Dóminus factus est obœ́diens usque ad mortem, mortem autem crucis: ideo Dóminus Jesus Christus in glória est Dei Patris.\n!Ps 101:2\nDómine, exáudi oratiónem meam: et clamor meus ad te véniat.\nv. In nómine Jesu omne genu flectátur, cœléstium, terréstrium et infernórum: quia Dóminus factus est obœ́diens usque ad mortem, mortem autem crucis: ideo Dóminus Jesus Christus in glória est Dei Patris.",
 "LectioL1":"Léctio Isaíæ Prophétæ\n!Isa 63:1-7\nHæc dicit Dóminus Deus: Dícite fíliæ Sion: Ecce Salvátor tuus venit: ecce, merces ejus cum eo. Quis est iste, qui venit de Edom, tinctis véstibus de Bosra? Iste formósus in stola sua, grádiens in multitúdine fortitúdinis suæ. Ego, qui loquor justítiam, et propugnátor sum ad salvándum. Quare ergo rubrum est induméntum tuum, et vestiménta tua sicut calcántium in torculári? Tórcular calcávi solus, et de géntibus non est vir mecum: calcávi eos in furóre meo, et conculcávi eos in ira mea: et aspérsus est sanguis eórum super vestiménta mea, et ómnia induménta mea inquinávi. Dies enim ultiónis in corde meo, annus redemptiónis meæ venit. Circumspéxi, et non erat auxiliátor: quæsívi, et non fuit, qui adjuváret: et salvávit mihi bráchium meum, et indignátio mea ipsa auxiliáta est mihi. Et conculcávi pópulos in furóre meo, et inebriávi eos in indignatióne mea, et detráxi in terram virtútem eórum. Miseratiónum Dómini recordábor, laudem Dómini super ómnibus, quæ réddidit nobis Dóminus, Deus noster.\n$Deo gratias",
@@ -13351,6 +13500,12 @@
 "Communio":"!Ps 101:13 et 14.\nPotum meum cum fletu temperábam: quia élevans allisísti me: et ego sicut fænum árui: tu autem, Dómine, in ætérnum pérmanes: tu exsúrgens miseréberis Sion, quia venit tempus miseréndi ejus.",
 "Postcommunio":"Largíre sénsibus nostris, omnípotens Deus: ut, per temporálem Fílii tui mortem, quam mystéria veneránda testántur, vitam te nobis dedísse perpétuam confidámus.\n$Per eundem",
 "Super populum":"!Oratio super populum\nv. Orémus.\nv. Humiliáte cápita vestra Deo.\nv. Réspice, quǽsumus, Dómine, super hanc famíliam tuam, pro qua Dóminus noster Jesus Christus non dubitávit mánibus tradi nocéntium, et Crucis subíre torméntum:\n$Qui tecum"
+},
+"annotated_sections":[
+"Officium (rubrica 1955 aut rubrica 196)"
+],
+"annotated_section_meta":{
+"Officium (rubrica 1955 aut rubrica 196)":"rubrica 1955 aut rubrica 196"
 }
 },
 "Tempora/Quad6-4":{
@@ -13831,7 +13986,7 @@
 "rank_num_1960":5.0,
 "commune_1960":"",
 "sections":{
-"Rule":"Sub unica conclusione in commemoratione",
+"Rule (rubrica 1960)":"Sub unica conclusione in commemoratione",
 "Introitus":"!Ps 66:2-3\nv. Deus misereátur nostri, et benedícat nobis: illúminet vultum suum super nos, et misereátur nostri: ut cognoscámus in terra viam tuam, in ómnibus géntibus salutáre tuum. (Allelúja, allelúja.)\n!Ps ibid., 4\nConfiteántur tibi pópuli, Deus: confiteántur tibi pópuli omnes.\n&Gloria\nv. Deus misereátur nostri, et benedícat nobis: illúminet vultum suum super nos, et misereátur nostri: ut cognoscámus in terra viam tuam, in ómnibus géntibus salutáre tuum. (Allelúja, allelúja.)",
 "Oratio":"Deus, qui omnes hómines vis salvos fíeri, et ad agnitiónem veritátis veníre: mitte, quǽsumus, operários in messem tuam, et da eis cum omni fidúcia loqui verbum tuum; ut sermo tuus currat et clarificétur, et omnes gentes cognóscant te solum Deum verum, et quem misísti Jesum Christum Fílium tuum, Dóminum nostrum.\n$Qui tecum",
 "Lectio":"Léctio libri Sapiéntiae\n!Eccli 36:1-10,17-19\nMiserére nostri, Deus ómnium, et réspice nos, et osténde nobis lucem miseratiónum tuárum: et immítte timórem tuum super gentes, quae non exquisiérunt te, ut cognóscant quia non est Deus nisi tu, et enárrent magnália tua. Alleva manum tuam super gentes aliénas, ut vídeant poténtiam tuam. Sicut enim in conspéctu eórum sanctificátus es in nobis, sic in conspéctu nostro magnificáberis in eis, ut cognóscant te, sicut et nos cognóvimus, quóniam non est Deus praeter te, Dómine. Innova signa, et immúta mirabília. Glorífica manum et bráchium dextrum. Excita furórem, et effúnde iram. Tolle adversárium, et afflíge inimícum. Festína tempus, et meménto finis, ut enárrent mirabília tua. Da testimónium his, qui ab inítio creatúrae tuae sunt, et súscita praedicatiónes, quas locúti sunt in nómine tuo prophétae prióres. Da mercédem sustinéntibus te, ut prophétae tui fidéles inveniántur: et exáudi oratiónes servórum tuórum, secúndum benedictiónem Aaron de pópulo tuo, et dírige nos in viam justítiae, et sciant omnes, qui hábitant terram, quia tu es Deus conspéctor saeculórum.",
@@ -13845,10 +14000,10 @@
 "Postcommunio":"Redemptiónis nostræ múnere vegetáti: quǽsumus, Dómine; ut hoc perpétuæ salútis auxílio, fides semper vera profíciat.\n$Per Dominum"
 },
 "annotated_sections":[
-"Rule"
+"Rule (rubrica 1960)"
 ],
 "annotated_section_meta":{
-"Rule":"rubrica 1960"
+"Rule (rubrica 1960)":"rubrica 1960"
 }
 },
 "Ordo/OrdoA":{
@@ -14051,11 +14206,11 @@
 "Invit":"Ave María, grátia plena, * Dóminus tecum.",
 "Hymnus Matutinum":"@Commune/C11",
 "HymnusM Matutinum":"@Commune/C11",
-"Responsory1":"@Commune/C11",
-"Responsory2":"@Commune/C11:Responsory7:1-3\nR. Quia ex te ortus est sol justítiæ\n&Gloria\nR. Christus, Deus noster.",
+"Responsory1 (rubrica tridentina)":"@Commune/C11",
+"Responsory2 (rubrica tridentina)":"@Commune/C11:Responsory7:1-3\nR. Quia ex te ortus est sol justítiæ\n&Gloria\nR. Christus, Deus noster.",
 "Benedictio":"Précibus et méritis beátæ Maríæ semper Vírginis et ómnium Sanctórum, perdúcat nos Dóminus ad regna cælórum.\nNos cum prole pia benedícat Virgo María.\nIpsa Virgo Vírginum intercédat pro nobis ad Dóminum.\nPer Vírginem matrem concédat nobis Dóminus salútem et pacem.",
 "Versum 0":"@Commune/C11",
-"Ant Laudes":"@Commune/C11",
+"Ant Laudes (rubrica tridentina)":"@Commune/C11",
 "Capitulum Laudes":"@Commune/C11",
 "Hymnus Laudes":"@Commune/C11",
 "HymnusM Laudes":"@Commune/C11",
@@ -14122,7 +14277,7 @@
 "Missa":"Vultum tuum (a Nativitate usque ad Purificationem)",
 "Ant 1":"@Sancti/01-01:Ant 3",
 "Oratio":"@Sancti/01-01",
-"Ant Laudes":"@Sancti/01-01:Ant Vespera:s/;;.*//g",
+"Ant Laudes (rubrica tridentina)":"@Sancti/01-01:Ant Vespera:s/;;.*//g",
 "Ant 2":"@Sancti/01-01:Ant 2",
 "Introitus":"!Ps 44:13; 44:15-16\nv. Vultum tuum deprecabúntur omnes dívites plebis: adducéntur Regi Vírgines post eam: próximæ ejus adducéntur tibi in lætítia et exsultatióne. (Allelúja, allelúja.)\n!Ps 44:2\nEructávit cor meum verbum bonum: dico ego ópera mea Regi.\n&Gloria\nv. Vultum tuum deprecabúntur omnes dívites plebis: adducéntur Regi Vírgines post eam: próximæ ejus adducéntur tibi in lætítia et exsultatióne. (Allelúja, allelúja.)",
 "Lectio":"@Sancti/12-25m2",
@@ -14147,7 +14302,7 @@
 "sections":{
 "Ant 1":"@Sancti/01-01:Ant 3",
 "Oratio":"@Sancti/01-01",
-"Ant Laudes":"@Sancti/01-01:Ant Vespera:s/;;.*//g",
+"Ant Laudes (rubrica tridentina)":"@Sancti/01-01:Ant Vespera:s/;;.*//g",
 "Ant 2":"@Sancti/01-01:Ant 2"
 },
 "parent":"Commune/C10"
@@ -14205,8 +14360,8 @@
 "Versum Nona":"@Commune/C6:Versum 2",
 "Versum 3":"@:Versum 1",
 "Ant 3":"Beátam me dicent * omnes generatiónes, quia ancíllam húmilem respéxit Deus.",
-"Ant 43":"Corde et ánimo Christo canámus glóriam, in hac sacra solemnitáte præcélsæ Genitrícis Dei Maríæ.",
-"Ant 44":"@:Ant 43",
+"Ant 43 (rubrica Ordo Praedicatorum)":"Corde et ánimo Christo canámus glóriam, in hac sacra solemnitáte præcélsæ Genitrícis Dei Maríæ.",
+"Ant 44 (rubrica Ordo Praedicatorum)":"@:Ant 43",
 "Introitus":"!Sedulius\nv. Salve, sancta parens, eníxa puérpera Regem: qui cælum terrámque regit in sǽcula sæculórum.\n!Ps 44:2\nEructávit cor meum verbum bonum: dico ego ópera mea Regi.\n&Gloria\nv. Salve, sancta parens, eníxa puérpera Regem: qui cælum terrámque regit in sǽcula sæculórum.",
 "Lectio":"Léctio libri Sapiéntiæ\n!Eccli 24:14-16\nAb inítio et ante sǽcula creáta sum, et usque ad futúrum sǽculum non désinam, et in habitatióne sancta coram ipso ministrávi. Et sic in Sion firmáta sum, et in civitáte sanctificáta simíliter requiévi, et in Jerúsalem potéstas mea. Et radicávi in pópulo honorificáto, et in parte Dei mei heréditas illíus, et in plenitúdine sanctórum deténtio mea.",
 "Graduale":"Benedícta et venerábilis es, Virgo María: quæ sine tactu pudóris invénta es Mater Salvatóris.\nV. Virgo, Dei Génetrix, quem totus non capit orbis, in tua se clausit víscera factus homo. Allelúja, allelúja.\nV. Post partum, Virgo, invioláta permansísti: Dei Génetrix, intercéde pro nobis. Allelúja.",
@@ -14220,12 +14375,12 @@
 "Postcommunio":"Sumptis, Dómine, salútis nostræ subsídiis: da, quǽsumus, beátæ Maríæ semper Vírginis patrocíniis nos ubíque prótegi; in cujus veneratióne hæc tuæ obtúlimus majestáti.\n$Per Dominum"
 },
 "annotated_sections":[
-"Ant 43",
-"Ant 44"
+"Ant 43 (rubrica Ordo Praedicatorum)",
+"Ant 44 (rubrica Ordo Praedicatorum)"
 ],
 "annotated_section_meta":{
-"Ant 43":"rubrica Ordo Praedicatorum",
-"Ant 44":"rubrica Ordo Praedicatorum"
+"Ant 43 (rubrica Ordo Praedicatorum)":"rubrica Ordo Praedicatorum",
+"Ant 44 (rubrica Ordo Praedicatorum)":"rubrica Ordo Praedicatorum"
 }
 },
 "Commune/C12":{
@@ -14255,6 +14410,7 @@
 "Responsory3":"@Commune/C11:Responsory7:s/festivitátem/commemoratiónem/ s/(R. Quia ex te ortus est sol justítiæ), (Christus, Deus noster.)/$1.\\n&Gloria\\nR. $2/",
 "Benedictio":"@Commune/C10\n(sed rubrica cisterciensis)\n@Commune/C10::3 s/Ipsa/Alma/",
 "Minor final":"#Conclusio\n&Dominus_vobiscum\n&Benedicamus_Domino\n$Fidelium animae\n\n$rubrica Pater post\n$Pater noster\n(sed rubrica 1955 aut rubrica 196 omittitur)",
+"Minor final (rubrica cisterciensis)":"#Conclusio\n$Dulce nomen",
 "Minor intro":"#Incipit\n$Ave Maria\n(sed rubrica cisterciensis)\n$Ave Maria Parvum\n(sed rubrica 1955 aut rubrica 196 omittitur)\n$Deus in adjutorium\n(deinde dicitur)\n&Alleluia\n(sed rubrica cisterciensis omittitur)",
 "Versum 0":"@Commune/C10",
 "Ant Laudes":"Assúmpta est María in cælum: * gaudent Angeli, laudántes benedícunt Dóminum.\nMaría Virgo assúmpta est * ad æthéreum thálamum, in quo Rex regum stelláto sedet sólio.\nIn odórem * unguentórum tuórum cúrrimus: adolescéntulæ dilexérunt te nimis.\nBenedícta * fília tu a Dómino: quia per te fructum vitæ communicávimus.\nPulchra es, * et decóra, fília Jerúsalem: terríbilis ut castrórum ácies ordináta.",
@@ -14279,17 +14435,19 @@
 "Ant 3":"@:Ant 1",
 "Special Completorium":"#Incipit\n(deinde dicitur)\n$Ave Maria\n(sed rubrica 1955 aut rubrica 196 omittitur)\n$Converte nos\n$Deus in adjutorium\n(deinde dicitur)\n&Alleluia\n(sed rubrica cisterciensis omittitur)\n\n#Psalmi\n(rubrica cisterciensis) @Sancti/12-25:Ant Vespera:3 s/^/Ant. / s/;;.*//\n&psalm(128)\n(sed rubrica cisterciensis)\n&psalm(12)\n\n&psalm(129)\n(sed rubrica cisterciensis)\n&psalm(128)\n\n&psalm(130)\n(rubrica cisterciensis) @Sancti/12-25:Ant Vespera:3 s/^/Ant. / s/;;.*//\n\n@:Hymnus minor\n(sed rubrica cisterciensis omittitur)\n\n#Capitulum Versus\n(sed rubrica cisterciensis)\n#Capitulum Hymnus Versus\n@:Capitulum Completorium\n(rubrica cisterciensis dicuntur semper)\n_\n@:Hymnus Completorium\n_\n@Psalterium/Common/Prayers:Conclusio cisterciensis:3-4\n(deinde dicitur)\n\n#Canticum: Nunc dimittis\n@:Ant Completorium\n&psalm(233)\n@:Ant Completorium\n(sed rubrica cisterciensis omittitur)\n\n#Oratio\n@:Pre oratio\n@:Oratio Completorium\n(sed rubrica cisterciensis)\n@:Oratio Sexta: s/$/~/m s/Per eumdem/Per eumdem Christum\\n\\$Amen/\n\n#Conclusio\n(deinde dicitur)\n&Dominus_vobiscum\n&Benedicamus_Domino\n$Benedictio Completorium2\nR. Amen.\n(sed rubrica cisterciensis loco hujus versus dicitur)\n$Dulce nomen\n(deinde dicitur)\n\n#Antiphona finalis B.M.V.\n$ant Salve Regina\n(sed tempore post Epiphaniam aut Septuagesimæ aut Quadragesimæ aut Passionis dicitur)\n$ant Ave Regina caelorum\n(sed Adventus aut Nativitatis aut Epiphaniæ aut post partum dicitur)\n$ant Alma Redemptoris Mater\n(sed Paschali)\n$ant Regina caeli\n(sed rubrica cisterciensis)\n@Psalterium/Mariaant:Ant Finalis Cist\n(deinde dicitur)\n&Divinum_auxilium\n(rubrica cisterciensis)$Fidelium animae\n\n$Pater noster\n$Ave Maria\n$Credo\n(sed rubrica 1955 aut rubrica 196 aut rubrica cisterciensis omittitur)",
 "Hymnus Completorium_C":"v. Eníxa est puérpera,\nQuem Gábriel prædíxerat,\nQuem matris alvo géstiens,\nClausus Joánnes sénserat.",
-"Hymnus Completorium":"@:Hymnus Completorium_C\n@:HymnusM minor:s/.*?\\_/_/s",
+"Hymnus Completorium (rubrica cisterciensis)":"@:Hymnus Completorium_C\n@:HymnusM minor:s/.*?\\_/_/s",
 "Ant Completorium":"Ant. Sub tuum præsídium * confúgimus, sancta Dei Génetrix: nostras deprecatiónes ne despícias in necessitátibus, sed a perículis cunctis libera nos semper, Virgo gloriósa et benedícta.\n(sed tempore paschali)\n@Commune/C10:Ant 1_Pasch:s/^/Ant. /",
 "Capitulum Completorium_":"!Sir 24:24\nv. Ego mater pulchræ dilectiónis, et timóris, et agnitiónis, et sanctæ spei.\n$Deo gratias\n_\nV. Ora pro nobis sancta Dei Génetrix.\nR. Ut digni efficiámur promissiónibus Christi.",
 "Capitulum Completorium":"@:Capitulum Completorium_\n(sed rubrica cisterciensis dicuntur)\n@:Lectio3:1 s/17-//\n@:Lectio3:5 s/^20/v./\n$Deo gratias",
 "Oratio Completorium":"v. Beátæ et gloriósæ semper Vírginis Maríæ, quǽsumus, Dómine, intercéssio gloriósa nos prótegat, et ad vitam perdúcat ætérnam.\n$Per Dominum"
 },
 "annotated_sections":[
-"Hymnus Completorium"
+"Hymnus Completorium (rubrica cisterciensis)",
+"Minor final (rubrica cisterciensis)"
 ],
 "annotated_section_meta":{
-"Hymnus Completorium":"rubrica cisterciensis"
+"Hymnus Completorium (rubrica cisterciensis)":"rubrica cisterciensis",
+"Minor final (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Commune/C12A":{
@@ -16221,14 +16379,14 @@
 "rank_num":5.1,
 "commune":"ex C11",
 "sections":{
-"Oratio":"@Sancti/10-07"
+"Oratio (rubrica cisterciensis)":"@Sancti/10-07"
 },
 "parent":"Sancti/10-07",
 "annotated_sections":[
-"Oratio"
+"Oratio (rubrica cisterciensis)"
 ],
 "annotated_section_meta":{
-"Oratio":"rubrica cisterciensis"
+"Oratio (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Sancti/11-13n":{
@@ -16263,28 +16421,60 @@
 "Ant 1":"Sapiéntia * ædificávit sibi domum, excídit colúmnas septem, súbdidit sibi gentes, superbórum et sublímium colla própria virtúte calcávit.",
 "Lectio1":"Incípiunt Parábolæ Salomónis\n!Prov 1:1-6\n1 Parábolæ Salomónis, fílii David regis Israël, \n2 ad sciéndam sapiéntiam et disciplínam, \n3 ad intelligénda verba prudéntiæ et suscipiéndam eruditiónem doctrínæ, justítiam et judícium et æquitátem, \n4 ut detur párvulis astútia, adolescénti sciéntia et intelléctus. \n5 Audiens sápiens sapiéntior erit, et intéllegens gubernácula possidébit: \n6 animadvértet parábolam et interpretatiónem, verba sapiéntum et ænígmata eórum.",
 "Responsory1":"R. In princípio Deus ántequam terram fáceret, priúsquam abýssos constitúeret, priúsquam prodúceret fontes aquárum, \n* Antequam montes collocaréntur, ante omnes colles generávit me Dóminus.\nV. Quando præparábat cælos, áderam, cum eo cuncta compónens.\nR. Antequam montes collocaréntur, ante omnes colles generávit me Dóminus.",
+"Responsory1 (rubrica cisterciensis)":"R. In princípio Deus ántequam terram fáceret, priúsquam abýssos constitúeret, priúsquam prodúceret fontes aquárum, antequam montes collocaréntur:\n* Ante omnes colles generávit me Dóminus.\nV. Ego in altíssimis hábito, et thronus meus in colúmna nubis.\nR. Ante omnes colles generávit me Dóminus.",
 "Lectio2":"!Prov 1:7-14\n7 Timor Dómini princípium sapiéntiæ. Sapiéntiam atque doctrínam stulti despíciunt. \n8 Audi, fili mi, disciplínam patris tui et ne dimíttas legem matris tuæ, \n9 ut addátur grátia cápiti tuo et torques collo tuo. \n10 Fili mi, si te lactáverint peccatóres, ne acquiéscas eis: \n11 si díxerint: Veni nobíscum, insidiémur sánguini, abscondámus tendículas contra insóntem frustra, \n12 deglutiámus eum sicut inférnus vivéntem et íntegrum quasi descendéntem in lacum; \n13 omnem pretiósam substántiam reperiémus, implébimus domos nostras spóliis:\n14 sortem mitte nobíscum, marsúpium unum sit ómnium nostrum.",
 "Responsory2":"R. Gyrum cæli circuívi sola, et in flúctibus maris ambulávi, in omni gente et in omni pópulo primátum ténui: \n* Superbórum et sublímium colla própria virtúte calcávi.\nV. Ego in altíssimis hábito, et thronus meus in colúmna nubis.\nR. Superbórum et sublímium colla própria virtúte calcávi.",
+"Responsory2 (rubrica cisterciensis)":"R. Inítium sapiéntiæ timor Dómini: \n* Intelléctus bonus ómnibus faciéntibus eum: laudátio ejus manet in sǽculum sǽculi.\nV. Diléctio illíus custódia legum est: quia omnis sapiéntia timor Dómini.\nR. Intelléctus bonus ómnibus faciéntibus eum: laudátio ejus manet in sǽculum sǽculi.",
 "Lectio3":"!Prov 1:15-19\n15 Fili mi, ne ámbules cum eis: próhibe pedem tuum a sémitis eórum; \n16 pedes enim illórum ad malum currunt, et festínant ut effúndant sánguinem. \n17 Frustra autem jácitur rete ante óculos pennatórum. \n18 Ipsi quoque contra sánguinem suum insidiántur et moliúntur fraudes contra ánimas suas. \n19 Sic sémitæ omnis avári: ánimas possidéntium rápiunt.",
 "Responsory3":"R. Emítte, Dómine, sapiéntiam de sede magnitúdinis tuæ, ut mecum sit et mecum labóret: \n* Ut sciam, quid accéptum sit coram te omni témpore.\nV. Da mihi, Dómine, sédium tuárum assistrícem sapiéntiam.\nR. Ut sciam quid accéptum sit coram te omni témpore.\n&Gloria\nR. Ut sciam quid accéptum sit coram te omni témpore.",
+"Responsory3 (rubrica cisterciensis)":"R. Emítte, Dómine, sapiéntiam de sede magnitúdinis tuæ:  \n* Ut mecum sit, et mecum labóret, ut sciam quid accéptum sit coram te omni témpore.\nV. Da mihi, Dómine, sédium tuárum assistrícem sapiéntiam.\nR. Ut mecum sit, et mecum labóret, ut sciam quid accéptum sit coram te omni témpore.",
 "Lectio4":"Ex Tractatu sancti Ambrósii Epíscopi in Psalmum centésimum décimum octavum\n!Sermo 5, n. 36-37\nInítium esse sapiéntiæ timórem Dómini, dicit prophéta. Quid est autem inítium sapiéntiæ, nisi sǽculo renuntiáre? Quia sápere sæculária, stultítia est. Dénique sapiéntiam hujus mundi, stultítiam esse apud Deum, Apóstolus dicit. Sed et ipse timor Dómini, nisi secúndum sciéntiam sit, nihil prodest, immo obest plúrimum. Síquidem Judǽi habent zelum Dei; sed quia non habent secúndum sciéntiam, in ipso zelo et timóre majórem cóntrahunt divinitátis offénsam. Quod circumcídunt infántulos suos, quod sábbata custódiunt, timórem Dei habent; sed quia nesciunt legem spiritálem esse, circumcídunt corpus, non cor suum.",
 "Responsory4":"R. Da mihi, Dómine, sédium tuárum assistrícem sapiéntiam, et noli me reprobáre a púeris tuis: \n* Quóniam servus tuus sum ego, et fílius ancíllæ tuæ.\nV. Mitte illam de sede magnitúdinis tuæ, ut mecum sit et mecum labóret.\nR. Quóniam servus tuus sum ego, et fílius ancíllæ tuæ.",
+"Responsory4 (rubrica cisterciensis)":"R. Dómine Pater, et Deus vitæ meæ, ne derelínquas me in cogitátu malígno: extolléntiam oculórum meórum ne déderis mihi, et desidérium malígnum avérte a me, Dómine; aufer a me concupiscéntiam: \n* Et ánimo irreverénti et infruníto ne tradas me, Dómine.\nV. Duo rogáví te, ne déneges mihi ántequam móriar: vanitátem, et verbum mendácii longe fac a me:\nR. Et ánimo irreverénti et infruníto ne tradas me, Dómine.",
 "Lectio5":"Et quid de Judǽis dico? Sunt étiam in nobis qui habent timórem Dei, sed non secúndum sciéntiam, statuéntes durióra præcépta, quæ non possit humána condítio sustinére. Timor in eo est, quia vidéntur sibi consúlere disciplínæ, opus virtútis exígere; sed inscítia in eo est, quia non compatiúntur natúræ, non ǽstimant possibilitátem. Non sit ergo irrationábilis timor. Etenim vera sapiéntia a timóre Dei íncipit, nec est sapiéntia spiritális sine timóre Dei; ita timor sine sapiéntia esse non debet.",
 "Responsory5":"R. Inítium sapiéntiæ timor Dómini: \n* Intelléctus bonus ómnibus faciéntibus eum: laudátio ejus manet in sǽculum sǽculi.\nV. Diléctio illíus custódia legum est: quia omnis sapiéntia timor Dómini.\nR. Intelléctus bonus ómnibus faciéntibus eum: laudátio ejus manet in sǽculum sǽculi.",
+"Responsory5 (rubrica cisterciensis)":"R. Verbum iníquum et dolósum longe fac a me, Dómine: divítias et paupertátem ne déderis mihi:\n* Sed tantum víctui meo tríbue necessária.\nV. Ne forte satiátus évomam illud, et perjúrem nomen Dei mei.\nR. Sed tantum víctui meo tríbue necessária.",
 "Lectio6":"Basis quædam verbi est timor sanctus. Sicut enim simulácrum áliquod in basi statúitur, et tunc majórem habet grátiam, cum in basi státua fúerit collocáta, standíque áccipit firmitátem: ita verbum Dei in timóre sancto mélius statúitur, fórtius radicátur in péctore timéntis Dóminum; ne labátur verbum de corde viri, ne véniant vólucres et áuferant illud de incuriósi et dissimulántis afféctu.",
 "Responsory6":"R. Verbum iníquum et dolósum longe fac a me, Dómine: \n* Divítias et paupertátem ne déderis mihi, sed tantum víctui meo tríbue necessária.\nV. Duo rogávi te, ne déneges mihi ántequam móriar.\nR. Divítias et paupertátem ne déderis mihi, sed tantum víctui meo tríbue necessária.\n&Gloria\nR. Divítias et paupertátem ne déderis mihi, sed tantum víctui meo tríbue necessária.",
+"Responsory6 (rubrica cisterciensis)":"@TemporaOP/081-3:Responsory2",
 "Responsory7":"R. Dómine, Pater et Deus vitæ meæ, ne derelínquas me in cogitátu malígno: extolléntiam oculórum meórum ne déderis mihi, et desidérium malígnum avérte a me, Dómine; aufer a me concupiscéntiam, \n* Et ánimo irreverénti et infruníto ne tradas me, Dómine.\nV. Ne derelínquas me, Dómine, ne accréscant ignorántiæ meæ, nec multiplicéntur delícta mea.\nR. Et ánimo irreverénti et infruníto ne tradas me, Dómine.",
 "Responsory8":"@Tempora/Pent01-0:Responsory8"
+},
+"annotated_sections":[
+"Responsory1 (rubrica cisterciensis)",
+"Responsory2 (rubrica cisterciensis)",
+"Responsory3 (rubrica cisterciensis)",
+"Responsory4 (rubrica cisterciensis)",
+"Responsory5 (rubrica cisterciensis)",
+"Responsory6 (rubrica cisterciensis)"
+],
+"annotated_section_meta":{
+"Responsory1 (rubrica cisterciensis)":"rubrica cisterciensis",
+"Responsory2 (rubrica cisterciensis)":"rubrica cisterciensis",
+"Responsory3 (rubrica cisterciensis)":"rubrica cisterciensis",
+"Responsory4 (rubrica cisterciensis)":"rubrica cisterciensis",
+"Responsory5 (rubrica cisterciensis)":"rubrica cisterciensis",
+"Responsory6 (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Tempora/081-1":{
 "sections":{
 "Lectio1":"De Parábolis Salomónis\n!Prov 3:1-6\n1 Fili mi, ne obliviscáris legis meæ, et præcépta mea cor tuum custódiat;\n2 longitúdinem enim diérum et annos vitæ et pacem appónent tibi.\n3 Misericórdia et véritas te non déserant: circúmda eas gútturi tuo et descríbe in tábulis cordis tui,\n4 et invénies grátiam et disciplínam bonam coram Deo et homínibus.\n5 Habe fidúciam in Dómino ex toto corde tuo et ne innitáris prudéntiæ tuæ;\n6 in ómnibus viis tuis cógita illum, et ipse díriget gressus tuos.",
 "Responsory1":"R. Ne derelínquas me, Dómine, pater et dominátor vitæ meæ, ut non córruam in conspéctu adversariórum meórum:\n* Ne gáudeat de me inimícus meus.\nV. Apprehénde arma et scutum et exsúrge in adjutórium mihi.\nR. Ne gáudeat de me inimícus meus.",
+"Responsory1 (rubrica cisterciensis)":"R. Da mihi, Dómine, sédium tuárum assistrícem sapiéntiam, et noli me reprobáre a púeris tuis: \n* Quóniam servus tuus sum ego, et fílius ancíllæ tuæ.\nV. Dómine Pater, et Deus vitæ meæ, ne derelínquas me in cogitátu malígno:\nR. Quóniam servus tuus sum ego, et fílius ancíllæ tuæ.",
 "Lectio2":"!Prov 3:7-10\n7 Ne sis sápiens apud temetípsum, time Deum et recéde a malo;\n8 sánitas quippe erit umbilíco tuo et irrigátio óssium tuórum.\n9 Honóra Dóminum de tua substántia et de primítiis ómnium frugum tuárum da ei;\n10 et implebúntur hórrea tua saturitáte, et vino torculária tua redundábunt.",
 "Responsory2":"R. Magna enim sunt judícia tua, Dómine, et inenarrabília verba tua:\n* Magnificásti pópulum tuum et honorásti.\nV. Transtulísti illos per Mare Rubrum et transvexísti eos per aquam nímiam.\nR. Magnificásti pópulum tuum et honorásti.",
+"Responsory2 (rubrica cisterciensis)":"R. Ne derelínquas me, Dómine Pater, et dominátor vitæ meæ, ut non córruam in conspéctu adversariórum meórum:\n* Ne gáudeat de me inimícus meus.\nV. Apprehénde arma et scutum, et exúrge in adjutórium mihi:\nR. Ne gáudeat de me inimícus meus.",
 "Lectio3":"!Prov 3:11-15\n11 Disciplínam Dómini, fili mi, ne abícias, nec defícias cum ab eo corríperis;\n12 quem enim díligit Dóminus córripit, et quasi pater in fílio cómplacet sibi.\n13 Beátus homo qui invénit sapiéntiam et qui áffluit prudéntia.\n14 Mélior est acquisítio ejus negotiatióne argénti, et auri primi et puríssimi fructus ejus;\n15 pretiósior est cunctis ópibus, et ómnia quæ desiderántur, huic non valent comparári.",
 "Responsory3":"R. Quæ sunt in corde hóminum, óculi tui vident, Dómine, et in libro tuo ómnia scribéntur:\n* Homo videt in fácie, Deus autem in corde.\nV. Omnia enim corda scrutátur, et univérsas méntium cogitatiónes intéllegit.\nR. Homo videt in fácie, Deus autem in corde.\n&Gloria\nR. Homo videt in fácie, Deus autem in corde."
+},
+"annotated_sections":[
+"Responsory1 (rubrica cisterciensis)",
+"Responsory2 (rubrica cisterciensis)"
+],
+"annotated_section_meta":{
+"Responsory1 (rubrica cisterciensis)":"rubrica cisterciensis",
+"Responsory2 (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Tempora/081-2":{
@@ -16341,6 +16531,7 @@
 "sections":{
 "Scriptura":"Dominica II. Augusti",
 "Ant 1":"Ego in altíssimis * hábito: et thronus meus in colúmna nubis.",
+"Ant 1 (rubrica cisterciensis)":"Omnis sapiéntia * a Dómino Deo est, et cum illo fuit semper, et est ante ævum.",
 "Lectio1":"Incipit liber Ecclesiástes\n!Eccl 1:1-7\n1 Verba Ecclesiástæ, fílii David, regis Jerúsalem. \n2 Vánitas vanitátum, dixit Ecclesiástes; vánitas vanitátum, et ómnia vánitas. \n3 Quid habet ámplius homo de univérso labóre suo quo labórat sub sole? \n4 Generátio prǽterit, et generátio ádvenit; terra autem in ætérnum stat. \n5 Oritur sol et óccidit et ad locum suum revértitur; ibíque renáscens \n6 gyrat per merídiem et fléctitur ad aquilónem. Lustrans univérsa in circúitu pergit spíritus et in círculos suos revértitur. \n7 Omnia flúmina intrant in mare, et mare non redúndat; ad locum unde éxeunt flúmina revertúntur, ut íterum fluant.",
 "Responsory1":"@Tempora/081-0:Responsory1",
 "Lectio2":"!Eccl 1:8-11\n8 Cunctæ res diffíciles: non potest eas homo explicáre sermóne. Non saturátur óculus visu, nec auris audítu implétur. \n9 Quid est quod fuit? Ipsum quod futúrum est. Quid est quod factum est? Ipsum quod faciéndum est.\n10 Nihil sub sole novum, nec valet quisquam dícere: Ecce hoc recens est; jam enim præcéssit in sǽculis quæ fuérunt ante nos. \n11 Non est priórum memória; sed nec eórum quidem quæ póstea futúra sunt, erit recordátio apud eos qui futúri sunt in novíssimo.",
@@ -16355,6 +16546,12 @@
 "Responsory6":"@Tempora/081-0:Responsory6",
 "Responsory7":"@Tempora/081-0:Responsory7",
 "Responsory8":"@Tempora/Pent01-0:Responsory8"
+},
+"annotated_sections":[
+"Ant 1 (rubrica cisterciensis)"
+],
+"annotated_section_meta":{
+"Ant 1 (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Tempora/082-1":{
@@ -16503,6 +16700,7 @@
 "sections":{
 "Scriptura":"Dominica IV. Augusti",
 "Ant 1":"Sapiéntia * clámitat in platéis: Si quis díligit sapiéntiam, ad me declínet, et eam invéniet: et, cum invénerit, beátus erit si tenúerit eam.",
+"Ant 1 (rubrica cisterciensis)":"Atténde, fili mi, * sapiéntiam meam, et ad elóquia oris mei inclína aurem tuam, quia in sapiéntia fundávit Dóminus terram, et stabilívit cœlos prudéntia.",
 "Lectio1":"Incipit liber Ecclesiástici\n!Sir 1:1-5\n1 Omnis sapiéntia a Dómino Deo est et cum illo fuit semper et est ante ævum. \n2 Arénam maris et plúviæ guttas, et dies sǽculi, quis dinumerávit? Altitúdinem cæli, et latitúdinem terræ, et profúndum abýssi, quis diménsus est? \n3 Sapiéntiam Dei præcedéntem ómnia quis investigávit? \n4 Prior ómnium creáta est sapiéntia, et intelléctus prudéntiæ ab ævo. \n5 Fons sapiéntiæ Verbum Dei in excélsis, et ingréssus illíus mandáta ætérna.",
 "Responsory1":"@Tempora/081-0:Responsory1",
 "Lectio2":"!Sir 1:6-10\n6 Radix sapiéntiæ cui reveláta est? et astútias illíus quis agnóvit? \n7 Disciplína sapiéntiæ cui reveláta est et manifestáta? et multiplicatiónem ingréssus illíus quis intelléxit? \n8 Unus est altíssimus, Creátor omnípotens, et Rex potens et metuéndus nimis, sedens super thronum illíus et dóminans, Deus. \n9 Ipse creávit illam in Spíritu Sancto, et vidit, et dinumerávit, et mensus est. \n10 Et effúdit illam super ómnia ópera sua, et super omnem carnem, secúndum datum suum, et prǽbuit illam diligéntibus se.",
@@ -16517,6 +16715,12 @@
 "Responsory6":"@Tempora/081-0:Responsory5",
 "Responsory7":"@Tempora/081-0:Responsory7",
 "Responsory8":"@Tempora/Pent01-0:Responsory8"
+},
+"annotated_sections":[
+"Ant 1 (rubrica cisterciensis)"
+],
+"annotated_section_meta":{
+"Ant 1 (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Tempora/084-1":{
@@ -16743,6 +16947,7 @@
 "Tempora/092-0":{
 "sections":{
 "Ant 1":"In ómnibus his * non peccávit Job lábiis suis neque stultum áliquid contra Deum locútus est.",
+"Ant 1 (rubrica cisterciensis)":"Quare detraxístis * sermónibus veritátis, ad increpándum verba conpónitis, et subvértere nitímini amícum vestrum? verúmtamen quæ cogitástis expléte.",
 "Lectio1":"De libro Job\n!Job 9:1-5\n1 Et respóndens Job, ait: \n2 Vere scio quod ita sit, et quod non justificétur homo compósitus Deo. \n3 Si volúerit conténdere cum eo, non póterit ei respondére unum pro mille. \n4 Sápiens corde est et fortis róbore. Quis réstitit ei, et pacem hábuit? \n5 Qui tránstulit montes, et nesciérunt hi quos subvértit in furóre suo.",
 "Responsory1":"@Tempora/091-0:Responsory1",
 "Lectio2":"!Job 9:6-10\n6 Qui cómmovet terram de loco suo, et colúmnæ ejus concutiúntur; \n7 qui prǽcipit soli, et non óritur, et stellas claudit quasi sub signáculo; \n8 qui exténdit cælos suos, et gráditur super fluctus maris; \n9 qui facit Arctúrum et Oríona et Hýadas et interióra Austri; \n10 qui facit magna et incomprehensibília et mirabília, quorum non est númerus.",
@@ -16757,6 +16962,12 @@
 "Responsory6":"@Tempora/091-0:Responsory6",
 "Responsory7":"@Tempora/091-0:Responsory7",
 "Responsory8":"@Tempora/Pent01-0:Responsory8"
+},
+"annotated_sections":[
+"Ant 1 (rubrica cisterciensis)"
+],
+"annotated_section_meta":{
+"Ant 1 (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Tempora/092-1":{
@@ -17038,6 +17249,7 @@
 "sections":{
 "Scriptura":"Dominica I. Octobris",
 "Ant 1":"Adapériat Dóminus * cor vestrum in lege sua et in præcéptis suis et fáciat pacem Dóminus Deus noster.",
+"Ant 1 (rubrica cisterciensis)":"Adapériat Dóminus * cor vestrum in lege sua et in præcéptis suis et fáciat pacem, concédat vobis salútem, et rédimat vos a malis.",
 "Lectio1":"Incipit liber primus Machabæórum\n!1 Mac 1:1-7\n1 Et factum est, postquam percússit Alexánder Philíppi Mácedo, qui primus regnávit in Grǽcia, egréssus de terra Cethim, Daríum regem Persárum et Medórum, \n2 constítuit prǽlia multa et obtínuit ómnium munitiónes et interfécit reges terræ,\n3 et pertránsiit usque ad fines terræ et accépit spólia multitúdinis géntium, et síluit terra in conspéctu ejus. \n4 Et congregávit virtútem et exércitum fortem nimis, et exaltátum est et elevátum cor ejus,\n5 et obtínuit regiónes géntium et tyránnos, et facti sunt illi in tribútum.\n6 Et post hæc décidit in lectum, et cognóvit quia morerétur, \n7 et vocávit púeros suos nóbiles, qui secum erant nutríti a juventúte, et divísit illis regnum suum, cum adhuc víveret.",
 "Responsory1":"R. Adapériat Dóminus cor vestrum in lege sua et in præcéptis suis et fáciat pacem in diébus vestris:\n* Concédat vobis salútem, et rédimat vos a malis.\nV. Exáudiat Dóminus oratiónes vestras, et reconciliétur vobis, nec vos déserat in témpore malo.\nR. Concédat vobis salútem, et rédimat vos a malis.",
 "Lectio2":"!1 Mac 1:8-11\n8 Et regnávit Alexánder annis duódecim et mórtuus est. \n9 Et obtinuérunt púeri ejus regnum, unusquísque in loco suo,\n10 et imposuérunt omnes sibi diadémata post mortem ejus, et fílii eórum post eos annis multis. Et multiplicáta sunt mala in terra.\n11 Et éxiit ex eis radix peccátrix, Antíochus illústris, fílius Antíochi regis qui fúerat Romæ obses, et regnávit in anno centésimo trigésimo séptimo regni Græcórum.",
@@ -17052,6 +17264,12 @@
 "Responsory6":"R. Tua est poténtia, tuum regnum, Dómine: tu es super omnes gentes:\n* Da pacem, Dómine, in diébus nostris.\nV. Creátor ómnium, Deus, terríbilis et fortis, justus et miséricors.\nR. Da pacem, Dómine, in diébus nostris.\n&Gloria\nR. Da pacem, Dómine, in diébus nostris.",
 "Responsory7":"R. Refúlsit sol in clípeos áureos, et resplenduérunt montes ab eis: \n* Et fortitúdo géntium dissipáta est.\nV. Erat enim exércitus magnus valde et fortis: et appropiávit Judas et exércitus ejus in prǽlio.\nR. Et fortitúdo géntium dissipáta est.",
 "Responsory8":"@Tempora/Pent01-0:Responsory8"
+},
+"annotated_sections":[
+"Ant 1 (rubrica cisterciensis)"
+],
+"annotated_section_meta":{
+"Ant 1 (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Tempora/101-1":{
@@ -17117,6 +17335,7 @@
 "Tempora/102-0":{
 "sections":{
 "Ant 1":"Refúlsit sol * in clípeos áureos, et resplenduérunt montes ab eis: et fortitúdo géntium dissipáta est.",
+"Ant 1 (rubrica cisterciensis)":"Exáudiat Dóminus * oratiónes vestras et reconciliétur vobis: nec vos déserat in témpore malo Dóminus, Deus noster.",
 "Lectio1":"De libro primo Machabæórum\n!1 Mac 4:36-40\n36 Dixit autem Judas et fratres ejus: Ecce contríti sunt inimíci nostri; ascendámus nunc mundáre sancta, et renováre.\n37 Et congregátus est omnis exércitus, et ascendérunt in montem Sion,\n38 et vidérunt sanctificatiónem desértam et altáre profanátum et portas exústas et in átriis virgúlta nata, sicut in saltu vel in móntibus, et pastophória díruta.\n39 Et scidérunt vestiménta sua et planxérunt planctu magno et imposuérunt cínerem super caput suum,\n40 et cecidérunt in fáciem super terram, et exclamavérunt tubis signórum, et clamavérunt in cælum.",
 "Responsory1":"@Tempora/101-0:Responsory1",
 "Lectio2":"!1 Mac 4:41-46\n41 Tunc ordinávit Judas viros ut pugnárent advérsus eos, qui erant in arce, donec emundárent sancta.\n42 Et elégit sacerdótes sine mácula voluntátem habéntes in lege Dei,\n43 et mundavérunt sancta et tulérunt lápides contaminatiónis in locum immúndum.\n44 Et cogitávit de altári holocaustórum, quod profanátum erat, quid de eo fáceret.\n45 Et íncidit illis consílium bonum ut destrúerent illud: ne forte illis esset in oppróbrium, quia contaminavérunt illud gentes, et demolíti sunt illud,\n46 et reposuérunt lápides in monte domus in loco apto, quoadúsque veníret prophéta et respondéret de eis.",
@@ -17131,6 +17350,12 @@
 "Responsory6":"@Tempora/101-0:Responsory6",
 "Responsory7":"@Tempora/101-0:Responsory7",
 "Responsory8":"@Tempora/Pent01-0:Responsory8"
+},
+"annotated_sections":[
+"Ant 1 (rubrica cisterciensis)"
+],
+"annotated_section_meta":{
+"Ant 1 (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Tempora/102-1":{
@@ -17196,6 +17421,7 @@
 "Tempora/103-0":{
 "sections":{
 "Ant 1":"Lugébat autem Judam * Israël planctu magno et dicébat: Quómodo cecidísti, potens in prǽlio, qui salvum faciébas pópulum Dómini?",
+"Ant 1 (rubrica cisterciensis)":"Ornavérunt * fáciem templi corónis áureis, et dedicavérunt altáre Dómino, et facta est lætítia magna in pópulo.",
 "Lectio1":"De libro primo Machabæórum\n!1 Mac 9:1-6\n1 Intérea, ut audívit Demétrius quia cécidit Nicánor et exércitus ejus in prǽlio, appósuit Bácchidem et Alcimum rursum míttere in Judǽam, et dextrum cornu cum illis.\n2 Et abiérunt viam quæ ducit ad Gálgala et castra posuérunt in Másaloth, quæ est in Arbéllis: et occupavérunt eam, et peremérunt ánimas hóminum multas. \n3 In mense primo anni centésimi et quinquagésimi secúndi applicuérunt exércitum ad Jerúsalem:\n4 et surrexérunt et abiérunt in Béream vigínti míllia virórum, et duo míllia équitum.\n5 Et Judas posúerat castra in Láisa, et tria míllia viri elécti cum eo. \n6 Et vidérunt multitúdinem exércitus, quia multi sunt, et timuérunt valde, et multi subtraxérunt se de castris, et non remansérunt ex eis nisi octingénti viri.",
 "Responsory1":"@Tempora/101-0:Responsory1",
 "Lectio2":"!1 Mac 9:7-11\n7 Et vidit Judas quod deflúxit exércitus suus, et bellum perurgébat eum, et confráctus est corde, quia non habébat tempus congregándi eos, et dissolútus est. \n8 Et dixit his qui resídui erant: Surgámus et eámus ad adversários nostros, si potérimus pugnáre advérsus eos. \n9 Et avertébant eum, dicéntes: Non potérimus, sed liberémus ánimas nostras modo, et revertámur ad fratres nostros, et tunc pugnábimus advérsus eos; nos autem pauci sumus. \n10 Et ait Judas: Absit istam rem fácere, ut fugiámus ab eis: et, si appropiávit tempus nostrum, moriámur in virtúte propter fratres nostros, et non inferámus crimen glóriæ nostræ. \n11 Et movit exércitus de castris, et stetérunt illis óbviam, et divísi sunt équites in duas partes, et fundibulárii et sagittárii præíbant exércitum, et primi certáminis omnes poténtes.",
@@ -17210,6 +17436,12 @@
 "Responsory6":"@Tempora/101-0:Responsory6",
 "Responsory7":"@Tempora/101-0:Responsory7",
 "Responsory8":"@Tempora/Pent01-0:Responsory8"
+},
+"annotated_sections":[
+"Ant 1 (rubrica cisterciensis)"
+],
+"annotated_section_meta":{
+"Ant 1 (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Tempora/103-1":{
@@ -17587,6 +17819,7 @@
 "sections":{
 "Scriptura":"Dominica III. Novembris",
 "Ant 1":"Muro tuo * inexpugnábili circumcínge nos, Dómine, et armis tuæ poténtiæ prótege nos semper.",
+"Ant 1 (rubrica cisterciensis)":"Super muros tuos, * Jerúsalem, constítui custódes; tota die et nocte non tacébunt laudáre nomen Dómini.",
 "Lectio1":"Incipit liber Daniélis Prophétæ\n!Dan 1:1-4\n1 Anno tértio regni Jóakim regis Juda, venit Nabuchodónosor, rex Babylónis, in Jerúsalem et obsédit eam:\n2 et trádidit Dóminus in manu ejus Jóakim, regem Juda, et partem vasórum domus Dei: et asportávit ea in terra Sénnaar in domum dei sui, et vasa íntulit in domum thesáuri dei sui. \n3 Et ait rex Asphenez præpósito eunuchórum, ut introdúceret de fíliis Israël, et de sémine régio et tyrannórum,\n4 púeros, in quibus nulla esset mácula, decóros forma, et erudítos omni sapiéntia, cautos sciéntia, et doctos disciplína, et qui possent stare in palátio regis, ut docéret eos lítteras et linguam Chaldæórum.",
 "Responsory1":"@Tempora/Pent01-0:Responsory1",
 "Lectio2":"!Dan 1:5-9\n5 Et constítuit eis rex annónam per síngulos dies de cibis suis, et de vino unde bibébat ipse, ut enutríti tribus annis, póstea starent in conspéctu regis. \n6 Fuérunt ergo inter eos de fíliis Juda, Dániel, Ananías, Mísaël, et Azarías. \n7 Et impósuit eis præpósitus eunuchórum nómina: Daniéli, Baltássar; Ananíæ, Sidrach; Misaéli, Misach; et Azaríæ, Abdénago. \n8 Propósuit autem Dániel in corde suo, ne polluerétur de mensa regis, neque de vino potus ejus: et rogávit eunuchórum præpósitum ne contaminarétur. \n9 Dedit autem Deus Daniéli grátiam et misericórdiam in conspéctu príncipis eunuchórum.",
@@ -17601,6 +17834,12 @@
 "Responsory6":"@Tempora/111-0:Responsory6",
 "Responsory7":"@Tempora/111-0:Responsory7",
 "Responsory8":"@Tempora/Pent01-0:Responsory8"
+},
+"annotated_sections":[
+"Ant 1 (rubrica cisterciensis)"
+],
+"annotated_section_meta":{
+"Ant 1 (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Tempora/113-1":{
@@ -17667,6 +17906,7 @@
 "sections":{
 "Scriptura":"Dominica IV. Novembris",
 "Ant 1":"Qui cælórum * cóntines thronum, et abýssos intuéris, Dómine, Rex regum, montes pónderas, terram palmo conclúdis: exáudi nos, Dómine, in gemítibus nostris.",
+"Ant 1 (rubrica cisterciensis)":"Muro tuo * inexpugnábili circumcínge nos, Dómine, et armis tuæ poténtiæ prótege nos semper.",
 "Lectio1":"Incipit liber Osée Prophétæ\n!Osee 1:1-3\n1 Verbum Dómini, quod factum est ad Osée, fílium Béeri, in diébus Ozíæ, Jóathan, Achaz, Ezechíæ, regum Juda; et in diébus Jeróboam, fílii Joas, regis Israël. \n2 Princípium loquéndi Dómino in Osée. Et dixit Dóminus ad Osée: Vade, sume tibi uxórem fornicatiónum, quia fórnicans fornicábitur terra a Dómino. \n3 Et ábiit, et accépit Gomer, fíliam Debélaim: et concépit, et péperit ei fílium.",
 "Responsory1":"@Tempora/Pent01-0:Responsory1",
 "Lectio2":"!Osee 1:4-7\n4 Et dixit Dóminus ad eum: Voca nomen ejus Jézrahel, quóniam adhuc módicum, et visitábo sánguinem Jézrahel super domum Jehu, et quiéscere fáciam regnum domus Israël,\n5 et in illa die cónteram arcum Israël in valle Jézrahel. \n6 Et concépit adhuc, et péperit fíliam. Et dixit ei: Voca nomen ejus Absque misericórdia, quia non addam ultra miseréri dómui Israël, sed oblivióne oblivíscar eórum,\n7 et dómui Juda miserébor et salvábo eos in Dómino Deo suo; et non salvábo eos in arcu et gládio, et in bello, et in equis, et in equítibus.",
@@ -17681,6 +17921,12 @@
 "Responsory6":"@Tempora/111-0:Responsory6",
 "Responsory7":"@Tempora/111-0:Responsory7",
 "Responsory8":"@Tempora/Pent01-0:Responsory8"
+},
+"annotated_sections":[
+"Ant 1 (rubrica cisterciensis)"
+],
+"annotated_section_meta":{
+"Ant 1 (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Tempora/114-1":{
@@ -17753,6 +17999,7 @@
 "sections":{
 "Scriptura":"Dominica V. Novembris",
 "Ant 1":"Super muros tuos, * Jerúsalem, constítui custódes; tota die et nocte non tacébunt laudáre nomen Dómini.",
+"Ant 1 (rubrica cisterciensis)":"Qui cælórum * cóntines thronum, et abýssos intuéris, Dómine, Rex regum, montes pónderas, terram palmo conclúdis: exáudi nos, Dómine, in gemítibus nostris.",
 "Lectio1":"Incipit Michǽas Prophéta\n!Mic 1:1-3\n1 Verbum Dómini, quod factum est ad Michǽam Morasthíten, in diébus Jóathan, Achaz, et Ezechíæ, regum Juda, quod vidit super Samaríam et Jerúsalem. \n2 Audíte, pópuli omnes, et atténdat terra, et plenitúdo ejus, et sit Dóminus Deus vobis in testem, Dóminus de templo sancto suo. \n3 Quia ecce Dóminus egrediétur de loco suo, et descéndet, et calcábit super excélsa terræ.",
 "Responsory1":"@Tempora/Pent01-0:Responsory1",
 "Lectio2":"!Mic 1:4-6\n4 Et consuméntur montes subtus eum, et valles scindéntur, sicut cera a fácie ignis, et sicut aquæ, quæ decúrrunt in præceps. \n5 In scélere Jacob omne istud et in peccátis domus Israël. Quod scelus Jacob? nonne Samaría? Et quæ excélsa Judæ? nonne Jerúsalem? \n6 Et ponam Samaríam quasi acérvum lápidum in agro, cum plantátur vínea, et détraham in vallem lápides ejus, et fundaménta ejus revelábo.",
@@ -17767,6 +18014,12 @@
 "Responsory6":"@Tempora/111-0:Responsory6",
 "Responsory7":"@Tempora/111-0:Responsory7",
 "Responsory8":"@Tempora/Pent01-0:Responsory8"
+},
+"annotated_sections":[
+"Ant 1 (rubrica cisterciensis)"
+],
+"annotated_section_meta":{
+"Ant 1 (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Tempora/115-1":{
@@ -17844,13 +18097,13 @@
 "rank_num_1960":4.9,
 "commune_1960":"",
 "sections":{
-"Ant Laudes":"@Tempora/Adv4-0"
+"Ant Laudes (rubrica cisterciensis)":"@Tempora/Adv4-0"
 },
 "annotated_sections":[
-"Ant Laudes"
+"Ant Laudes (rubrica cisterciensis)"
 ],
 "annotated_section_meta":{
-"Ant Laudes":"rubrica cisterciensis"
+"Ant Laudes (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Tempora/Epi1-0b":{
@@ -17925,21 +18178,21 @@
 "sections":{
 "Rule":"vide Sancti/01-06\nFeria Te Deum\nInfra octavam Epiphaniæ Domini",
 "Lectio1":"De Epístola ad Romános\n!Rom 9:1-5\n1 Veritátem dico in Christo, non méntior: testimónium mihi perhibénte consciéntia mea in Spíritu Sancto:\n2 quóniam tristítia mihi magna est, et contínuus dolor cordi meo. \n3 Optábam enim ego ipse anáthema esse a Christo pro frátribus meis, qui sunt cognáti mei secúndum carnem, \n4 qui sunt Israëlítæ, quorum adóptio est filiórum, et glória, et testaméntum, et legislátio, et obséquium, et promíssa: \n5 quorum patres, et ex quibus est Christus secúndum carnem, qui est super ómnia Deus benedíctus in sǽcula. Amen.",
-"Responsory1":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06:Responsory1InfraOctavam",
+"Responsory1 (rubrica 196)":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06:Responsory1InfraOctavam",
 "Lectio2":"!Rom 9:6-10\n6 Non autem quod excíderit verbum Dei. Non enim omnes qui ex Israël sunt, ii sunt Israëlítæ:\n7 neque qui semen sunt Abrahæ, omnes fílii: sed in Isaac vocábitur tibi semen: \n8 id est, non qui fílii carnis, hi fílii Dei: sed qui fílii sunt promissiónis, æstimántur in sémine. \n9 Promissiónis enim verbum hoc est: Secúndum hoc tempus véniam: et erit Saræ fílius. \n10 Non solum autem illa: sed et Rebécca ex uno concúbitu habens, Isaac patris nostri.",
-"Responsory2":"@SanctiM/01-07\n(sed feria 7)\n@SanctiM/01-07:Responsory3\n(sed rubrica 1960)\n@Sancti/01-06",
+"Responsory2 (rubrica 196)":"@SanctiM/01-07\n(sed feria 7)\n@SanctiM/01-07:Responsory3\n(sed rubrica 1960)\n@Sancti/01-06",
 "Lectio3":"!Rom 9:11-16\n11 Cum enim nondum nati fuíssent, aut áliquid boni egíssent, aut mali, (ut secúndum electiónem propósitum Dei manéret),\n12 non ex opéribus, sed ex vocánte dictum est ei: Quia major sérviet minóri,\n13 sicut scriptum est: Jacob diléxi, Esau autem ódio hábui. \n14 Quid ergo dicémus? numquid iníquitas apud Deum? Absit. \n15 Móysi enim dicit: Miserébor cujus miséreor: et misericórdiam præstábo cujus miserébor. \n16 Igitur non voléntis, neque curréntis, sed miseréntis est Dei.",
-"Responsory3":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06"
+"Responsory3 (rubrica 196)":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06"
 },
 "annotated_sections":[
-"Responsory1",
-"Responsory2",
-"Responsory3"
+"Responsory1 (rubrica 196)",
+"Responsory2 (rubrica 196)",
+"Responsory3 (rubrica 196)"
 ],
 "annotated_section_meta":{
-"Responsory1":"rubrica 196",
-"Responsory2":"rubrica 196",
-"Responsory3":"rubrica 196"
+"Responsory1 (rubrica 196)":"rubrica 196",
+"Responsory2 (rubrica 196)":"rubrica 196",
+"Responsory3 (rubrica 196)":"rubrica 196"
 }
 },
 "Tempora/Nat08":{
@@ -17950,21 +18203,21 @@
 "sections":{
 "Rule":"vide Sancti/01-06\nFeria Te Deum\nInfra octavam Epiphaniæ Domini",
 "Lectio1":"De Epístola ad Romános\n!Rom 12:1-3\n1 Obsecro ítaque vos, fratres, per misericórdiam Dei, ut exhibeátis córpora vestra hóstiam vivéntem, sanctam, Deo placéntem, rationábile obséquium vestrum. \n2 Et nolíte conformári huic sǽculo, sed reformámini in novitáte sensus vestri: ut probétis quæ sit volúntas Dei bona, et benéplacens, et perfécta. \n3 Dico enim per grátiam quæ data est mihi, ómnibus qui sunt inter vos: Non plus sápere quam opórtet sápere, sed sápere ad sobrietátem: et unicuíque sicut Deus divísit mensúram fídei.",
-"Responsory1":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06:Responsory1InfraOctavam",
+"Responsory1 (rubrica 196)":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06:Responsory1InfraOctavam",
 "Lectio2":"!Rom 12:4-8\n4 Sicut enim in uno córpore multa membra habémus, ómnia autem membra non eúndem actum habent: \n5 ita multi unum corpus sumus in Christo, sínguli autem alter altérius membra. \n6 Habéntes autem donatiónes secúndum grátiam, quæ data est nobis, differéntes: sive prophetíam secúndum ratiónem fídei, \n7 sive ministérium in ministrándo, sive qui docet in doctrína,\n8 qui exhortátur in exhortándo, qui tríbuit in simplicitáte, qui præest in sollicitúdine, qui miserétur in hilaritáte.",
-"Responsory2":"@SanctiM/01-07\n(sed feria 7)\n@SanctiM/01-07:Responsory3\n(sed rubrica 1960)\n@Sancti/01-06",
+"Responsory2 (rubrica 196)":"@SanctiM/01-07\n(sed feria 7)\n@SanctiM/01-07:Responsory3\n(sed rubrica 1960)\n@Sancti/01-06",
 "Lectio3":"!Rom 12:9-16\n9 Diléctio sine simulatióne. Odiéntes malum, adhæréntes bono: \n10 Caritáte fraternitátis ínvicem diligéntes: Honóre ínvicem præveniéntes: \n11 Sollicitúdine non pigri: Spíritu fervéntes: Dómino serviéntes:\n12 Spe gaudéntes: In tribulatióne patiéntes: Oratióni instántes: \n13 Necessitátibus sanctórum communicántes: Hospitalitátem sectántes. \n14 Benedícite persequéntibus vos: benedícite, et nolíte maledícere. \n15 Gaudére cum gaudéntibus, flere cum fléntibus:\n16 Idípsum ínvicem sentiéntes: Non alta sapiéntes, sed humílibus consentiéntes.",
-"Responsory3":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06"
+"Responsory3 (rubrica 196)":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06"
 },
 "annotated_sections":[
-"Responsory1",
-"Responsory2",
-"Responsory3"
+"Responsory1 (rubrica 196)",
+"Responsory2 (rubrica 196)",
+"Responsory3 (rubrica 196)"
 ],
 "annotated_section_meta":{
-"Responsory1":"rubrica 196",
-"Responsory2":"rubrica 196",
-"Responsory3":"rubrica 196"
+"Responsory1 (rubrica 196)":"rubrica 196",
+"Responsory2 (rubrica 196)":"rubrica 196",
+"Responsory3 (rubrica 196)":"rubrica 196"
 }
 },
 "Tempora/Nat09":{
@@ -17975,21 +18228,21 @@
 "sections":{
 "Rule":"vide Sancti/01-06\nFeria Te Deum\nInfra octavam Epiphaniæ Domini",
 "Lectio1":"De Epístola ad Romános\n!Rom 13:1-4\n1 Omnis ánima potestátibus sublimióribus súbdita sit: non est enim potéstas nisi a Deo: quæ autem sunt, a Deo ordinátæ sunt. \n2 Itaque qui resístit potestáti, Dei ordinatióni resístit. Qui autem resístunt, ipsi sibi damnatiónem acquírunt:\n3 nam príncipes non sunt timóri boni óperis, sed mali. Vis autem non timére potestátem? Bonum fac: et habébis laudem ex illa; \n4 Dei enim miníster est tibi in bonum.",
-"Responsory1":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06:Responsory1InfraOctavam",
+"Responsory1 (rubrica 196)":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06:Responsory1InfraOctavam",
 "Lectio2":"!Rom 13:4-7\n4 Si autem malum féceris, time: non enim sine causa gládium portat. Dei enim miníster est: vindex in iram ei, qui malum agit. \n5 Ideo necessitáte súbditi estóte non solum propter iram, sed étiam propter consciéntiam.\n6 Ideo enim et tribúta præstátis: minístri enim Dei sunt, in hoc ipsum serviéntes. \n7 Réddite ómnibus débita: cui tribútum, tribútum: cui vectígal, vectígal: cui timórem, timórem: cui honórem, honórem.",
-"Responsory2":"@SanctiM/01-07\n(sed feria 7)\n@SanctiM/01-07:Responsory3\n(sed rubrica 1960)\n@Sancti/01-06",
+"Responsory2 (rubrica 196)":"@SanctiM/01-07\n(sed feria 7)\n@SanctiM/01-07:Responsory3\n(sed rubrica 1960)\n@Sancti/01-06",
 "Lectio3":"!Rom 13:8-10\n8 Némini quidquam debeátis, nisi ut ínvicem diligátis: qui enim díligit próximum, legem implévit. \n9 Nam, Non adulterábis, Non occídes, Non furáberis, Non falsum testimónium dices, Non concupísces: et si quod est áliud mandátum, in hoc verbo instaurátur: Díliges próximum tuum sicut teípsum. \n10 Diléctio próximi malum non operátur. Plenitúdo ergo legis est diléctio.",
-"Responsory3":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06"
+"Responsory3 (rubrica 196)":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06"
 },
 "annotated_sections":[
-"Responsory1",
-"Responsory2",
-"Responsory3"
+"Responsory1 (rubrica 196)",
+"Responsory2 (rubrica 196)",
+"Responsory3 (rubrica 196)"
 ],
 "annotated_section_meta":{
-"Responsory1":"rubrica 196",
-"Responsory2":"rubrica 196",
-"Responsory3":"rubrica 196"
+"Responsory1 (rubrica 196)":"rubrica 196",
+"Responsory2 (rubrica 196)":"rubrica 196",
+"Responsory3 (rubrica 196)":"rubrica 196"
 }
 },
 "Tempora/Nat10":{
@@ -18000,21 +18253,21 @@
 "sections":{
 "Rule":"vide Sancti/01-06\nFeria Te Deum\nInfra octavam Epiphaniæ Domini",
 "Lectio1":"De Epístola ad Romános\n!Rom 14:1-4\n1 Infírmum autem in fide assúmite, non in disceptatiónibus cogitatiónum. \n2 Alius enim credit se manducáre ómnia: qui autem infírmus est, olus mandúcet. \n3 Is qui mandúcat, non manducántem non spernat: et qui non mandúcat, manducántem non júdicet: Deus enim illum assúmpsit. \n4 Tu quis es, qui júdicas aliénum servum? Dómino suo stat, aut cadit: stabit autem: potens est enim Deus statúere illum.",
-"Responsory1":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06:Responsory1InfraOctavam",
+"Responsory1 (rubrica 196)":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06:Responsory1InfraOctavam",
 "Lectio2":"!Rom 14:5-8\n5 Nam álius júdicat diem inter diem, álius autem júdicat omnem diem: unusquísque in suo sensu abúndet. \n6 Qui sapit diem, Dómino sapit. Et qui mandúcat, Dómino mandúcat: grátias enim agit Deo. Et qui non mandúcat, Dómino non mandúcat, et grátias agit Deo. \n7 Nemo enim nostrum sibi vivit, et nemo sibi móritur. \n8 Sive enim vívimus, Dómino vívimus: sive mórimur, Dómino mórimur. Sive ergo vívimus, sive mórimur, Dómini sumus.",
-"Responsory2":"@SanctiM/01-07\n(sed feria 7)\n@SanctiM/01-07:Responsory3\n(sed rubrica 1960)\n@Sancti/01-06",
+"Responsory2 (rubrica 196)":"@SanctiM/01-07\n(sed feria 7)\n@SanctiM/01-07:Responsory3\n(sed rubrica 1960)\n@Sancti/01-06",
 "Lectio3":"!Rom 14:9-13\n9 In hoc enim Christus mórtuus est, et resurréxit: ut et mortuórum et vivórum dominétur. \n10 Tu autem, quid júdicas fratrem tuum? aut tu quare spernis fratrem tuum? Omnes enim stábimus ante tribúnal Christi. \n11 Scriptum est enim: Vivo ego, dicit Dóminus, quóniam mihi flectétur omne genu: et omnis lingua confitébitur Deo. \n12 Itaque unusquísque nostrum pro se ratiónem reddet Deo. \n13 Non ergo ámplius ínvicem judicémus.",
-"Responsory3":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06"
+"Responsory3 (rubrica 196)":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06"
 },
 "annotated_sections":[
-"Responsory1",
-"Responsory2",
-"Responsory3"
+"Responsory1 (rubrica 196)",
+"Responsory2 (rubrica 196)",
+"Responsory3 (rubrica 196)"
 ],
 "annotated_section_meta":{
-"Responsory1":"rubrica 196",
-"Responsory2":"rubrica 196",
-"Responsory3":"rubrica 196"
+"Responsory1 (rubrica 196)":"rubrica 196",
+"Responsory2 (rubrica 196)":"rubrica 196",
+"Responsory3 (rubrica 196)":"rubrica 196"
 }
 },
 "Tempora/Nat11":{
@@ -18025,21 +18278,21 @@
 "sections":{
 "Rule":"vide Sancti/01-06\nFeria Te Deum\nInfra octavam Epiphaniæ Domini",
 "Lectio1":"De Epístola ad Romános\n!Rom 15:1-4\n1 Debémus autem nos firmióres imbecillitátes infirmórum sustinére, et non nobis placére. \n2 Unusquísque vestrum próximo suo pláceat in bonum, ad ædificatiónem. \n3 Etenim Christus non sibi plácuit, sed sicut scriptum est: Impropéria improperántium tibi cecidérunt super me. \n4 Quæcúmque enim scripta sunt, ad nostram doctrínam scripta sunt: ut per patiéntiam et consolatiónem Scripturárum, spem habeámus.",
-"Responsory1":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06:Responsory1InfraOctavam",
+"Responsory1 (rubrica 196)":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06:Responsory1InfraOctavam",
 "Lectio2":"!Rom 15:5-11\n5 Deus autem patiéntiæ et solátii, det vobis idípsum sápere in altérutrum secúndum Jesum Christum: \n6 ut unánimes, uno ore honorificétis Deum, et Patrem Dómini nostri Jesu Christi. \n7 Propter quod suscípite ínvicem, sicut et Christus suscépit vos in honórem Dei. \n8 Dico enim Christum Jesum minístrum fuísse circumcisiónis propter veritátem Dei, ad confirmándas promissiónes patrum: \n9 Gentes autem super misericórdiam honoráre Deum, sicut scriptum est: Proptérea confitébor tibi in géntibus, Dómine, et nómini tuo cantábo. \n10 Et íterum dicit: Lætámini, gentes, cum plebe ejus. \n11 Et íterum: Laudáte, omnes gentes, Dóminum, et magnificáte eum, omnes pópuli.",
-"Responsory2":"@SanctiM/01-07\n(sed feria 7)\n@SanctiM/01-07:Responsory3\n(sed rubrica 1960)\n@Sancti/01-06",
+"Responsory2 (rubrica 196)":"@SanctiM/01-07\n(sed feria 7)\n@SanctiM/01-07:Responsory3\n(sed rubrica 1960)\n@Sancti/01-06",
 "Lectio3":"!Rom 15:12-16\n12 Et rursus Isaías ait: Erit radix Jesse, et qui exsúrget régere gentes, in eum gentes sperábunt. \n13 Deus autem spei répleat vos omni gáudio et pace in credéndo: ut abundétis in spe, et virtúte Spíritus Sancti. \n14 Certus sum autem, fratres mei, et ego ipse de vobis, quóniam et ipsi pleni estis dilectióne, repléti omni sciéntia, ita ut possítis altérutrum monére. \n15 Audácius autem scripsi vobis, fratres, ex parte, tamquam in memóriam vos redúcens: propter grátiam, quæ data est mihi a Deo,\n16 ut sim miníster Christi Jesu in géntibus: sanctíficans Evangélium Dei, ut fiat oblátio géntium accépta, et sanctificáta in Spíritu Sancto.",
-"Responsory3":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06"
+"Responsory3 (rubrica 196)":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06"
 },
 "annotated_sections":[
-"Responsory1",
-"Responsory2",
-"Responsory3"
+"Responsory1 (rubrica 196)",
+"Responsory2 (rubrica 196)",
+"Responsory3 (rubrica 196)"
 ],
 "annotated_section_meta":{
-"Responsory1":"rubrica 196",
-"Responsory2":"rubrica 196",
-"Responsory3":"rubrica 196"
+"Responsory1 (rubrica 196)":"rubrica 196",
+"Responsory2 (rubrica 196)":"rubrica 196",
+"Responsory3 (rubrica 196)":"rubrica 196"
 }
 },
 "Tempora/Nat12":{
@@ -18056,21 +18309,30 @@
 "sections":{
 "Rule":"vide Sancti/01-06\nFeria Te Deum\nInfra octavam Epiphaniæ Domini",
 "Lectio1":"De Epístola ad Romános\n!Rom 16:1-5\n1 Comméndo autem vobis Phœben sorórem nostram, quæ est in ministério ecclésiæ, quæ est in Cenchris:\n2 ut eam suscipiátis in Dómino digne sanctis: et assistátis ei in quocúmque negótio vestri indigúerit: étenim ipsa quoque ásstitit multis, et mihi ipsi.\n3 Salutáte Priscam et Aquilam, adjutóres meos in Christo Jesu\n4 (qui pro ánima mea suas cervíces supposuérunt: quibus non solus ego grátias ago, sed et cunctæ ecclésiæ géntium),\n5 et domésticam ecclésiam eórum. Salutáte Epǽnetum diléctum mihi, qui est primitívus Asiæ in Christo.",
-"Responsory1":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06",
+"Lectio1 (rubrica 1960)":"@Tempora/Epi1-0a",
+"Responsory1 (rubrica 196)":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06",
 "Lectio2":"!Rom 16:17-19\n17 Rogo autem vos fratres, ut observétis eos qui dissensiónes et offendícula, præter doctrínam, quam vos didicístis, fáciunt, et declináte ab illis.\n18 Hujuscémodi enim Christo Dómino nostro non sérviunt, sed suo ventri: et per dulces sermónes et benedictiónes sedúcunt corda innocéntium.\n19 Vestra enim obediéntia in omnem locum divulgáta est. Gáudeo ígitur in vobis. Sed volo vos sapiéntes esse in bono, et símplices in malo.",
-"Responsory2":"@SanctiM/01-07\n(sed feria 7)\n@SanctiM/01-07:Responsory3\n(sed rubrica 1960)\n@Sancti/01-06",
+"Lectio2 (rubrica 1960)":"@Tempora/Epi1-0a:Lectio2",
+"Responsory2 (rubrica 196)":"@SanctiM/01-07\n(sed feria 7)\n@SanctiM/01-07:Responsory3\n(sed rubrica 1960)\n@Sancti/01-06",
 "Lectio3":"!Rom 16:21-24\n21 Salútat vos Timótheus adjútor meus, et Lúcius, et Jason, et Sosípater cognáti mei.\n22 Salúto vos ego Tértius, qui scripsi epístolam, in Dómino.\n23 Salútat vos Cajus hospes meus, et univérsa ecclésia. Salútat vos Erástus arcárius civitátis, et Quartus, frater.\n24 Grátia Dómini nostri Jesu Christi cum ómnibus vobis. Amen.",
-"Responsory3":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06"
+"Lectio3 (rubrica 1960)":"@Tempora/Epi1-0a:Lectio3",
+"Responsory3 (rubrica 196)":"@SanctiM/01-07\n(sed rubrica 1960)\n@Sancti/01-06"
 },
 "annotated_sections":[
-"Responsory1",
-"Responsory2",
-"Responsory3"
+"Lectio1 (rubrica 1960)",
+"Lectio2 (rubrica 1960)",
+"Lectio3 (rubrica 1960)",
+"Responsory1 (rubrica 196)",
+"Responsory2 (rubrica 196)",
+"Responsory3 (rubrica 196)"
 ],
 "annotated_section_meta":{
-"Responsory1":"rubrica 196",
-"Responsory2":"rubrica 196",
-"Responsory3":"rubrica 196"
+"Lectio1 (rubrica 1960)":"rubrica 1960",
+"Lectio2 (rubrica 1960)":"rubrica 1960",
+"Lectio3 (rubrica 1960)":"rubrica 1960",
+"Responsory1 (rubrica 196)":"rubrica 196",
+"Responsory2 (rubrica 196)":"rubrica 196",
+"Responsory3 (rubrica 196)":"rubrica 196"
 }
 },
 "Tempora/Nat2-0r":{
@@ -18095,13 +18357,13 @@
 "Ant 1C":"Nésciens Mater Virgo virum, péperit sine dolóre Salvatórem sæculórum, ipsum Regem Angelórum sola Virgo lactábat úbere de cœlo pleno.",
 "Ant 1":"@Sancti/12-25:Ant 3\n(sed rubrica cisterciensis)\n@:Ant 1C",
 "Ant 2C":"Verbum caro factum est, et habitávit in nobis: et vídimus glóriam ejus, glóriam quasi Unigéniti a Patre plenum grátiæ, et veritátis, allelúia, allelúia, allelúia.",
-"Ant 2":"Verbum caro factum est, et habitávit in nobis: et vídimus glóriam ejus, glóriam quasi Unigéniti a Patre plenum grátiæ, et veritátis, allelúia, allelúia, allelúia."
+"Ant 2 (rubrica cisterciensis)":"Verbum caro factum est, et habitávit in nobis: et vídimus glóriam ejus, glóriam quasi Unigéniti a Patre plenum grátiæ, et veritátis, allelúia, allelúia, allelúia."
 },
 "annotated_sections":[
-"Ant 2"
+"Ant 2 (rubrica cisterciensis)"
 ],
 "annotated_section_meta":{
-"Ant 2":"rubrica cisterciensis"
+"Ant 2 (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Tempora/Nat27":{
@@ -18118,15 +18380,18 @@
 "Versum 1":"@Sancti/12-25:Versum 3",
 "Versum 2":"@Sancti/12-25:Versum 2",
 "Ant 1":"@Sancti/12-25:Ant 3",
-"Ant 2":"@Tempora/Nat26",
-"Commemoratio 2":"@Sancti/12-26:Octava",
-"Commemoratio 3":"@Sancti/12-26:Octava"
+"Ant 1 (rubrica cisterciensis)":"@Tempora/Nat26",
+"Ant 2 (rubrica cisterciensis)":"@Tempora/Nat26",
+"Commemoratio 2 (rubrica tridentina nisi rubrica altovadensis)":"@Sancti/12-26:Octava",
+"Commemoratio 3 (rubrica tridentina nisi rubrica altovadensis)":"@Sancti/12-26:Octava"
 },
 "annotated_sections":[
-"Ant 2"
+"Ant 1 (rubrica cisterciensis)",
+"Ant 2 (rubrica cisterciensis)"
 ],
 "annotated_section_meta":{
-"Ant 2":"rubrica cisterciensis"
+"Ant 1 (rubrica cisterciensis)":"rubrica cisterciensis",
+"Ant 2 (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Tempora/Nat28":{
@@ -18143,15 +18408,18 @@
 "Versum 1":"@Sancti/12-25:Versum 3",
 "Versum 2":"@Sancti/12-25:Versum 2",
 "Ant 1":"@Sancti/12-25:Ant 3",
-"Ant 2":"@Tempora/Nat26",
-"Commemoratio 2":"@Sancti/12-26:Octava\n@Sancti/12-27:Octava",
-"Commemoratio 3":"@Sancti/12-26:Octava\n@Sancti/12-27:Octava"
+"Ant 1 (rubrica cisterciensis)":"@Tempora/Nat26",
+"Ant 2 (rubrica cisterciensis)":"@Tempora/Nat26",
+"Commemoratio 2 (rubrica tridentina nisi rubrica altovadensis)":"@Sancti/12-26:Octava\n@Sancti/12-27:Octava",
+"Commemoratio 3 (rubrica tridentina nisi rubrica altovadensis)":"@Sancti/12-26:Octava\n@Sancti/12-27:Octava"
 },
 "annotated_sections":[
-"Ant 2"
+"Ant 1 (rubrica cisterciensis)",
+"Ant 2 (rubrica cisterciensis)"
 ],
 "annotated_section_meta":{
-"Ant 2":"rubrica cisterciensis"
+"Ant 1 (rubrica cisterciensis)":"rubrica cisterciensis",
+"Ant 2 (rubrica cisterciensis)":"rubrica cisterciensis"
 }
 },
 "Tempora/Pasc1-0t":{
@@ -18172,14 +18440,14 @@
 "Tempora/Quad5-5Feriarc":{
 "sections":{
 "Comment":"#This file to be used in transfer table when Quad5-5 falls on a day when there will be another saint commemorated. E.g. the transfer table for Easter on 11 April under 1960 rubrics would refer to 04-02=Tempora/Quad5-5Feriarc;;",
-"Oratio 2":"@Tempora/Quad5-5Feria\n_\n@Tempora/Quad5-5Feria:Commemoratio 2:1\n@Tempora/Quad5-5:Ant 2: s/^/Ant. /\n_\n@Tempora/Quad5-5:Versum 2\n_\n$Oremus\n@Tempora/Quad5-5:Oratio:1 s/^/v. /"
+"Oratio 2 (rubrica 1955 aut rubrica 1960 aut rubrica innovata)":"@Tempora/Quad5-5Feria\n_\n@Tempora/Quad5-5Feria:Commemoratio 2:1\n@Tempora/Quad5-5:Ant 2: s/^/Ant. /\n_\n@Tempora/Quad5-5:Versum 2\n_\n$Oremus\n@Tempora/Quad5-5:Oratio:1 s/^/v. /"
 },
 "parent":"Tempora/Quad5-5Feria",
 "annotated_sections":[
-"Oratio 2"
+"Oratio 2 (rubrica 1955 aut rubrica 1960 aut rubrica innovata)"
 ],
 "annotated_section_meta":{
-"Oratio 2":"rubrica 1955 aut rubrica 1960 aut rubrica innovata"
+"Oratio 2 (rubrica 1955 aut rubrica 1960 aut rubrica innovata)":"rubrica 1955 aut rubrica 1960 aut rubrica innovata"
 }
 },
 "Tempora/XPRex":{

@@ -176,7 +176,18 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
             .and_then(|f| f.sections.get(effective_sect))
             .map(|s: &String| !s.trim().is_empty())
             .unwrap_or(false);
-        let final_sect: &str = if let Some(variant) = seasonal_variant_section(effective_sect, season) {
+        // Per-rubric variant section: `[Evangelium](rubrica 1960)` on
+        // Pasc5-4 strips the pre-1960 Paschal-candle rubric for R60.
+        // Try it FIRST (before the seasonal-variant swap) so the
+        // rubric-specific override beats both the default body and
+        // the seasonal commune fallback.
+        let rubric_variant_key = winner_file.and_then(|f| {
+            rubric_variant_section_for(effective_sect, office.rubric, &f.sections)
+        });
+        let final_sect: &str = if let Some(rv) = rubric_variant_key {
+            effective_sect_str = rv;
+            effective_sect_str.as_str()
+        } else if let Some(variant) = seasonal_variant_section(effective_sect, season) {
             if !winner_has_local && proper_block(&resolved, &variant, corpus).is_some() {
                 effective_sect_str = variant;
                 effective_sect_str.as_str()
@@ -1269,6 +1280,36 @@ fn graduale_or_tractus(
 /// Map an `Adv` season to the seasonal section-variant suffix.
 /// `[Graduale] (tempore Adventus)` is stored under the literal section
 /// name `Graduale (tempore Adventus)` in the JSON.
+/// Look up a `Section (rubrica X)` second-header variant in
+/// `winner_sections` whose annotation `(rubrica X)` evaluates TRUE
+/// for the active rubric. Returns the section key (e.g. `Evangelium
+/// (rubrica 1960)`) when a matching variant exists.
+///
+/// Drives Pasc5-4 [Evangelium](rubrica 1960) — strips the
+/// pre-1960 Paschal-candle rubric from the Ascension Mass under
+/// R60. Non-Rank only — [Rank] variants are bucketed at parse
+/// time into `rank_num_*` slots.
+fn rubric_variant_section_for(
+    base: &str,
+    rubric: crate::divinum_officium::core::Rubric,
+    winner_sections: &std::collections::HashMap<String, String>,
+) -> Option<String> {
+    let prefix = format!("{base} (");
+    for key in winner_sections.keys() {
+        if !key.starts_with(&prefix) || !key.ends_with(')') {
+            continue;
+        }
+        let inner = &key[prefix.len()..key.len() - 1];
+        if !inner.starts_with("rubrica ") && !inner.starts_with("rubricis ") {
+            continue;
+        }
+        if annotation_applies_to_rubric(inner, rubric) {
+            return Some(key.clone());
+        }
+    }
+    None
+}
+
 fn seasonal_variant_section(base: &str, season: crate::divinum_officium::core::Season) -> Option<String> {
     use crate::divinum_officium::core::Season;
     match season {

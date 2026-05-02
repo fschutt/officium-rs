@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>officium-rs — Divinum Officium liturgical engine in Rust/WASM</title>
+<style>
+  :root {
+    --bg: #f8f4ec;
+    --fg: #1a1612;
+    --muted: #6b6358;
+    --rule: #d8cfbf;
+    --accent: #8b1c2b;
+    --accent-soft: #ad3a4a;
+    --card: #fffcf5;
+    --shadow: 0 1px 0 rgba(0,0,0,0.04), 0 4px 16px rgba(60,40,20,0.06);
+    --mono: ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
+    --serif: "EB Garamond", Garamond, Georgia, "Times New Roman", serif;
+  }
+
+  * { box-sizing: border-box }
+
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.55;
+  }
+
+  header, main, footer {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  header {
+    padding-top: 56px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  header h1 {
+    font-size: 32px;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+
+  header h1 .crate {
+    font-family: var(--mono);
+    font-size: 0.85em;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  header .tagline {
+    color: var(--muted);
+    margin: 0;
+    font-style: italic;
+  }
+
+  main {
+    padding-top: 32px;
+    padding-bottom: 64px;
+  }
+
+  section + section {
+    margin-top: 40px;
+  }
+
+  h2 {
+    font-size: 14px;
+    font-family: var(--mono);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin: 0 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  form {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px 16px;
+    align-items: center;
+  }
+
+  label {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  input[type=date], select {
+    font-family: var(--serif);
+    font-size: 16px;
+    padding: 8px 10px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--card);
+    color: var(--fg);
+    width: 100%;
+  }
+
+  input[type=date]:focus, select:focus {
+    outline: 2px solid var(--accent-soft);
+    outline-offset: -1px;
+    border-color: var(--accent);
+  }
+
+  button {
+    grid-column: 1 / -1;
+    justify-self: end;
+    padding: 9px 18px;
+    border: none;
+    background: var(--accent);
+    color: #fffcf5;
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  button:hover:not(:disabled) { background: var(--accent-soft); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .result {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .result.empty {
+    color: var(--muted);
+    font-style: italic;
+    text-align: center;
+    padding: 40px 24px;
+  }
+
+  .field {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 8px 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .field:last-child { border-bottom: none }
+
+  .field .key {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .field .val { font-family: var(--serif); }
+  .field .val code { font-family: var(--mono); font-size: 0.92em; background: rgba(139,28,43,0.06); padding: 1px 5px; border-radius: 3px; }
+
+  .commems { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+  .commems li code { font-family: var(--mono); font-size: 0.88em; color: var(--accent); }
+
+  .color-swatch {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+    border: 1px solid var(--rule);
+  }
+
+  pre.api-example {
+    background: #1a1612;
+    color: #e8dfc8;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 16px 20px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 0;
+  }
+
+  pre.api-example .kw { color: #d49a93 }
+  pre.api-example .str { color: #c8b88a }
+  pre.api-example .com { color: #6b6358; font-style: italic }
+
+  footer {
+    padding-top: 32px;
+    padding-bottom: 56px;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  footer a { color: var(--accent); text-decoration: none; border-bottom: 1px solid currentColor; }
+  footer a:hover { color: var(--accent-soft) }
+  .meta { font-family: var(--mono); font-size: 12px; }
+
+  .status {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .status.error { color: var(--accent); }
+  .status.ok { color: #2e6b3e; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="crate">officium-rs</span></h1>
+  <p class="tagline">A pure-Rust port of the Divinum Officium liturgical engine. Resolves the day's office under any of five Roman rubrics — 1570, 1910, 1939, 1955, 1960 — at 100% (R60: 99.7%) parity with the upstream Perl reference.</p>
+</header>
+
+<main>
+
+  <section>
+    <h2>Try it</h2>
+    <form id="query-form">
+      <label for="date">Date</label>
+      <input type="date" id="date" required>
+      <span></span>
+
+      <label for="rubric">Rubric</label>
+      <select id="rubric">
+        <option value="trid-1570">Tridentine 1570</option>
+        <option value="trid-1910">Tridentine 1910 (Pius X)</option>
+        <option value="divino-afflatu">Divino Afflatu 1939</option>
+        <option value="reduced-1955">Reduced 1955 (Pius XII)</option>
+        <option value="rubrics-1960" selected>Rubrics 1960 (John XXIII)</option>
+      </select>
+      <span></span>
+
+      <button type="submit" id="submit-btn" disabled>Compute</button>
+    </form>
+    <p class="status" id="status">Loading WASM…</p>
+  </section>
+
+  <section>
+    <h2>Result</h2>
+    <div id="result" class="result empty">No query yet — pick a date and click Compute.</div>
+  </section>
+
+  <section>
+    <h2>API</h2>
+<pre class="api-example"><span class="com">// Browser:</span>
+<span class="kw">import</span> init, { compute_office_json } <span class="kw">from</span> <span class="str">'./pkg/officium_rs.js'</span>;
+
+<span class="kw">await</span> init();
+<span class="kw">const</span> json = compute_office_json(<span class="str">2026</span>, <span class="str">5</span>, <span class="str">2</span>, <span class="str">'rubrics-1960'</span>);
+<span class="kw">const</span> office = JSON.parse(json);
+<span class="com">// → { winner: "Sancti/05-02", color: "White",
+<span class="com">//     season: "PaschalTime", rank: "Duplex", … }</span>
+</pre>
+  </section>
+
+</main>
+
+<footer>
+  <p>
+    <a href="https://github.com/fschutt/officium-rs">github.com/fschutt/officium-rs</a> ·
+    <a href="https://github.com/DivinumOfficium/divinum-officium">upstream Perl</a> ·
+    MIT
+  </p>
+  <p class="meta" id="version">officium-rs · WASM</p>
+</footer>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

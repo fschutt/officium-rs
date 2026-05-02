@@ -1,7 +1,7 @@
 /target
 **/*.rs.bk
-Cargo.lock
 .DS_Store
 /dist
+/pkg
 /demo/pkg
 /.idea

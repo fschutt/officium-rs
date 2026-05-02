@@ -1,0 +1,85 @@
+name: Deploy demo to GitHub Pages
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        # We don't need the Perl submodule for the WASM build —
+        # it's only used by the regression harness which is gated
+        # behind --no-default-features here.
+        with:
+          submodules: false
+
+      - name: Install Rust toolchain (with wasm32 target)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install wasm-bindgen-cli (pinned to 0.2.92)
+        run: cargo install wasm-bindgen-cli --version 0.2.92 --force
+
+      - name: Install binaryen (wasm-opt)
+        run: |
+          curl -L -o /tmp/binaryen.tgz \
+            https://github.com/WebAssembly/binaryen/releases/download/version_117/binaryen-version_117-x86_64-linux.tar.gz
+          tar -xzf /tmp/binaryen.tgz -C /tmp
+          echo "/tmp/binaryen-version_117/bin" >> $GITHUB_PATH
+
+      - name: Build WASM
+        run: |
+          cargo build \
+            --target wasm32-unknown-unknown \
+            --release \
+            --no-default-features \
+            --features wasm \
+            --lib
+
+      - name: Run wasm-bindgen
+        run: |
+          mkdir -p demo/pkg
+          wasm-bindgen --target web --out-dir demo/pkg \
+            target/wasm32-unknown-unknown/release/officium_rs.wasm
+
+      - name: Optimise with wasm-opt
+        run: |
+          wasm-opt -Oz -o demo/pkg/officium_rs_bg.opt.wasm demo/pkg/officium_rs_bg.wasm
+          mv demo/pkg/officium_rs_bg.opt.wasm demo/pkg/officium_rs_bg.wasm
+          ls -la demo/pkg/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: demo/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

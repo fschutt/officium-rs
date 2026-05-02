@@ -6,82 +6,130 @@ of five rubric layers — Tridentine 1570 → Rubrics 1960 (John XXIII) —
 with 100% output parity against the upstream Perl implementation
 across a year-sweep regression (21,900 cells × 5 rubrics).
 
-**Demo:** <https://fschutt.github.io/officium-rs/> (coming soon)
+**Demo:** <https://fschutt.github.io/officium-rs/>
 
 ## Status
 
 - ✅ Calendar, occurrence, precedence, mass-propers resolution (Latin)
-- ✅ All five rubric layers at 100% Perl parity
-- ⏳ Full WASM build with embedded compressed corpus
-- ⏳ no_std migration
+- ✅ Tridentine 1570 / 1910 / Divino Afflatu 1939 / Reduced 1955 at
+  **100%** parity; Rubrics 1960 at **99.7%** (1 known case — see
+  [`UPSTREAM_WEIRDNESSES.md`][weird] §35)
+- ✅ WASM build (3.3 MB raw, ~590 KB brotli; bindgen API in
+  [`src/wasm.rs`](src/wasm.rs))
+- ✅ Live demo on GitHub Pages
+- ⏳ Postcard-encoded compressed corpus (V2)
+- ⏳ `no_std` migration (V2)
 - ⏳ Monastic rubric
 - ⏳ Office hours (Vespers, Lauds, …) — only Mass today
 - ⏳ Translations (English, German, …) — Latin only today
+
+[weird]: UPSTREAM_WEIRDNESSES.md
 
 ## Architecture
 
 The crate exposes a `Corpus` trait + pure functions over it. The
 default `BundledCorpus` reads from the JSON corpus shipped under
-`data/` (embedded via `include_str!` for now; a follow-up commit
-moves the runtime to compressed postcard bytes).
+`data/` (embedded via `include_str!`); consumers can supply their own
+impl for custom data sources.
 
 Rubric layers covered:
 
 | layer            | year       | enum                                   |
 | ---------------- | ---------- | -------------------------------------- |
 | Tridentine 1570  | 1570–1909  | `Rubric::Tridentine1570`               |
-| Tridentine 1910  | 1910–1955  | `Rubric::Tridentine1910`               |
-| Divino Afflatu   | 1911–1955  | `Rubric::DivinoAfflatu`                |
+| Tridentine 1910  | 1910–1938  | `Rubric::Tridentine1910`               |
+| Divino Afflatu   | 1939–1954  | `Rubric::DivinoAfflatu1911`            |
 | Reduced 1955     | 1955–1959  | `Rubric::Reduced1955`                  |
 | Rubrics 1960     | 1960–      | `Rubric::Rubrics1960`                  |
 
-## Usage
+## Usage — native
 
 ```rust
-use officium_rs::{precedence::compute_office, mass::mass_propers,
-                  corpus::BundledCorpus, core::*};
+use officium_rs::{
+    core::{Date, Locale, OfficeInput, Rubric},
+    corpus::BundledCorpus,
+    precedence::compute_office,
+    mass::mass_propers,
+};
 
 let corpus = BundledCorpus;
 let input = OfficeInput {
-    year: 2026, month: 5, day: 2,
+    date:   Date::new(2026, 5, 2),
     rubric: Rubric::Rubrics1960,
+    locale: Locale::Latin,
 };
+
 let office = compute_office(&input, &corpus);
+println!("winner = {}", office.winner.render());
+// → "Sancti/05-02"
+
 let mass = mass_propers(&office, &corpus);
-println!("{}", mass.introitus.body);
+if let Some(intr) = &mass.introitus {
+    println!("{}", intr.latin);
+}
 ```
+
+## Usage — WASM (browser)
+
+After `wasm-pack build` (or `cargo build --target wasm32-unknown-unknown
+--features wasm --no-default-features` + `wasm-bindgen`):
+
+```html
+<script type="module">
+  import init, { compute_office_json } from './pkg/officium_rs.js';
+
+  await init();
+  const json = compute_office_json(2026, 5, 2, 'rubrics-1960');
+  const office = JSON.parse(json);
+  console.log(office.winner);   // "Sancti/05-02"
+  console.log(office.color);    // "White"
+</script>
+```
+
+V1 ships the `compute_office_json` resolver only — date + rubric in,
+JSON description of the office out (winner path, color, season, rank,
+commemorations). Full Mass-propers body assembly over WASM is V2.
+
+See [`demo/`](demo/) for the live deployment source — vanilla HTML +
+ES-module JS, no framework.
 
 ## Features
 
-| feature       | what it gives you                                     |
-| ------------- | ----------------------------------------------------- |
-| `regression`  | (default) Rust↔Perl comparator + `year-sweep` binary  |
+| feature       | what it gives you                                       |
+| ------------- | ------------------------------------------------------- |
+| `regression`  | (default) Rust↔Perl comparator + `year-sweep` binary    |
+| `wasm`        | `wasm-bindgen` surface — see `src/wasm.rs`              |
 
 The `regression` feature is **native-only** — it shells out to the
 upstream Perl runtime for reference-output diffs. Building for
 `wasm32-unknown-unknown` with `regression` enabled triggers a
-`compile_error!`.
+`compile_error!`. Use `--no-default-features --features wasm` for
+WASM builds.
 
 ## Regression harness
 
-Run the year-sweep against the upstream Perl source:
+Run the year-sweep against the upstream Perl source (requires `perl5`
+and the bundled CPAN deps; see `scripts/setup-divinum-officium.sh`):
 
 ```sh
-git submodule update --init --recursive    # pulls vendor/divinum-officium-perl
+git submodule update --init --recursive    # pulls vendor/divinum-officium
 cargo run --bin year-sweep --release -- --year 2026
 ```
 
 Boards land under `target/regression/{slug}-{year}/board.html`.
-Every cell should be green for all five rubrics.
+Every cell green = parity; the published baseline is at the SHA in
+`scripts/divinum-officium.pin` (April 2026 upstream).
 
 ## Provenance
 
 This crate ports the Divinum Officium Perl implementation
-(<https://github.com/DivinumOfficium/divinum-officium>) — vendored
-as a git submodule under `vendor/divinum-officium-perl/` for
-regression testing. All liturgical content remains under the
-upstream's terms; this crate is the rubric *logic* in Rust.
+(<https://github.com/DivinumOfficium/divinum-officium>) — vendored as a
+git submodule under `vendor/divinum-officium/` for regression testing.
+All liturgical content remains under the upstream's terms; this crate
+is the rubric *logic* in Rust.
 
 ## License
 
-MIT. See [`LICENSE`](LICENSE).
+MIT for the Rust code itself. See [`LICENSE`](LICENSE). The vendored
+upstream Perl tree under `vendor/divinum-officium/` carries its own
+license terms; data files derived from that tree are subject to them.

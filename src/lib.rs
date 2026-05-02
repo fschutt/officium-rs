@@ -44,3 +44,6 @@ pub mod regression;
 
 #[cfg(all(feature = "regression", target_arch = "wasm32"))]
 compile_error!("the `regression` feature is native-only; disable it for wasm32 targets");
+
+#[cfg(feature = "wasm")]
+pub mod wasm;

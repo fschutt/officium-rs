@@ -11,20 +11,32 @@ categories = ["text-processing"]
 readme = "README.md"
 
 [lib]
-crate-type = ["lib"]
+crate-type = ["lib", "cdylib"]
 
 [features]
 default = ["regression"]
 # Native-only Rust↔Perl regression harness. Pulls in the Perl source
-# as a git submodule (vendor/divinum-officium-perl/) and shells out to
+# as a git submodule (vendor/divinum-officium/) and shells out to
 # `perl5` to render reference HTML for diff. Hard-gated to non-WASM
 # targets — see compile_error! at the top of src/regression.rs.
 regression = []
+# wasm-bindgen surface (browser/Node). Use with
+# `cargo build --target wasm32-unknown-unknown --release --features wasm
+# --no-default-features` or wasm-pack.
+wasm = ["dep:wasm-bindgen"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 unicode-normalization = "0.1"
+# Pinned to match the installed wasm-bindgen-cli version. Bump in
+# lockstep with the CI tooling (`wasm-bindgen-cli --version`).
+wasm-bindgen = { version = "=0.2.92", optional = true }
+
+[profile.release]
+opt-level = "z"   # optimize for size on wasm; minor pessimization on native, acceptable
+lto = true
+codegen-units = 1
 
 [[bin]]
 name = "year-sweep"

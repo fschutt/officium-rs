@@ -44,9 +44,9 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | **B** (Breviary) | B1 — Build pipeline (psalms, horas, ordinarium → JSON) | ✅ DONE 2026-05-04 (commit `b2d227c`) — 1,204 horas keys + 202 psalms; src/horas.rs loader + 4 tests passing | — | — |
 | B | B2 — Hour walker over Ordinarium template (Vespers first) | ✅ DONE 2026-05-04 (commit `b890da3`) — `compute_office_hour` walker + macro expansion; 3 new tests | — | — |
 | B | B3 — Vespers (single hour) end-to-end Perl-parity smoke | ✅ DONE 2026-05-04 (commit `94b37cd`) — commune-chain resolver + per-day proper splicing | — | — |
-| B | B4 — Lauds + Prime + Tertia/Sexta/Nona + Compline | ✅ DONE 2026-05-05 — `ordinarium_file_for_hour` mapping (Tertia/Sexta/Nona → Minor); slot_candidates extended for `Hymnus`, `Capitulum Versus`, `Canticum: Benedictus`, `Canticum: Nunc dimittis`, `Lectio brevis`; 6 new tests; Oratio splice verified across all 7 hours | — | — |
-| B | B5 — Matins (the densest hour) | ⏳ next | — | Matins has the elaborate three-nocturn structure with lectios, responsories, invitatorium psalm 94, and Te Deum |
-| B | B6 — Concurrence + first-vespers split | ⏳ pending | — | after B5 |
+| B | B4 — Lauds + Prime + Tertia/Sexta/Nona + Compline | ✅ DONE 2026-05-05 (commit `104630a`) | — | — |
+| B | B5 — Matins (the densest hour) | ✅ DONE 2026-05-05 — Invitatorium splice + multi-Lectio emission (Lectio1..9 with intervening Responsories) via `splice_matins_lectios`; 3 new tests; Lectio4 (Monica proper) + Invitatorium antiphon both verified | — | — |
+| B | B6 — Concurrence + first-vespers split | ⏳ next | — | implement first-vespers vs second-vespers selection (today's Vespera vs tomorrow's first Vespera based on rank precedence). Also wire Te Deum + nocturn antiphons (3 Ant Matutinum) into the Matins Psalmi-cum-lectionibus slot |
 | B | B7 — Demo `/breviary.html` page + WASM API | ⏳ pending | — | after B6, ships with B-leg |
 | B | B8 — Year-sweep regression to ≥ 99.7 % (all 8 hours × 5 rubrics) | ⏳ pending | — | gates leg-B "done" |
 | **C** (correctness) | C1 — Local span-configurable runner (`scripts/regression.sh day|year|decade|century`) | ⏳ pending | — | after B1 |
@@ -138,22 +138,25 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    B
-ACTIVE TASK:   B5 — Matins (the densest hour)
-ESTIMATED:     2-3 loop windows. Matins is structurally different
-               from the day hours — three nocturns × 3 lectios
-               each = 9 lectios with responsories. Sancti/05-04
-               already exposes Lectio4..9 + Lectio94 (1-nocturn
-               variant for class-III feasts). The slot_candidates
-               table needs entries for `Lectio 1..9`, `Responsory
-               1..9`, `Invitatorium`, `Hymnus Matutinum`, `Ant
-               Matutinum {1,2,3}`, `Te Deum`. The walker also needs
-               to honour the `[Rule]` directive `9 lectiones` vs
-               `3 lectiones` to choose the right lectio slot count.
-EXIT WHEN:     compute_office_hour for Matutinum 2026-05-04 emits
-               a `RenderedLine::Plain { body }` for at least one
-               Lectio (Lectio4 — Monica's first proper lection)
-               and the Invitatorium antiphon. Te Deum + responsory
-               splicing can wait for B6.
+ACTIVE TASK:   B6 — Concurrence + first-vespers split
+ESTIMATED:     2 loop windows. Two pieces:
+                 (a) First-vespers selection: when the next day
+                     outranks today, today's Vespera renders from
+                     tomorrow's office (this is what Perl's
+                     `precedence.pl::concurrence` decides — the
+                     rank comparison is already in Rust under
+                     `crate::precedence`).
+                 (b) Wire the remaining Matins infrastructure:
+                     `Ant Matutinum {1,2,3}` antiphons grouped per
+                     nocturn, `Te Deum` macro from Common/Prayers,
+                     and respect `[Rule] 3 lectiones` (use Lectio94
+                     instead of Lectio4..9).
+EXIT WHEN:     (a) `compute_office_hour` accepts an optional
+               `next_day_key` and emits the next day's Vespera if
+               that day outranks today.
+               (b) Te Deum macro emits in Matutinum output for
+               2026-05-04 (St. Monica is class III but ranks high
+               enough — verify against Perl).
 ```
 
 Update this block on every wakeup so the next iteration knows what

@@ -375,6 +375,9 @@ fn slot_candidates(label: &str, hour: &str) -> Vec<String> {
             "Regula".to_string(),
         ],
 
+        // Matins-only slots.
+        "Invitatorium" => vec!["Invit".to_string()],
+
         _ => Vec::new(),
     }
 }
@@ -388,6 +391,17 @@ fn splice_proper_into_slot(
     if chain.is_empty() {
         return;
     }
+
+    // Special: Matins's `Psalmi cum lectionibus` slot is a structural
+    // composite — it needs the 9 Lectios and intervening responsories
+    // emitted as a sequence, not a single body. The full
+    // antiphon/psalmody/Te-Deum mechanic lands in B6+; for B5 we
+    // splice the Lectio + Responsory pairs.
+    if label == "Psalmi cum lectionibus" {
+        splice_matins_lectios(out, chain);
+        return;
+    }
+
     for cand in slot_candidates(label, hour) {
         if let Some(body) = find_section_in_chain(chain, &cand) {
             out.push(RenderedLine::Plain { body: body.to_string() });
@@ -400,6 +414,32 @@ fn splice_proper_into_slot(
         let hymnus_key = format!("Hymnus {hour}");
         if let Some(body) = find_section_in_chain(chain, &hymnus_key) {
             out.push(RenderedLine::Plain { body: body.to_string() });
+        }
+    }
+}
+
+/// Emit Lectio1..Lectio9 + Responsory1..Responsory9 from the day
+/// chain as a sequence of `Plain` lines tagged with a leading
+/// `Section { label: "Lectio N" }` marker. The full structure
+/// (3 nocturns × 3 lectios with antiphons + Te Deum) lands in B6;
+/// this is the B5 baseline that satisfies "at least Lectio4 emits
+/// for Sancti/05-04".
+fn splice_matins_lectios(out: &mut Vec<RenderedLine>, chain: &[&HorasFile]) {
+    for n in 1..=9 {
+        let key = format!("Lectio{n}");
+        if let Some(body) = find_section_in_chain(chain, &key) {
+            out.push(RenderedLine::Section { label: key.clone() });
+            out.push(RenderedLine::Plain { body: body.to_string() });
+        }
+        let resp_key = format!("Responsory{n}");
+        if let Some(body) = find_section_in_chain(chain, &resp_key) {
+            // Skip placeholder responsories (some C7a entries are
+            // 1-line "vide" stubs <30 chars); the structural slot
+            // marker is enough in those cases.
+            if body.trim().len() > 20 {
+                out.push(RenderedLine::Section { label: resp_key });
+                out.push(RenderedLine::Plain { body: body.to_string() });
+            }
         }
     }
 }
@@ -799,6 +839,80 @@ mod tests {
         let has_nunc = lines.iter().any(|l| matches!(l,
             RenderedLine::Section { label } if label.contains("Nunc")));
         assert!(has_nunc, "Completorium missing Nunc dimittis slot");
+    }
+
+    // ─── B5 tests: Matins ────────────────────────────────────────────
+
+    #[test]
+    fn matutinum_renders_invitatorium_and_lectio4() {
+        let lines = compute_office_hour(&args_for(HOUR_MATUTINUM, Some("Sancti/05-04")));
+        assert!(!lines.is_empty(), "Matutinum rendered nothing");
+
+        // Invitatorium antiphon — proper from Sancti/05-04 [Invit]
+        // ("Laudémus Deum nostrum * In confessióne beátæ Mónicæ.").
+        let mut found_invit = false;
+        for w in lines.windows(2) {
+            if let (RenderedLine::Section { label }, RenderedLine::Plain { body }) = (&w[0], &w[1])
+            {
+                if label == "Invitatorium" && body.contains("Mónicæ") {
+                    found_invit = true;
+                    break;
+                }
+            }
+        }
+        assert!(
+            found_invit,
+            "Matutinum did not splice the proper Invitatorium antiphon"
+        );
+
+        // At least one Lectio with proper Monica content. Lectio4 is
+        // the first proper lection ("Monica, sancti Augustíni
+        // dupliciter mater…").
+        let mut found_lectio4 = false;
+        for w in lines.windows(2) {
+            if let (RenderedLine::Section { label }, RenderedLine::Plain { body }) = (&w[0], &w[1])
+            {
+                if label == "Lectio4" && body.contains("Monica") {
+                    found_lectio4 = true;
+                    break;
+                }
+            }
+        }
+        assert!(
+            found_lectio4,
+            "Matutinum did not emit Lectio4 (Monica's proper first lection)"
+        );
+    }
+
+    #[test]
+    fn matutinum_emits_multiple_lectios() {
+        let lines = compute_office_hour(&args_for(HOUR_MATUTINUM, Some("Sancti/05-04")));
+        let lectio_count = lines
+            .iter()
+            .filter(|l| matches!(l, RenderedLine::Section { label } if label.starts_with("Lectio")))
+            .count();
+        // Sancti/05-04 has Lectio4..9 (6 entries); Lectio1..3 come
+        // from the Commune chain. Expect ≥6 lectio markers.
+        assert!(
+            lectio_count >= 6,
+            "expected ≥6 Lectio markers in Matins; got {lectio_count}"
+        );
+    }
+
+    #[test]
+    fn matutinum_oratio_splices_proper() {
+        let lines = compute_office_hour(&args_for(HOUR_MATUTINUM, Some("Sancti/05-04")));
+        let mut found = false;
+        for w in lines.windows(2) {
+            if let (RenderedLine::Section { label }, RenderedLine::Plain { body }) = (&w[0], &w[1])
+            {
+                if label == "Oratio" && body.contains("Mónicæ") {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        assert!(found, "Matutinum Oratio splice missed Monica proper");
     }
 
     #[test]

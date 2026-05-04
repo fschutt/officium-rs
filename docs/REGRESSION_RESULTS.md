@@ -7,17 +7,21 @@ switching with their eyes open.
 
 ## ±50 year sweep (1976–2076, 101 years × 5 rubrics)
 
-Run [25316562795] on `master` `3154843`, against upstream Perl pin
-`b0c1c71` (April 2026). Five matrix jobs, each ~3.5h wall-clock.
+Latest run [25328246322] on `master` `b21b7c7`, against upstream Perl
+pin `b0c1c71` (April 2026). Five matrix jobs, each ~3.5h wall-clock.
 
 | Rubric                  | Days passing  | Pct     |
 |-------------------------|---------------|---------|
-| Tridentine 1570         | 36833 / 36891 | 99.84%  |
-| Tridentine 1910         | 36803 / 36891 | 99.76%  |
+| Tridentine 1570         | 36848 / 36891 | **99.88%**  |
+| Tridentine 1910         | 36818 / 36891 | **99.80%**  |
 | Divino Afflatu 1939     | 36825 / 36891 | 99.82%  |
 | Reduced 1955            | 36761 / 36891 | 99.65%  |
 | Rubrics 1960            | 36693 / 36891 | 99.46%  |
-| **All five rubrics**    | **184 195 / 184 455** | **99.86%** |
+| **All five rubrics**    | **183 945 / 184 455** | **99.72%** |
+
+T1570/T1910 picked up +15 fail-years each from the Jan-12 Saturday
+anticipation patch (commit `450127f`); the other rubrics were
+already handling that case via explicit transfer-table entries.
 
 Zero panics. Zero Perl-render failures. Failures are all "section
 content diverges from Perl reference" — the Rust pipeline ran end-to-end

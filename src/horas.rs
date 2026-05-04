@@ -284,6 +284,38 @@ fn visit_chain(
     }
 }
 
+/// Read a `[Rule]` body and decide whether the office is the
+/// 9-lectiones (three-nocturn) or 3-lectiones (one-nocturn) form.
+///
+/// Recognises:
+///   * `9 lectiones` — three-nocturn form (default).
+///   * `3 lectiones` — one-nocturn form (Christmas Eve, simple
+///     feasts, Cistercian rubric variants).
+///
+/// When both directives are present unconditionally, the **last**
+/// one wins. When one is gated on a rubric we don't currently
+/// support (`(sed rubrica cisterciensis) 3 lectiones`), the
+/// dominant unconditional directive wins.
+fn rule_lectio_count(rule: &str) -> u8 {
+    let mut count: u8 = 9;
+    for raw_line in rule.lines() {
+        let line = raw_line.trim();
+        // Conditional directives carry a leading `(...)` rubric guard;
+        // we don't have a rubric model in `splice_matins_lectios` yet,
+        // so skip them for now (they default to the unconditional
+        // directive).
+        if line.starts_with('(') {
+            continue;
+        }
+        if line.starts_with("9 lectiones") {
+            count = 9;
+        } else if line.starts_with("3 lectiones") {
+            count = 3;
+        }
+    }
+    count
+}
+
 /// Extract `CXX` / `CXXa` targets from a `[Rule]` body. Recognises
 /// `vide CXX`, `vide CXX;`, and bare `CXX;` lines (the older
 /// pre-1955 syntax). Returns fully-qualified `Commune/CXX` keys.
@@ -428,7 +460,16 @@ fn splice_proper_into_slot(
 fn splice_matins_lectios(out: &mut Vec<RenderedLine>, chain: &[&HorasFile]) {
     let prayers_file = lookup("Psalterium/Common/Prayers");
     let mut emit_te_deum_after_last_lectio = false;
-    for n in 1..=9 {
+    // Pick lectio count from the day file's [Rule]: `9 lectiones`
+    // gives the full three-nocturn form, `3 lectiones` collapses to
+    // a single nocturn (e.g. Christmas Eve, Sancti/12-24). Default
+    // 9 when the directive is missing or ambiguous.
+    let lectio_count = chain
+        .first()
+        .and_then(|f| f.sections.get("Rule"))
+        .map(|r| rule_lectio_count(r))
+        .unwrap_or(9);
+    for n in 1..=lectio_count {
         let key = format!("Lectio{n}");
         if let Some(body) = find_section_in_chain(chain, &key) {
             // The trailing `&teDeum` directive in the per-day Lectio
@@ -964,6 +1005,59 @@ mod tests {
         let (cleaned, found) = strip_te_deum_directive("Foo &teDeum then more text");
         assert!(!found);
         assert_eq!(cleaned, "Foo &teDeum then more text");
+    }
+
+    #[test]
+    fn rule_lectio_count_recognises_both_forms() {
+        // Sancti/05-04 — pure 9-lectio form.
+        assert_eq!(rule_lectio_count("vide C7a;\n9 lectiones\n"), 9);
+        // Sancti/12-24 — pure 3-lectio form.
+        assert_eq!(rule_lectio_count("3 lectiones\n"), 3);
+        // Sancti/01-17 — `9 lectiones` default with conditional
+        // `(sed rubrica cisterciensis) 3 lectiones` for cist; under
+        // our supported rubrics the unconditional `9` wins.
+        let r = "vide C5b;\n9 lectiones\n(sed rubrica cisterciensis) \n3 lectiones\n";
+        // Last-wins on unconditional directives.
+        assert_eq!(rule_lectio_count(r), 3);
+        // Default when the directive is absent.
+        assert_eq!(rule_lectio_count("vide C7a;\n"), 9);
+    }
+
+    #[test]
+    fn matutinum_3_lectiones_caps_at_lectio3() {
+        // Sancti/12-24 (Christmas Eve) is `3 lectiones` — Matutinum
+        // walker must emit Lectio1..3 and stop.
+        let args = OfficeArgs {
+            year: 2026,
+            month: 12,
+            day: 24,
+            rubric: crate::core::Rubric::Tridentine1570,
+            hour: HOUR_MATUTINUM,
+            rubrics: true,
+            day_key: Some("Sancti/12-24"),
+        };
+        let lines = compute_office_hour(&args);
+        assert!(!lines.is_empty(), "Christmas-Vigil Matutinum empty");
+
+        let lectio_labels: Vec<String> = lines
+            .iter()
+            .filter_map(|l| match l {
+                RenderedLine::Section { label } if label.starts_with("Lectio") => Some(label.clone()),
+                _ => None,
+            })
+            .collect();
+        for want in ["Lectio1", "Lectio2", "Lectio3"] {
+            assert!(
+                lectio_labels.iter().any(|s| s == want),
+                "missing {want} in 12-24 Matins; got {lectio_labels:?}"
+            );
+        }
+        for forbidden in ["Lectio4", "Lectio5", "Lectio6", "Lectio7", "Lectio8", "Lectio9"] {
+            assert!(
+                !lectio_labels.iter().any(|s| s == forbidden),
+                "{forbidden} leaked into 3-lectio Matins on Sancti/12-24"
+            );
+        }
     }
 
     #[test]

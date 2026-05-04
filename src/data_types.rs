@@ -176,3 +176,43 @@ pub struct MassFile {
     #[serde(default)]
     pub annotated_section_meta: HashMap<String, String>,
 }
+
+// ─── Breviary corpus (`data/horas_latin.json`) ───────────────────────
+
+/// One file in the upstream Breviary corpus — Tempora / Sancti /
+/// Commune / Ordinarium / Psalterium index. Mirrors the Mass
+/// `MassFile` shape but trimmed: no per-rubric metadata variants
+/// (Breviary `[Rank]` is parsed at runtime by Rust against the active
+/// rubric, not pre-baked into N copies).
+///
+/// Two payload shapes:
+///   * **`sections`**: Tempora / Sancti / Commune / Psalterium files
+///     use the `[Section] body` grammar — the resolver picks a
+///     section by name (with optional rubric-tag fallback).
+///   * **`template`**: Ordinarium hour skeletons use the
+///     `#Section`/`&macro`/`$prayer`/`(sed rubrica X)` template
+///     grammar shared with `Ordo/Ordo*.txt`; we reuse the same
+///     [`OrdoLine`] shape so the Mass-side walker logic ports over.
+///
+/// Exactly one of the two is populated for any given file.
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct HorasFile {
+    #[serde(default)]
+    pub sections: HashMap<String, String>,
+    #[serde(default)]
+    pub template: Vec<OrdoLine>,
+}
+
+// ─── Psalter corpus (`data/psalms_latin.json`) ───────────────────────
+
+/// One psalm file — keyed by `Psalm{N}` or split form `Psalm17a`.
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct PsalmFile {
+    /// Vulgate Latin text (the default for all rubrics).
+    #[serde(default)]
+    pub latin: String,
+    /// Pius XII / Bea revision — substituted under the `psalmvar`
+    /// runtime flag. Empty when no Bea variant exists.
+    #[serde(default)]
+    pub latin_bea: String,
+}

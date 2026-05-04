@@ -19,7 +19,7 @@ use std::path::Path;
 #[path = "src/data_types.rs"]
 mod data_types;
 
-use data_types::{Cell, KalendariaEntry, MassFile, OrdoCorpus, SanctiEntry};
+use data_types::{Cell, HorasFile, KalendariaEntry, MassFile, OrdoCorpus, PsalmFile, SanctiEntry};
 
 fn transcode<T>(input: &Path, out_path: &Path)
 where
@@ -75,6 +75,8 @@ fn main() {
     println!("cargo:rerun-if-changed=data/kalendaria_by_rubric.json");
     println!("cargo:rerun-if-changed=data/missa_latin.json");
     println!("cargo:rerun-if-changed=data/ordo_latin.json");
+    println!("cargo:rerun-if-changed=data/horas_latin.json");
+    println!("cargo:rerun-if-changed=data/psalms_latin.json");
 
     transcode::<HashMap<String, Vec<SanctiEntry>>>(
         &data.join("sancti.json"),
@@ -102,4 +104,38 @@ fn main() {
         &data.join("ordo_latin.json"),
         &out.join("ordo_latin.postcard.br"),
     );
+
+    // Breviary corpus — only encoded if the JSON file exists. The
+    // upstream tree is large (~4.5 MB raw → ~700 KB brotli) so this
+    // is gated by the existence of the JSON; runs of `data/build_
+    // horas_json.py` produce it. Lib code that depends on this
+    // (`src/horas.rs`) must handle the corpus being empty / missing
+    // until B1+ ships completely.
+    let horas_json = data.join("horas_latin.json");
+    if horas_json.exists() {
+        transcode::<HashMap<String, HorasFile>>(
+            &horas_json,
+            &out.join("horas_latin.postcard.br"),
+        );
+    } else {
+        // Write an empty postcard blob so include_bytes! has
+        // something to pull at runtime.
+        let empty: HashMap<String, HorasFile> = HashMap::new();
+        let bytes = postcard::to_allocvec(&empty).expect("empty horas postcard");
+        let compressed = brotli_compress(&bytes);
+        std::fs::write(out.join("horas_latin.postcard.br"), compressed).unwrap();
+    }
+
+    let psalms_json = data.join("psalms_latin.json");
+    if psalms_json.exists() {
+        transcode::<HashMap<String, PsalmFile>>(
+            &psalms_json,
+            &out.join("psalms_latin.postcard.br"),
+        );
+    } else {
+        let empty: HashMap<String, PsalmFile> = HashMap::new();
+        let bytes = postcard::to_allocvec(&empty).expect("empty psalms postcard");
+        let compressed = brotli_compress(&bytes);
+        std::fs::write(out.join("psalms_latin.postcard.br"), compressed).unwrap();
+    }
 }

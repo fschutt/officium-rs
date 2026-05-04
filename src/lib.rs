@@ -31,6 +31,7 @@ pub mod corpus;
 pub mod data_types;
 pub mod date;
 pub mod embed;
+pub mod horas;
 pub mod kalendaria;
 pub mod kalendaria_layers;
 pub mod kalendarium_1570;

@@ -56,25 +56,35 @@ Noster, Agnus Dei, Ite Missa Est, Last Gospel, etc.
 - `vendor/divinum-officium/web/cgi-bin/missa/Cmissa.pl:52-53`:
   the Ordo-file picker per cursus.
 
-### Refactor (Phase R1)
-- New `data/build_ordo_json.py`: reads `Ordo/Ordo*.txt` + `Prayers.txt`
-  + `Prefationes.txt` from the submodule, emits `data/ordo_latin.json`
-  with the structured template per cursus.
-- New `src/data_types.rs::OrdoTemplate`, `OrdoLine` (variant: Plain,
-  Spoken{role,body}, Macro{name}, ProperInsert{name},
-  Conditional{flags, body}, Header).
-- New `src/ordo.rs::render_mass(office, propers, mode) -> Vec<OrdoLine>`
-  — walks the template, resolves macros against the prayers map,
-  substitutes propers at insertion points, applies `!*` gates against
-  the rubric/mode (Solemn/Sung/Low/Defunctorum).
-- Extend `compute_mass_full(year, month, day, rubric, mode) -> JSON`
-  in `src/wasm.rs` to return the full ordered structure.
-- Replace `demo/ordo.js` with a shim that pulls the template from the
-  WASM API; `demo/render.js` walks the returned structure.
+### Refactor (Phase R1) — DONE
+- ✅ `data/build_ordo_json.py`: reads `Ordo/Ordo*.txt` + `Prayers.txt`
+  + `Prefationes.txt` from the submodule, emits `data/ordo_latin.json`.
+  Output: 7 templates (Ordo, Ordo67, OrdoN, OrdoA, OrdoM, OrdoOP, OrdoS),
+  44 prayers, 34 prefaces.
+- ✅ `src/data_types.rs::OrdoLine` + `OrdoCorpus` shared between
+  `build.rs` and the lib (postcard-encoded, brotli-compressed, ~50 KB
+  shipped weight).
+- ✅ `src/ordo.rs::render_mass(args)` walker. Mirrors
+  `propers.pl::specials()`: applies `!*FLAG` flag-guards (D/R/S/nD/RnD/
+  SnD), `!*&hookname` hook-guards (CheckQuiDixisti, CheckPax,
+  CheckBlessing, CheckUltimaEv, placeattibi), and side-effect hooks
+  (Introibo / GloriaM / Credo emitting `omit.` rubrics under the right
+  conditions).
+- ✅ `wasm.rs::compute_mass_full(year, month, day, rubric, solemn,
+  rubrics) -> JSON` — exposes the rendered Ordinary as
+  `ordinary: [...]` alongside the existing office / propers / rules.
+  Auto-infers `defunctorum` from the winner's `officium` / `commune`
+  metadata (covers All Souls + votive Cross via C9 commune).
+  `compute_mass_json` removed — `compute_mass_full` is its strict
+  superset.
+- ✅ `demo/ordo.js` deleted; `demo/render.js` walks
+  `mass.ordinary` from WASM. Solemn / show-rubrics checkboxes added
+  to the form; Defunctorum is auto-detected by the engine.
 
 **Outcome**: zero static Latin in JS; demo + Rust core share the
-Ordo source-of-truth bundled from upstream. ~600 LOC new Rust,
-~80 LOC pruned JS.
+Ordo source-of-truth bundled from upstream. WASM bundle stayed
+~1.3 MB (the new Ordo corpus added ~50 KB brotli; we pruned
+`compute_mass_json` + `pull_rules` to compensate).
 
 ---
 

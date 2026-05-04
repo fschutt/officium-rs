@@ -19,7 +19,7 @@ use std::path::Path;
 #[path = "src/data_types.rs"]
 mod data_types;
 
-use data_types::{Cell, KalendariaEntry, MassFile, SanctiEntry};
+use data_types::{Cell, KalendariaEntry, MassFile, OrdoCorpus, SanctiEntry};
 
 fn transcode<T>(input: &Path, out_path: &Path)
 where
@@ -74,6 +74,7 @@ fn main() {
     println!("cargo:rerun-if-changed=data/kalendaria_1962.json");
     println!("cargo:rerun-if-changed=data/kalendaria_by_rubric.json");
     println!("cargo:rerun-if-changed=data/missa_latin.json");
+    println!("cargo:rerun-if-changed=data/ordo_latin.json");
 
     transcode::<HashMap<String, Vec<SanctiEntry>>>(
         &data.join("sancti.json"),
@@ -95,5 +96,10 @@ fn main() {
     transcode::<HashMap<String, MassFile>>(
         &data.join("missa_latin.json"),
         &out.join("missa_latin.postcard.br"),
+    );
+
+    transcode::<OrdoCorpus>(
+        &data.join("ordo_latin.json"),
+        &out.join("ordo_latin.postcard.br"),
     );
 }

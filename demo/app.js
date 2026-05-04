@@ -2,7 +2,7 @@
 // full Mass.
 
 import init, {
-  compute_mass_json,
+  compute_mass_full,
   version as crateVersion,
 } from "./pkg/officium_rs.js";
 
@@ -43,8 +43,10 @@ function setStatus(text, kind = "") {
 
     let mass;
     const t0 = performance.now();
+    const solemn = $("solemn") ? $("solemn").checked : true;
+    const rubricsOn = $("rubrics-on") ? $("rubrics-on").checked : true;
     try {
-      const json = compute_mass_json(y, m, d, rubric);
+      const json = compute_mass_full(y, m, d, rubric, solemn, rubricsOn);
       mass = JSON.parse(json);
     } catch (err) {
       $("result").innerHTML =

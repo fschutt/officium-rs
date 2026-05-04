@@ -1,8 +1,7 @@
-// Mass renderer — turns the WASM JSON output of compute_mass_json
-// into HTML by interleaving the day's propers (introitus, oratio, …)
-// with the static Latin Ordinary from `./ordo.js`.
-
-import { ORDO } from "./ordo.js";
+// Mass renderer — walks the WASM-emitted `mass.ordinary` list (no
+// hardcoded Latin lives in JS) and HTML-formats each entry. The
+// shape of `ordinary` is documented in
+// `src/wasm.rs::compute_mass_full`.
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({
@@ -23,23 +22,14 @@ function formatProperBody(latin) {
     .map((raw) => {
       const line = raw.trim();
       if (!line) return "";
-      // Citation header (`!Heb 13:1`).
       if (line.startsWith("!")) {
         return `<div class="citation">${escapeHtml(line.slice(1).trim())}</div>`;
       }
-      // Versicle / responsory / "v." prefix.
       const vMatch = line.match(/^([VvRrSsMmCcDdJj])\.\s*(.*)$/);
       if (vMatch) {
         return `<div class="vers"><span class="role">${escapeHtml(vMatch[1].toUpperCase())}.</span> ${escapeHtml(vMatch[2])}</div>`;
       }
-      // Bare separator line.
-      if (line === "_") {
-        return `<hr class="sep">`;
-      }
-      // Inline rubric `(Hic genuflectitur)` — Perl renders these in
-      // small red italic. The propers we get may still contain them
-      // wrapped in parens because apply_body_conditionals_1570 only
-      // strips the logical predicates.
+      if (line === "_") return `<hr class="sep">`;
       if (line.startsWith("(") && line.endsWith(")")) {
         return `<div class="inline-rubric">${escapeHtml(line)}</div>`;
       }
@@ -50,70 +40,62 @@ function formatProperBody(latin) {
   return html;
 }
 
-function renderEntry(entry, mass, rules) {
-  const heading = entry.header
-    ? `<h3 class="ord-heading">${escapeHtml(entry.header)}</h3>`
+// Macro bodies (Confiteor / Gloria / Pater noster / DominusVobiscum
+// dialog / IteMissaEst variants) come from the Perl Prayers.txt
+// multi-line text. Reuse the same role-prefixed line splitter as
+// formatProperBody — Prayers.txt uses the same V./R./S. convention.
+function formatMacroBody(body) {
+  return formatProperBody(body);
+}
+
+function renderProper(section, mass) {
+  const block = mass.propers[section];
+  if (!block) return "";
+  const source = block.source
+    ? `<div class="proper-source">from <code>${escapeHtml(block.source)}</code>${block.via_commune ? ' <span class="via">via Commune</span>' : ''}</div>`
     : "";
+  const body = formatProperBody(block.latin);
+  let commems = "";
+  if (
+    ["oratio", "secreta", "postcommunio"].includes(section) &&
+    Array.isArray(mass.propers.commemorations)
+  ) {
+    for (const c of mass.propers.commemorations) {
+      const sub = c[section];
+      if (!sub) continue;
+      commems += `
+        <div class="commem">
+          <div class="commem-h">Commemoratio: <code>${escapeHtml(c.source)}</code></div>
+          ${formatProperBody(sub.latin)}
+        </div>`;
+    }
+  }
+  return `<div class="proper">${source}${body}${commems}</div>`;
+}
 
-  switch (entry.kind) {
+function renderLine(entry, mass) {
+  switch (entry.k) {
+    case "section":
+      return `<h3 class="ord-heading">${escapeHtml(entry.label)}</h3>`;
+
     case "rubric":
-      return `${heading}<div class="rubric">${escapeHtml(entry.body)}</div>`;
+      return `<div class="rubric" data-level="${entry.level}">${escapeHtml(entry.body)}</div>`;
 
-    case "spoken": {
-      const role = entry.role
-        ? `<span class="role">${escapeHtml(entry.role)}.</span> `
-        : "";
-      return `${heading}<div class="spoken">${role}${escapeHtml(entry.body)}</div>`;
-    }
+    case "spoken":
+      return `<div class="spoken"><span class="role">${escapeHtml(entry.role)}.</span> ${escapeHtml(entry.body)}</div>`;
 
-    case "proper": {
-      const block = mass.propers[entry.section];
-      if (!block) {
-        // Empty proper (Tractus on a non-Lent day, etc.) — silently skip.
-        return "";
-      }
-      const source = block.source
-        ? `<div class="proper-source">from <code>${escapeHtml(block.source)}</code>${block.via_commune ? ' <span class="via">via Commune</span>' : ''}</div>`
-        : "";
-      const body = formatProperBody(block.latin);
-      const head = entry.header
-        ? `<h3 class="ord-heading proper-h">${escapeHtml(entry.header)}</h3>`
-        : "";
-      // For Oratio / Secreta / Postcommunio, also render commemorations.
-      let commems = "";
-      if (
-        ["oratio", "secreta", "postcommunio"].includes(entry.section) &&
-        Array.isArray(mass.propers.commemorations)
-      ) {
-        for (const c of mass.propers.commemorations) {
-          const sub = c[entry.section];
-          if (!sub) continue;
-          commems += `
-            <div class="commem">
-              <div class="commem-h">Commemoratio: <code>${escapeHtml(c.source)}</code></div>
-              ${formatProperBody(sub.latin)}
-            </div>`;
-        }
-      }
-      return `${head}<div class="proper">${source}${body}${commems}</div>`;
-    }
+    case "plain":
+      return `<div class="spoken">${escapeHtml(entry.body)}</div>`;
 
-    case "conditional": {
-      if (!rules[entry.flag]) return "";
-      const inner = entry.entries.map((e) => renderEntry(e, mass, rules)).join("\n");
-      return `${heading}<div class="cond">${inner}</div>`;
-    }
+    case "macro":
+      return `<div class="macro" data-macro="${escapeHtml(entry.name)}">${formatMacroBody(entry.body)}</div>`;
 
-    case "conditional_branch": {
-      for (const branch of entry.branches) {
-        if (branch.when_default || rules[branch.when_flag]) {
-          return branch.entries
-            .map((e) => renderEntry(e, mass, rules))
-            .join("\n");
-        }
-      }
-      return "";
-    }
+    case "proper":
+      return renderProper(entry.section, mass);
+
+    case "hook":
+      // Side-effect hook fired (Introibo / GloriaM / Credo emitted "omit.").
+      return `<div class="rubric">${escapeHtml(entry.message)}</div>`;
 
     default:
       return "";
@@ -134,17 +116,17 @@ export function renderMass(mass) {
         <dt>Rubric</dt><dd>${escapeHtml(office.rubric)}</dd>
       </dl>
       <div class="mass-toggles">
-        Gloria: <strong>${rules.gloria ? "yes" : "omitted"}</strong>
+        Mode: <strong>${rules.solemn ? "solemn" : "low Mass"}</strong>
+        ${rules.defunctorum ? '· <strong>Defunctorum</strong>' : ''}
+        · Gloria: <strong>${rules.gloria ? "yes" : "omitted"}</strong>
         · Credo: <strong>${rules.credo ? "yes" : "omitted"}</strong>
-        ${rules.prefatio_name ? ` · Prefatio: <strong>${escapeHtml(rules.prefatio_name)}</strong>` : ""}
+        ${rules.prefatio_name ? `· Prefatio: <strong>${escapeHtml(rules.prefatio_name)}</strong>` : ""}
       </div>
     </header>
   `;
 
-  const body = ORDO
-    .map((entry) => renderEntry(entry, mass, rules))
-    .filter(Boolean)
-    .join("\n");
+  const ordinary = Array.isArray(mass.ordinary) ? mass.ordinary : [];
+  const body = ordinary.map((e) => renderLine(e, mass)).filter(Boolean).join("\n");
 
   return `<article class="mass">${head}${body}</article>`;
 }

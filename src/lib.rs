@@ -10,6 +10,10 @@
 //! ## Status
 //!
 //! - ✅ Calendar, occurrence, precedence, mass-propers resolution (Latin)
+//! - ✅ Mass Ordinary renderer ([`ordo`]) — guard-aware walker over
+//!   the upstream `Ordo/Ordo*.txt` template, with side-effect hooks
+//!   (Introibo / GloriaM / Credo), hook-guards (CheckBlessing,
+//!   CheckUltimaEv, …), and proper-insertion splicing.
 //! - ✅ All five rubric layers at 100% Perl parity
 //! - ⏳ Monastic rubric
 //! - ⏳ Office hours (Vespers, Lauds, …) — only Mass today
@@ -33,6 +37,7 @@ pub mod kalendarium_1570;
 pub mod mass;
 pub mod missa;
 pub mod occurrence;
+pub mod ordo;
 pub mod prayers;
 pub mod precedence;
 pub mod reform;

@@ -56,6 +56,67 @@ pub struct Cell {
     pub kind: String,
 }
 
+// ─── Mass Ordinary template (`data/ordo_latin.json`) ────────────────
+
+/// One line of an Ordo template, plus its conditional guard. Mirrors
+/// the upstream Perl walker's per-line decision in
+/// `propers.pl::specials()` — the guard is consulted at render time
+/// against the active `(solemn, defunctorum)` mode and the line is
+/// either emitted, skipped, or — for hooks — dispatched to a
+/// callback.
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct OrdoLine {
+    /// `Some("S"|"R"|"D"|"nD"|"SnD"|"RnD")` for flag guards, or
+    /// `Some("&hookname")` for hook guards (e.g. `&CheckBlessing`).
+    /// `None` means unconditional.  See `crate::ordo::Mode::passes_guard`.
+    ///
+    /// Note: postcard is a positional binary format — it always writes
+    /// the discriminant byte for `Option` regardless of whether the
+    /// field is present. We can't use `skip_serializing_if` here without
+    /// breaking the build-time → runtime round-trip.
+    #[serde(default)]
+    pub guard: Option<String>,
+    pub kind: String,
+    /// Body for `plain`/`spoken`/`rubric`/`hook` (when hooks carry
+    /// inline rubric text).
+    #[serde(default)]
+    pub body: Option<String>,
+    /// Speaker tag for `spoken`: V/R/S/M/D/C/J.
+    #[serde(default)]
+    pub role: Option<String>,
+    /// Section heading text for `section`.
+    #[serde(default)]
+    pub label: Option<String>,
+    /// Rubric italic level (1, 2, 3) or omitted-comment marker (21, 22).
+    #[serde(default)]
+    pub level: Option<u8>,
+    /// `&macroname` / `&propername` / `!&hookname` identifier.
+    #[serde(default)]
+    pub name: Option<String>,
+    /// For `hook` lines that have inline rubric text after the hook
+    /// name (e.g. `!*D In Missis Defunctorum dicit: …`).
+    #[serde(default)]
+    pub text: Option<String>,
+}
+
+/// Bundled Ordo corpus — all per-cursus templates + the macro
+/// dictionary + the preface dictionary. Built from upstream
+/// `Ordo/Ordo*.txt` + `Ordo/Prayers.txt` + `Ordo/Prefationes.txt` by
+/// `data/build_ordo_json.py`.
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct OrdoCorpus {
+    /// Cursus name → ordered list of `OrdoLine`s. Keys: `Ordo`,
+    /// `Ordo67`, `OrdoN`, `OrdoA`, `OrdoM`, `OrdoOP`, `OrdoS`.
+    pub templates: HashMap<String, Vec<OrdoLine>>,
+    /// `&MacroName` lookup — the static prayer texts referenced by
+    /// `kind: "macro"` lines (e.g. `&Confiteor`, `&IteMissa`,
+    /// `&DominusVobiscum`).
+    pub prayers: HashMap<String, String>,
+    /// Named preface bodies — `Prefationes.txt` keyed by name token
+    /// (e.g. `Adv`, `Nat`, `Quad`, `Apostolis`, `Communis`).
+    pub prefaces: HashMap<String, String>,
+}
+
 // ─── Mass corpus (`data/missa_latin.json`) ───────────────────────────
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]

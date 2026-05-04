@@ -31,9 +31,31 @@
   }
 
   header.page, main, footer.page {
-    max-width: 760px;
-    margin: 0 auto;
-    padding: 0 24px;
+    max-width: 880px;
+    margin: 0;
+    padding: 0 36px;
+    text-align: left;
+  }
+
+  /* Top nav: Mass / Calendar links */
+  nav.toplinks {
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    gap: 18px;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  nav.toplinks a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid currentColor;
+  }
+  nav.toplinks a[aria-current="page"] {
+    color: var(--fg);
+    border-bottom-color: var(--fg);
+    font-weight: 500;
   }
 
   header.page {
@@ -130,6 +152,27 @@
   button:hover:not(:disabled) { background: var(--accent-soft); }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
 
+  .checkboxes {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .checkboxes label.cb {
+    font-family: var(--serif);
+    font-size: 15px;
+    color: var(--fg);
+    text-transform: none;
+    letter-spacing: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .checkboxes input[type=checkbox] {
+    accent-color: var(--accent);
+  }
+
   /* ── Mass renderer ─────────────────────────────────────────── */
 
   article.mass {
@@ -139,7 +182,9 @@
     padding: 32px 36px;
     box-shadow: var(--shadow);
     line-height: 1.55;
+    text-align: left;
   }
+  article.mass * { text-align: left; }
 
   .mass-head {
     border-bottom: 1px solid var(--rule);
@@ -270,8 +315,8 @@
   .empty-state, #status {
     color: var(--muted);
     font-style: italic;
-    text-align: center;
-    padding: 36px 24px;
+    text-align: left;
+    padding: 18px 24px;
     background: var(--card);
     border: 1px dashed var(--rule);
     border-radius: 6px;
@@ -323,7 +368,12 @@
 
 <header class="page">
   <h1><span class="crate">officium-rs</span></h1>
-  <p class="tagline">A pure-Rust port of the Divinum Officium liturgical engine. Resolves the day's office and renders the full Tridentine Mass under any of five Roman rubrics — 1570, 1910, 1939, 1955, 1960 — at 100% (R60: 99.7%) parity with the upstream Perl reference.</p>
+  <p class="tagline">A pure-Rust port of the Divinum Officium liturgical engine. Resolves the day's office and renders the Tridentine Mass under any of five Roman rubrics — 1570, 1910, 1939, 1955, 1960.</p>
+  <nav class="toplinks">
+    <a href="./" aria-current="page">Mass</a>
+    <a href="./calendar.html">Calendar</a>
+    <a href="https://github.com/fschutt/officium-rs">GitHub</a>
+  </nav>
 </header>
 
 <main>
@@ -339,10 +389,17 @@
       <select id="rubric">
         <option value="trid-1570">Tridentine 1570</option>
         <option value="trid-1910">Tridentine 1910 (Pius X)</option>
-        <option value="divino-afflatu">Divino Afflatu 1939</option>
+        <option value="divino-afflatu" selected>Divino Afflatu 1939 (pre-55)</option>
         <option value="reduced-1955">Reduced 1955 (Pius XII)</option>
-        <option value="rubrics-1960" selected>Rubrics 1960 (John XXIII)</option>
+        <option value="rubrics-1960">Rubrics 1960 (John XXIII)</option>
       </select>
+      <span></span>
+
+      <label for="solemn">Mode</label>
+      <span class="checkboxes">
+        <label class="cb"><input type="checkbox" id="solemn" checked> Solemn (sung)</label>
+        <label class="cb"><input type="checkbox" id="rubrics-on" checked> Show rubrics</label>
+      </span>
       <span></span>
 
       <button type="submit" id="submit-btn" disabled>Render Mass</button>
@@ -358,16 +415,21 @@
   <section>
     <h2 class="section-h">API</h2>
 <pre class="api-example"><span class="com">// Browser:</span>
-<span class="kw">import</span> init, { compute_mass_json } <span class="kw">from</span> <span class="str">'./pkg/officium_rs.js'</span>;
+<span class="kw">import</span> init, { compute_mass_full } <span class="kw">from</span> <span class="str">'./pkg/officium_rs.js'</span>;
 
 <span class="kw">await</span> init();
-<span class="kw">const</span> json = compute_mass_json(<span class="str">2026</span>, <span class="str">5</span>, <span class="str">2</span>, <span class="str">'rubrics-1960'</span>);
+<span class="kw">const</span> json = compute_mass_full(<span class="str">2026</span>, <span class="str">5</span>, <span class="str">2</span>, <span class="str">'rubrics-1960'</span>, <span class="kw">true</span>, <span class="kw">true</span>);
 <span class="kw">const</span> mass = JSON.parse(json);
-<span class="com">// → { office: {winner, color, season, rank, rubric, commemorations},</span>
-<span class="com">//     propers: {introitus: {latin, source, via_commune}, oratio: {…},</span>
-<span class="com">//               lectio, graduale, evangelium, offertorium, secreta,</span>
-<span class="com">//               prefatio, communio, postcommunio, commemorations: […]},</span>
-<span class="com">//     rules:   {gloria: bool, credo: bool, prefatio_name: "…"} }</span>
+<span class="com">// → { office:    {winner, color, season, rank, rubric, commemorations},</span>
+<span class="com">//     propers:   {introitus, oratio, lectio, graduale, evangelium, …,</span>
+<span class="com">//                 commemorations: […]},</span>
+<span class="com">//     rules:     {gloria, credo, prefatio_name, solemn, defunctorum},</span>
+<span class="com">//     ordinary:  [{k:"section",label:"Incipit"}, {k:"rubric",body,level},</span>
+<span class="com">//                 {k:"spoken",role:"V",body}, {k:"plain",body},</span>
+<span class="com">//                 {k:"macro",name:"Gloria",body},</span>
+<span class="com">//                 {k:"proper",section:"introitus"},</span>
+<span class="com">//                 {k:"hook",hook:"Introibo",message:"omit. psalm"},</span>
+<span class="com">//                 …] }</span>
 </pre>
   </section>
 

@@ -89,15 +89,29 @@ pub fn iter() -> impl Iterator<Item = (&'static String, &'static HorasFile)> {
 
 // ─── Hour walker (B2) ────────────────────────────────────────────────
 
-/// The 8 canonical Roman office hours, plus aliases used elsewhere
-/// in the corpus. The string form matches the upstream filename
-/// stems under `horas/Ordinarium/`.
-pub const HOUR_VESPERA: &str = "Vespera";
+/// The canonical Roman office hours. Strings are the *liturgical*
+/// hour names — used for per-day section lookups (`Capitulum
+/// Tertia`, `Hymnus Vespera`, etc.). The walker maps them to the
+/// underlying Ordinarium filename via [`ordinarium_file_for_hour`]
+/// (Tertia/Sexta/Nona share `Minor.txt`).
+pub const HOUR_MATUTINUM: &str = "Matutinum";
 pub const HOUR_LAUDES: &str = "Laudes";
 pub const HOUR_PRIMA: &str = "Prima";
-pub const HOUR_MINOR: &str = "Minor";
-pub const HOUR_MATUTINUM: &str = "Matutinum";
+pub const HOUR_TERTIA: &str = "Tertia";
+pub const HOUR_SEXTA: &str = "Sexta";
+pub const HOUR_NONA: &str = "Nona";
+pub const HOUR_VESPERA: &str = "Vespera";
 pub const HOUR_COMPLETORIUM: &str = "Completorium";
+
+/// Map a liturgical hour name to its Ordinarium template filename.
+/// Tertia/Sexta/Nona share `Minor.txt` upstream; everything else is
+/// 1:1.
+pub fn ordinarium_file_for_hour(hour: &str) -> &str {
+    match hour {
+        HOUR_TERTIA | HOUR_SEXTA | HOUR_NONA => "Minor",
+        _ => hour,
+    }
+}
 
 /// Inputs for [`compute_office_hour`].
 ///
@@ -148,7 +162,7 @@ pub struct OfficeArgs<'a> {
 ///
 /// On unknown hour stem returns an empty vec.
 pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
-    let key = format!("Ordinarium/{}", args.hour);
+    let key = format!("Ordinarium/{}", ordinarium_file_for_hour(args.hour));
     let file = match lookup(&key) {
         Some(f) => f,
         None => return Vec::new(),
@@ -314,15 +328,53 @@ fn parse_vide_targets(rule: &str) -> Vec<String> {
 /// in B4+.
 fn slot_candidates(label: &str, hour: &str) -> Vec<String> {
     match label {
+        // Shared across hours.
         "Oratio" => vec!["Oratio".to_string()],
+
+        // Vespera + Laudes Capitulum/Hymnus/Versus combo slot.
         "Capitulum Hymnus Versus" | "Capitulum Responsorium Hymnus Versus" => vec![
             format!("Capitulum {hour}"),
             "Capitulum".to_string(),
         ],
+
+        // Prima/Minor/Completorium use a tighter Capitulum + Versus form.
+        "Capitulum Versus" | "Capitulum Responsorium Versus" => vec![
+            format!("Capitulum {hour}"),
+            "Capitulum".to_string(),
+        ],
+
+        // Standalone Hymnus slot (Prima, Minor, Completorium).
+        "Hymnus" => vec![
+            format!("Hymnus {hour}"),
+            "Hymnus".to_string(),
+        ],
+
+        // Gospel-canticle antiphons.
         "Canticum: Magnificat" => vec![
             format!("Ant Magnificat {hour}"),
             "Ant Magnificat".to_string(),
         ],
+        "Canticum: Benedictus" => vec![
+            format!("Ant Benedictus {hour}"),
+            "Ant Benedictus".to_string(),
+        ],
+        "Canticum: Nunc dimittis" => vec![
+            "Ant Nunc dimittis".to_string(),
+        ],
+
+        // Lectio brevis — Compline / Prima / minor hours.
+        // Prima uses `Lectio Prima`; everything else `Lectio brevis {hour}`
+        // with a fallback to bare `Lectio brevis`.
+        "Lectio brevis" => vec![
+            format!("Lectio brevis {hour}"),
+            "Lectio brevis".to_string(),
+            "Lectio Prima".to_string(),
+        ],
+        "Regula vel Lectio brevis" | "Regula vel Evangelium" => vec![
+            "Lectio Prima".to_string(),
+            "Regula".to_string(),
+        ],
+
         _ => Vec::new(),
     }
 }
@@ -641,6 +693,112 @@ mod tests {
         // Don't assert hard — Vidua's Vespera Capitulum is an edge
         // case in upstream. The Oratio test above is the firm exit.
         let _ = found_splice;
+    }
+
+    // ─── B4 tests: minor hours ───────────────────────────────────────
+
+    #[test]
+    fn ordinarium_file_for_hour_maps_minor_hours() {
+        assert_eq!(ordinarium_file_for_hour(HOUR_TERTIA), "Minor");
+        assert_eq!(ordinarium_file_for_hour(HOUR_SEXTA), "Minor");
+        assert_eq!(ordinarium_file_for_hour(HOUR_NONA), "Minor");
+        assert_eq!(ordinarium_file_for_hour(HOUR_LAUDES), "Laudes");
+        assert_eq!(ordinarium_file_for_hour(HOUR_PRIMA), "Prima");
+        assert_eq!(ordinarium_file_for_hour(HOUR_VESPERA), "Vespera");
+        assert_eq!(ordinarium_file_for_hour(HOUR_COMPLETORIUM), "Completorium");
+    }
+
+    fn args_for(hour: &'static str, day_key: Option<&'static str>) -> OfficeArgs<'static> {
+        OfficeArgs {
+            year: 2026,
+            month: 5,
+            day: 4,
+            rubric: crate::core::Rubric::Tridentine1570,
+            hour,
+            rubrics: true,
+            day_key,
+        }
+    }
+
+    #[test]
+    fn lauds_renders_with_oratio_splice() {
+        let lines = compute_office_hour(&args_for(HOUR_LAUDES, Some("Sancti/05-04")));
+        assert!(!lines.is_empty(), "Lauds rendered nothing");
+        let mut found_oratio = false;
+        for w in lines.windows(2) {
+            if let (RenderedLine::Section { label }, RenderedLine::Plain { body }) = (&w[0], &w[1])
+            {
+                if label == "Oratio" && body.contains("Mónicæ") {
+                    found_oratio = true;
+                    break;
+                }
+            }
+        }
+        assert!(found_oratio, "Lauds did not splice St. Monica Oratio");
+    }
+
+    #[test]
+    fn prima_renders_non_empty() {
+        let lines = compute_office_hour(&args_for(HOUR_PRIMA, Some("Sancti/05-04")));
+        assert!(!lines.is_empty(), "Prima rendered nothing");
+        // Prima Capitulum slot should resolve via per-day chain to
+        // *something* (Capitulum + Lectio Prima) — at minimum a
+        // Section "Capitulum Versus" or "Capitulum Responsorium Versus"
+        // must be emitted.
+        let has_cap = lines.iter().any(|l| matches!(l,
+            RenderedLine::Section { label } if label.contains("Capitulum")));
+        assert!(has_cap, "Prima missing Capitulum section slot");
+    }
+
+    #[test]
+    fn tertia_sexta_nona_share_minor_template() {
+        for hour in [HOUR_TERTIA, HOUR_SEXTA, HOUR_NONA] {
+            let lines = compute_office_hour(&args_for(hour, Some("Sancti/05-04")));
+            assert!(!lines.is_empty(), "{hour} rendered nothing");
+            // All three must hit Oratio.
+            let mut found = false;
+            for w in lines.windows(2) {
+                if let (RenderedLine::Section { label }, RenderedLine::Plain { body }) =
+                    (&w[0], &w[1])
+                {
+                    if label == "Oratio" && body.contains("Mónicæ") {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            assert!(found, "{hour} did not splice St. Monica Oratio");
+        }
+    }
+
+    #[test]
+    fn sexta_splices_capitulum_from_commune() {
+        // Commune/C7a has [Capitulum Sexta] explicitly.
+        let lines = compute_office_hour(&args_for(HOUR_SEXTA, Some("Sancti/05-04")));
+        let mut found_capitulum_body = false;
+        for w in lines.windows(2) {
+            if let (RenderedLine::Section { label }, RenderedLine::Plain { body }) = (&w[0], &w[1])
+            {
+                if label.contains("Capitulum") && !body.trim().is_empty() {
+                    found_capitulum_body = true;
+                    break;
+                }
+            }
+        }
+        assert!(
+            found_capitulum_body,
+            "Sexta should splice Capitulum from Commune/C7a"
+        );
+    }
+
+    #[test]
+    fn completorium_renders_non_empty() {
+        let lines = compute_office_hour(&args_for(HOUR_COMPLETORIUM, Some("Sancti/05-04")));
+        assert!(!lines.is_empty(), "Completorium rendered nothing");
+        // Completorium has a Nunc dimittis Canticum slot.
+        let has_nunc = lines.iter().any(|l| matches!(l,
+            RenderedLine::Section { label } if label.contains("Nunc")));
+        assert!(has_nunc, "Completorium missing Nunc dimittis slot");
     }
 
     #[test]

@@ -43,9 +43,9 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | R | R5 — `RankKind` from numerics | ⏳ pending | — | low-priority polish |
 | **B** (Breviary) | B1 — Build pipeline (psalms, horas, ordinarium → JSON) | ✅ DONE 2026-05-04 (commit `b2d227c`) — 1,204 horas keys + 202 psalms; src/horas.rs loader + 4 tests passing | — | — |
 | B | B2 — Hour walker over Ordinarium template (Vespers first) | ✅ DONE 2026-05-04 (commit `b890da3`) — `compute_office_hour` walker + macro expansion; 3 new tests | — | — |
-| B | B3 — Vespers (single hour) end-to-end Perl-parity smoke | ✅ DONE 2026-05-04 — commune-chain resolver (`vide CXX`) + per-day proper splicing (Oratio + Capitulum/Hymnus); 5 new tests; St. Monica Vespera Oratio splice verified | — | — |
-| B | B4 — Lauds + Prime + Tertia/Sexta/Nona + Compline | ⏳ next | — | reuse B3 commune-chain + slot resolver across the 5 minor hours; expand `slot_candidates` for Lauds-specific labels (`Capitulum Laudes`, `Hymnus Laudes`, `Ant Laudes 1..5`, `Ant Benedictus`) and Prime/Tertia/Sexta/Nona (`Capitulum Prima` etc.) |
-| B | B5 — Matins (the densest hour) | ⏳ pending | — | after B4 |
+| B | B3 — Vespers (single hour) end-to-end Perl-parity smoke | ✅ DONE 2026-05-04 (commit `94b37cd`) — commune-chain resolver + per-day proper splicing | — | — |
+| B | B4 — Lauds + Prime + Tertia/Sexta/Nona + Compline | ✅ DONE 2026-05-05 — `ordinarium_file_for_hour` mapping (Tertia/Sexta/Nona → Minor); slot_candidates extended for `Hymnus`, `Capitulum Versus`, `Canticum: Benedictus`, `Canticum: Nunc dimittis`, `Lectio brevis`; 6 new tests; Oratio splice verified across all 7 hours | — | — |
+| B | B5 — Matins (the densest hour) | ⏳ next | — | Matins has the elaborate three-nocturn structure with lectios, responsories, invitatorium psalm 94, and Te Deum |
 | B | B6 — Concurrence + first-vespers split | ⏳ pending | — | after B5 |
 | B | B7 — Demo `/breviary.html` page + WASM API | ⏳ pending | — | after B6, ships with B-leg |
 | B | B8 — Year-sweep regression to ≥ 99.7 % (all 8 hours × 5 rubrics) | ⏳ pending | — | gates leg-B "done" |
@@ -138,20 +138,22 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    B
-ACTIVE TASK:   B4 — Lauds + Prime + Tertia/Sexta/Nona + Compline
-ESTIMATED:     ~1-2 loop windows. The B3 walker is hour-agnostic by
-               construction — `slot_candidates(label, hour)` already
-               formats `"Capitulum {hour}"` etc. Adding a hour means:
-                 1. a smoke test for the new hour stem (Laudes,
-                    Prima, Tertia, Sexta, Nona, Completorium);
-                 2. expanding `slot_candidates` for hour-specific
-                    section labels that appear in the Ordinarium
-                    template (e.g. Lauds has `Canticum: Benedictus`,
-                    Prime has `Lectio Prima`).
-EXIT WHEN:     compute_office_hour with each of {Laudes, Prima,
-               Tertia, Sexta, Nona, Completorium} returns a non-empty
-               Vec<RenderedLine> with at least the Oratio splice
-               wired (regardless of psalmody — that's B5).
+ACTIVE TASK:   B5 — Matins (the densest hour)
+ESTIMATED:     2-3 loop windows. Matins is structurally different
+               from the day hours — three nocturns × 3 lectios
+               each = 9 lectios with responsories. Sancti/05-04
+               already exposes Lectio4..9 + Lectio94 (1-nocturn
+               variant for class-III feasts). The slot_candidates
+               table needs entries for `Lectio 1..9`, `Responsory
+               1..9`, `Invitatorium`, `Hymnus Matutinum`, `Ant
+               Matutinum {1,2,3}`, `Te Deum`. The walker also needs
+               to honour the `[Rule]` directive `9 lectiones` vs
+               `3 lectiones` to choose the right lectio slot count.
+EXIT WHEN:     compute_office_hour for Matutinum 2026-05-04 emits
+               a `RenderedLine::Plain { body }` for at least one
+               Lectio (Lectio4 — Monica's first proper lection)
+               and the Invitatorium antiphon. Te Deum + responsory
+               splicing can wait for B6.
 ```
 
 Update this block on every wakeup so the next iteration knows what

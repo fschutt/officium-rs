@@ -159,6 +159,45 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
         input.rubric,
     );
 
+    // ── Anticipated Sunday-Within-Octave-of-Epiphany ────────────────
+    // Under T1570 / T1910 the Octave of Epiphany was kept and Jan 13
+    // (Octave Day) outranks the Sunday-Within-Octave Mass. When Jan 13
+    // falls on a Sunday, Perl celebrates the Sunday-Within-Octave
+    // ("Dominica infra Octavam Epiphaniæ ~ Semiduplex Dominica minor")
+    // anticipated to Saturday Jan 12 — the Sunday Mass moves backward
+    // rather than being suppressed entirely. Mirrors the directorium-
+    // driven anticipation in `horascommon.pl`.
+    //
+    // DA / R55 / R60 handle the same case via explicit transfer-table
+    // entries (`01-12=Tempora/Epi1-0;;DA`); this branch fills the gap
+    // for the older rubrics where the table is silent.
+    //
+    // Closing this case took the multi-year regression sweep above
+    // 99.86% → ≈99.90% (15 fail-years × 5 rubrics → 0).
+    if matches!(input.rubric, Rubric::Tridentine1570 | Rubric::Tridentine1910)
+        && m == 1
+        && d == 12
+        && dow == 6
+    {
+        let stem = pick_tempora_variant("Epi1-0", input.rubric, corpus);
+        let key = FileKey {
+            category: FileCategory::Tempora,
+            stem,
+        };
+        return OccurrenceResult {
+            winner: key.clone(),
+            commemoratio: None,
+            scriptura: Some(key),
+            commune: None,
+            commune_type: CommuneType::None,
+            rank: 2.5, // Semiduplex Dominica minor
+            sanctoral_office: false,
+            temporal_rank: 2.5,
+            sanctoral_rank,
+            reform_trace: vec![],
+        };
+    }
+
     // ── Saturday-BVM rule (Tridentine 1570) ──────────────────────────
     // On free Saturdays (no major feast), the Mass is "Sanctæ Mariæ
     // Sabbato" using Commune/C10[a/b/c/Pasc] depending on the

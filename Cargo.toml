@@ -30,9 +30,19 @@ wasm = ["dep:wasm-bindgen"]
 serde = { version = "1", features = ["derive"] }
 # postcard is the runtime decoder for our embedded corpus. Built from
 # the source JSON by `build.rs` at compile time and shipped as
-# OUT_DIR/*.postcard files; lib reads via `include_bytes!`. Pure-rust,
-# `no_std`-friendly, much smaller than serde_json at runtime.
+# OUT_DIR/*.postcard.br files (postcard, then brotli-compressed); lib
+# reads via `include_bytes!` and decompresses on first access.
+# Pure-rust, `no_std`-friendly, much smaller than serde_json at runtime.
 postcard = { version = "1", default-features = false, features = ["alloc"] }
+# Pure-rust brotli decompressor for the precompressed corpus. Brotli
+# beats gzip ~2× on our metadata-heavy files (kalendaria_by_rubric:
+# 18.9 KB gzip → 11.6 KB brotli) and ~1.7× on missa_latin (872 KB
+# gzip → 506 KB brotli). The decompress-only crate `brotli-decompressor`
+# is smaller than the full `brotli` crate.
+# `std` feature pulls in `Decompressor` (the `Read`-based API);
+# without it we'd need to use the lower-level `BrotliDecompress`
+# directly. Both work in WASM via std.
+brotli-decompressor = { version = "5", default-features = false, features = ["std"] }
 # serde_json is gated behind `regression` — only the regression
 # harness + native binaries write JSON manifests. Lib runtime path
 # uses postcard exclusively, so WASM bundles drop this dep entirely.
@@ -44,11 +54,12 @@ wasm-bindgen = { version = "=0.2.92", optional = true }
 
 [build-dependencies]
 serde = { version = "1", features = ["derive"] }
-# build.rs reads `data/*.json` (serde_json) and writes
-# `OUT_DIR/*.postcard` (postcard). The lib runtime decoder doesn't
-# need serde_json — only the build does.
+# build.rs reads `data/*.json` (serde_json), encodes as postcard,
+# compresses with brotli, writes `OUT_DIR/*.postcard.br`. Lib runtime
+# only needs postcard + brotli-decompressor.
 serde_json = "1"
 postcard = { version = "1", features = ["alloc"] }
+brotli = "8"
 
 [profile.release]
 opt-level = "z"   # optimize for size on wasm; minor pessimization on native, acceptable

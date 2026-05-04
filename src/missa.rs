@@ -18,11 +18,14 @@ use std::sync::OnceLock;
 
 pub use crate::data_types::MassFile;
 
-static MISSA_BIN: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/missa_latin.postcard"));
+static MISSA_BR: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/missa_latin.postcard.br"));
 static PARSED: OnceLock<HashMap<String, MassFile>> = OnceLock::new();
 
 fn parsed() -> &'static HashMap<String, MassFile> {
-    PARSED.get_or_init(|| postcard::from_bytes(MISSA_BIN).unwrap_or_default())
+    PARSED.get_or_init(|| {
+        let pc = crate::embed::decompress(MISSA_BR);
+        postcard::from_bytes(&pc).unwrap_or_default()
+    })
 }
 
 /// Look up a Mass file by key (e.g. `"Sancti/04-29"`,

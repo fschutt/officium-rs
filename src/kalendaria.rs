@@ -24,11 +24,14 @@ use std::sync::OnceLock;
 
 pub use crate::data_types::{KalendariaEntry, KalendariaFeast};
 
-static KALENDARIA_BIN: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/kalendaria_1962.postcard"));
+static KALENDARIA_BR: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/kalendaria_1962.postcard.br"));
 static PARSED: OnceLock<HashMap<String, Option<KalendariaEntry>>> = OnceLock::new();
 
 fn parsed() -> &'static HashMap<String, Option<KalendariaEntry>> {
-    PARSED.get_or_init(|| postcard::from_bytes(KALENDARIA_BIN).unwrap_or_default())
+    PARSED.get_or_init(|| {
+        let pc = crate::embed::decompress(KALENDARIA_BR);
+        postcard::from_bytes(&pc).unwrap_or_default()
+    })
 }
 
 #[derive(Debug)]

@@ -31,15 +31,35 @@ where
         .unwrap_or_else(|e| panic!("parse {}: {e}", input.display()));
     let encoded = postcard::to_allocvec(&value)
         .unwrap_or_else(|e| panic!("postcard {}: {e}", input.display()));
-    fs::write(out_path, &encoded)
+    let compressed = brotli_compress(&encoded);
+    fs::write(out_path, &compressed)
         .unwrap_or_else(|e| panic!("write {}: {e}", out_path.display()));
     println!(
-        "cargo:warning=transcoded {} → {} bytes ({} → {})",
-        input.display(),
-        encoded.len(),
+        "cargo:warning={}: json {} → postcard {} → brotli {} ({:.1}%)",
+        input.file_name().unwrap().to_string_lossy(),
         bytes.len(),
-        out_path.display(),
+        encoded.len(),
+        compressed.len(),
+        compressed.len() as f64 / bytes.len() as f64 * 100.0,
     );
+}
+
+fn brotli_compress(input: &[u8]) -> Vec<u8> {
+    use std::io::Write;
+    let mut out = Vec::with_capacity(input.len() / 3);
+    {
+        let params = brotli::enc::BrotliEncoderParams {
+            quality: 11,
+            lgwin: 22,
+            ..Default::default()
+        };
+        let mut writer = brotli::CompressorWriter::with_params(&mut out, 4096, &params);
+        writer
+            .write_all(input)
+            .expect("brotli write_all should not fail on Vec");
+        writer.flush().expect("brotli flush");
+    }
+    out
 }
 
 fn main() {
@@ -57,23 +77,23 @@ fn main() {
 
     transcode::<HashMap<String, Vec<SanctiEntry>>>(
         &data.join("sancti.json"),
-        &out.join("sancti.postcard"),
+        &out.join("sancti.postcard.br"),
     );
 
     transcode::<HashMap<String, Option<KalendariaEntry>>>(
         &data.join("kalendaria_1962.json"),
-        &out.join("kalendaria_1962.postcard"),
+        &out.join("kalendaria_1962.postcard.br"),
     );
 
     // kalendaria_by_rubric.json — top-level `{ "1570": { "MM-DD":
     // [Cell, ...] }, "1888": ..., ... }`.
     transcode::<HashMap<String, HashMap<String, Vec<Cell>>>>(
         &data.join("kalendaria_by_rubric.json"),
-        &out.join("kalendaria_by_rubric.postcard"),
+        &out.join("kalendaria_by_rubric.postcard.br"),
     );
 
     transcode::<HashMap<String, MassFile>>(
         &data.join("missa_latin.json"),
-        &out.join("missa_latin.postcard"),
+        &out.join("missa_latin.postcard.br"),
     );
 }

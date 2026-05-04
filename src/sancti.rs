@@ -30,11 +30,14 @@ use std::sync::OnceLock;
 
 pub use crate::data_types::SanctiEntry;
 
-static SANCTI_BIN: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/sancti.postcard"));
+static SANCTI_BR: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/sancti.postcard.br"));
 static PARSED: OnceLock<HashMap<String, Vec<SanctiEntry>>> = OnceLock::new();
 
 fn parsed() -> &'static HashMap<String, Vec<SanctiEntry>> {
-    PARSED.get_or_init(|| postcard::from_bytes(SANCTI_BIN).unwrap_or_default())
+    PARSED.get_or_init(|| {
+        let pc = crate::embed::decompress(SANCTI_BR);
+        postcard::from_bytes(&pc).unwrap_or_default()
+    })
 }
 
 /// Raw entries for `(month, day)` — all rubric variants. Empty

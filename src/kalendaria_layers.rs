@@ -112,11 +112,14 @@ pub fn layer_for_year(year: i32) -> Layer {
     }
 }
 
-static KALENDARIA_BIN: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/kalendaria_by_rubric.postcard"));
+static KALENDARIA_BR: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/kalendaria_by_rubric.postcard.br"));
 static PARSED: OnceLock<HashMap<String, HashMap<String, Entry>>> = OnceLock::new();
 
 fn parsed() -> &'static HashMap<String, HashMap<String, Entry>> {
-    PARSED.get_or_init(|| postcard::from_bytes(KALENDARIA_BIN).unwrap_or_default())
+    PARSED.get_or_init(|| {
+        let pc = crate::embed::decompress(KALENDARIA_BR);
+        postcard::from_bytes(&pc).unwrap_or_default()
+    })
 }
 
 /// Look up the resolved entry for `(month, day)` under `layer`.

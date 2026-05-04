@@ -12,6 +12,7 @@
     --rule: #d8cfbf;
     --accent: #8b1c2b;
     --accent-soft: #ad3a4a;
+    --rubric-red: #a31a2a;
     --card: #fffcf5;
     --shadow: 0 1px 0 rgba(0,0,0,0.04), 0 4px 16px rgba(60,40,20,0.06);
     --mono: ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
@@ -29,32 +30,32 @@
     line-height: 1.55;
   }
 
-  header, main, footer {
-    max-width: 720px;
+  header.page, main, footer.page {
+    max-width: 760px;
     margin: 0 auto;
     padding: 0 24px;
   }
 
-  header {
+  header.page {
     padding-top: 56px;
     padding-bottom: 28px;
     border-bottom: 1px solid var(--rule);
   }
 
-  header h1 {
+  header.page h1 {
     font-size: 32px;
     margin: 0 0 6px;
     letter-spacing: -0.01em;
   }
 
-  header h1 .crate {
+  header.page h1 .crate {
     font-family: var(--mono);
     font-size: 0.85em;
     color: var(--accent);
     font-weight: 500;
   }
 
-  header .tagline {
+  header.page .tagline {
     color: var(--muted);
     margin: 0;
     font-style: italic;
@@ -69,7 +70,7 @@
     margin-top: 40px;
   }
 
-  h2 {
+  h2.section-h {
     font-size: 14px;
     font-family: var(--mono);
     font-weight: 600;
@@ -129,51 +130,166 @@
   button:hover:not(:disabled) { background: var(--accent-soft); }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .result {
+  /* ── Mass renderer ─────────────────────────────────────────── */
+
+  article.mass {
     background: var(--card);
     border: 1px solid var(--rule);
     border-radius: 6px;
-    padding: 24px;
+    padding: 32px 36px;
     box-shadow: var(--shadow);
+    line-height: 1.55;
   }
 
-  .result.empty {
-    color: var(--muted);
-    font-style: italic;
-    text-align: center;
-    padding: 40px 24px;
-  }
-
-  .field {
-    display: grid;
-    grid-template-columns: 140px 1fr;
-    gap: 8px 16px;
-    padding: 10px 0;
+  .mass-head {
     border-bottom: 1px solid var(--rule);
+    padding-bottom: 18px;
+    margin-bottom: 24px;
   }
-  .field:last-child { border-bottom: none }
 
-  .field .key {
+  .mass-head h2 {
+    margin: 0 0 8px;
     font-family: var(--mono);
+    font-size: 14px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .mass-head h2 code {
+    font-family: var(--mono);
+    background: rgba(139,28,43,0.06);
+    padding: 1px 6px;
+    border-radius: 3px;
+  }
+
+  dl.mass-meta {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 2px 12px;
+    margin: 8px 0 10px;
+    font-size: 14px;
+  }
+  dl.mass-meta dt { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+  dl.mass-meta dd { margin: 0; }
+
+  .mass-toggles {
     font-size: 13px;
     color: var(--muted);
   }
 
-  .field .val { font-family: var(--serif); }
-  .field .val code { font-family: var(--mono); font-size: 0.92em; background: rgba(139,28,43,0.06); padding: 1px 5px; border-radius: 3px; }
-
-  .commems { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
-  .commems li code { font-family: var(--mono); font-size: 0.88em; color: var(--accent); }
-
-  .color-swatch {
-    display: inline-block;
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
-    margin-right: 8px;
-    vertical-align: middle;
-    border: 1px solid var(--rule);
+  .mass h3.ord-heading {
+    font-family: var(--mono);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin: 28px 0 6px;
+    padding-bottom: 3px;
+    border-bottom: 1px dashed var(--rule);
   }
+  .mass h3.proper-h {
+    color: var(--fg);
+  }
+
+  .mass .rubric {
+    color: var(--rubric-red);
+    font-style: italic;
+    font-size: 14px;
+    margin: 8px 0;
+  }
+
+  .mass .spoken {
+    margin: 4px 0;
+  }
+
+  .mass .role {
+    color: var(--rubric-red);
+    font-style: italic;
+    font-weight: 500;
+    margin-right: 4px;
+  }
+
+  .mass .proper p {
+    margin: 6px 0;
+  }
+
+  .mass .vers {
+    margin: 4px 0;
+  }
+
+  .mass .citation {
+    color: var(--rubric-red);
+    font-style: italic;
+    font-size: 14px;
+    margin: 6px 0 2px;
+  }
+
+  .mass .inline-rubric {
+    color: var(--rubric-red);
+    font-style: italic;
+    font-size: 14px;
+    margin: 2px 0;
+  }
+
+  .mass hr.sep {
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin: 12px 0;
+  }
+
+  .mass .proper-source {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin: -4px 0 8px;
+  }
+  .mass .proper-source code {
+    background: rgba(139,28,43,0.05);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  .mass .proper-source .via {
+    color: var(--accent);
+  }
+
+  .mass .commem {
+    margin: 14px 0;
+    padding-left: 16px;
+    border-left: 3px solid var(--rule);
+  }
+
+  .mass .commem-h {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  /* ── Initial empty / status ────────────────────────────────── */
+
+  .empty-state, #status {
+    color: var(--muted);
+    font-style: italic;
+    text-align: center;
+    padding: 36px 24px;
+    background: var(--card);
+    border: 1px dashed var(--rule);
+    border-radius: 6px;
+  }
+
+  #status {
+    font-family: var(--mono);
+    font-size: 13px;
+    text-align: left;
+    padding: 8px 0;
+    background: none;
+    border: none;
+  }
+
+  #status.error { color: var(--rubric-red); }
+  #status.ok    { color: #2e6b3e; }
+
+  /* ── API code block ────────────────────────────────────────── */
 
   pre.api-example {
     background: #1a1612;
@@ -186,12 +302,11 @@
     overflow-x: auto;
     margin: 0;
   }
-
   pre.api-example .kw { color: #d49a93 }
   pre.api-example .str { color: #c8b88a }
   pre.api-example .com { color: #6b6358; font-style: italic }
 
-  footer {
+  footer.page {
     padding-top: 32px;
     padding-bottom: 56px;
     border-top: 1px solid var(--rule);
@@ -199,31 +314,22 @@
     font-size: 14px;
     line-height: 1.6;
   }
-
-  footer a { color: var(--accent); text-decoration: none; border-bottom: 1px solid currentColor; }
-  footer a:hover { color: var(--accent-soft) }
+  footer.page a { color: var(--accent); text-decoration: none; border-bottom: 1px solid currentColor; }
+  footer.page a:hover { color: var(--accent-soft); }
   .meta { font-family: var(--mono); font-size: 12px; }
-
-  .status {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
-  }
-  .status.error { color: var(--accent); }
-  .status.ok { color: #2e6b3e; }
 </style>
 </head>
 <body>
 
-<header>
+<header class="page">
   <h1><span class="crate">officium-rs</span></h1>
-  <p class="tagline">A pure-Rust port of the Divinum Officium liturgical engine. Resolves the day's office under any of five Roman rubrics — 1570, 1910, 1939, 1955, 1960 — at 100% (R60: 99.7%) parity with the upstream Perl reference.</p>
+  <p class="tagline">A pure-Rust port of the Divinum Officium liturgical engine. Resolves the day's office and renders the full Tridentine Mass under any of five Roman rubrics — 1570, 1910, 1939, 1955, 1960 — at 100% (R60: 99.7%) parity with the upstream Perl reference.</p>
 </header>
 
 <main>
 
   <section>
-    <h2>Try it</h2>
+    <h2 class="section-h">Pick a date</h2>
     <form id="query-form">
       <label for="date">Date</label>
       <input type="date" id="date" required>
@@ -239,32 +345,35 @@
       </select>
       <span></span>
 
-      <button type="submit" id="submit-btn" disabled>Compute</button>
+      <button type="submit" id="submit-btn" disabled>Render Mass</button>
     </form>
-    <p class="status" id="status">Loading WASM…</p>
+    <p id="status">Loading WASM…</p>
   </section>
 
   <section>
-    <h2>Result</h2>
-    <div id="result" class="result empty">No query yet — pick a date and click Compute.</div>
+    <h2 class="section-h">Mass</h2>
+    <div id="result" class="empty-state">No query yet — pick a date and click "Render Mass".</div>
   </section>
 
   <section>
-    <h2>API</h2>
+    <h2 class="section-h">API</h2>
 <pre class="api-example"><span class="com">// Browser:</span>
-<span class="kw">import</span> init, { compute_office_json } <span class="kw">from</span> <span class="str">'./pkg/officium_rs.js'</span>;
+<span class="kw">import</span> init, { compute_mass_json } <span class="kw">from</span> <span class="str">'./pkg/officium_rs.js'</span>;
 
 <span class="kw">await</span> init();
-<span class="kw">const</span> json = compute_office_json(<span class="str">2026</span>, <span class="str">5</span>, <span class="str">2</span>, <span class="str">'rubrics-1960'</span>);
-<span class="kw">const</span> office = JSON.parse(json);
-<span class="com">// → { winner: "Sancti/05-02", color: "White",
-<span class="com">//     season: "PaschalTime", rank: "Duplex", … }</span>
+<span class="kw">const</span> json = compute_mass_json(<span class="str">2026</span>, <span class="str">5</span>, <span class="str">2</span>, <span class="str">'rubrics-1960'</span>);
+<span class="kw">const</span> mass = JSON.parse(json);
+<span class="com">// → { office: {winner, color, season, rank, rubric, commemorations},</span>
+<span class="com">//     propers: {introitus: {latin, source, via_commune}, oratio: {…},</span>
+<span class="com">//               lectio, graduale, evangelium, offertorium, secreta,</span>
+<span class="com">//               prefatio, communio, postcommunio, commemorations: […]},</span>
+<span class="com">//     rules:   {gloria: bool, credo: bool, prefatio_name: "…"} }</span>
 </pre>
   </section>
 
 </main>
 
-<footer>
+<footer class="page">
   <p>
     <a href="https://github.com/fschutt/officium-rs">github.com/fschutt/officium-rs</a> ·
     <a href="https://github.com/DivinumOfficium/divinum-officium">upstream Perl</a> ·

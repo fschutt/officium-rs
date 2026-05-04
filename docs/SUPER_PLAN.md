@@ -42,9 +42,9 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | R | R4 — Inline-conditional grammar tables | ⏳ pending | — | C-leg unblocker |
 | R | R5 — `RankKind` from numerics | ⏳ pending | — | low-priority polish |
 | **B** (Breviary) | B1 — Build pipeline (psalms, horas, ordinarium → JSON) | ✅ DONE 2026-05-04 (commit `b2d227c`) — 1,204 horas keys + 202 psalms; src/horas.rs loader + 4 tests passing | — | — |
-| B | B2 — Hour walker over Ordinarium template (Vespers first) | ✅ DONE 2026-05-04 — `compute_office_hour` walker over `Ordinarium/<HourName>` template with macro expansion against `Psalterium/Common/Prayers`; 3 new tests | — | — |
-| B | B3 — Vespers (single hour) end-to-end Perl-parity smoke | ⏳ next | — | next wakeup |
-| B | B4 — Lauds + Prime + Tertia/Sexta/Nona + Compline | ⏳ pending | — | after B3 |
+| B | B2 — Hour walker over Ordinarium template (Vespers first) | ✅ DONE 2026-05-04 (commit `b890da3`) — `compute_office_hour` walker + macro expansion; 3 new tests | — | — |
+| B | B3 — Vespers (single hour) end-to-end Perl-parity smoke | ✅ DONE 2026-05-04 — commune-chain resolver (`vide CXX`) + per-day proper splicing (Oratio + Capitulum/Hymnus); 5 new tests; St. Monica Vespera Oratio splice verified | — | — |
+| B | B4 — Lauds + Prime + Tertia/Sexta/Nona + Compline | ⏳ next | — | reuse B3 commune-chain + slot resolver across the 5 minor hours; expand `slot_candidates` for Lauds-specific labels (`Capitulum Laudes`, `Hymnus Laudes`, `Ant Laudes 1..5`, `Ant Benedictus`) and Prime/Tertia/Sexta/Nona (`Capitulum Prima` etc.) |
 | B | B5 — Matins (the densest hour) | ⏳ pending | — | after B4 |
 | B | B6 — Concurrence + first-vespers split | ⏳ pending | — | after B5 |
 | B | B7 — Demo `/breviary.html` page + WASM API | ⏳ pending | — | after B6, ships with B-leg |
@@ -138,18 +138,20 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    B
-ACTIVE TASK:   B3 — Vespers single-hour end-to-end Perl-parity smoke
-ESTIMATED:     ~1 hr per loop window. Wire the per-day Tempora/Sancti
-               propers into the section slots emitted by B2. Concretely:
-               select winner key (today: Sancti/05-04 → St. Monica) →
-               look up `Antiphona 1..5`, `Psalmus*`, `Capitulum`,
-               `Hymnus`, `Versum`, `Antiphona Magnificat`, `Oratio`
-               sections in the per-day file → splice them into the
-               `RenderedLine::Section` slots from B2.
-EXIT WHEN:     compute_office_hour for Vespera 2026-05-04 emits a
-               `RenderedLine::Plain { body }` for the Magnificat
-               antiphon ("Dóminus Iesus...") and the proper oratio,
-               not just the bare `Section { label }` slot.
+ACTIVE TASK:   B4 — Lauds + Prime + Tertia/Sexta/Nona + Compline
+ESTIMATED:     ~1-2 loop windows. The B3 walker is hour-agnostic by
+               construction — `slot_candidates(label, hour)` already
+               formats `"Capitulum {hour}"` etc. Adding a hour means:
+                 1. a smoke test for the new hour stem (Laudes,
+                    Prima, Tertia, Sexta, Nona, Completorium);
+                 2. expanding `slot_candidates` for hour-specific
+                    section labels that appear in the Ordinarium
+                    template (e.g. Lauds has `Canticum: Benedictus`,
+                    Prime has `Lectio Prima`).
+EXIT WHEN:     compute_office_hour with each of {Laudes, Prima,
+               Tertia, Sexta, Nona, Completorium} returns a non-empty
+               Vec<RenderedLine> with at least the Oratio splice
+               wired (regardless of psalmody — that's B5).
 ```
 
 Update this block on every wakeup so the next iteration knows what

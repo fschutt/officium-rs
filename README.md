@@ -1,26 +1,42 @@
 # officium-rs
 
+[![Pages][pages-badge]][demo]
+[![Regression][reg-badge]][reg-actions]
+
+[pages-badge]: https://github.com/fschutt/officium-rs/actions/workflows/pages.yml/badge.svg
+[reg-badge]:   https://github.com/fschutt/officium-rs/actions/workflows/regression.yml/badge.svg
+[demo]:        https://fschutt.github.io/officium-rs/
+[reg-actions]: https://github.com/fschutt/officium-rs/actions/workflows/regression.yml
+
 Divinum Officium rubric core in pure Rust. Computes the Roman-rite
 liturgical calendar and resolves Mass propers for any date under any
 of five rubric layers — Tridentine 1570 → Rubrics 1960 (John XXIII) —
 with 100% output parity against the upstream Perl implementation
 across a year-sweep regression (21,900 cells × 5 rubrics).
 
-**Demo:** <https://fschutt.github.io/officium-rs/>
+**Demo:** <https://fschutt.github.io/officium-rs/> — picks any date,
+any of five rubrics, and renders the full Tridentine Mass in the
+browser. Latin Ordinary (Kyrie, Gloria, Credo, Sanctus, Pater Noster,
+Agnus Dei, dialog versicles, inline rubrics) interleaved with the
+day's Propers, all driven by a 907 KB WebAssembly bundle (~700 KB
+gzip-served).
 
 ## Status
 
 - ✅ Calendar, occurrence, precedence, mass-propers resolution (Latin)
 - ✅ Tridentine 1570 / 1910 / Divino Afflatu 1939 / Reduced 1955 at
   **100%** parity; Rubrics 1960 at **99.7%** (1 known case — see
-  [`UPSTREAM_WEIRDNESSES.md`][weird] §35)
-- ✅ WASM build (3.3 MB raw, ~590 KB brotli; bindgen API in
-  [`src/wasm.rs`](src/wasm.rs))
-- ✅ Live demo on GitHub Pages
-- ⏳ Postcard-encoded compressed corpus (V2)
-- ⏳ `no_std` migration (V2)
+  [`docs/UPSTREAM_WEIRDNESSES.md`][weird] §35)
+- ✅ WASM build (907 KB raw / ~700 KB gzip / ~660 KB brotli; bindgen
+  API in [`src/wasm.rs`](src/wasm.rs))
+- ✅ Full Mass renderer in the demo
+- ✅ Multi-year regression CI — runs `year-sweep` against the
+  upstream Perl across N years × 5 rubrics
+  ([workflow][reg-actions])
+- ⏳ `no_std` migration
 - ⏳ Monastic rubric
-- ⏳ Office hours (Vespers, Lauds, …) — only Mass today
+- ⏳ Office hours (Vespers, Lauds, …) — only Mass today; see
+  [`docs/BREVIARY_PORT_SCOPE.md`](docs/BREVIARY_PORT_SCOPE.md)
 - ⏳ Translations (English, German, …) — Latin only today
 
 [weird]: UPSTREAM_WEIRDNESSES.md
@@ -113,12 +129,27 @@ and the bundled CPAN deps; see `scripts/setup-divinum-officium.sh`):
 
 ```sh
 git submodule update --init --recursive    # pulls vendor/divinum-officium
-cargo run --bin year-sweep --release -- --year 2026
+
+# Single year, single rubric — local development:
+cargo run --bin year-sweep --release -- \
+    --year 2026 --rubric 'Rubrics 1960 - 1960'
+
+# Multi-year range — for proving long-window parity:
+cargo run --bin year-sweep --release -- \
+    --years 2016:2036 --rubric 'Tridentine - 1570' --strict
 ```
 
 Boards land under `target/regression/{slug}-{year}/board.html`.
 Every cell green = parity; the published baseline is at the SHA in
 `scripts/divinum-officium.pin` (April 2026 upstream).
+
+Continuous integration runs the same sweep weekly across all five
+rubrics against a configurable year range — see
+[`.github/workflows/regression.yml`](.github/workflows/regression.yml).
+The default `workflow_dispatch` window is ±10 years (2016 – 2036);
+wider runs (e.g. `1976:2076` for the full ±50) can be triggered
+manually. Perl-rendered HTML is cached by upstream-pin SHA so re-runs
+against the same upstream commit are fast.
 
 ## Provenance
 

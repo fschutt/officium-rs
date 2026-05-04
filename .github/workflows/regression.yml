@@ -1,0 +1,160 @@
+name: Regression — Rust ↔ Perl year sweep
+
+# Long-running parity check: runs `year-sweep` against the upstream
+# Perl reference for every day of N years × 5 rubrics. Goal — prove
+# zero regressions across a multi-decade window so the upstream
+# project can switch to the Rust core with confidence.
+#
+# Cost: ~3 min/year/rubric Perl-bound. With matrix=rubric (5 jobs)
+# the wall-clock for ±10 years is ~60 min/job. The default range is
+# kept tight so the workflow finishes inside a free-tier slot;
+# `workflow_dispatch` accepts a wider range for periodic deep runs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      year_range:
+        description: "Inclusive year range (FROM:TO). Default ±10 around the current year."
+        required: false
+        default: "2016:2036"
+      strict:
+        description: "Fail the workflow on any divergence."
+        required: false
+        type: boolean
+        default: true
+  schedule:
+    # Every Sunday 04:30 UTC — periodic re-run against latest upstream
+    # Perl SHA + the current Rust master. Catches drift early.
+    - cron: "30 4 * * 0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regression-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rubric:
+          - "Tridentine - 1570"
+          - "Tridentine - 1910"
+          - "Divino Afflatu - 1939"
+          - "Reduced - 1955"
+          - "Rubrics 1960 - 1960"
+
+    timeout-minutes: 350   # GitHub free-tier hard cap is 360 min/job.
+
+    env:
+      YEAR_RANGE: ${{ github.event.inputs.year_range || '2016:2036' }}
+      STRICT_FLAG: ${{ github.event.inputs.strict == 'false' && '' || '--strict' }}
+
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: regression
+
+      - name: Install Perl + CPAN deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libcgi-pm-perl libdatetime-perl
+          # The remaining modules (Time::Local, POSIX, FindBin, Encode,
+          # File::Basename, CGI::Cookie, CGI::Carp) ship with the core
+          # Perl distribution on Ubuntu.
+          perl -e 'use CGI; use CGI::Cookie; use CGI::Carp;
+                   use DateTime; use Time::Local; use POSIX;
+                   use FindBin; use Encode; use File::Basename;
+                   print "Perl deps OK\n"'
+
+      - name: Smoke-test the Perl render harness
+        run: |
+          bash scripts/do_render.sh 04-30-2026 'Tridentine - 1570' SanctaMissa \
+            | grep -q "Introitus" \
+            && echo "Perl render OK" \
+            || { echo "Perl render FAILED"; exit 1; }
+
+      - name: Cache Perl-render outputs
+        # Perl HTML is deterministic for (date, rubric, perl-SHA).
+        # Cache by Perl pin so re-runs against the same upstream
+        # commit don't re-render.
+        uses: actions/cache@v4
+        with:
+          path: target/regression
+          key: regression-perl-${{ hashFiles('scripts/divinum-officium.pin') }}-${{ matrix.rubric }}-${{ env.YEAR_RANGE }}
+          restore-keys: |
+            regression-perl-${{ hashFiles('scripts/divinum-officium.pin') }}-${{ matrix.rubric }}-
+
+      - name: Build year-sweep
+        run: cargo build --release --bin year-sweep
+
+      - name: Run year-sweep
+        id: sweep
+        run: |
+          ./target/release/year-sweep \
+            --rubric "${{ matrix.rubric }}" \
+            --years "$YEAR_RANGE" \
+            --quiet \
+            $STRICT_FLAG \
+            | tee sweep.log
+
+      - name: Aggregate manifest
+        if: always()
+        run: |
+          mkdir -p aggregate
+          cd target/regression && find . -name manifest.json -print -exec \
+            cp --parents {} ../../aggregate/ \;
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-${{ matrix.rubric }}
+          path: |
+            sweep.log
+            aggregate/
+            target/regression/*/board.html
+          retention-days: 30
+
+  summary:
+    needs: sweep
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Render summary
+        run: |
+          {
+            echo "# Regression year-sweep summary"
+            echo
+            echo "Year range: \`${{ github.event.inputs.year_range || '2016:2036' }}\`"
+            echo
+            for rubric_dir in artifacts/regression-*; do
+              name=$(basename "$rubric_dir" | sed 's/regression-//')
+              echo "## $name"
+              echo
+              if [ -f "$rubric_dir/sweep.log" ]; then
+                tail -10 "$rubric_dir/sweep.log" | sed 's/^/    /'
+              fi
+              echo
+            done
+          } > $GITHUB_STEP_SUMMARY

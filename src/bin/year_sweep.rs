@@ -78,9 +78,11 @@ fn usage() -> ! {
 }
 
 fn repo_root() -> PathBuf {
-    let mut p = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    p.pop();
-    p
+    // `vendor/divinum-officium/` and `scripts/` live at the crate
+    // root in officium-rs (formerly one level up in the website
+    // monorepo). Drop the historic `pop()` and use the manifest dir
+    // directly.
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
 
 fn assert_vendor_present(root: &PathBuf) {
@@ -223,6 +225,10 @@ struct Stats {
 
 struct Cfg {
     year: i32,
+    /// Optional inclusive year range — when set, the binary loops
+    /// over each year FROM..=TO and emits per-year output dirs.
+    /// Used by the CI 100-year regression workflow.
+    years: Option<(i32, i32)>,
     rubric_str: String,
     rubric: Rubric,
     limit: Option<usize>,
@@ -235,16 +241,21 @@ struct Cfg {
     /// When true (default), the rolling progress line prints the
     /// current section-pass rate so we get live feedback.
     progress: bool,
+    /// When true, exit with non-zero status if any section diverges.
+    /// CI uses this to fail the workflow on regressions.
+    strict: bool,
 }
 
 fn parse_args() -> Cfg {
     let mut year: Option<i32> = None;
+    let mut years: Option<(i32, i32)> = None;
     let mut rubric_str = String::from("Tridentine - 1570");
     let mut limit: Option<usize> = None;
     let mut smoke = false;
     let mut out_override: Option<PathBuf> = None;
     let mut dump = false;
     let mut progress = true;
+    let mut strict = false;
 
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
@@ -253,6 +264,16 @@ fn parse_args() -> Cfg {
             "--year" => {
                 i += 1;
                 year = Some(args.get(i).and_then(|s| s.parse().ok()).unwrap_or_else(|| usage()));
+            }
+            "--years" => {
+                // Accept `1976:2076` or `1976..=2076` or `1976..2077`.
+                i += 1;
+                let s = args.get(i).cloned().unwrap_or_else(|| usage());
+                let parsed = parse_year_range(&s).unwrap_or_else(|| {
+                    eprintln!("unknown --years value {s:?}; expected FROM:TO");
+                    usage();
+                });
+                years = Some(parsed);
             }
             "--rubric" => {
                 i += 1;
@@ -269,6 +290,7 @@ fn parse_args() -> Cfg {
             "--smoke" => smoke = true,
             "--dump" => dump = true,
             "--quiet" => progress = false,
+            "--strict" => strict = true,
             "-h" | "--help" => usage(),
             other => {
                 eprintln!("unknown arg: {other}");
@@ -289,6 +311,7 @@ fn parse_args() -> Cfg {
 
     Cfg {
         year: year.unwrap_or_else(current_year),
+        years,
         rubric_str,
         rubric,
         limit,
@@ -296,7 +319,24 @@ fn parse_args() -> Cfg {
         out_override,
         dump,
         progress,
+        strict,
     }
+}
+
+fn parse_year_range(s: &str) -> Option<(i32, i32)> {
+    // Try `FROM:TO` first (cleanest for shells).
+    if let Some((a, b)) = s.split_once(':') {
+        return Some((a.parse().ok()?, b.parse().ok()?));
+    }
+    // `..=` and `..` Rust-range syntax for convenience.
+    if let Some((a, b)) = s.split_once("..=") {
+        return Some((a.parse().ok()?, b.parse().ok()?));
+    }
+    if let Some((a, b)) = s.split_once("..") {
+        let to: i32 = b.parse().ok()?;
+        return Some((a.parse().ok()?, to - 1));
+    }
+    None
 }
 
 fn main() {
@@ -304,10 +344,59 @@ fn main() {
     let root = repo_root();
     assert_vendor_present(&root);
 
+    if let Some((from, to)) = cfg.years {
+        let mut any_failed = false;
+        let mut total_pass = 0u32;
+        let mut total_total = 0u32;
+        for year in from..=to {
+            let (pass, total, ok) = run_one_year(&cfg, year, &root);
+            total_pass += pass;
+            total_total += total;
+            if !ok {
+                any_failed = true;
+            }
+        }
+        let pct = if total_total > 0 {
+            total_pass as f64 / total_total as f64 * 100.0
+        } else {
+            0.0
+        };
+        println!();
+        println!("=== multi-year summary ===");
+        println!(
+            "  rubric:      {}",
+            cfg.rubric_str,
+        );
+        println!(
+            "  years:       {}..={} ({} years)",
+            from,
+            to,
+            to - from + 1,
+        );
+        println!(
+            "  days passing: {}/{} ({:.2}%)",
+            total_pass, total_total, pct,
+        );
+        if cfg.strict && (any_failed || total_pass < total_total) {
+            std::process::exit(1);
+        }
+        return;
+    }
+
+    let (_, _, ok) = run_one_year(&cfg, cfg.year, &root);
+    if cfg.strict && !ok {
+        std::process::exit(1);
+    }
+}
+
+/// Run the year-sweep for a single year. Returns
+/// `(days_passing, days_total, no_panics_or_perl_failures)` so the
+/// caller can aggregate across a range.
+fn run_one_year(cfg: &Cfg, year: i32, root: &PathBuf) -> (u32, u32, bool) {
     let dates: Vec<(u32, u32)> = if cfg.smoke {
         vec![(1, 1), (4, 30), (12, 25)]
     } else {
-        let mut d = dates_for_year(cfg.year);
+        let mut d = dates_for_year(year);
         if let Some(n) = cfg.limit {
             d.truncate(n);
         }
@@ -318,7 +407,7 @@ fn main() {
     let out_dir = cfg
         .out_override
         .clone()
-        .unwrap_or_else(|| root.join(format!("target/regression/{slug}-{}", cfg.year)));
+        .unwrap_or_else(|| root.join(format!("target/regression/{slug}-{}", year)));
     fs::create_dir_all(&out_dir).expect("create output dir");
 
     let total = dates.len();
@@ -327,23 +416,23 @@ fn main() {
     let mut day_reports: Vec<DayReport> = Vec::with_capacity(total);
 
     println!(
-        "year-sweep Phase 6: rubric={:?} year={} dates={} out={}",
+        "year-sweep: rubric={:?} year={} dates={} out={}",
         cfg.rubric_str,
-        cfg.year,
+        year,
         total,
         out_dir.display()
     );
 
     for (i, (mm, dd)) in dates.iter().enumerate() {
         let t0 = Instant::now();
-        let date_label = format!("{:04}-{:02}-{:02}", cfg.year, mm, dd);
+        let date_label = format!("{:04}-{:02}-{:02}", year, mm, dd);
         stats.days_total += 1;
 
         // ── 1. Rust pipeline (catch panics — Phase 3-5 ports
         // intentionally call panic!() on unsupported rubrics or
         // unknown corpus shapes; we don't want to abort the sweep).
         let input = OfficeInput {
-            date: Date::new(cfg.year, *mm, *dd),
+            date: Date::new(year, *mm, *dd),
             rubric: cfg.rubric,
             locale: Locale::Latin,
         };
@@ -363,7 +452,7 @@ fn main() {
         };
 
         // ── 2. Perl pipeline.
-        let perl_html = match render_perl(&root, *mm, *dd, cfg.year, &cfg.rubric_str) {
+        let perl_html = match render_perl(&root, *mm, *dd, year, &cfg.rubric_str) {
             Ok(h) => h,
             Err(e) => {
                 stats.perl_failures.push((*mm, *dd, e.clone()));
@@ -508,7 +597,7 @@ fn main() {
 
     let manifest = serde_json::json!({
         "rubric": cfg.rubric_str,
-        "year": cfg.year,
+        "year": year,
         "phase": "6",
         "tool": "year_sweep",
         "tool_version": env!("CARGO_PKG_VERSION"),
@@ -554,13 +643,13 @@ fn main() {
     fs::write(&manifest_path, serde_json::to_string_pretty(&manifest).unwrap())
         .expect("write manifest");
 
-    fs::write(&board_path, render_board_html(&cfg, &day_reports, &stats, pass_pct, section_match_pct))
+    fs::write(&board_path, render_board_html(&cfg, year, &day_reports, &stats, pass_pct, section_match_pct))
         .expect("write board");
 
     println!();
     println!("─── Phase 6 year-sweep summary ───");
     println!("  rubric:            {}", cfg.rubric_str);
-    println!("  year:              {}", cfg.year);
+    println!("  year:              {}", year);
     println!("  days passing:      {}/{} ({:.1}%)",
         stats.days_passing, stats.days_total, pass_pct);
     println!("  winner-match days: {}/{}", stats.days_winner_match, stats.days_total);
@@ -606,6 +695,15 @@ fn main() {
     if pass_pct < 99.0 {
         eprintln!("\nNOTE: pass rate {pass_pct:.1}% < 99% threshold — see board for red cells.");
     }
+    let ok = stats.panics.is_empty()
+        && stats.perl_failures.is_empty()
+        && stats.section_differ == 0
+        && stats.section_rust_blank == 0;
+    (
+        stats.days_passing as u32,
+        stats.days_total as u32,
+        ok,
+    )
 }
 
 /// Sort `(key, count)` pairs descending by count, take top `n`.
@@ -630,6 +728,7 @@ fn panic_message(e: &Box<dyn std::any::Any + Send>) -> String {
 
 fn render_board_html(
     cfg: &Cfg,
+    year: i32,
     days: &[DayReport],
     stats: &Stats,
     pass_pct: f32,
@@ -675,8 +774,8 @@ Panics: {} &middot; Perl failures: {}.
 </p>
 <table>
 <thead><tr><th>date</th><th>winner</th>",
-        cfg.rubric_str, cfg.year,
-        cfg.rubric_str, cfg.year,
+        cfg.rubric_str, year,
+        cfg.rubric_str, year,
         stats.days_passing, stats.days_total, pass_pct,
         stats.days_winner_match, stats.days_total,
         stats.section_match, stats.section_match + stats.section_differ + stats.section_rust_blank + stats.section_perl_blank + stats.section_empty,

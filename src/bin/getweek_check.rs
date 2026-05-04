@@ -26,9 +26,8 @@ use std::process::Command;
 use officium_rs::date;
 
 fn repo_root() -> PathBuf {
-    let mut p = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    p.pop();
-    p
+    // scripts/ lives at the crate root in officium-rs.
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
 
 fn usage() -> ! {

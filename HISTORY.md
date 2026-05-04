@@ -43,8 +43,28 @@ reverts, upstream bugs found.
     larger (926 → 1020 KB) since postcard's tighter packing leaves
     less redundancy for HTTP-layer compression — the net win is
     faster runtime decode + smaller compiled-code footprint.
+15. **V3 — brotli precompression + full Mass renderer + multi-year
+    regression CI.**
+    - Compression bench (`docs/COMPRESSION_BENCH.md`) ran 8 encoders
+      across each input. `postcard + brotli` won on total bundle
+      (data + decoder code): WASM dropped 2.88 MB → **907 KB raw**,
+      ~1.0 MB → **~700 KB** gzip-served from Pages. Brotli is
+      pure-Rust via `brotli-decompressor` (~30 KB compiled).
+    - Full Mass renderer on the demo: new `compute_mass_json` WASM
+      surface returns the propers + `gloria`/`credo`/`prefatio_name`
+      rules; `demo/ordo.js` is the static Latin Tridentine Ordinary
+      transcribed from upstream `Ordo.txt`; `demo/render.js`
+      interleaves them in liturgical order with role tags (S./M./V./R.),
+      red rubrics, citation headers, separator marks, conditional
+      Gloria/Credo, and Ite-Missa-Est/Benedicamus-Domino branching.
+    - Multi-year regression CI: `year-sweep --years FROM:TO --strict`,
+      matrix on 5 rubrics, weekly schedule, Perl-output cache keyed
+      by upstream pin SHA. First green run: 1976:2076 (101 years × 5
+      rubrics × ~365 days = ~184 000 cells) all 100%, validating that
+      the Rust core can replace the Perl reference for any date in
+      the modern era.
 
-## V3 backlog
+## V4 backlog
 
 - **`no_std` + `alloc` migration.** Most of the crate is already
   allocation-only; the regression module is the one place that uses

@@ -426,11 +426,23 @@ fn splice_proper_into_slot(
 /// this is the B5 baseline that satisfies "at least Lectio4 emits
 /// for Sancti/05-04".
 fn splice_matins_lectios(out: &mut Vec<RenderedLine>, chain: &[&HorasFile]) {
+    let prayers_file = lookup("Psalterium/Common/Prayers");
+    let mut emit_te_deum_after_last_lectio = false;
     for n in 1..=9 {
         let key = format!("Lectio{n}");
         if let Some(body) = find_section_in_chain(chain, &key) {
+            // The trailing `&teDeum` directive in the per-day Lectio
+            // body (typically Lectio9 or Lectio94) is the upstream
+            // signal to emit the Te Deum hymn after the lectio. We
+            // strip the directive and remember to emit it afterwards
+            // so the Lectio body itself never contains a stray
+            // `&teDeum` reference.
+            let (cleaned, has_te_deum) = strip_te_deum_directive(body);
             out.push(RenderedLine::Section { label: key.clone() });
-            out.push(RenderedLine::Plain { body: body.to_string() });
+            out.push(RenderedLine::Plain { body: cleaned });
+            if has_te_deum {
+                emit_te_deum_after_last_lectio = true;
+            }
         }
         let resp_key = format!("Responsory{n}");
         if let Some(body) = find_section_in_chain(chain, &resp_key) {
@@ -443,6 +455,37 @@ fn splice_matins_lectios(out: &mut Vec<RenderedLine>, chain: &[&HorasFile]) {
             }
         }
     }
+    if emit_te_deum_after_last_lectio {
+        if let Some(body) = lookup_te_deum_body(prayers_file) {
+            out.push(RenderedLine::Macro {
+                name: "Te_Deum".to_string(),
+                body: body.to_string(),
+            });
+        }
+    }
+}
+
+/// Strip a trailing `&teDeum` macro reference from a Lectio body.
+/// Returns the cleaned body and a flag indicating whether the marker
+/// was present. Mirrors the upstream pattern: the per-day Lectio9
+/// (or Lectio94 for the 1-nocturn variant) ends with `&teDeum` to
+/// instruct the renderer to follow the lectio with the Te Deum
+/// hymn.
+fn strip_te_deum_directive(body: &str) -> (String, bool) {
+    const NEEDLE: &str = "&teDeum";
+    if let Some(pos) = body.rfind(NEEDLE) {
+        let after = body[pos + NEEDLE.len()..].trim();
+        if after.is_empty() {
+            let cleaned = body[..pos].trim_end().to_string();
+            return (cleaned, true);
+        }
+    }
+    (body.to_string(), false)
+}
+
+fn lookup_te_deum_body(prayers: Option<&'static HorasFile>) -> Option<&'static str> {
+    let prayers = prayers?;
+    prayers.sections.get("Te Deum").map(String::as_str)
 }
 
 /// Look up `name` against a commune chain. Tries exact-match first,
@@ -897,6 +940,62 @@ mod tests {
         assert!(
             lectio_count >= 6,
             "expected ≥6 Lectio markers in Matins; got {lectio_count}"
+        );
+    }
+
+    // ─── B6 tests ────────────────────────────────────────────────────
+
+    #[test]
+    fn strip_te_deum_directive_handles_trailing_marker() {
+        let (cleaned, found) = strip_te_deum_directive("Body text\n&teDeum");
+        assert!(found);
+        assert_eq!(cleaned, "Body text");
+
+        let (cleaned, found) = strip_te_deum_directive("Body text\n&teDeum\n  \n");
+        assert!(found);
+        assert_eq!(cleaned, "Body text");
+
+        // No trailing marker — return unchanged.
+        let (cleaned, found) = strip_te_deum_directive("Body text without marker");
+        assert!(!found);
+        assert_eq!(cleaned, "Body text without marker");
+
+        // Marker mid-body (not a render directive) — leave alone.
+        let (cleaned, found) = strip_te_deum_directive("Foo &teDeum then more text");
+        assert!(!found);
+        assert_eq!(cleaned, "Foo &teDeum then more text");
+    }
+
+    #[test]
+    fn matutinum_emits_te_deum_after_final_lectio() {
+        // Sancti/05-04 [Lectio9] ends with `&teDeum`. Walker must
+        // strip the marker AND emit a Te Deum macro line after the
+        // Lectio block.
+        let lines = compute_office_hour(&args_for(HOUR_MATUTINUM, Some("Sancti/05-04")));
+
+        // No emitted body should still contain the literal `&teDeum`
+        // marker — that's a render directive, not user text.
+        for l in &lines {
+            let body = match l {
+                RenderedLine::Plain { body } | RenderedLine::Macro { body, .. } => body.as_str(),
+                _ => continue,
+            };
+            assert!(
+                !body.contains("&teDeum"),
+                "&teDeum directive leaked into rendered body: {body:?}"
+            );
+        }
+
+        // A Te Deum macro line must appear.
+        let te_deum = lines.iter().find_map(|l| match l {
+            RenderedLine::Macro { name, body } if name == "Te_Deum" => Some(body),
+            _ => None,
+        });
+        let body = te_deum.expect("Te_Deum macro missing from Matutinum");
+        assert!(
+            body.contains("Te Deum laudámus"),
+            "Te Deum body not resolved: {}",
+            &body[..body.len().min(80)]
         );
     }
 

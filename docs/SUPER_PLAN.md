@@ -47,7 +47,7 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | B | B3 — Vespers (single hour) end-to-end Perl-parity smoke | ✅ DONE 2026-05-04 (commit `94b37cd`) — commune-chain resolver + per-day proper splicing | — | — |
 | B | B4 — Lauds + Prime + Tertia/Sexta/Nona + Compline | ✅ DONE 2026-05-05 (commit `104630a`) | — | — |
 | B | B5 — Matins (the densest hour) | ✅ DONE 2026-05-05 — Invitatorium splice + multi-Lectio emission (Lectio1..9 with intervening Responsories) via `splice_matins_lectios`; 3 new tests; Lectio4 (Monica proper) + Invitatorium antiphon both verified | — | — |
-| B | B6 — Concurrence + first-vespers split | ⏳ next | — | implement first-vespers vs second-vespers selection (today's Vespera vs tomorrow's first Vespera based on rank precedence). Also wire Te Deum + nocturn antiphons (3 Ant Matutinum) into the Matins Psalmi-cum-lectionibus slot |
+| B | B6 — Concurrence + first-vespers split | 🟡 in progress 2026-05-05 — Te Deum macro emission ✅ DONE (`splice_matins_lectios` strips trailing `&teDeum` directive from Lectio body and appends a Te_Deum Macro line resolved against `Psalterium/Common/Prayers [Te Deum]`); 2 new tests. Remaining: nocturn-antiphon grouping (`Ant Matutinum {1,2,3}`), first-vespers swap via `next_day_key` rank compare, `[Rule] 3 lectiones` → Lectio94 selection | — | next wakeup |
 | B | B7 — Demo `/breviary.html` page + WASM API | ⏳ pending | — | after B6, ships with B-leg |
 | B | B8 — Year-sweep regression to ≥ 99.7 % (all 8 hours × 5 rubrics) | ⏳ pending | — | gates leg-B "done" |
 | **C** (correctness) | C1 — Local span-configurable runner (`scripts/regression.sh day|year|decade|century`) | ⏳ pending | — | after B1 |
@@ -139,25 +139,31 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    B
-ACTIVE TASK:   B6 — Concurrence + first-vespers split
-ESTIMATED:     2 loop windows. Two pieces:
-                 (a) First-vespers selection: when the next day
-                     outranks today, today's Vespera renders from
-                     tomorrow's office (this is what Perl's
-                     `precedence.pl::concurrence` decides — the
-                     rank comparison is already in Rust under
+ACTIVE TASK:   B6 (continued) — nocturn-antiphon grouping +
+               Lectio94/Lectio4..9 selection + first-vespers swap
+ESTIMATED:     1-2 loop windows. Done so far in B6 slice 1
+               (commit-pending): `&teDeum` directive stripping +
+               Te Deum macro emission after final Lectio. Remaining:
+                 (a) `[Rule] 3 lectiones` selection — use Lectio94
+                     instead of Lectio4..9 when the rule directive
+                     opts for the 1-nocturn variant.
+                 (b) `Ant Matutinum 1/2/3` per-nocturn antiphons
+                     grouped in front of each nocturn's Lectio
+                     trio inside the `Psalmi cum lectionibus` slot.
+                 (c) First-vespers concurrence: `OfficeArgs::
+                     next_day_key`; when tomorrow outranks today,
+                     today's Vespera renders from tomorrow's
+                     office (rank comparison already in
                      `crate::precedence`).
-                 (b) Wire the remaining Matins infrastructure:
-                     `Ant Matutinum {1,2,3}` antiphons grouped per
-                     nocturn, `Te Deum` macro from Common/Prayers,
-                     and respect `[Rule] 3 lectiones` (use Lectio94
-                     instead of Lectio4..9).
-EXIT WHEN:     (a) `compute_office_hour` accepts an optional
-               `next_day_key` and emits the next day's Vespera if
-               that day outranks today.
-               (b) Te Deum macro emits in Matutinum output for
-               2026-05-04 (St. Monica is class III but ranks high
-               enough — verify against Perl).
+EXIT WHEN:     (a) Sancti/05-04 Matins respects `[Rule] 9 lectiones`
+                   → emits Lectio4..9 (current behaviour).
+               (b) Lauds/Vespera offices with `Ant Matutinum 1`/
+                   `Ant Matutinum 2`/`Ant Matutinum 3` separately
+                   spliced have those antiphons emit in nocturn
+                   order before each lectio trio.
+               (c) On a date where tomorrow is a I-class feast,
+                   today's Vespera body matches tomorrow's
+                   propers (Christmas Eve → tomorrow's [Oratio]).
 ```
 
 Update this block on every wakeup so the next iteration knows what

@@ -222,6 +222,7 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
             _ => {}
         }
     }
+    crate::ordo::apply_render_scrubs(&mut out);
     out
 }
 

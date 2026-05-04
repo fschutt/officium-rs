@@ -1467,18 +1467,27 @@ mod tests {
 
     #[test]
     fn extract_perl_sections_simple() {
+        // The extractor is column-aware: it only walks `<TD ID='N'>`
+        // Latin columns. Wrap the test fixture so it matches the
+        // upstream 2-column Mass HTML shape.
         let html = r##"
+<TR>
+<TD VALIGN='TOP' WIDTH='50%' ID='1'>
 <FONT SIZE='+1' COLOR="red"><B><I>Introitus</I></B></FONT>
 hello latin
-<FONT SIZE='+1' COLOR="red"><B><I>Introit</I></B></FONT>
-english cut-off
 <FONT SIZE='+1' COLOR="red"><B><I>Oratio</I></B></FONT>
 oratio body
+</TD>
+<TD VALIGN='TOP' WIDTH='50%'>
+<FONT SIZE='+1' COLOR="red"><B><I>Introit</I></B></FONT>
+english cut-off
+</TD>
+</TR>
 "##;
         let s = extract_perl_sections(html);
         assert!(s.get("Introitus").unwrap().contains("hello latin"));
-        // The English "Introit" header is a cut-off — Latin body
-        // should NOT extend past it into the English text.
+        // The English "Introit" header is in the English column —
+        // Latin body should NOT extend into it.
         assert!(!s.get("Introitus").unwrap().contains("english cut-off"));
         assert!(s.get("Oratio").unwrap().contains("oratio body"));
     }

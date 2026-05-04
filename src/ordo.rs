@@ -343,7 +343,40 @@ pub fn render_mass(args: &RenderArgs<'_>) -> Vec<RenderedLine> {
         }
     }
 
+    apply_render_scrubs(&mut out);
     out
+}
+
+/// Apply the upstream Perl `webdia.pl::display_text` render-time
+/// scrubs to every body in a rendered hour. Mirrors the Perl render
+/// boundary — see [`crate::scrub::scrub_render_text`]. Mutates in
+/// place so callers (Mass and Office walkers) finish their build,
+/// then post-process once at the end.
+pub fn apply_render_scrubs(lines: &mut [RenderedLine]) {
+    for line in lines {
+        match line {
+            RenderedLine::Plain { body }
+            | RenderedLine::Rubric { body, .. }
+            | RenderedLine::Macro { body, .. } => {
+                let scrubbed = crate::scrub::scrub_render_text(body);
+                if scrubbed.as_str() != body.as_str() {
+                    *body = scrubbed;
+                }
+            }
+            RenderedLine::Spoken { body, .. } => {
+                let scrubbed = crate::scrub::scrub_render_text(body);
+                if scrubbed.as_str() != body.as_str() {
+                    *body = scrubbed;
+                }
+            }
+            // `Section`/`Proper`/`HookOmit` carry labels/ids/short
+            // messages — no scrub needed (they aren't user-visible
+            // body prose).
+            RenderedLine::Section { .. }
+            | RenderedLine::Proper { .. }
+            | RenderedLine::HookOmit { .. } => {}
+        }
+    }
 }
 
 /// Side-effect hooks (`!&hookname`) — the Perl callbacks that *push*
@@ -465,6 +498,59 @@ mod tests {
         let lines = render_mass(&args);
         let hook_count = lines.iter().filter(|l| matches!(l, RenderedLine::HookOmit { hook, .. } if hook == "Introibo")).count();
         assert!(hook_count >= 1, "Introibo should fire under Defunctorum (got {hook_count} HookOmit lines)");
+    }
+
+    #[test]
+    fn render_mass_strips_upstream_wait_markers() {
+        // Ordo.txt:219 carries `wait10 (Jungit manus, …)` inside the
+        // first Memento. The renderer must scrub that before emit so
+        // the user never sees `wait10` in the rendered Mass.
+        let mode = Mode {
+            solemn: true,
+            defunctorum: false,
+            dayname: "Pasc3-0".to_string(),
+            ..Default::default()
+        };
+        let args = RenderArgs {
+            mode: &mode,
+            gloria_active: true,
+            credo_active: true,
+            rubrics: true,
+            template_name: "Ordo",
+        };
+        let lines = render_mass(&args);
+        // Walk every emitted body and assert the marker is gone.
+        for l in &lines {
+            let body = match l {
+                RenderedLine::Plain { body }
+                | RenderedLine::Rubric { body, .. }
+                | RenderedLine::Macro { body, .. }
+                | RenderedLine::Spoken { body, .. } => body.as_str(),
+                _ => continue,
+            };
+            assert!(
+                !body.to_lowercase().contains("wait5"),
+                "wait5 leaked into rendered Mass body: {body:?}"
+            );
+            assert!(
+                !body.to_lowercase().contains("wait10"),
+                "wait10 leaked into rendered Mass body: {body:?}"
+            );
+            assert!(
+                !body.to_lowercase().contains("wait16"),
+                "wait16 leaked into rendered Mass body: {body:?}"
+            );
+        }
+        // Sanity: the Memento line that previously held `wait10`
+        // should still emit and contain the (Jungit manus, …) prose.
+        let has_memento = lines.iter().any(|l| {
+            if let RenderedLine::Spoken { body, .. } = l {
+                body.contains("Meménto") && body.contains("Jungit manus")
+            } else {
+                false
+            }
+        });
+        assert!(has_memento, "Memento with Jungit manus did not survive scrub");
     }
 
     #[test]

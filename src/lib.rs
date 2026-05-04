@@ -43,6 +43,8 @@ pub mod prayers;
 pub mod precedence;
 pub mod reform;
 pub mod sancti;
+pub mod scrub;
+
 pub mod tempora_table;
 pub mod transfer_table;
 pub mod translation;

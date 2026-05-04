@@ -37,6 +37,7 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | Leg | Phase | Status | Owner | Wakeup-cue |
 |-----|-------|--------|-------|------------|
 | **R** (hardcode audit refactor) | R1 — Mass Ordinary in JS → Ordo.txt walker | ✅ DONE 2026-05-04 (commit `426599d`) | — | — |
+| R | R1.5 — Render-text scrub mirroring `webdia.pl` (wait[0-9]+ + extensible scrub list) | ✅ DONE 2026-05-05 — `src/scrub.rs` + `apply_render_scrubs` post-process; eliminates `wait5`/`wait10`/`wait16` leak in Mass output. Source-of-truth: `webdia.pl:651-682`. Architecture: scrub at Rust render boundary, JSON corpus stays a faithful transcode | — | — |
 | R | R2 — Substring feast detection → kalendar lookup | ⏳ pending | — | when C surfaces a date this would close |
 | R | R3 — Hardcoded date branches (Jan-12 etc.) → Sunday-letter table | ⏳ pending | — | C-leg unblocker |
 | R | R4 — Inline-conditional grammar tables | ⏳ pending | — | C-leg unblocker |

@@ -102,13 +102,18 @@ jobs:
 
       - name: Run year-sweep
         id: sweep
+        # `pipefail` surfaces year-sweep's non-zero exit through the
+        # `| tee` — without it the workflow always exits 0 because tee
+        # succeeds even when --strict triggered an exit(1) upstream.
+        shell: bash
         run: |
+          set -o pipefail
           ./target/release/year-sweep \
             --rubric "${{ matrix.rubric }}" \
             --years "$YEAR_RANGE" \
             --quiet \
             $STRICT_FLAG \
-            | tee sweep.log
+            2>&1 | tee sweep.log
 
       - name: Aggregate manifest
         if: always()

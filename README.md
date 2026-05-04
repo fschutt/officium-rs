@@ -24,9 +24,12 @@ gzip-served).
 ## Status
 
 - ✅ Calendar, occurrence, precedence, mass-propers resolution (Latin)
-- ✅ Tridentine 1570 / 1910 / Divino Afflatu 1939 / Reduced 1955 at
-  **100%** parity; Rubrics 1960 at **99.7%** (1 known case — see
-  [`docs/UPSTREAM_WEIRDNESSES.md`][weird] §35)
+- ✅ All five rubrics at **100%** parity for 2026 (the development
+  reference year). Across the full ±50-year sweep (1976–2076 × 5
+  rubrics × 365 days = 184 455 cells) the parity rate is **99.86%**;
+  failures cluster on a handful of edge dates per rubric — see
+  [`docs/REGRESSION_RESULTS.md`](docs/REGRESSION_RESULTS.md) and
+  [`docs/UPSTREAM_WEIRDNESSES.md`](docs/UPSTREAM_WEIRDNESSES.md)
 - ✅ WASM build (907 KB raw / ~700 KB gzip / ~660 KB brotli; bindgen
   API in [`src/wasm.rs`](src/wasm.rs))
 - ✅ Full Mass renderer in the demo

@@ -41,9 +41,9 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | R | R3 — Hardcoded date branches (Jan-12 etc.) → Sunday-letter table | ⏳ pending | — | C-leg unblocker |
 | R | R4 — Inline-conditional grammar tables | ⏳ pending | — | C-leg unblocker |
 | R | R5 — `RankKind` from numerics | ⏳ pending | — | low-priority polish |
-| **B** (Breviary) | B1 — Build pipeline (psalms, horas, ordinarium → JSON) | ✅ DONE 2026-05-04 (commit pending) — 1,204 horas keys + 202 psalms; src/horas.rs loader + 4 tests passing | this loop | — |
-| B | B2 — Hour walker over Ordinarium template (Vespers first) | ⏳ next | — | next wakeup |
-| B | B3 — Vespers (single hour) end-to-end Perl-parity smoke | ⏳ pending | — | after B2 |
+| **B** (Breviary) | B1 — Build pipeline (psalms, horas, ordinarium → JSON) | ✅ DONE 2026-05-04 (commit `b2d227c`) — 1,204 horas keys + 202 psalms; src/horas.rs loader + 4 tests passing | — | — |
+| B | B2 — Hour walker over Ordinarium template (Vespers first) | ✅ DONE 2026-05-04 — `compute_office_hour` walker over `Ordinarium/<HourName>` template with macro expansion against `Psalterium/Common/Prayers`; 3 new tests | — | — |
+| B | B3 — Vespers (single hour) end-to-end Perl-parity smoke | ⏳ next | — | next wakeup |
 | B | B4 — Lauds + Prime + Tertia/Sexta/Nona + Compline | ⏳ pending | — | after B3 |
 | B | B5 — Matins (the densest hour) | ⏳ pending | — | after B4 |
 | B | B6 — Concurrence + first-vespers split | ⏳ pending | — | after B5 |
@@ -138,14 +138,18 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    B
-ACTIVE TASK:   B2 — hour walker over Ordinarium template (Vespers first)
-ESTIMATED:     ~1 hr — port Mass-side ordo::render_mass to handle hour
-               templates, with `&Deus_in_adjutorium` macro lookup +
-               psalmody slot stub (B3 fills it in).
-EXIT WHEN:     compute_office_hour(date, rubric, hour='Vespera') returns
-               a structured Vec<RenderedLine> with antiphons stubbed
-               and conclusion emitted; smoke-test renders Vespera for
-               2026-05-04 and 2026-12-25.
+ACTIVE TASK:   B3 — Vespers single-hour end-to-end Perl-parity smoke
+ESTIMATED:     ~1 hr per loop window. Wire the per-day Tempora/Sancti
+               propers into the section slots emitted by B2. Concretely:
+               select winner key (today: Sancti/05-04 → St. Monica) →
+               look up `Antiphona 1..5`, `Psalmus*`, `Capitulum`,
+               `Hymnus`, `Versum`, `Antiphona Magnificat`, `Oratio`
+               sections in the per-day file → splice them into the
+               `RenderedLine::Section` slots from B2.
+EXIT WHEN:     compute_office_hour for Vespera 2026-05-04 emits a
+               `RenderedLine::Plain { body }` for the Magnificat
+               antiphon ("Dóminus Iesus...") and the proper oratio,
+               not just the bare `Section { label }` slot.
 ```
 
 Update this block on every wakeup so the next iteration knows what

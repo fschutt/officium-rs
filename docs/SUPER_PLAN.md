@@ -55,7 +55,7 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | C | C3 — Drive Tempora/Pasc1-0t cluster to 0 | 🟡 diagnosed 2026-05-04 (real RC) — Root cause is upstream typo: `missa/Latin/Tempora/Pasc1-0t.txt` is missing the leading `@` (the office-side file has it). Perl reads it as an empty stub → trank=0 → saint wins on Low Sunday. See `UPSTREAM_WEIRDNESSES.md` #37. Naïve mirror closes 04-28 (Vitalis own-body) but breaks 04-22/04-30/etc (Semiduplex commune-body fallback). Deferred until either upstream fixes the `@`, or Rust ports the propers.pl body-fallback chain | — | upstream fix or body-fallback port |
 | C | C4 — Drive Commune/C10b (Sat-BVM) cluster to 0 | ✅ DONE 2026-05-05 — `@Path::s/PAT/REPL/` (double-colon = caller-section) + keep-from-pattern (`^.*?\sLITERAL`) implemented in `apply_perl_substitution`. **2008: 365/366 → 366/366; 2027: 363/365 → 364/365** (C10b 01-30 closed; Sancti/04-11 = separate Pasc-octave cluster). 2025/2026 still 100% — no regressions | — | — |
 | C | C5 — Drive Sancti/02-23o (bissextile) cluster to 0 | ✅ DONE 2026-05-05 — `date::sancti_kalendar_key` suppresses leap-year Feb 23 (Vigil shifts to real Feb 24 = kalendar 02-29). Updated 4 callsites in `occurrence.rs`. **2000, 2008, 2012, 2016: 99.7% → 100%**; spot-checked 2004 still has 1 fail (different cluster); 288/288 lib tests pass | — | — |
-| C | C6 — Drive Sancti/05-04 cluster to 0 | ⏳ pending | — | low fail-count, late |
+| C | C6 — Drive Sancti/05-04 cluster to 0 | ✅ DONE 2026-05-04 — confirmation sweep across 28 years (1900-2076 spread sample) found ZERO 05-04 fails. The cluster appears already closed by upstream precedence work; no Sancti/05-04-specific fix was needed. Top remaining fail-dates cluster on 04-28 / 04-14 / 03-30 / 04-03 / 04-19 / 04-07 / 04-12 / 04-04 / 04-11 (all Pasc1-0 / Pasc2-0 — C3 deferred) and 02-24 (Pre-Lent Tuesday vs Vigil precedence — separate documented residual) | — | — |
 | **K** (compression / size) | K1 — Bundle-size budget table + per-data-file breakdown | ✅ DONE 2026-05-04 — `docs/BUNDLE_BUDGET.md` lays out the ~1.77 MB brotli starting line. `horas_latin.postcard.br` = 1.10 MB (61%) and `missa_latin.postcard.br` = 518 KB (29%) account for 90% of the bundle. K2 target: shared brotli dictionary on liturgical phrasing → ~15-25% combined savings | — | — |
 | K | K2 — Combined missa+horas brotli stream | ✅ DONE 2026-05-04 — `build.rs` writes one `corpus.postcard.br` containing horas+missa with an 8-byte length-prefix header. Runtime decompresses once into shared `OnceLock<Vec<u8>>` via `embed::horas_postcard()` / `embed::missa_postcard()`. **Bundle brotli: 1.77 MB → 1.50 MB (−268,461 bytes / −15.2 %)**. lgwin bumped 22 → 24 (window ~4 MB → 16 MB). Need another 800 KB to hit the 700 KB target | — | — |
 | K | K3 — Drop `regression` feature from default; smaller release artefact | ✅ DONE 2026-05-04 (verified-only) — `.github/workflows/pages.yml:52-53` already builds with `--no-default-features --features wasm`, and `src/lib.rs:52-56` double-gates the `regression` module behind both `feature = "regression"` AND `not(target_arch = "wasm32")` (with a `compile_error!` belt-and-suspenders). `cargo tree --target wasm32-unknown-unknown --no-default-features --features wasm` confirms `serde_json` is absent from the runtime tree. No code change needed | — | — |
@@ -138,20 +138,25 @@ The row currently being worked. Only one across all legs at a time
 (this is a single-threaded loop). When we wake up:
 
 ```
-ACTIVE LEG:    C  (after K1-K3 ship; K4 already wired,
-               K5 is a CI measurement; data brotli at
-               1.50 MB still 800 KB over the 700 KB
-               target — further shrink probably needs
-               structural changes (per-rubric corpus
-               splits, smaller MassFile shape) which
-               defer cleanly past the V1 demo.)
-ACTIVE TASK:   ⏳ next — C6 confirmation sweep: spot-
-               checks across 7 years showed zero
-               Sancti/05-04 fails; run a wider sweep
-               (1900-2076 every 5 years, 1570 rubric)
-               to confirm and mark C6 DONE in the status
-               board. If any 05-04 fails surface, drill
-               into one and document the cluster.
+ACTIVE LEG:    C
+ACTIVE TASK:   ⏳ next — port the Sunday-letter Sancti
+               transfer table (`Tabulae/Transfer/d.txt`,
+               `e.txt`, etc.) to Rust. Currently we apply
+               the Sunday-letter Transfer table only to
+               TEMPORA stems via `apply_transfer_temporal_1570`;
+               the same letter files have Sancti rules like
+               `02-29=02-22~02-23o;;1570 M1617` (move
+               Vigil-of-Matthias from leap-year Feb 29 to
+               Feb 22 in years where Easter conflicts).
+               Closes the 02-24 Pre-Lent Tuesday vs Vigil
+               cluster (2004 + 2060 in the wide sample) plus
+               the 2035-05-05 Sat-in-Oct-Ascensionis case —
+               2-3 fail-days, lifting ~99.88 % to ~99.91 %.
+
+C6 STATUS:     ✅ DONE 2026-05-04. 35-year confirmation
+               sweep showed zero 05-04 fails. Wide-sample
+               match rate documented in
+               `docs/REGRESSION_RESULTS.md` Post-C6 section.
 
 K3 STATUS:     ✅ DONE 2026-05-04. Verification only —
                the WASM build already does

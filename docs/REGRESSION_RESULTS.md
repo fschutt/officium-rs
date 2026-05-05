@@ -274,3 +274,54 @@ gh workflow run regression.yml --repo fschutt/officium-rs \
 ```
 
 [25316562795]: https://github.com/fschutt/officium-rs/actions/runs/25316562795
+
+## Post-C6 (2026-05-04, master `962df09`)
+
+Wider 35-year confirmation sweep across 1900-2076 (every 5 years
+plus selected bissextile years), 1570 rubric:
+
+- Years scanned: **35**
+- Years 100% clean: **21** (60 %)
+- Years with at least one fail-day: **14**
+- Total fail-days across the sample: **15** (out of ~12,788 cells)
+- **Sample-wide match rate: ~99.88 %**
+
+Top fail-date histogram (mm-dd, count):
+
+| mm-dd | Years | Cluster |
+|------:|------:|---------|
+| 02-24 | 2 | Pre-Lent Tuesday rank vs Vigil (deferred) |
+| 04-28 | 2 | C3: Pasc1-0t upstream typo (deferred) |
+| 04-14 | 1 | C3 (Pasc1-0t in early-Easter year) |
+| 03-30 | 1 | C3 (Pasc1-0t) |
+| 04-03 | 1 | C3 |
+| 04-19 | 1 | C3 |
+| 04-07 | 1 | C3 |
+| 04-12 | 1 | C3 |
+| 04-04 | 1 | C3 |
+| 04-11 | 1 | C3 / Pasc2-0 |
+| 04-17 | 1 | C3 |
+| 04-26 | 1 | C3 |
+| 05-05 | 1 | Sat in Oct. Ascensionis (Sunday-letter transfer) |
+
+**Zero fail-days on 05-04** across the 35-year sample — confirming
+**C6** needs no Sancti/05-04-specific fix; the cluster is closed by
+existing precedence work.
+
+The 15 remaining fail-days break down:
+
+- **C3 (Pasc1-0t)**: ~12 / 15. Deferred to upstream typo fix or the
+  propers.pl body-fallback chain port. `UPSTREAM_WEIRDNESSES.md` #37.
+- **Pre-Lent Tuesday vs Vigil precedence** (2 fail-days,
+  2004-02-24 + 2060-02-24): needs the Sunday-letter Sancti transfer
+  table (`Tabulae/Transfer/<letter>.txt`'s
+  `02-29=02-22~02-23o;;1570 M1617` rule) ported to Rust. Not in
+  C1-C6 and outside the 5-pattern exit list.
+- **Pasc-octave Sancti/Tempora transfer** (2035-05-05): single fail;
+  same Sunday-letter mechanism would close it.
+
+C-leg status: **C2/C4/C5/C6 all DONE**; C1 (local CLI) pending; C3
+deferred (multi-window upstream-aligned). Mass parity at ~99.88 %
+on this 35-year sample. Closing Pre-Lent Tuesday + Pasc-octave
+transfers (one Sunday-letter Sancti-transfer port) would move us
+to ~99.91 %; closing C3 would push above 99.95 %.

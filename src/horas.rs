@@ -616,10 +616,16 @@ fn splice_proper_into_slot(
         return;
     }
 
+    let saint_name = chain
+        .first()
+        .and_then(|f| f.sections.get("Name"))
+        .map(String::as_str);
+
     for cand in slot_candidates(label, hour) {
         if let Some(body) = find_section_in_chain(chain, &cand) {
             let resolved = expand_at_redirect(body, &cand);
-            out.push(RenderedLine::Plain { body: resolved });
+            let with_name = substitute_saint_name(&resolved, saint_name);
+            out.push(RenderedLine::Plain { body: with_name });
             return;
         }
     }
@@ -629,9 +635,66 @@ fn splice_proper_into_slot(
         let hymnus_key = format!("Hymnus {hour}");
         if let Some(body) = find_section_in_chain(chain, &hymnus_key) {
             let resolved = expand_at_redirect(body, &hymnus_key);
-            out.push(RenderedLine::Plain { body: resolved });
+            let with_name = substitute_saint_name(&resolved, saint_name);
+            out.push(RenderedLine::Plain { body: with_name });
         }
     }
+}
+
+/// Substitute the `N.` placeholder in a Commune-of-Saints body with
+/// the per-day saint's genitive name. Mirrors the upstream Perl
+/// behaviour where Commune templates carry `N.` as a fill-in mark
+/// and the renderer replaces it with the `[Name]` field from the
+/// per-day file (e.g. `[Name]\nPauli` for St. Paul the Hermit).
+///
+/// The match is intentionally conservative: only `N.` (capital N
+/// followed by a period) is replaced, matching whole-word with
+/// trailing space/punctuation. Other usages of `N` in Latin (e.g.
+/// abbreviated forms) stay untouched.
+fn substitute_saint_name(body: &str, name: Option<&str>) -> String {
+    let Some(name) = name else {
+        return body.to_string();
+    };
+    if name.is_empty() || !body.contains("N.") {
+        return body.to_string();
+    }
+    // Walk the string by byte indices so we can substitute `N.` at
+    // word boundaries while preserving UTF-8 codepoints elsewhere.
+    // ASCII-only matching is safe because the trigger sequence is
+    // pure ASCII; any non-ASCII byte (high bit set) is part of a
+    // UTF-8 continuation and never overlaps `N.`.
+    let bytes = body.as_bytes();
+    let n = bytes.len();
+    let mut out = String::with_capacity(n + name.len());
+    let mut i = 0;
+    while i < n {
+        let at_boundary = i == 0
+            || matches!(bytes[i - 1], b' ' | b'\t' | b'\n' | b'(' | b'.' | b',' | b';');
+        if at_boundary && i + 2 <= n && &bytes[i..i + 2] == b"N." {
+            let next_ok = i + 2 >= n
+                || matches!(bytes[i + 2], b' ' | b'\t' | b'\n' | b',' | b';' | b':' | b'.');
+            if next_ok {
+                out.push_str(name);
+                i += 2;
+                continue;
+            }
+        }
+        // Copy one UTF-8 codepoint.
+        let head = bytes[i];
+        let cp_len = match head {
+            0..=0x7F => 1,
+            0xC0..=0xDF => 2,
+            0xE0..=0xEF => 3,
+            0xF0..=0xF7 => 4,
+            _ => 1,
+        };
+        let end = (i + cp_len).min(n);
+        if let Ok(piece) = core::str::from_utf8(&bytes[i..end]) {
+            out.push_str(piece);
+        }
+        i = end;
+    }
+    out
 }
 
 /// Expand a whole-body `@Path` or `@Path:Section` redirect against
@@ -1074,6 +1137,39 @@ mod tests {
         // Should not match `Conf` or `Class III`.
         let r = "Confessor; Class III";
         assert!(parse_vide_targets(r).is_empty());
+    }
+
+    #[test]
+    fn substitute_saint_name_replaces_placeholder() {
+        let body = "Deus, qui nos beáti N. Confessóris tui ánnua solemnitáte lætíficas: …";
+        let got = substitute_saint_name(body, Some("Pauli"));
+        assert!(got.contains("beáti Pauli Confessóris"), "got: {got}");
+        assert!(!got.contains("N."), "placeholder leaked: {got}");
+    }
+
+    #[test]
+    fn substitute_saint_name_preserves_unicode() {
+        let body = "intercéssor exsístat beátæ N. Vírginis: …";
+        let got = substitute_saint_name(body, Some("Mónicæ"));
+        assert!(got.contains("Mónicæ Vírginis"));
+        assert!(got.contains("beátæ"));
+    }
+
+    #[test]
+    fn substitute_saint_name_no_op_when_name_missing() {
+        let body = "Deus, qui nos beáti N. Confessóris tui";
+        let got = substitute_saint_name(body, None);
+        assert_eq!(got, body);
+    }
+
+    #[test]
+    fn substitute_saint_name_does_not_replace_inside_abbrev_chain() {
+        // `N.B.` (other abbreviation patterns) should not consume.
+        // This is a defensive test — the upstream Latin doesn't
+        // typically use `N.B.` but we want to be safe.
+        let body = "See N.B. above.";
+        let got = substitute_saint_name(body, Some("X"));
+        assert_eq!(got, body);
     }
 
     #[test]

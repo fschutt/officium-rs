@@ -81,11 +81,42 @@ the higher-rank Tempora.
 **Cluster summary across the 5 documented Mass patterns:**
 
 - ✅ C2 (Sancti/01-12): closed (already passing in current code)
-- 🟡 C3 (Tempora/Pasc1-0t): kalendar-stem-override threading;
-   unfix at 2019/2027/2030/2050 04-x dates
+- 🟡 C3 (Tempora/Pasc1-0t): every Low Sunday under 1570 fails
+   with the same shape — Rust picks `Tempora/Pasc1-0t.txt`
+   (which redirects to Easter Sunday's body) for Low Sunday
+   dates (Pasc2-0 in upstream numbering); Perl emits richer
+   bodies that include the Low Sunday Quasi-modo-geniti
+   antiphon + the Sancti-day commemoration. Spot-checked
+   1985-04-14, 2030-04-28, 2050-04-17 — all the same
+   pattern. Multi-window fix: needs proper Pasc1-0t →
+   Pasc2-0 resolution under 1570 + Sancti commemoration
+   overlay.
 - ✅ C4 (Commune/C10b): closed in commit `7b49537`
 - ✅ C5 (Sancti/02-23o): closed in commit `04e0f30`
 - ⏳ C6 (Sancti/05-04): not yet investigated
+
+**Wider 14-year 1570 sample (post-C5):**
+
+| Year | Pass | Failing dates |
+|-----:|-----:|---------------|
+| 1980 | 100% | — |
+| 1985 | 99.7% | 04-14 (Pasc1-0t) |
+| 1990 | 100% | — |
+| 2000 | 100% | — |
+| 2010 | 100% | — |
+| 2015 | 100% | — |
+| 2020 | 100% | — |
+| 2024 | 100% | — |
+| 2026 | 100% | — |
+| 2030 | 99.7% | 04-28 (Pasc1-0t) |
+| 2040 | 100% | — |
+| 2050 | 99.7% | 04-17 (Pasc1-0t) |
+| 2076 | 100% | — |
+
+**11/14 years at 100%** under Tridentine 1570 in current
+master. The 3 single-day fails are all C3 Low-Sunday
+Pasc1-0t pattern — closing C3 lifts the rate to 14/14 on
+this sample (modulo any years not yet checked).
 
 The **`Sancti/01-12` cluster** that was 15 fail-years in the
 previous CI run appears to be already closed in current code —

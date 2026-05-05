@@ -5,6 +5,33 @@ the multi-year `year-sweep` regression CI, not the marketing version.
 Goal: be honest with upstream about the gap so they can evaluate
 switching with their eyes open.
 
+## Spot-check after B-leg work (2026-05-05)
+
+Local sweeps after the B8 chain-resolver work (`master` `8cb4797`):
+
+| Year | Tridentine 1570 | Failing winners |
+|------|-----------------|-----------------|
+| 2008 | 364/365 (99.7%) | `Commune/C10b` 01-26 (Graduale/Offertorium differ — Septuagesima variant) |
+| 2013 | 365/365 (100%)  | — |
+| 2019 | 364/365 (99.7%) | `Tempora/Pasc1-0t` 04-28 |
+| 2020 | 366/366 (100%)  | — |
+| 2025 | 365/365 (100%)  | — |
+| 2027 | 363/365 (99.5%) | `Commune/C10b` 01-30, `Sancti/04-11` |
+| 2030 | 364/365 (99.7%) | `Tempora/Pasc1-0t` 04-28 |
+
+The **`Sancti/01-12` cluster** that was 15 fail-years in the
+previous CI run appears to be already closed in current code —
+none of the spot-checked years (2008, 2013, 2019, 2030, 2035)
+fired it. A fresh ±50 year CI run is needed to confirm. The
+remaining clusters (C10b Sat-BVM, Pasc1-0t) still fire.
+
+The **C10b Graduale/Offertorium** failure (e.g. 2008-01-26)
+is a section-content gap, not a winner-resolution gap: both
+Rust and Perl agree the office is Sat-BVM, but the Graduale
+under Septuagesima needs the seasonal-variant text
+(`(tempore Septuagesima)` annotation) — currently the
+resolver picks the Per-Annum default.
+
 ## ±50 year sweep (1976–2076, 101 years × 5 rubrics)
 
 Latest run [25328246322] on `master` `b21b7c7`, against upstream Perl

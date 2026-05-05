@@ -51,7 +51,7 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | B | B7 — Demo `/breviary.html` page + WASM API | ✅ DONE 2026-05-05 — Slice a (`ae21198`): `compute_office_full` WASM API. Slice b/c (this commit): `demo/breviary.html` + `demo/breviary.js` with hour selector + day_key field + first-vespers swap surfaced in UI; three-page nav (Mass / Breviary / Calendar) wired in `index.html`. Pages CI rebuilds the WASM pkg on push | — | — |
 | B | B8 — Year-sweep regression to ≥ 99.7 % (all 8 hours × 5 rubrics) | 🟡 in progress 2026-05-05 — Slices 1-8 ✅. Slice 9: attempted `mass::expand_macros` on office bodies — regressed (63.33% → 46.67%) so reverted; comparator already accepts the unexpanded form via substring match. **60-day Vespera 1570 sweep: 66.67% match (40/60).** All remaining Differs are Tempora-vs-Sancti precedence gaps shared with the Mass side. Documented patterns closed + patterns reverted in `docs/BREVIARY_REGRESSION_RESULTS.md` | — | next wakeup |
 | **C** (correctness) | C1 — Local span-configurable runner (`scripts/regression.sh day|year|decade|century`) | ⏳ pending | — | after B1 |
-| C | C2 — Drive Sancti/01-12 cluster to 0 fail-years | ⏳ pending | — | after C1 |
+| C | C2 — Drive Sancti/01-12 cluster to 0 fail-years | 🟡 spot-checked 2026-05-05 — `Sancti/01-12` did not fire on any of 2008/2013/2019/2030/2035 in current code; the cluster appears already closed by recent precedence work. Needs full ±50yr CI rerun to confirm before marking DONE | — | run CI sweep |
 | C | C3 — Drive Tempora/Pasc1-0t cluster to 0 | ⏳ pending | — | parallel with C2 |
 | C | C4 — Drive Commune/C10b (Sat-BVM) cluster to 0 | ⏳ pending | — | parallel with C2 |
 | C | C5 — Drive Sancti/02-23o (bissextile) cluster to 0 | ⏳ pending | — | needs `date.rs` look |
@@ -139,27 +139,30 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    B
-ACTIVE TASK:   B8 has plateaued; pivot to leg-C
-ESTIMATED:     The remaining ~33-40% of office Differs are
-               Tempora-vs-Sancti rank-precedence gaps shared
-               with the Mass side (`compute_office` picks a
-               different winner than Perl). Closing these on
-               the Mass side automatically closes them on
-               the Office side.
-               Per the SUPER_PLAN sequencing rule
-               ("leg B (Breviary) first → leg C once B7
-               ships"), B7 has shipped, so the active task
-               legitimately advances to leg-C — same fixes
-               will lift both Mass and Breviary pass-rates.
-EXIT WHEN:     leg-C closes the 5 documented Mass patterns
-               (Sancti/01-12, Tempora/Pasc1-0t, Commune/C10b,
-               Sancti/02-23o, Sancti/05-04). Re-run
-               `office_sweep --year` afterwards; expect the
-               office side to track to ≥99% on Vespera 1570
-               in the same gain.
-               B8 stays "in progress" with full coverage
-               (8 hours × 5 rubrics × ±50 years) deferred
-               until leg-C lands.
+ACTIVE TASK:   C4 — Sat-BVM (Commune/C10b) Graduale +
+               Offertorium seasonal-variant resolution
+ESTIMATED:     1-2 loop windows. Local spot-check found the
+               concrete gap: 2008-01-26 (Saturday in
+               Septuagesima) — both sides agree the day's
+               winner is Commune/C10b (Sat-BVM Mariæ), but
+               the Graduale section content differs.
+               Perl emits "Speciósus forma præ fíliis…"
+               (the Septuagesima-variant Graduale + a
+               trailing Tractus). Rust emits the
+               Per-Annum default Graduale.
+               Root cause: `Commune/C10b` upstream has
+               multiple `[Graduale]` headers annotated by
+               season — `[Graduale](tempore Septuagesima)`,
+               `[Graduale](tempore Quadragesima)`, etc.
+               The Mass resolver currently picks the bare
+               `[Graduale]` (Per-Annum default). Need to
+               select the seasonal variant matching the
+               date's `season`.
+EXIT WHEN:     2008-01-26 Tridentine 1570 SanctaMissa
+               renders the Septuagesima Sat-BVM Graduale
+               byte-for-byte (Speciósus forma…). Same fix
+               likely closes 2027-01-30, the other C10b
+               failures across years.
 ```
 
 Update this block on every wakeup so the next iteration knows what

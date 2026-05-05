@@ -2687,7 +2687,14 @@ fn expand_inline_at_lines(
             // `@:Oratio Pauli ... @Sancti/.../...:Oratio Petri` to
             // emit both the Pauli prayer and the Petri commemoration.
             if let Some(rest) = stripped_trim.strip_prefix(':') {
-                let target = rest.split(':').next().unwrap_or("").trim();
+                // Detect optional `:s/PAT/REPL/[FLAGS]` regex-sub
+                // suffix (Commune/C10b's `@:Graduale:s/\s+Al.*//s`).
+                // Section names never contain `:s/`, so the first
+                // occurrence of `:s/` is the substitution delimiter.
+                let (target, sub_spec) = match rest.find(":s/") {
+                    Some(idx) => (rest[..idx].trim(), Some(rest[idx + 1..].to_string())),
+                    None => (rest.split(':').next().unwrap_or("").trim(), None),
+                };
                 if !target.is_empty() && !target.contains('/') {
                     if let Some(file) = corpus.mass_file(self_key) {
                         if let Some(target_body) = file
@@ -2706,7 +2713,18 @@ fn expand_inline_at_lines(
                             let nested = expand_inline_at_lines(
                                 target_body, target, corpus, self_key, via_commune,
                             );
-                            out.push(nested);
+                            // Apply the regex-sub spec on the
+                            // resolved body. When the spec doesn't
+                            // model (e.g. unsupported regex meta),
+                            // fall back to the unsubstituted body
+                            // — better to emit the literal Graduale
+                            // than nothing.
+                            let final_body = match &sub_spec {
+                                Some(spec) => apply_perl_substitution(&nested, spec)
+                                    .unwrap_or(nested),
+                                None => nested,
+                            };
+                            out.push(final_body);
                             continue;
                         }
                     }
@@ -3193,7 +3211,45 @@ fn apply_perl_substitution(text: &str, spec: &str) -> Option<String> {
     let rest = rest.strip_prefix('/')?;
     // Find the next unescaped `/` for end-of-PAT.
     let (pattern, after_pattern) = split_unescaped(rest, '/')?;
-    let (replacement, _flags) = split_unescaped(after_pattern, '/')?;
+    let (replacement, flags) = split_unescaped(after_pattern, '/')?;
+    // Truncate-from-pattern shape: `\s+LITERAL.*` (with optional `s`
+    // flag). Used by Commune/C10b `[Tractus] = @:Graduale:s/\s+Al.*//s`
+    // — strip everything from the first whitespace before "Al" to
+    // end-of-string, leaving only the Per-Annum portion of the
+    // Graduale (without the trailing Allelúja-Verse).
+    if replacement.is_empty()
+        && pattern.starts_with(r"\s+")
+        && pattern.ends_with(".*")
+    {
+        let inner = &pattern[r"\s+".len()..pattern.len() - ".*".len()];
+        // The inner must be a plain literal (no regex metachars after
+        // unescape). When `s` flag is set, `.` matches newlines so
+        // truncating at the first occurrence anywhere is correct.
+        if let Some(literal) = unescape_literal(inner) {
+            // Find first whitespace-prefixed match of `literal`. We
+            // walk byte-wise (Latin text is UTF-8 but the literal is
+            // ASCII for the "Al" / "Allelúja" cases we handle).
+            let bytes = text.as_bytes();
+            let lit_bytes = literal.as_bytes();
+            for i in 0..bytes.len() {
+                if !matches!(bytes[i], b' ' | b'\t' | b'\n' | b'\r') {
+                    continue;
+                }
+                let start = i + 1;
+                if start + lit_bytes.len() > bytes.len() {
+                    break;
+                }
+                if &bytes[start..start + lit_bytes.len()] == lit_bytes {
+                    // Truncate at the whitespace position.
+                    return Some(text[..i].to_string());
+                }
+            }
+            // No match — when `g` flag isn't relevant for truncation,
+            // Perl's behaviour is to leave the text unchanged.
+            let _ = flags;
+            return Some(text.to_string());
+        }
+    }
     // Special-case the `\!(?!M).*` pattern (Pasc5-5 Evangelium) —
     // strip every line starting with `!` followed by anything except
     // `M`. Lines starting with `!M` (chapter/verse references) keep
@@ -3519,6 +3575,29 @@ mod tests {
 
     fn propers(year: i32, month: u32, day: u32) -> MassPropers {
         mass_propers(&office(year, month, day), &BundledCorpus)
+    }
+
+    #[test]
+    fn perl_sub_truncate_at_whitespace_literal() {
+        // Commune/C10b's `[Tractus] = @:Graduale:s/\s+Al.*//s`
+        // truncates the Graduale at the first whitespace before
+        // "Al" (the Allelúja-Verse split). Verify the substitution
+        // helper emits the Per-Annum portion only.
+        let body = "!Ps 44:3; 44:2\n\
+                    Speciósus forma præ fíliis hóminum: diffúsa est grátia in lábiis tuis.\n\
+                    V. Eructávit cor meum verbum bonum: dico ego ópera mea Regi: lingua mea cálamus scribæ velóciter scribéntis. Allelúja, allelúja.\n\
+                    V. Post partum, Virgo, invioláta permansísti: Dei Génetrix, intercéde pro nobis. Allelúja.";
+        let out = apply_perl_substitution(body, r"s/\s+Al.*//s").expect("sub applies");
+        assert!(out.ends_with("scribéntis."), "out: {out:?}");
+        assert!(!out.contains("Allelúja"), "Allelúja leaked: {out:?}");
+    }
+
+    #[test]
+    fn perl_sub_truncate_no_match_keeps_text() {
+        // No `\s+Foo` in the body — return unchanged.
+        let body = "no whitespace-prefixed match here";
+        let out = apply_perl_substitution(body, r"s/\s+Xyzzy.*//s").expect("sub applies");
+        assert_eq!(out, body);
     }
 
     #[test]

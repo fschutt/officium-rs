@@ -139,35 +139,43 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    B
-ACTIVE TASK:   C4 (slice 1) — `@:Section:s/PAT/REPL/`
-               self-redirect resolver in mass.rs
-ESTIMATED:     1-2 loop windows. Updated diagnosis after
-               reading the upstream `[Tractus]` body:
-               the gap is NOT a missing seasonal variant —
-               C10b has only one `[Graduale]` upstream. The
-               gap is that upstream `[Tractus]` carries
-               an `@:Graduale:s/\s+Al.*//s` self-redirect
-               with a regex substitution which our
-               resolver returns verbatim. Perl evaluates
-               the regex sub against the named target's
-               body and substitutes; we don't.
-               Slice 1: implement
-               `expand_at_self_redirect_with_sub(body)`
-               in mass.rs, used inside `read_section`.
-               It detects the `@:Section:s/PAT/REPL/FLAGS`
-               shape, fetches the named section's body
-               from the same file, applies the regex
-               substitution, and returns the resolved
-               body. (Multi-line bodies use the same
-               resolver; the trailing `_\n@Commune/C11…`
-               in C10b's Tractus is then a second
-               redirect that the existing chain handles.)
-EXIT WHEN:     `expand_at_self_redirect_with_sub("@:Graduale:s/\\s+Al.*//s", c10b_body)`
-               returns the Graduale stripped of the
-               trailing Alleluja content, with a unit test
-               pinning the exact byte-for-byte transform.
-               Year-sweep on 2008 should drop from 1
-               failing day to 0.
+ACTIVE TASK:   C4 (slice 2) — second-hop `@Commune/C11::s/.../`
+               redirect chain (after slice 1 partial)
+               
+SLICE 1 RESULT (commit-pending): `apply_perl_substitution`
+               extended for the `\s+LITERAL.*` truncate
+               pattern; `expand_inline_at_lines` now parses
+               the optional `:s/PAT/REPL/FLAGS` suffix on
+               `@:Section` self-redirects and applies the
+               substitution. 2008-01-26 Graduale body
+               770 → 652 chars (closer to Perl's 669) —
+               the trailing `@Commune/C11::s/.../` second-
+               hop is still unresolved. 6 perl_sub tests
+               pass; 285/285 lib tests pass; 2025/2026 sweep
+               unchanged at 100%.
+
+REMAINING:     C10b's Tractus body is 3 lines:
+                 `@:Graduale:s/\s+Al.*//s`  ← slice 1 (✅)
+                 `_`                        ← paragraph
+                 `@Commune/C11::s/^.*?\s(\!)//s`  ← slice 2
+               Slice 2 needs:
+                 (a) `expand_inline_at_lines` to handle the
+                     `@Path::s/PAT/REPL/` form (note the
+                     double-colon — section is empty, so
+                     the substitution applies to Path's
+                     FULL body, the *entire file* concatenated).
+                 (b) The pattern `^.*?\s(\!)//s` strips
+                     everything up to the first `\s\!` —
+                     keeping only the `!Citation` portion
+                     onward. This needs a new pattern shape
+                     in `apply_perl_substitution`:
+                     `^.*?\sLITERAL` with `s` flag → keep
+                     only from LITERAL onward (inverse of
+                     slice 1's truncate).
+EXIT WHEN:     2008-01-26 Tridentine 1570 SanctaMissa
+               passes — Graduale body matches Perl's 669
+               chars exactly. C10b row drops from "1 fail"
+               to 0 across the 100-year sweep.
 ```
 
 Update this block on every wakeup so the next iteration knows what

@@ -73,6 +73,7 @@ pub fn compute_office_json(year: i32, month: u32, day: u32, rubric: &str) -> Str
         date: Date::new(year, month, day),
         rubric: rubric_enum,
         locale: Locale::Latin,
+        is_mass_context: false,
     };
     let corpus = BundledCorpus;
     let office = compute_office(&input, &corpus);
@@ -148,6 +149,7 @@ pub fn compute_mass_full(
         date: Date::new(year, month, day),
         rubric: rubric_enum,
         locale: Locale::Latin,
+        is_mass_context: true,
     };
     let corpus = BundledCorpus;
     let office = compute_office(&input, &corpus);

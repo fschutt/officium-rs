@@ -171,6 +171,18 @@ pub struct MassFile {
     pub parent: Option<String>,
     #[serde(default)]
     pub parent_1570: Option<String>,
+    /// Set when the missa-side file's first content line is a bare
+    /// path with NO `@` prefix (only known instance:
+    /// `missa/Latin/Tempora/Pasc1-0t.txt` has `Tempora/Pasc1-0`
+    /// instead of `@Tempora/Pasc1-0`). Perl's `setupstring` only
+    /// follows whole-file inclusions when the line matches `^\s*@`,
+    /// so the file reads as an empty stub with empty `[Rank]` —
+    /// making the saint win on Low Sunday under 1570 (rank 1.1
+    /// Simplex vs empty trank). Mass-context occurrence honors the
+    /// flag (winner = Sancti); Office-context follows parent
+    /// because the horas-side file has the proper `@`-prefix.
+    #[serde(default)]
+    pub mass_broken_redirect: bool,
     #[serde(default)]
     pub annotated_sections: Vec<String>,
     #[serde(default)]

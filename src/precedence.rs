@@ -300,6 +300,7 @@ mod tests {
             date: Date::new(year, month, day),
             rubric: Rubric::Tridentine1570,
             locale: Locale::Latin,
+            is_mass_context: true,
         }
     }
 
@@ -499,6 +500,7 @@ mod tests {
             date: Date::new(2026, 4, 5),
             rubric: Rubric::Rubrics1960,
             locale: Locale::Latin,
+            is_mass_context: true,
         };
         // We're testing the panic path — wrap in catch_unwind.
         let r = std::panic::catch_unwind(|| compute_office(&i, &BundledCorpus));

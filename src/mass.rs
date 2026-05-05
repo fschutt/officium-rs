@@ -3635,6 +3635,7 @@ mod tests {
                 date: Date::new(year, month, day),
                 rubric: Rubric::Tridentine1570,
                 locale: Locale::Latin,
+                is_mass_context: true,
             },
             &BundledCorpus,
         )

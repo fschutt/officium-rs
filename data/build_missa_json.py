@@ -73,6 +73,14 @@ PARENT_RE = re.compile(r"^@(\S+)\s*$")
 # becomes <Path>; otherwise the unconditional parent (or no parent)
 # applies. We capture (predicate, path) and let the runtime decide.
 COND_PARENT_RE = re.compile(r"^\(([^)]+)\)\s*@(\S+)\s*$")
+# Bare-path stub (NO leading `@`): the file's only content is a
+# `Tempora/Foo` / `Sancti/MM-DD` / `Commune/Cxx` path. Perl's
+# `setupstring` does NOT treat this as an inclusion — the file is
+# read as an empty stub with `__preamble` only and zero sections.
+# Captured as `mass_broken_redirect` so Mass-context occurrence
+# can mirror the empty-rank behavior (Office reads from horas/
+# where the same stem typically has the proper `@` prefix).
+BARE_PATH_RE = re.compile(r"^(?:Tempora|Sancti|Commune|Ordo)/[A-Za-z0-9._-]+\s*$")
 # Section-rubric annotations the Tridentine 1570 layer must EXCLUDE
 # because they encode post-1570 reforms. Anything else (no annotation,
 # `(rubrica tridentina)`, `(ad missam)`, `(tempore paschali)`, etc.)
@@ -255,6 +263,7 @@ def parse_mass_file(text: str) -> dict:
     collecting = False
     parent: str | None = None
     parent_1570: str | None = None
+    mass_broken_redirect: bool = False
     seen_section = False
     for raw in text.splitlines():
         m = SECTION_RE.match(raw.rstrip())
@@ -347,6 +356,24 @@ def parse_mass_file(text: str) -> dict:
                 pm = PARENT_RE.match(stripped)
                 if pm and parent is None:
                     parent = pm.group(1)
+                    continue
+                # Bare path with no `@` — Perl's `setupstring` does
+                # NOT follow it for Mass-context section/[Rank] lookups
+                # (sole known instance: `Tempora/Pasc1-0t.txt`). Mark
+                # `mass_broken_redirect` so Mass-context occurrence can
+                # mirror the empty-rank result. ALSO set `parent` to
+                # the same target so non-Mass-context paths (the
+                # heuristic-transfer helper, the Office walker, the
+                # parent-following body resolver) still see the
+                # office-side rank — Perl's horas-side file has the
+                # proper `@`-prefix and inherits Pasc1-0's rank, so
+                # both Office and the cross-day helpers should agree
+                # with that view. Mass-context's `is_mass_context`
+                # gate in `compute_occurrence` overrides trank to 0
+                # at the saint-vs-Sunday precedence step.
+                if BARE_PATH_RE.match(stripped) and parent is None:
+                    mass_broken_redirect = True
+                    parent = stripped
 
     out: dict = {}
     if "Officium" in sections:
@@ -510,6 +537,8 @@ def parse_mass_file(text: str) -> dict:
         out["parent"] = parent
     if parent_1570:
         out["parent_1570"] = parent_1570
+    if mass_broken_redirect:
+        out["mass_broken_redirect"] = True
     # Sections that carry a post-1570 rubric annotation. Each entry
     # is a [section, annotation] pair so the consumer can re-evaluate
     # the annotation under the active rubric — `(communi Summorum
@@ -550,7 +579,7 @@ def gather(missa_root: Path) -> dict:
             parsed = parse_mass_file(text)
             # skip files that produced literally nothing — keeps the
             # JSON down to "actual content" only.
-            if parsed.get("sections") or parsed.get("officium") or parsed.get("parent"):
+            if parsed.get("sections") or parsed.get("officium") or parsed.get("parent") or parsed.get("mass_broken_redirect"):
                 out[key] = parsed
     return out
 
@@ -625,7 +654,7 @@ def main():
             except UnicodeDecodeError:
                 text = path.read_text(encoding="latin-1")
             parsed = parse_mass_file(text)
-            if parsed.get("sections") or parsed.get("officium") or parsed.get("parent"):
+            if parsed.get("sections") or parsed.get("officium") or parsed.get("parent") or parsed.get("mass_broken_redirect"):
                 # Missa-side entry is authoritative; only fill in
                 # from horas if missa didn't supply one.
                 if key not in data:

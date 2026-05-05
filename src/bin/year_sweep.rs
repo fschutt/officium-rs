@@ -435,6 +435,7 @@ fn run_one_year(cfg: &Cfg, year: i32, root: &PathBuf) -> (u32, u32, bool) {
             date: Date::new(year, *mm, *dd),
             rubric: cfg.rubric,
             locale: Locale::Latin,
+            is_mass_context: true,
         };
         let rust_result = std::panic::catch_unwind(|| {
             let office = compute_office(&input, &BundledCorpus);

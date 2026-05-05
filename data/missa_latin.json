@@ -8666,6 +8666,11 @@
 "Pinsert":"in hoc potíssimum gloriósius prædicáre."
 }
 },
+"Tempora/Pasc1-0t":{
+"sections":{},
+"parent":"Tempora/Pasc1-0",
+"mass_broken_redirect":true
+},
 "Tempora/Pasc1-1":{
 "officium":"Feria Secunda infra Hebdomadam I post Octavam Paschæ",
 "rank":"Feria",
@@ -18421,10 +18426,6 @@
 "Ant 1 (rubrica cisterciensis)":"rubrica cisterciensis",
 "Ant 2 (rubrica cisterciensis)":"rubrica cisterciensis"
 }
-},
-"Tempora/Pasc1-0t":{
-"sections":{},
-"parent":"Tempora/Pasc1-0"
 },
 "Tempora/Pent04-4o":{
 "sections":{

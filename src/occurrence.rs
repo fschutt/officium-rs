@@ -121,25 +121,28 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
         category: FileCategory::Tempora,
         stem: tempora_stem,
     };
+    // Mass-context broken-redirect detection: when the missa-side
+    // file is a bare path with no `@` prefix (sole known case:
+    // `Tempora/Pasc1-0t.txt`), Perl's `SetupString::setupstring`
+    // reads it as an empty stub (`__preamble` only, no Rank). The
+    // saint of the day wins on Low Sunday because trank[2]=0 vs a
+    // rank ≥ 1 Sancti. Office-context (default) still follows the
+    // parent chain because `horas/Latin/Tempora/Pasc1-0t.txt` HAS
+    // the proper `@`-prefix and inherits Pasc1-0's rank 7.
+    // See `docs/UPSTREAM_WEIRDNESSES.md` #37.
+    let mass_broken_redirect_active = input.is_mass_context
+        && corpus
+            .mass_file(&tempora_key)
+            .map(|f| f.mass_broken_redirect)
+            .unwrap_or(false);
     // For body-less redirect files (Tempora/Adv1-0o is just a single
     // `@Tempora/Adv1-0` parent-inherit line), follow the parent chain
     // to find the file that actually carries the rank/officium.
-    //
-    // C3 note: `missa/Latin/Tempora/Pasc1-0t.txt` is the ONE Mass-
-    // side file in the upstream corpus whose first line is a bare
-    // path (`Tempora/Pasc1-0`) with no `@` prefix — Perl's
-    // `SetupString::setupstring` reads it as an empty stub, so
-    // Mass-context gets `trank[2]=0` and the saint wins on Low
-    // Sunday. Naïvely mirroring that here closes 2030-04-28
-    // (Vitalis Simplex with own propers) but breaks any year where
-    // Pasc1-0 lands on a saint that uses Commune-only propers
-    // (1990-04-22 SS. Soter+Caji, 2000-04-30 St. Catherine of
-    // Siena, etc.) — Perl's `propers.pl` body-fallback path keeps
-    // the Sunday body in those cases, and we don't yet model that
-    // fallback. The C3 cluster stays open until either upstream
-    // adds the missing `@` or we port the body-fallback chain.
-    // See `docs/UPSTREAM_WEIRDNESSES.md` #37.
-    let effective_tempora_key = effective_tempora_key(&tempora_key, corpus);
+    let effective_tempora_key = if mass_broken_redirect_active {
+        tempora_key.clone()
+    } else {
+        effective_tempora_key(&tempora_key, corpus)
+    };
     let tempora_file = corpus.mass_file(&effective_tempora_key);
     // Rubric-aware rank pick. The corpus carries up to four
     // alternative `rank_num_*` slots populated from per-rubric `[Rank]
@@ -147,17 +150,21 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     // Heart from 4.01 to 6.5 under T1910; Pent02-1 has 1570-only 2.9
     // override; etc.). Pick the slot that matches the active rubric,
     // then fall back to the bare default.
-    let temporal_rank = tempora_file
-        .and_then(|f| match input.rubric {
-            Rubric::Tridentine1570 => f.rank_num_1570.or(f.rank_num),
-            Rubric::Tridentine1910 => f.rank_num_1906.or(f.rank_num),
-            Rubric::DivinoAfflatu1911 => f.rank_num,
-            Rubric::Reduced1955 => f.rank_num_1955.or(f.rank_num),
-            Rubric::Rubrics1960 => f.rank_num_1960.or(f.rank_num_1955).or(f.rank_num),
-            Rubric::Monastic => f.rank_num_1570.or(f.rank_num),
-        })
-        .map(|r| downgrade_post_1570_octave(r, tempora_file.unwrap(), input.rubric))
-        .unwrap_or(0.0);
+    let temporal_rank = if mass_broken_redirect_active {
+        0.0
+    } else {
+        tempora_file
+            .and_then(|f| match input.rubric {
+                Rubric::Tridentine1570 => f.rank_num_1570.or(f.rank_num),
+                Rubric::Tridentine1910 => f.rank_num_1906.or(f.rank_num),
+                Rubric::DivinoAfflatu1911 => f.rank_num,
+                Rubric::Reduced1955 => f.rank_num_1955.or(f.rank_num),
+                Rubric::Rubrics1960 => f.rank_num_1960.or(f.rank_num_1955).or(f.rank_num),
+                Rubric::Monastic => f.rank_num_1570.or(f.rank_num),
+            })
+            .map(|r| downgrade_post_1570_octave(r, tempora_file.unwrap(), input.rubric))
+            .unwrap_or(0.0)
+    };
 
     // ── Sanctoral side ───────────────────────────────────────────────
     let (sancti_key, sancti_entry_holder) =
@@ -1009,6 +1016,45 @@ fn transferred_sancti_for_1570(
             if blocked {
                 continue; // walk further — this day claims its native
             }
+            // Privileged-Octave block: the Tridentine 1570 heuristic
+            // transfer rule only fires when there's a genuinely free
+            // day for the displaced Duplex. The Octave of Ascension
+            // (Pasc5-x weekdays + Pasc6-0 Sunday in Octava) is a
+            // privileged Octave under 1570 — Perl's `Directorium`
+            // does NOT walk transferred Sancti into it (1940-05-05
+            // and 2035-05-05 were the residual fail-pattern). The
+            // Tridentine downgrade of Pasc6-0 from rank 5 to 2.9
+            // (Dominica minor) made the rank-only check land
+            // Athanasius (rank 3) on the Sunday in Octava.
+            // Block the walk by Tempora-name match — privileged
+            // Octaves carry "Octavam Ascensionis" or
+            // "infra Octavam Ascensionis" in their officium.
+            let walk_weekname = date::getweek(walk_d, walk_m, walk_y, false, true);
+            let walk_is_pasc5_or_pasc6 = walk_weekname == "Pasc5"
+                || walk_weekname == "Pasc6";
+            if walk_is_pasc5_or_pasc6 {
+                let walk_dow = date::day_of_week(walk_d, walk_m, walk_y);
+                let walk_stem_default = if walk_dow == 0 {
+                    format!("{}-0", walk_weekname)
+                } else {
+                    format!("{}-{}", walk_weekname, walk_dow)
+                };
+                let walk_stem = pick_tempora_variant_for_1570(
+                    &walk_stem_default, corpus,
+                );
+                let walk_key = FileKey {
+                    category: FileCategory::Tempora,
+                    stem: walk_stem,
+                };
+                let walk_eff = effective_tempora_key(&walk_key, corpus);
+                let walk_tname = corpus
+                    .mass_file(&walk_eff)
+                    .and_then(|f| f.officium.as_deref())
+                    .unwrap_or("");
+                if walk_tname.contains("Ascensionis") {
+                    continue;
+                }
+            }
             // Slot available. Does the temporal still preempt the
             // transferred saint here?
             if was_sancti_preempted_1570(walk_y, walk_m, walk_d, entry, layer, corpus) {
@@ -1717,6 +1763,7 @@ mod tests {
             date: Date::new(year, month, day),
             rubric: Rubric::Tridentine1570,
             locale: Locale::Latin,
+            is_mass_context: true,
         }
     }
 

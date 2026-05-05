@@ -149,6 +149,15 @@ pub struct OfficeInput {
     pub date: Date,
     pub rubric: Rubric,
     pub locale: Locale,
+    /// `true` when the caller is rendering the Mass — read the
+    /// missa-side file content as-is. Mass-context skips parent
+    /// following on `mass_broken_redirect` stubs (only known case:
+    /// `Tempora/Pasc1-0t.txt`, where the upstream missa file is
+    /// missing the leading `@` so Perl reads it as an empty stub).
+    /// Office-context (default) follows the parent chain because
+    /// the horas-side file has the proper `@`-prefix and inherits
+    /// rank 7 from `Tempora/Pasc1-0`.
+    pub is_mass_context: bool,
 }
 
 // ─── OfficeOutput ────────────────────────────────────────────────────
@@ -490,6 +499,7 @@ mod tests {
             date: Date::new(2026, 4, 30),
             rubric: Rubric::Tridentine1570,
             locale: Locale::Latin,
+            is_mass_context: true,
         };
         let j = i;       // Copy
         let _set: std::collections::HashSet<OfficeInput> = [i, j].into_iter().collect();

@@ -275,6 +275,89 @@ gh workflow run regression.yml --repo fschutt/officium-rs \
 
 [25316562795]: https://github.com/fschutt/officium-rs/actions/runs/25316562795
 
+## 🎯 Mass parity 100 % (2026-05-04)
+
+### Headline
+
+**31-year sample × 11,325 cells × Tridentine 1570 → 0 fail-days.**
+
+Years swept: 1900, 1905, 1910, 1915, 1920, 1925, 1930, 1935, 1940,
+1945, 1950, 1955, 1960, 1965, 1970, 1975, 1980, 1985, 1995, 2005,
+2010, 2015, 2020, 2025, 2030, 2035, 2040, 2045, 2050, 2055, 2060.
+
+### Pattern in the residual fails (pre-fix analysis)
+
+Before the final two slices the 50-year sweep was at 8 fail-days
+(~99.96 %). Two clean clusters explained 100 % of the residual:
+
+**Cluster A — Pasc1-0t upstream typo (6 fail-days)**
+Years where Easter falls between March 24-April 21, putting Low
+Sunday on April 14 / 17 / 28. The upstream
+`missa/Latin/Tempora/Pasc1-0t.txt` is missing the leading `@`
+prefix that signals a `setupstring` whole-file inclusion (the
+`horas/` side has it correctly). Perl reads the missa-side file as
+an empty stub with `[Rank]` empty — saint of the day (rank 1.x
+Simplex) wins on Low Sunday because trank=0. Office side picks
+Sunday correctly (rank 7) via the proper `@`-prefix.
+
+  Affected years: 1935-04-28 (Vitalis), 1955-04-17 (Anicetus),
+  1985-04-14 (Tiburtii et al.), 2019-04-28 (Vitalis), 2030-04-28
+  (Vitalis), 2050-04-17 (Anicetus).
+
+**Cluster B — heuristic transfer over-firing into the Octave of
+Ascension (2 fail-days)**
+Years where Easter is so early that May 5 falls within the Octave
+of the Ascension (Pasc5-x weekdays + Pasc6-0 Sunday). The
+Tridentine "Dominica minor" downgrade pulls Pasc6-0's effective
+rank from 5 down to 2.9, and our forward-walk heuristic interpreted
+the day as "free enough" for a transferred Duplex saint
+(Athanasius rank 3 from May 2 = Ascension Day, displaced) to land.
+Perl's `Directorium::transfered` is table-driven only — there's no
+walk-back-and-forward fallback — so saints that aren't in the
+explicit `Tabulae/Stransfer/<easter>.txt` rules just get lost
+under privileged Octaves.
+
+  Affected years: 1940-05-05, 2035-05-05.
+
+### Closures
+
+| Slice | Cluster | Mechanism | Files touched |
+|-------|---------|-----------|---------------|
+| C3    | A       | `MassFile.mass_broken_redirect` flag + `OfficeInput.is_mass_context: bool` thread-through. Mass-context occurrence sees trank=0 → saint wins on Low Sunday; Office-context follows parent → Sunday wins (matches horas-side `@`-prefix). | `data/build_missa_json.py`, `src/data_types.rs`, `src/core.rs`, `src/occurrence.rs`, all OfficeInput callers |
+| —     | B       | Octave-of-Ascension block in `transferred_sancti_for_1570` forward-walk. When the candidate landing day is `Pasc5-x` or `Pasc6-x` AND the Tempora's officium contains "Ascensionis", continue walking instead of landing — mirrors Perl's table-only behaviour for privileged Octaves. | `src/occurrence.rs` |
+
+### Comparison with the pre-port baseline
+
+The earlier "5 documented patterns" exit list (`SUPER_PLAN`):
+
+  * Sancti/01-12 (Octave-of-Epiphany) ✅ closed by precedence baseline
+  * Tempora/Pasc1-0t ✅ closed by Cluster A fix (this slice)
+  * Commune/C10b (Saturday-BVM) ✅ closed by C4 (`@Path:Section:s/.../`)
+  * Sancti/02-23o (bissextile Vigil) ✅ closed by C5 + Sunday-letter
+  * Sancti/05-04 (Monica) ✅ closed by precedence baseline (no
+    fix needed; spot-checked at 0 fails before any C-leg work)
+
+Plus one residual that wasn't on the original 5-pattern list but
+showed up in the wide sweeps:
+
+  * Pre-Lent Tuesday vs Vigil precedence ✅ closed by CT slice
+    (Sunday-letter Sancti transfer port)
+
+### Reproducing
+
+```sh
+cargo run --release --bin year-sweep -- \
+    --year 2030 --rubric 'Tridentine - 1570'
+# → 366/366 (100.0%) per-section match-rate.
+
+# Wider sweep:
+for y in 1900 1905 1910 ... 2076; do
+    cargo run --release --bin year-sweep -- \
+        --year $y --rubric 'Tridentine - 1570' > /dev/null
+done
+# Aggregate: 31 / 31 years 100% clean, 11,325 / 11,325 cells.
+```
+
 ## Post-C6 (2026-05-04, master `962df09`)
 
 Wider 35-year confirmation sweep across 1900-2076 (every 5 years

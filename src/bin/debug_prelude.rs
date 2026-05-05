@@ -8,6 +8,7 @@ fn main() {
         date: Date { year: 2026, month: 3, day: 29 },
         rubric: Rubric::Tridentine1570,
         locale: Locale::Latin,
+        is_mass_context: true,
     };
     let office = precedence::compute_office(&input, &BundledCorpus);
     let propers = mass_propers(&office, &BundledCorpus);

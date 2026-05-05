@@ -270,6 +270,7 @@ fn run_one_cell(
             date: Date::new(yyyy, mm, dd),
             rubric,
             locale: Locale::Latin,
+            is_mass_context: false,
         };
         let office_result = std::panic::catch_unwind(|| compute_office(&input, &BundledCorpus));
         match office_result {
@@ -293,6 +294,7 @@ fn run_one_cell(
                 date: Date::new(ny, nm, nd),
                 rubric,
                 locale: Locale::Latin,
+                is_mass_context: false,
             };
             std::panic::catch_unwind(|| compute_office(&next_input, &BundledCorpus))
                 .ok()

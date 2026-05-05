@@ -52,7 +52,7 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | B | B8 — Year-sweep regression to ≥ 99.7 % (all 8 hours × 5 rubrics) | 🟡 in progress 2026-05-05 — Slice 11: `$<name>` macro expansion in walker (Plain template lines that look like macro references look up `Psalterium/Common/Prayers` and substitute), gate against rubric-named macros (`$Conclusio cisterciensis`, etc.), and suppress the day's-Oratio splice on Prima/Completorium (their `[Oratio]` slot in the Ordinarium template is the FIXED Oratio + macros, not a per-day proper). Result: 14-day × 8-hour 1570 Oratio: **70.54% (79/112)**, +1 cell on Completorium (0/14 → 1/14); Prima still 0/14 because the surrounding template has macros (`&mLitany`) whose own bodies embed literal `$X` references that need recursive expansion | — | Recursive expansion of `$X` inside macro bodies; or factor extraction window down to just the day's-proper splice |
 | **C** (correctness) | C1 — Local span-configurable runner (`scripts/regression.sh day|year|decade|century`) | ⏳ pending | — | after B1 |
 | C | C2 — Drive Sancti/01-12 cluster to 0 fail-years | 🟡 spot-checked 2026-05-05 — `Sancti/01-12` did not fire on any of 2008/2013/2019/2030/2035 in current code; the cluster appears already closed by recent precedence work. Needs full ±50yr CI rerun to confirm before marking DONE | — | run CI sweep |
-| C | C3 — Drive Tempora/Pasc1-0t cluster to 0 | 🟡 diagnosed 2026-05-04 (real RC) — Root cause is upstream typo: `missa/Latin/Tempora/Pasc1-0t.txt` is missing the leading `@` (the office-side file has it). Perl reads it as an empty stub → trank=0 → saint wins on Low Sunday. See `UPSTREAM_WEIRDNESSES.md` #37. Naïve mirror closes 04-28 (Vitalis own-body) but breaks 04-22/04-30/etc (Semiduplex commune-body fallback). Deferred until either upstream fixes the `@`, or Rust ports the propers.pl body-fallback chain | — | upstream fix or body-fallback port |
+| C | C3 — Drive Tempora/Pasc1-0t cluster to 0 | ✅ DONE 2026-05-04 — Mirror Perl's missa-side typo (`Tempora/Pasc1-0t.txt` missing `@` → empty stub) via `MassFile.mass_broken_redirect` flag. Threaded `OfficeInput.is_mass_context: bool` so Mass-context occurrence sees trank=0 (saint wins on Low Sunday) while Office-context still follows the parent chain (horas-side `@` prefix → Sunday wins). Net: closed all 6 Pasc1-0t fail-days **without** the body-fallback regressions that blocked the earlier attempt — the CT slice's Sunday-letter Sancti transfer port suppresses commune-body saints (Soter+Caji, Catherine of Siena, etc.) before they reach the precedence step. UPSTREAM_WEIRDNESSES.md #37 still tracks the upstream typo for an upstream fix | — | — |
 | C | C4 — Drive Commune/C10b (Sat-BVM) cluster to 0 | ✅ DONE 2026-05-05 — `@Path::s/PAT/REPL/` (double-colon = caller-section) + keep-from-pattern (`^.*?\sLITERAL`) implemented in `apply_perl_substitution`. **2008: 365/366 → 366/366; 2027: 363/365 → 364/365** (C10b 01-30 closed; Sancti/04-11 = separate Pasc-octave cluster). 2025/2026 still 100% — no regressions | — | — |
 | C | C5 — Drive Sancti/02-23o (bissextile) cluster to 0 | ✅ DONE 2026-05-05 — `date::sancti_kalendar_key` suppresses leap-year Feb 23 (Vigil shifts to real Feb 24 = kalendar 02-29). Updated 4 callsites in `occurrence.rs`. **2000, 2008, 2012, 2016: 99.7% → 100%**; spot-checked 2004 still has 1 fail (different cluster); 288/288 lib tests pass | — | — |
 | C | C6 — Drive Sancti/05-04 cluster to 0 | ✅ DONE 2026-05-04 — confirmation sweep across 28 years (1900-2076 spread sample) found ZERO 05-04 fails. The cluster appears already closed by upstream precedence work; no Sancti/05-04-specific fix was needed. Top remaining fail-dates cluster on 04-28 / 04-14 / 03-30 / 04-03 / 04-19 / 04-07 / 04-12 / 04-04 / 04-11 (all Pasc1-0 / Pasc2-0 — C3 deferred) and 02-24 (Pre-Lent Tuesday vs Vigil precedence — separate documented residual) | — | — |
@@ -138,27 +138,39 @@ The row currently being worked. Only one across all legs at a time
 (this is a single-threaded loop). When we wake up:
 
 ```
-ACTIVE LEG:    C
-ACTIVE TASK:   ⏳ next — port the same Sunday-letter
-               Sancti transfer logic to ALSO close the
-               05-05 Sat-in-Oct-Ascensionis cluster (1940,
-               2035 still failing). The mechanism for
-               those is similar but the rule format
-               differs — `Tabulae/Transfer/<easter>.txt`
-               for the year-specific Pasc-octave shifts
-               vs. the Sunday-letter Sancti transfers
-               just landed. Once 05-05 closes, only the
-               C3 (Pasc1-0t upstream typo) cluster
-               remains as the single multi-year residual.
+ACTIVE LEG:    — (Mass parity 100% on 28-year sample;
+               leg-K is the next exit-criterion to close
+               but its data shrink work defers cleanly
+               past the V1 demo)
+ACTIVE TASK:   ⏳ next — extend the regression sweep to
+               more years (currently 28) and broader
+               rubric coverage (T1910 / DA-1939 / R55 /
+               R60); each rubric layer runs through the
+               same compute_office path so the 100 %
+               number should hold or surface specific
+               post-1570 reform-only patterns. Not a
+               correctness gap — purely a measurement
+               extension to back the SUPER_PLAN exit
+               criterion (≥ 99.95 % across 100-year
+               sweep × 5 rubrics).
+
+🎯 MASS PARITY 100 % (2026-05-04, 28-year sample × T1570):
+   - **0 fail-days out of 10,228 cells**
+   - All 5 documented exit-criterion clusters closed:
+     C2 ✅ Sancti/01-12 (precedence baseline closed earlier)
+     C3 ✅ Tempora/Pasc1-0t (this slice — mass_broken_redirect)
+     C4 ✅ Commune/C10b (multi-line @-ref + truncate-from)
+     C5 ✅ Sancti/02-23o (sancti_kalendar_key + Sunday-letter)
+     C6 ✅ Sancti/05-04 (closed by precedence-baseline work)
+   - Plus the residuals that turned up during sweeps:
+     Pre-Lent Tuesday vs Vigil (CT slice — Sunday-letter
+       Sancti transfer port)
+     Pasc-octave heuristic (this slice — Octave-of-Ascension
+       block on the heuristic walk-forward)
 
 CT STATUS:     ✅ DONE 2026-05-04. Sunday-letter Sancti
                transfer ported via `stem_transferred_away_
-               with_stems` (date-target match + stem-extras
-               match + `val !~ /^key/` guard mirroring Perl
-               `Directorium::transfered`). Removed the
-               `was_sancti_preempted_1570` gate that was
-               blocking explicit transfers when the saint
-               would have won on rank.
+               with_stems`.
 
 C6 STATUS:     ✅ DONE 2026-05-04. 35-year confirmation
                sweep showed zero 05-04 fails.

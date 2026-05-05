@@ -49,7 +49,7 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | B | B5 — Matins (the densest hour) | ✅ DONE 2026-05-05 — Invitatorium splice + multi-Lectio emission (Lectio1..9 with intervening Responsories) via `splice_matins_lectios`; 3 new tests; Lectio4 (Monica proper) + Invitatorium antiphon both verified | — | — |
 | B | B6 — Concurrence + first-vespers split | ✅ DONE 2026-05-05 — 4 slices: Te Deum (`a653808`), `[Rule] 3 lectiones` (`20c350b`), nocturn-antiphon grouping (`f58dbcd`), first-vespers concurrence helpers (`parse_horas_rank` + `first_vespers_day_key` — caller-driven rank compare so the walker stays a pure projection). 9 new tests across the 4 slices | — | — |
 | B | B7 — Demo `/breviary.html` page + WASM API | ✅ DONE 2026-05-05 — Slice a (`ae21198`): `compute_office_full` WASM API. Slice b/c (this commit): `demo/breviary.html` + `demo/breviary.js` with hour selector + day_key field + first-vespers swap surfaced in UI; three-page nav (Mass / Breviary / Calendar) wired in `index.html`. Pages CI rebuilds the WASM pkg on push | — | — |
-| B | B8 — Year-sweep regression to ≥ 99.7 % (all 8 hours × 5 rubrics) | 🟡 in progress 2026-05-05 — Slices 1-8 ✅. Slice 9 reverted. Slice 10: `--hour all` mode + per-hour stats; **14-day × 8-hour 1570 Oratio sweep: 58.04% → 69.64%** (Matutinum: 0% → 92.86% via stripping `(sed rubrica X)` and `$rubrica X` template directives in `rust_office_section`). Per-hour view: Matutinum/Laudes/Tertia/Sexta/Nona/Vespera all at 92.86%; Prima + Completorium still at 0% — they have FIXED Oratios (`$oratio_Domine` / `$oratio_Visita`) baked into the Ordinarium template that need macro expansion | — | Prima/Compline `$oratio_<name>` macro expansion |
+| B | B8 — Year-sweep regression to ≥ 99.7 % (all 8 hours × 5 rubrics) | 🟡 in progress 2026-05-05 — Slice 11: `$<name>` macro expansion in walker (Plain template lines that look like macro references look up `Psalterium/Common/Prayers` and substitute), gate against rubric-named macros (`$Conclusio cisterciensis`, etc.), and suppress the day's-Oratio splice on Prima/Completorium (their `[Oratio]` slot in the Ordinarium template is the FIXED Oratio + macros, not a per-day proper). Result: 14-day × 8-hour 1570 Oratio: **70.54% (79/112)**, +1 cell on Completorium (0/14 → 1/14); Prima still 0/14 because the surrounding template has macros (`&mLitany`) whose own bodies embed literal `$X` references that need recursive expansion | — | Recursive expansion of `$X` inside macro bodies; or factor extraction window down to just the day's-proper splice |
 | **C** (correctness) | C1 — Local span-configurable runner (`scripts/regression.sh day|year|decade|century`) | ⏳ pending | — | after B1 |
 | C | C2 — Drive Sancti/01-12 cluster to 0 fail-years | 🟡 spot-checked 2026-05-05 — `Sancti/01-12` did not fire on any of 2008/2013/2019/2030/2035 in current code; the cluster appears already closed by recent precedence work. Needs full ±50yr CI rerun to confirm before marking DONE | — | run CI sweep |
 | C | C3 — Drive Tempora/Pasc1-0t cluster to 0 | 🟡 diagnosed 2026-05-04 (real RC) — Root cause is upstream typo: `missa/Latin/Tempora/Pasc1-0t.txt` is missing the leading `@` (the office-side file has it). Perl reads it as an empty stub → trank=0 → saint wins on Low Sunday. See `UPSTREAM_WEIRDNESSES.md` #37. Naïve mirror closes 04-28 (Vitalis own-body) but breaks 04-22/04-30/etc (Semiduplex commune-body fallback). Deferred until either upstream fixes the `@`, or Rust ports the propers.pl body-fallback chain | — | upstream fix or body-fallback port |
@@ -139,26 +139,37 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    B
-ACTIVE TASK:   ⏳ next — B8 slice 11: expand the fixed
-               Prima `$oratio_Domine` and Completorium
-               `$oratio_Visita` Ordinarium macros so the
-               two zero-pass-rate hours start matching
-               Perl. Both hours hold the Oratio body as
-               a `$macro_name` reference inside the
-               template; the walker currently emits the
-               literal `$oratio_X` token where Perl
-               renders the prayer text via Prayers.txt
-               lookup. Slice-10 (just shipped) added the
-               `--hour all` per-hour distribution mode and
-               stripped `(sed rubrica X)` / `$rubrica X`
-               directives from `rust_office_section`,
-               flipping Matutinum 0% → 92.86% and the
-               14-day × 8-hour aggregate from 58.04% to
-               69.64%. After Prima + Completorium close,
-               the remaining Differs are all the same
-               Tempora-vs-Sancti precedence gap visible
-               in Vespera 60-day work — solving them is
-               leg-C territory.
+ACTIVE TASK:   ⏳ next — B8 slice 12: investigate why
+               Prima still scores 0/14 after slice 11 —
+               the surrounding template emits macros
+               (`&mLitany` and friends) whose own
+               bodies in `Psalterium/Common/Prayers`
+               embed literal `$Kyrie` / `$Pater noster
+               Et` references that the walker isn't
+               recursively expanding. Two paths:
+                 (a) Recursive `$X` expansion when
+                     pulling a macro body in
+                     `lookup_horas_macro` — model the
+                     upstream Perl expand chain.
+                 (b) Or: shrink the comparator's
+                     extraction window for Prima and
+                     Completorium to the actual `$oratio_*`
+                     macro line, since Perl's HTML
+                     section "Oratio" only contains the
+                     prayer + verse/response framing.
+
+               Slice 11 (just shipped) wired
+               `expand_dollar_macro` for Plain template
+               lines that look like `$<name>`,
+               suppressed the day's-proper splice on
+               Prima/Completorium so the wrong proper
+               doesn't leak in, and gated the expansion
+               against rubric-named macros (cisterciensis,
+               monastica, 1955, 1960, etc.) so they stay
+               literal. Net: +1 cell on Completorium
+               (14-day × 8-hour 1570 Oratio: 69.64% →
+               70.54%); Prima still 0/14 awaiting deeper
+               macro work.
 
 C3 STATUS:     Deferred 2026-05-04. Spent the wakeup
                window proving the real root cause: the

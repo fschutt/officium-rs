@@ -199,7 +199,14 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
             }
             "plain" => {
                 if let Some(body) = &line.body {
-                    out.push(RenderedLine::Plain { body: body.clone() });
+                    // Expand `$<name>` macro references against the
+                    // Prayers.txt section table. Used by Prima/
+                    // Completorium fixed-Oratio templates that embed
+                    // `$Kyrie`, `$Pater noster Et`, `$oratio_Domine`,
+                    // `$oratio_Visita` as plain lines (not `&macro`).
+                    let expanded = expand_dollar_macro(body, prayers_file)
+                        .unwrap_or_else(|| body.clone());
+                    out.push(RenderedLine::Plain { body: expanded });
                 }
             }
             "macro" => {
@@ -238,8 +245,101 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
 /// falling back to the first underscore-separated token if the
 /// direct mapping misses; B3+ will refine to mirror the ScriptFunc
 /// branch logic.
+/// Expand a Plain template line that's a bare `$macro` reference.
+///
+/// Many Ordinarium hour templates (notably Prima/Completorium) embed
+/// fixed prayers as `$<name>` lines: `$Kyrie`, `$Pater noster Et`,
+/// `$oratio_Domine`, `$Per Dominum`, `$Fidelium animae`, etc. The
+/// build script classifies these as `kind: 'plain'` because the
+/// `$` form isn't part of the `&macro` grammar it knows. This
+/// helper looks the name up in `Psalterium/Common/Prayers` and
+/// returns the substituted body when the line is just `$<name>`.
+///
+/// Returns `None` for lines that aren't `$`-prefixed, or whose
+/// macro name doesn't resolve, or whose body contains text after
+/// the macro name (so we don't accidentally rewrite "$Per Dominum
+/// nostrum" — leave compound prose alone).
+///
+/// Single-level expansion: if the macro body itself is a `@:`
+/// section reference, follow ONE redirect within the same Prayers
+/// file. Deeper resolution chains aren't yet needed for the known
+/// Prima/Completorium fixed-Oratio shapes (`oratio_Visita` →
+/// `Oratio Visita_`).
+fn expand_dollar_macro(body: &str, prayers: Option<&HorasFile>) -> Option<String> {
+    let s = body.trim();
+    if !s.starts_with('$') {
+        return None;
+    }
+    // Strip the leading `$` and parse the macro name. Names use
+    // ASCII letters / digits / underscores; the rest of the line
+    // can be a single-token tail (`$Pater noster Et` — the `noster
+    // Et` modifies which Pater section is used).
+    let rest = &s[1..];
+    if rest.is_empty() {
+        return None;
+    }
+    // Skip rubric-gated macros — these are fully replaced by the
+    // upstream `$rubrica X` evaluator only when X matches the
+    // active rubric. Without porting that evaluator we can't safely
+    // expand them; under 1570 the cisterciensis/monastica/1960
+    // variants would fire wrongly. Known cases: `$Conclusio
+    // cisterciensis`, `$rubrica Pater secreto`, etc.
+    let lower = rest.to_lowercase();
+    for tok in [
+        "cisterciensis", "monastica", "monastic", "praedicatorum",
+        "1955", "1960", "196",
+    ] {
+        if lower.contains(tok) {
+            return None;
+        }
+    }
+    // The full body after `$` (possibly multi-token) IS the section
+    // name in upstream Prayers.txt for compound forms like
+    // `$Pater noster Et` (section `[Pater noster Et]`). Try the
+    // full string first, then progressively shorter prefixes.
+    let prayers = prayers?;
+    if let Some(body_text) = prayers.sections.get(rest) {
+        return Some(resolve_self_redirect(body_text, prayers));
+    }
+    // Try just the first whitespace-delimited token (single-word
+    // macro like `$Kyrie`).
+    let first_token = rest.split_whitespace().next()?;
+    if let Some(body_text) = prayers.sections.get(first_token) {
+        return Some(resolve_self_redirect(body_text, prayers));
+    }
+    None
+}
+
+/// Follow a single `@:Section` self-redirect inside Prayers.txt.
+/// Used by `expand_dollar_macro` for the `oratio_Visita` →
+/// `Oratio Visita_` indirection. Returns the body unchanged when
+/// the redirect doesn't fire or the target is missing.
+fn resolve_self_redirect(body: &str, prayers: &HorasFile) -> String {
+    let trimmed = body.trim();
+    if let Some(rest) = trimmed.strip_prefix("@:") {
+        // `@:Section` — possibly followed by `:s/.../.../FLAGS` we
+        // don't yet model. Strip everything from the first `:` after
+        // the section name to keep the lookup simple.
+        let section = rest.split_once(':').map(|(s, _)| s).unwrap_or(rest).trim();
+        if let Some(target) = prayers.sections.get(section) {
+            return target.clone();
+        }
+    }
+    body.to_string()
+}
+
 fn lookup_horas_macro<'a>(prayers: Option<&'a HorasFile>, name: &str) -> Option<&'a str> {
     let prayers = prayers?;
+    // Two upstream conventions coexist in `Prayers.txt`:
+    //   * `&Deus_in_adjutorium` → section `[Deus in adjutorium]`
+    //     (underscore-as-space form for prose macros).
+    //   * `$oratio_Domine`     → section `[oratio_Domine]`
+    //     (literal-underscore form for the fixed-Oratio Hour
+    //     macros used by Prima/Completorium).
+    // Try the literal name first so the underscored form wins.
+    if let Some(body) = prayers.sections.get(name) {
+        return Some(body.as_str());
+    }
     let key = name.replace('_', " ");
     if let Some(body) = prayers.sections.get(&key) {
         return Some(body.as_str());
@@ -542,8 +642,16 @@ fn first_path_token(s: &str) -> Option<String> {
 /// in B4+.
 fn slot_candidates(label: &str, hour: &str) -> Vec<String> {
     match label {
-        // Shared across hours.
-        "Oratio" => vec!["Oratio".to_string()],
+        // Shared across hours, EXCEPT Prima and Completorium where
+        // the Oratio is a fixed prayer (`$oratio_Domine` /
+        // `$oratio_Visita`) baked into the Ordinarium template, not
+        // the day's proper. Splicing the day's [Oratio] into those
+        // two hours would prepend the wrong prayer text — Perl
+        // doesn't do this either. Suppress the slot for them.
+        "Oratio" => match hour {
+            "Prima" | "Completorium" => Vec::new(),
+            _ => vec!["Oratio".to_string()],
+        },
 
         // Vespera + Laudes Capitulum/Hymnus/Versus combo slot.
         "Capitulum Hymnus Versus" | "Capitulum Responsorium Hymnus Versus" => vec![

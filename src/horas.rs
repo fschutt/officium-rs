@@ -559,7 +559,8 @@ fn splice_proper_into_slot(
 
     for cand in slot_candidates(label, hour) {
         if let Some(body) = find_section_in_chain(chain, &cand) {
-            out.push(RenderedLine::Plain { body: body.to_string() });
+            let resolved = expand_at_redirect(body, &cand);
+            out.push(RenderedLine::Plain { body: resolved });
             return;
         }
     }
@@ -568,9 +569,74 @@ fn splice_proper_into_slot(
     if label == "Capitulum Hymnus Versus" || label == "Capitulum Responsorium Hymnus Versus" {
         let hymnus_key = format!("Hymnus {hour}");
         if let Some(body) = find_section_in_chain(chain, &hymnus_key) {
-            out.push(RenderedLine::Plain { body: body.to_string() });
+            let resolved = expand_at_redirect(body, &hymnus_key);
+            out.push(RenderedLine::Plain { body: resolved });
         }
     }
+}
+
+/// Expand a whole-body `@Path` or `@Path:Section` redirect against
+/// the corpus. Mirrors the upstream Perl `setupstring` behaviour for
+/// per-section redirects:
+///
+/// - `@Tempora/Nat1-0` (no `:`)  → look up the **same-named section**
+///   in `Tempora/Nat1-0` and return that body. The section name to
+///   look up comes from `default_section`.
+/// - `@Tempora/Nat1-0:Oratio` → look up the explicitly-named section.
+///
+/// When the body is anything *other than* a pure single-line redirect,
+/// returns it untouched. Multi-`@`-line bodies (used by the upstream
+/// Perl `@:Section` self-reference form) are out of scope here.
+fn expand_at_redirect(body: &str, default_section: &str) -> String {
+    let trimmed = body.trim();
+    if !trimmed.starts_with('@') {
+        return body.to_string();
+    }
+    // Reject if there are multiple non-empty lines — these often have
+    // a leading `@` plus a rubric guard that we don't yet evaluate.
+    if trimmed.lines().filter(|l| !l.trim().is_empty()).count() > 1 {
+        return body.to_string();
+    }
+    let after_at = &trimmed[1..];
+    let (path, section) = if let Some((p, s)) = after_at.split_once(':') {
+        (p.trim(), s.trim().to_string())
+    } else {
+        (after_at.trim(), default_section.to_string())
+    };
+    if !looks_like_corpus_path(path) {
+        return body.to_string();
+    }
+    let Some(target) = lookup(path) else {
+        return body.to_string();
+    };
+    if let Some(resolved) = target.sections.get(&section) {
+        if !resolved.trim().is_empty() {
+            // Recurse one hop in case the target's body is itself a
+            // redirect (`@Path:X` → `@OtherPath:Y`). Cap recursion
+            // implicitly: if the second hop hits a non-redirect we
+            // return it; if it hits another redirect we return the
+            // first hop verbatim to avoid infinite loops.
+            let resolved = resolved.clone();
+            let trimmed_inner = resolved.trim();
+            if trimmed_inner.starts_with('@') {
+                return expand_at_redirect(&resolved, &section);
+            }
+            return resolved;
+        }
+    }
+    // Not found — fall back to the literal `@…` so the divergence
+    // is visible rather than silently dropped.
+    body.to_string()
+}
+
+fn looks_like_corpus_path(s: &str) -> bool {
+    s.starts_with("Sancti/")
+        || s.starts_with("Tempora/")
+        || s.starts_with("Commune/")
+        || s.starts_with("Psalterium/")
+        || s.starts_with("SanctiM/")
+        || s.starts_with("SanctiOP/")
+        || s.starts_with("Ordinarium/")
 }
 
 /// Emit Lectio1..Lectio9 + Responsory1..Responsory9 from the day
@@ -949,6 +1015,41 @@ mod tests {
         // Should not match `Conf` or `Class III`.
         let r = "Confessor; Class III";
         assert!(parse_vide_targets(r).is_empty());
+    }
+
+    #[test]
+    fn expand_at_redirect_implicit_section() {
+        // Sancti/01-05 [Oratio] body is `@Tempora/Nat1-0` — implicit
+        // same-section redirect to Nat1-0's [Oratio].
+        let resolved = expand_at_redirect("@Tempora/Nat1-0", "Oratio");
+        assert!(
+            !resolved.starts_with('@'),
+            "redirect should expand, not leak literal `@…`: {resolved:?}"
+        );
+        assert!(
+            resolved.contains("Omnípotens") || resolved.contains("dírige actus") || resolved.len() > 30,
+            "resolved Oratio body unexpected: {}",
+            &resolved[..resolved.len().min(120)]
+        );
+    }
+
+    #[test]
+    fn expand_at_redirect_explicit_section() {
+        // Cross-section: `@Path:OtherSection` form.
+        let resolved = expand_at_redirect("@Sancti/01-06:Oratio", "Hymnus Vespera");
+        assert!(resolved.contains("Unigénitum tuum géntibus stella duce"));
+    }
+
+    #[test]
+    fn expand_at_redirect_passthrough_on_non_redirect() {
+        let body = "Plain prayer text with no redirect.";
+        assert_eq!(expand_at_redirect(body, "Oratio"), body);
+    }
+
+    #[test]
+    fn expand_at_redirect_unknown_path_keeps_literal() {
+        let body = "@Sancti/99-99";
+        assert_eq!(expand_at_redirect(body, "Oratio"), body);
     }
 
     #[test]

@@ -424,13 +424,24 @@ fn parse_vide_targets(rule: &str) -> Vec<String> {
     }
 
     // (2) `ex Sancti/MM-DD` / `ex Tempora/Foo`.
-    // (3) `@Sancti/MM-DD` / `@Tempora/Foo` parent-inherit.
+    // (3) `vide Sancti/MM-DD` / `vide Tempora/Foo` (saint octave-day
+    //     pattern: `Sancti/01-03` carries `vide Sancti/12-27`).
+    // (4) `@Sancti/MM-DD` / `@Tempora/Foo` parent-inherit.
     for raw_line in rule.lines() {
         let line = raw_line.trim();
         if line.starts_with('(') {
             continue;
         }
         if let Some(rest) = line.strip_prefix("ex ") {
+            if let Some(path) = first_path_token(rest) {
+                push(path, &mut out, &mut seen);
+            }
+            continue;
+        }
+        if let Some(rest) = line.strip_prefix("vide ") {
+            // `vide CXX` already captured by the Commune pass above;
+            // here we only catch the `vide Sancti/...`/`vide Tempora/...`
+            // shape.
             if let Some(path) = first_path_token(rest) {
                 push(path, &mut out, &mut seen);
             }

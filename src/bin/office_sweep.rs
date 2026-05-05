@@ -106,6 +106,17 @@ fn days_in_month(year: i32, month: u32) -> u32 {
     }
 }
 
+fn next_day(year: i32, month: u32, day: u32) -> (u32, u32, i32) {
+    let dim = days_in_month(year, month);
+    if day < dim {
+        (month, day + 1, year)
+    } else if month < 12 {
+        (month + 1, 1, year)
+    } else {
+        (1, 1, year + 1)
+    }
+}
+
 fn dates_for_year(year: i32) -> Vec<(u32, u32)> {
     let mut out = Vec::with_capacity(366);
     for m in 1..=12 {
@@ -267,12 +278,32 @@ fn run_one_cell(
         }
     };
 
-    let resolved_key = if hour == "Vespera" {
-        if let Some(next) = next_day_key_override {
-            horas::first_vespers_day_key(&derived_key, next).to_string()
+    // For Vespera: auto-derive the next day's office key (using the
+    // same `precedence::compute_office` path) and let
+    // `first_vespers_day_key` swap if tomorrow outranks today. This
+    // mirrors what `horas.pl` does internally — Vespera on the eve
+    // of a higher-rank feast is the first Vespers of that feast.
+    // The CLI override still wins if explicitly set.
+    let next_derived_key: Option<String> = if hour == "Vespera" {
+        if let Some(k) = next_day_key_override {
+            Some(k.to_string())
         } else {
-            derived_key.clone()
+            let (nm, nd, ny) = next_day(yyyy, mm, dd);
+            let next_input = OfficeInput {
+                date: Date::new(ny, nm, nd),
+                rubric,
+                locale: Locale::Latin,
+            };
+            std::panic::catch_unwind(|| compute_office(&next_input, &BundledCorpus))
+                .ok()
+                .map(|o| o.winner.render())
         }
+    } else {
+        None
+    };
+
+    let resolved_key = if let Some(next) = next_derived_key.as_deref() {
+        horas::first_vespers_day_key(&derived_key, next).to_string()
     } else {
         derived_key.clone()
     };

@@ -51,6 +51,42 @@ clusters identified in the original 1976-2076 CI baseline
 are mostly closed already**; what's left is concentrated in
 2 patterns (bissextile + Pasc-side adjacency).
 
+## Post-C5 (2026-05-05, master `58dff9e`)
+
+After C5 (`date::sancti_kalendar_key` leap+Feb-23 suppression):
+
+Full bissextile-year sweep under Tridentine 1570:
+
+| Year | T1570 | Failing date | Cluster |
+|-----:|------:|--------------|---------|
+| 2000 | 100%  | — | — |
+| 2004 | 99.7% | 02-24 (Tue) | Pre-Lent Tuesday rank vs Vigil |
+| 2008 | 100%  | — | — |
+| 2012 | 100%  | — | — |
+| 2016 | 100%  | — | — |
+| 2020 | 100%  | — | — |
+| 2024 | 100%  | — | — |
+| 2060 | 99.7% | 02-24 (Tue) | Pre-Lent Tuesday rank vs Vigil |
+| 2076 | 100%  | — | — |
+
+7/9 bissextile years at 100%. The remaining 2 fail-days
+(2004-02-24, 2060-02-24) trace to a precedence-rank gap:
+real Feb 24 in leap years correctly resolves to the Vigil
+of Matthias (rank 1.5) via `sday_pair → 02-29`, but Perl
+emits the Pre-Lent Tuesday ferial. Quinquagesima Tuesday
+and Sexagesima Tuesday are rank-2.0 ferias under 1570
+(elevated above plain ferials), and Perl's precedence picks
+the higher-rank Tempora.
+
+**Cluster summary across the 5 documented Mass patterns:**
+
+- ✅ C2 (Sancti/01-12): closed (already passing in current code)
+- 🟡 C3 (Tempora/Pasc1-0t): kalendar-stem-override threading;
+   unfix at 2019/2027/2030/2050 04-x dates
+- ✅ C4 (Commune/C10b): closed in commit `7b49537`
+- ✅ C5 (Sancti/02-23o): closed in commit `04e0f30`
+- ⏳ C6 (Sancti/05-04): not yet investigated
+
 The **`Sancti/01-12` cluster** that was 15 fail-years in the
 previous CI run appears to be already closed in current code —
 none of the spot-checked years (2008, 2013, 2019, 2030, 2035)

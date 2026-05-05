@@ -56,7 +56,7 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | C | C4 — Drive Commune/C10b (Sat-BVM) cluster to 0 | ✅ DONE 2026-05-05 — `@Path::s/PAT/REPL/` (double-colon = caller-section) + keep-from-pattern (`^.*?\sLITERAL`) implemented in `apply_perl_substitution`. **2008: 365/366 → 366/366; 2027: 363/365 → 364/365** (C10b 01-30 closed; Sancti/04-11 = separate Pasc-octave cluster). 2025/2026 still 100% — no regressions | — | — |
 | C | C5 — Drive Sancti/02-23o (bissextile) cluster to 0 | ✅ DONE 2026-05-05 — `date::sancti_kalendar_key` suppresses leap-year Feb 23 (Vigil shifts to real Feb 24 = kalendar 02-29). Updated 4 callsites in `occurrence.rs`. **2000, 2008, 2012, 2016: 99.7% → 100%**; spot-checked 2004 still has 1 fail (different cluster); 288/288 lib tests pass | — | — |
 | C | C6 — Drive Sancti/05-04 cluster to 0 | ⏳ pending | — | low fail-count, late |
-| **K** (compression / size) | K1 — Bundle-size budget table + per-data-file breakdown | ⏳ pending | — | after B-leg ships (Breviary corpus is 2-3× Mass) |
+| **K** (compression / size) | K1 — Bundle-size budget table + per-data-file breakdown | ✅ DONE 2026-05-04 — `docs/BUNDLE_BUDGET.md` lays out the ~1.77 MB brotli starting line. `horas_latin.postcard.br` = 1.10 MB (61%) and `missa_latin.postcard.br` = 518 KB (29%) account for 90% of the bundle. K2 target: shared brotli dictionary on liturgical phrasing → ~15-25% combined savings | — | — |
 | K | K2 — Try shared-dictionary brotli for `missa_latin` + `horas_latin` | ⏳ pending | — | after K1 |
 | K | K3 — Drop `regression` feature from default; smaller release artefact | ⏳ pending | — | small win |
 | K | K4 — `wasm-opt -Oz` already wired; revisit after each leg ships | ✅ already wired in pages.yml | — | — |
@@ -138,38 +138,42 @@ The row currently being worked. Only one across all legs at a time
 (this is a single-threaded loop). When we wake up:
 
 ```
-ACTIVE LEG:    B
-ACTIVE TASK:   ⏳ next — B8 slice 12: investigate why
-               Prima still scores 0/14 after slice 11 —
-               the surrounding template emits macros
-               (`&mLitany` and friends) whose own
-               bodies in `Psalterium/Common/Prayers`
-               embed literal `$Kyrie` / `$Pater noster
-               Et` references that the walker isn't
-               recursively expanding. Two paths:
-                 (a) Recursive `$X` expansion when
-                     pulling a macro body in
-                     `lookup_horas_macro` — model the
-                     upstream Perl expand chain.
-                 (b) Or: shrink the comparator's
-                     extraction window for Prima and
-                     Completorium to the actual `$oratio_*`
-                     macro line, since Perl's HTML
-                     section "Oratio" only contains the
-                     prayer + verse/response framing.
+ACTIVE LEG:    K (after K1 baseline; B8 Prima/Compline
+               deferred — see PARKED below)
+ACTIVE TASK:   ⏳ next — K2: shared-dictionary brotli on
+               `horas_latin.postcard` and
+               `missa_latin.postcard`. Target: build a
+               static brotli dictionary from the most-
+               frequent liturgical n-grams (`Per Dominum`,
+               `Gloria Patri`, `Sicut erat`, `℣.`/`℟.`,
+               etc.) and pass it to the brotli encoder
+               in `build.rs`. Both corpora share the same
+               Latin phrasing, so a shared dictionary
+               should compress both better than per-file
+               brotli. Estimated savings: 15-25% off the
+               combined 1.62 MB → ~1.25-1.40 MB. See
+               `docs/BUNDLE_BUDGET.md` for the K-leg plan.
 
-               Slice 11 (just shipped) wired
-               `expand_dollar_macro` for Plain template
-               lines that look like `$<name>`,
-               suppressed the day's-proper splice on
-               Prima/Completorium so the wrong proper
-               doesn't leak in, and gated the expansion
-               against rubric-named macros (cisterciensis,
-               monastica, 1955, 1960, etc.) so they stay
-               literal. Net: +1 cell on Completorium
-               (14-day × 8-hour 1570 Oratio: 69.64% →
-               70.54%); Prima still 0/14 awaiting deeper
-               macro work.
+K1 STATUS:     ✅ DONE 2026-05-04. Baseline measured
+               and documented. Total brotli today is
+               1.77 MB; target is 700 KB. `horas_latin`
+               (1.10 MB) + `missa_latin` (518 KB) = 90 %
+               of the bundle, so leg-K work targets the
+               two big files first.
+
+PARKED — Prima / Compline 0% Office regression:
+               Their Ordinarium template emits a thick
+               Pater-noster / Kyrie / Litany / Dominus-
+               vobiscum block that Perl renders inline
+               in earlier sections (Preces) but Rust
+               extracts under "Oratio". Closing them
+               needs either (a) full upstream `specials()`
+               rubric-conditional evaluator, or (b)
+               narrower extraction window keyed on the
+               `$oratio_<name>` macro line. Both are
+               significant work. Park here; re-evaluate
+               after K2/K3 ship and the bundle hits its
+               budget.
 
 C3 STATUS:     Deferred 2026-05-04. Spent the wakeup
                window proving the real root cause: the

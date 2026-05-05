@@ -458,6 +458,26 @@ pub fn sday_pair(month: u32, day: u32, year: i32) -> (u32, u32) {
     (month, day)
 }
 
+/// Sancti kalendar lookup key, or `None` when the date has no
+/// kalendar entry under the current rubric's leap-year handling.
+///
+/// Mirrors `sday_pair`'s shift, with one extra rule for **leap
+/// years only**: real Feb 23 returns `None`. Reason: in leap years
+/// the upstream tradition shifts the Vigil of Matthias to real
+/// Feb 24 (kalendar key 02-29 — the "doubled 6th-Calends-of-March").
+/// Real Feb 23 becomes ferial — there's no longer a Vigil there.
+/// Without this suppression, `sday_pair(2, 23, leap)` returns
+/// `(2, 23)` which still hits the Vigil entry, making the Sancti
+/// resolver pick the Vigil on a day Perl renders as plain ferial.
+///
+/// Returns `Some(key)` for every other date.
+pub fn sancti_kalendar_key(year: i32, month: u32, day: u32) -> Option<(u32, u32)> {
+    if leap_year(year) && month == 2 && day == 23 {
+        return None;
+    }
+    Some(sday_pair(month, day, year))
+}
+
 /// Returns the “Sancti/” date (MM-DD) for the *next* calendar day, used
 /// especially for Vespers references. Internally increments the day-of-year.
 /// For example, if “2023-02-28” -> next day is “2023-03-01” unless leap year logic etc.

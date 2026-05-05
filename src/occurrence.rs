@@ -920,7 +920,9 @@ fn transferred_sancti_for_1570(
         cursor_y = prev.0;
         cursor_m = prev.1;
         cursor_d = prev.2;
-        let (look_m, look_d) = date::sday_pair(cursor_m, cursor_d, cursor_y);
+        let Some((look_m, look_d)) = date::sancti_kalendar_key(cursor_y, cursor_m, cursor_d) else {
+            continue;
+        };
         let Some(entry) = kalendarium_1570::lookup_for_layer(layer, look_m, look_d) else {
             continue;
         };
@@ -970,8 +972,12 @@ fn transferred_sancti_for_1570(
                 return None;
             }
             // Is this day's slot available (free or lower-ranked saint)?
-            let (look_m2, look_d2) = date::sday_pair(walk_m, walk_d, walk_y);
-            let native_here = kalendarium_1570::lookup_for_layer(layer, look_m2, look_d2);
+            let native_here = match date::sancti_kalendar_key(walk_y, walk_m, walk_d) {
+                Some((look_m2, look_d2)) => {
+                    kalendarium_1570::lookup_for_layer(layer, look_m2, look_d2)
+                }
+                None => None,
+            };
             // Tridentine practice: a transferred saint can displace a
             // SIMPLEX (rank < 2) native saint, who is then
             // commemorated. Semiduplex+ native saints (rank 2.0+)
@@ -1338,7 +1344,8 @@ fn resolve_sancti_for_tridentine_1570(
     //   2. Today's native entry has lower rank than the transferred
     //      saint (the transferred saint then displaces today's native
     //      saint, who gets commemorated).
-    let (look_m, look_d) = date::sday_pair(month, day, year);
+    let kalendar_key = date::sancti_kalendar_key(year, month, day);
+    let (look_m, look_d) = kalendar_key.unwrap_or_else(|| date::sday_pair(month, day, year));
     // If the year's transfer table ANNOUNCES that this date's stem
     // (e.g. `03-25` = Annunciation) has been moved to a future date
     // (`04-08=03-25` for years where Easter falls on March 31), AND
@@ -1353,16 +1360,24 @@ fn resolve_sancti_for_tridentine_1570(
     // 2020 (letter d) Ignatius (Feb 1, rank 2.2) lands on a free
     // Saturday and isn't preempted, so the Feb-3 transfer entry
     // should not activate.
+    //
+    // `kalendar_key.is_none()` covers the leap-year Feb-23 suppression
+    // (the Vigil of Matthias slid to real Feb 24 = kalendar 02-29);
+    // real Feb 23 in leap years has no kalendar entry, falls through
+    // to ferial.
+    let kalendar_entry_for_date = kalendar_key.and_then(|(m, d)| {
+        kalendarium_1570::lookup_for_layer(layer, m, d)
+    });
     let suppressed_by_transfer =
         crate::transfer_table::stem_transferred_away(
             year, rubric.transfer_rubric_tag(), look_m, look_d,
-        ) && kalendarium_1570::lookup_for_layer(layer, look_m, look_d)
+        ) && kalendar_entry_for_date
             .map(|e| was_sancti_preempted_1570(year, month, day, e, layer, corpus))
             .unwrap_or(false);
     let native_entry = if suppressed_by_transfer {
         None
     } else {
-        kalendarium_1570::lookup_for_layer(layer, look_m, look_d)
+        kalendar_entry_for_date
     };
     let native_rank = native_entry.map(|e| e.main.rank_num).unwrap_or(0.0);
     // The heuristic transfer-walk simulates Tridentine 1570
@@ -1407,7 +1422,7 @@ fn resolve_sancti_for_tridentine_1570(
     let kalendar_lookup = if suppressed_by_transfer {
         None
     } else {
-        kalendarium_1570::lookup_for_layer(layer, look_m, look_d)
+        kalendar_entry_for_date
     };
     if let Some(override_) = kalendar_lookup {
         // Some kalendar entries assume a specific weekday — e.g.

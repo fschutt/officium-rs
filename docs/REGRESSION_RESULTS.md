@@ -5,19 +5,30 @@ the multi-year `year-sweep` regression CI, not the marketing version.
 Goal: be honest with upstream about the gap so they can evaluate
 switching with their eyes open.
 
-## Spot-check after B-leg work (2026-05-05)
+## Spot-check after C4 (2026-05-05, master `1af86ed`)
 
-Local sweeps after the B8 chain-resolver work (`master` `8cb4797`):
+Local sweeps after the C4 (Sat-BVM seasonal Graduale) closure:
 
 | Year | Tridentine 1570 | Failing winners |
 |------|-----------------|-----------------|
-| 2008 | 364/365 (99.7%) | `Commune/C10b` 01-26 (Graduale/Offertorium differ — Septuagesima variant) |
+| 1990 | 365/365 (100%)  | — |
+| 2000 | 365/366 (99.7%) | `Sancti/02-23o` (bissextile Vigil-of-Matthias slide) |
+| 2008 | 366/366 (100%)  | — *(was 365/366 before C4)* |
+| 2010 | 365/365 (100%)  | — |
 | 2013 | 365/365 (100%)  | — |
 | 2019 | 364/365 (99.7%) | `Tempora/Pasc1-0t` 04-28 |
 | 2020 | 366/366 (100%)  | — |
+| 2024 | running         | — |
 | 2025 | 365/365 (100%)  | — |
-| 2027 | 363/365 (99.5%) | `Commune/C10b` 01-30, `Sancti/04-11` |
+| 2026 | 365/365 (100%)  | — |
+| 2027 | 364/365 (99.7%) | `Sancti/04-11` *(C4 closed 01-30)* |
 | 2030 | 364/365 (99.7%) | `Tempora/Pasc1-0t` 04-28 |
+| 2035 | 364/365 (99.7%) | residual single fail |
+
+7 of the 11 spot-checked years are at 100%. The residual
+failures cluster around: bissextile (2000), Pasc-side
+Tempora variants (2019/2030/2027), and a single
+residual day in 2035.
 
 The **`Sancti/01-12` cluster** that was 15 fail-years in the
 previous CI run appears to be already closed in current code —

@@ -264,7 +264,46 @@ fn commune_chain(day_key: &str) -> Vec<&'static HorasFile> {
     let mut visited = std::collections::HashSet::new();
     let mut out = Vec::new();
     visit_chain(day_key, &mut visited, &mut out, 0);
+    // Tempora ferial fall-through: when a `Tempora/FooN-D` (D > 0)
+    // day's chain doesn't surface an `[Oratio]` section, fall back
+    // to the week's parent Sunday `Tempora/FooN-0`. Mirrors the
+    // upstream `Oratio Dominica` rule directive — many ferials
+    // carry no proper Oratio of their own and inherit the Sunday's.
+    if let Some(parent) = tempora_sunday_fallback(day_key) {
+        if !visited.contains(&parent) {
+            visit_chain(&parent, &mut visited, &mut out, 0);
+        }
+    }
     out
+}
+
+/// Map a Tempora ferial / octave-variant key to its parent Sunday.
+///
+/// - `Tempora/Epi3-4` → `Tempora/Epi3-0` (ferial → Sunday)
+/// - `Tempora/Epi4-0tt` → `Tempora/Epi4-0` (octave-tail → bare Sunday)
+/// - `Tempora/Quad5-5r` → `Tempora/Quad5-0` (rubric-variant → Sunday)
+///
+/// Returns `None` for already-bare Sundays (`Tempora/Pasc1-0`) or
+/// non-Tempora categories.
+fn tempora_sunday_fallback(day_key: &str) -> Option<String> {
+    let stem = day_key.strip_prefix("Tempora/")?;
+    // Find the `-` between season-week and day-of-week.
+    let dash = stem.rfind('-')?;
+    let after_dash = &stem[dash + 1..];
+    // The day-of-week is digit(s) optionally followed by lowercase
+    // letters (e.g. `0tt`, `4r`).
+    let stripped = after_dash.trim_end_matches(|c: char| c.is_ascii_lowercase());
+    if stripped.is_empty() || !stripped.chars().all(|c| c.is_ascii_digit()) {
+        return None;
+    }
+    // A bare `-0` is already the parent — no fallback. Anything
+    // else (different digit, OR `-0` with trailing letters that
+    // make it a variant Sunday) maps to the bare Sunday.
+    if after_dash == "0" {
+        return None;
+    }
+    let week_prefix = &stem[..dash];
+    Some(format!("Tempora/{week_prefix}-0"))
 }
 
 fn visit_chain(
@@ -400,9 +439,12 @@ fn parse_vide_targets(rule: &str) -> Vec<String> {
         }
     };
 
-    // (1) Commune `C2`/`C7a`-style targets — match anywhere in the
-    // body (whitespace- or `;`-separated tokens).
-    for token in rule.split(|c: char| c.is_whitespace() || c == ';') {
+    // (1) Commune `C2` / `C7a` / `C6-1` / `C7a-1` style targets —
+    // match anywhere in the body (whitespace- or `;`-separated
+    // tokens). Accepts a `C<digits>[<lowercase>][-<digits>][<lowercase>]`
+    // shape; the `-N` suffix is used by Commune sub-keys
+    // (`C6-1` = "1st reading of the Confessor common").
+    for token in rule.split(|c: char| c.is_whitespace() || c == ';' || c == ',') {
         let bytes = token.as_bytes();
         if bytes.first() != Some(&b'C') {
             continue;
@@ -416,6 +458,21 @@ fn parse_vide_targets(rule: &str) -> Vec<String> {
         }
         if i < bytes.len() && bytes[i].is_ascii_lowercase() {
             i += 1;
+        }
+        // Optional `-N` suffix (`C6-1`, `C7a-1`).
+        if i < bytes.len() && bytes[i] == b'-' {
+            let dash_at = i;
+            i += 1;
+            while i < bytes.len() && bytes[i].is_ascii_digit() {
+                i += 1;
+            }
+            if i == dash_at + 1 {
+                // `-` with no digits — reject.
+                continue;
+            }
+            if i < bytes.len() && bytes[i].is_ascii_lowercase() {
+                i += 1;
+            }
         }
         if i != bytes.len() {
             continue;
@@ -1052,6 +1109,56 @@ mod tests {
     fn expand_at_redirect_unknown_path_keeps_literal() {
         let body = "@Sancti/99-99";
         assert_eq!(expand_at_redirect(body, "Oratio"), body);
+    }
+
+    #[test]
+    fn parse_vide_targets_handles_hyphenated_commune_subkey() {
+        // Sancti/01-23o, Sancti/01-26 use `vide C6-1` / `vide C2-1`
+        // commune sub-key form for "first martyr/confessor sub-form".
+        let r = "vide C6-1;\n";
+        assert_eq!(parse_vide_targets(r), vec!["Commune/C6-1".to_string()]);
+
+        let r = "vide C2-1;\n9 lectiones";
+        assert_eq!(parse_vide_targets(r), vec!["Commune/C2-1".to_string()]);
+
+        // Trailing letter after `-N` — `C7a-1b` shape (rare).
+        let r = "vide C7a-1b";
+        assert_eq!(parse_vide_targets(r), vec!["Commune/C7a-1b".to_string()]);
+
+        // A bare `-` with no digits should NOT match.
+        let r = "vide C7-;";
+        assert!(parse_vide_targets(r).is_empty());
+    }
+
+    #[test]
+    fn tempora_sunday_fallback_maps_ferials_to_sunday() {
+        assert_eq!(
+            tempora_sunday_fallback("Tempora/Epi3-4"),
+            Some("Tempora/Epi3-0".to_string())
+        );
+        // Octave-day suffix shape (`-0tt`) is stripped along with
+        // the day-of-week digit.
+        assert_eq!(
+            tempora_sunday_fallback("Tempora/Epi4-0tt"),
+            Some("Tempora/Epi4-0".to_string())
+        );
+        // Sundays already — no fallback.
+        assert_eq!(tempora_sunday_fallback("Tempora/Pasc1-0"), None);
+        // Non-Tempora — no fallback.
+        assert_eq!(tempora_sunday_fallback("Sancti/05-04"), None);
+    }
+
+    #[test]
+    fn commune_chain_falls_through_to_sunday_oratio() {
+        // Tempora/Epi3-4 has no [Oratio] of its own (Rule:
+        // "Oratio Dominica") — chain must fall back to Tempora/Epi3-0
+        // for the Sunday Oratio.
+        let chain = commune_chain("Tempora/Epi3-4");
+        let oratio = find_section_in_chain(&chain, "Oratio");
+        assert!(
+            oratio.is_some(),
+            "Tempora/Epi3-4 chain should reach Tempora/Epi3-0 Oratio"
+        );
     }
 
     #[test]

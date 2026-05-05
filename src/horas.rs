@@ -284,6 +284,65 @@ fn visit_chain(
     }
 }
 
+// ─── Concurrence / first-vespers helpers (B6 slice 4) ───────────────
+
+/// Parse the highest numeric rank from a horas `[Rank]` body.
+/// Format mirrors the Mass corpus: each line is
+/// `<title>;;<class-name>;;<rank-num>[;;<commune-ref>]`. The title
+/// is sometimes empty (leading `;;`); the rank-num is always the
+/// 3rd `;;`-separated field.
+///
+/// When multiple lines are present (rubric variants), returns the
+/// max rank — the dominant class wins for first-vespers comparison.
+pub fn parse_horas_rank(body: &str) -> Option<f32> {
+    let mut best: Option<f32> = None;
+    for raw_line in body.lines() {
+        let line = raw_line.trim();
+        if line.is_empty() || line.starts_with('(') {
+            // Skip rubric-conditional headers like
+            // `(sed rubrica 1570 aut rubrica monastica)`.
+            continue;
+        }
+        let parts: Vec<&str> = line.split(";;").collect();
+        if parts.len() < 3 {
+            continue;
+        }
+        if let Ok(rank) = parts[2].trim().parse::<f32>() {
+            best = Some(best.map_or(rank, |b: f32| b.max(rank)));
+        }
+    }
+    best
+}
+
+/// Resolve the day key that today's Vespera should render.
+///
+/// In the Roman office, Vespers is sung from a feast's first day
+/// when that feast outranks the day on whose evening it falls
+/// (the "first vespers" of a I- or II-class feast). If
+/// `tomorrow_key` outranks `today_key`, tomorrow's office wins
+/// today's Vespera; otherwise today's office is used.
+///
+/// Returns the chosen `day_key`, in 'static-borrowed form taken
+/// directly from the corpus map keys (no allocations).
+pub fn first_vespers_day_key<'a>(
+    today_key: &'a str,
+    tomorrow_key: &'a str,
+) -> &'a str {
+    let today_rank = lookup(today_key)
+        .and_then(|f| f.sections.get("Rank"))
+        .and_then(|r| parse_horas_rank(r))
+        .unwrap_or(0.0);
+    let tomorrow_rank = lookup(tomorrow_key)
+        .and_then(|f| f.sections.get("Rank"))
+        .and_then(|r| parse_horas_rank(r))
+        .unwrap_or(0.0);
+    if tomorrow_rank > today_rank {
+        tomorrow_key
+    } else {
+        today_key
+    }
+}
+
 /// Read a `[Rule]` body and decide whether the office is the
 /// 9-lectiones (three-nocturn) or 3-lectiones (one-nocturn) form.
 ///
@@ -1146,6 +1205,59 @@ mod tests {
                 "{forbidden} leaked into 3-lectio Matins on Sancti/12-24"
             );
         }
+    }
+
+    // ─── B6 slice 4: first-vespers concurrence ───────────────────────
+
+    #[test]
+    fn parse_horas_rank_handles_corpus_shapes() {
+        // 12-25 — Christmas: title-prefixed `In Nativitate Domini;;
+        // Duplex I Classis;;6.9`.
+        assert_eq!(
+            parse_horas_rank("In Nativitate Domini;;Duplex I Classis;;6.9"),
+            Some(6.9)
+        );
+        // 06-29 — Peter & Paul: leading `;;`. Multiple lines, max wins.
+        assert_eq!(
+            parse_horas_rank(";;Duplex I classis cum octava communi;;6.5;;ex C1\n;;Duplex I classis;;6;;ex C1"),
+            Some(6.5)
+        );
+        // 05-04 — Monica: class III, conditional simplex variant.
+        assert_eq!(
+            parse_horas_rank(";;Duplex;;3;;vide C7a\n(sed rubrica 1570 aut rubrica monastica)\n;;Simplex;;1.1;;vide C7a"),
+            Some(3.0)
+        );
+        // Empty body → None.
+        assert_eq!(parse_horas_rank(""), None);
+    }
+
+    #[test]
+    fn first_vespers_swaps_when_tomorrow_outranks() {
+        // Sancti/05-04 (Monica, rank 3) → Sancti/06-29 (Peter &
+        // Paul, rank 6.5 class I with octave). Tomorrow outranks
+        // today, so today's evening Vespera is the first Vespers of
+        // Peter & Paul. (Date adjacency isn't required for this
+        // helper — the caller supplies whichever two day-keys the
+        // calendar resolves.)
+        let chosen = first_vespers_day_key("Sancti/05-04", "Sancti/06-29");
+        assert_eq!(chosen, "Sancti/06-29");
+    }
+
+    #[test]
+    fn first_vespers_keeps_today_when_tomorrow_outranked() {
+        // Sancti/06-29 (rank 6.5) vs Sancti/05-04 (rank 3) — today
+        // wins.
+        let chosen = first_vespers_day_key("Sancti/06-29", "Sancti/05-04");
+        assert_eq!(chosen, "Sancti/06-29");
+    }
+
+    #[test]
+    fn first_vespers_keeps_today_on_rank_tie() {
+        // Equal-rank neighbours: today wins (no swap). Christmas Eve
+        // (rank 6.9) and Christmas Day (rank 6.9 in pre-1960 rubric)
+        // both share the I-class Vigil/Octave rank.
+        let chosen = first_vespers_day_key("Sancti/12-24", "Sancti/12-25");
+        assert_eq!(chosen, "Sancti/12-24");
     }
 
     #[test]

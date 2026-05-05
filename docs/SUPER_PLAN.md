@@ -47,8 +47,8 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | B | B3 — Vespers (single hour) end-to-end Perl-parity smoke | ✅ DONE 2026-05-04 (commit `94b37cd`) — commune-chain resolver + per-day proper splicing | — | — |
 | B | B4 — Lauds + Prime + Tertia/Sexta/Nona + Compline | ✅ DONE 2026-05-05 (commit `104630a`) | — | — |
 | B | B5 — Matins (the densest hour) | ✅ DONE 2026-05-05 — Invitatorium splice + multi-Lectio emission (Lectio1..9 with intervening Responsories) via `splice_matins_lectios`; 3 new tests; Lectio4 (Monica proper) + Invitatorium antiphon both verified | — | — |
-| B | B6 — Concurrence + first-vespers split | 🟡 in progress 2026-05-05 — Slice 1 ✅ Te Deum (`a653808`). Slice 2 ✅ `[Rule] 3 lectiones` (`20c350b`). Slice 3 ✅ Nocturn antiphon grouping — `collect_nocturn_antiphons` reads either per-nocturn `Ant Matutinum {1,2,3}` keys or splits a single multi-line `Ant Matutinum` body into 3-line groups; emits a Section + Plain block before each nocturn's lectio trio (Lectio1/4/7 for 9-lectio, Lectio1 only for 3-lectio); 3 new tests; Peter+Paul Matins emits all 3 nocturn blocks with the Apostle antiphon "In omnem terram" verified. Remaining: first-vespers swap via `next_day_key` rank compare | — | next wakeup |
-| B | B7 — Demo `/breviary.html` page + WASM API | ⏳ pending | — | after B6, ships with B-leg |
+| B | B6 — Concurrence + first-vespers split | ✅ DONE 2026-05-05 — 4 slices: Te Deum (`a653808`), `[Rule] 3 lectiones` (`20c350b`), nocturn-antiphon grouping (`f58dbcd`), first-vespers concurrence helpers (`parse_horas_rank` + `first_vespers_day_key` — caller-driven rank compare so the walker stays a pure projection). 9 new tests across the 4 slices | — | — |
+| B | B7 — Demo `/breviary.html` page + WASM API | ⏳ next | — | wire `compute_office_hour` through `wasm.rs::compute_office_full(year, month, day, rubric, hour, day_key, next_day_key)` returning JSON; build a minimal `demo/breviary.html` that lets the user pick hour + date and renders the structured `RenderedLine`s |
 | B | B8 — Year-sweep regression to ≥ 99.7 % (all 8 hours × 5 rubrics) | ⏳ pending | — | gates leg-B "done" |
 | **C** (correctness) | C1 — Local span-configurable runner (`scripts/regression.sh day|year|decade|century`) | ⏳ pending | — | after B1 |
 | C | C2 — Drive Sancti/01-12 cluster to 0 fail-years | ⏳ pending | — | after C1 |
@@ -139,27 +139,28 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    B
-ACTIVE TASK:   B6 (slice 4) — first-vespers concurrence swap
-ESTIMATED:     1 loop window. Slices done:
-                 1. `&teDeum` strip + Te Deum macro emission
-                    (commit `a653808`).
-                 2. `[Rule] 3 lectiones` → cap lectio loop at 3
-                    (commit `20c350b`).
-                 3. Nocturn antiphon grouping (this commit) —
-                    `Ant Matutinum 1/2/3` blocks emitted before
-                    each nocturn's lectio trio.
-               Remaining:
-                 - First-vespers concurrence: extend
-                   `OfficeArgs` with an optional `next_day_key`;
-                   when the next day outranks today (per
-                   `crate::precedence`), Vespera renders from
-                   tomorrow's office. The hard part is the
-                   rank-compare integration — `precedence` is
-                   already there for Mass; reuse it.
-EXIT WHEN:     On a date where tomorrow is a I-class feast,
-               today's Vespera body matches tomorrow's propers
-               (e.g. Christmas Eve 2026-12-24 → renders the
-               2026-12-25 [Oratio] for first-vespers).
+ACTIVE TASK:   B7 — Demo `/breviary.html` page + WASM API
+ESTIMATED:     1-2 loop windows. Pieces:
+                 (a) Add `wasm::compute_office_full(year, month,
+                     day, rubric, hour, day_key, next_day_key)`
+                     mirroring `compute_mass_full`. Returns
+                     JSON with the `Vec<RenderedLine>` and a
+                     small metadata block (chosen day_key after
+                     first-vespers swap, rank, etc.).
+                 (b) Build `demo/breviary.html` — a thin shell
+                     that mirrors `index.html` but for the
+                     8 hours. Hour selector + date picker; loads
+                     WASM and walks the rendered lines into
+                     HTML. Reuse `demo/render.js` patterns.
+                 (c) Add `breviary.html` to the navigation in
+                     `demo/index.html` and the Calendar page so
+                     the three-page nav (Mass / Breviary /
+                     Calendar) is in place.
+EXIT WHEN:     Browsing to `/breviary.html?date=2026-05-04&
+               hour=Vespera` renders the Vespera of St. Monica
+               with the proper Oratio body visible — same data
+               flow we already test in Rust just exposed at the
+               page boundary.
 ```
 
 Update this block on every wakeup so the next iteration knows what

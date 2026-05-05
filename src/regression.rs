@@ -26,6 +26,7 @@ use unicode_normalization::UnicodeNormalization;
 use crate::core::MassPropers;
 use crate::mass::expand_macros;
 use crate::missa;
+use crate::ordo::RenderedLine;
 
 // ─── Public types ────────────────────────────────────────────────────
 
@@ -482,6 +483,65 @@ pub fn extract_perl_sections(html: &str) -> BTreeMap<String, String> {
         }
     }
     out
+}
+
+// ─── Office-side regression helpers (B8 slice 1) ─────────────────────
+
+/// Extract the body of a named Office section from a `Vec<RenderedLine>`.
+/// Walks until the first `Section { label == name }` marker, then
+/// concatenates every following Plain/Macro/Spoken/Rubric body until
+/// the next Section. Returns `None` when the section isn't present
+/// or its body is empty.
+///
+/// Mirrors `extract_perl_sections` for the Rust side: the Office
+/// regression sweep uses this to extract the Rust body for direct
+/// comparison against the Perl HTML's same-named section.
+pub fn rust_office_section(lines: &[RenderedLine], name: &str) -> Option<String> {
+    let mut iter = lines.iter().peekable();
+    while let Some(l) = iter.next() {
+        if let RenderedLine::Section { label } = l {
+            if label != name {
+                continue;
+            }
+            let mut buf = String::new();
+            for next in iter.by_ref() {
+                match next {
+                    RenderedLine::Section { .. } => break,
+                    RenderedLine::Plain { body }
+                    | RenderedLine::Spoken { body, .. }
+                    | RenderedLine::Macro { body, .. }
+                    | RenderedLine::Rubric { body, .. } => {
+                        if !buf.is_empty() {
+                            buf.push('\n');
+                        }
+                        buf.push_str(body);
+                    }
+                    _ => {}
+                }
+            }
+            return if buf.trim().is_empty() {
+                None
+            } else {
+                Some(buf)
+            };
+        }
+    }
+    None
+}
+
+/// Compare a Rust-rendered Office section body against the Perl
+/// HTML's same-named section. Re-uses the Mass-side
+/// [`compare_section_named`] machinery — the comparator is
+/// section-agnostic (normalises both sides, then runs the
+/// substring-after-cleaning equality test).
+pub fn compare_office_section(
+    rust_body: &str,
+    perl_html: &str,
+    section: &str,
+) -> SectionStatus {
+    let perl_sections = extract_perl_sections(perl_html);
+    let perl_body = perl_sections.get(section).cloned().unwrap_or_default();
+    compare_section_named(rust_body, &perl_body, section)
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1463,6 +1523,44 @@ mod tests {
         assert_eq!(m.len(), 2);
         assert_eq!(m[0].0, "Introitus");
         assert_eq!(m[1].0, "Oratio");
+    }
+
+    #[test]
+    fn rust_office_section_extracts_oratio_body() {
+        use crate::ordo::RenderedLine;
+        let lines = vec![
+            RenderedLine::Section { label: "Incipit".to_string() },
+            RenderedLine::Plain { body: "Pater noster…".to_string() },
+            RenderedLine::Section { label: "Oratio".to_string() },
+            RenderedLine::Plain {
+                body: "Deus, mæréntium consolátor: per beátam Mónicam.".to_string(),
+            },
+            RenderedLine::Section { label: "Conclusio".to_string() },
+            RenderedLine::Plain { body: "Benedicámus Dómino.".to_string() },
+        ];
+        let oratio = rust_office_section(&lines, "Oratio").expect("Oratio should be found");
+        assert!(oratio.contains("Mónicam"));
+        // Doesn't bleed into Conclusio.
+        assert!(!oratio.contains("Benedicámus"));
+    }
+
+    #[test]
+    fn rust_office_section_missing_returns_none() {
+        let lines = vec![
+            crate::ordo::RenderedLine::Section { label: "Incipit".to_string() },
+            crate::ordo::RenderedLine::Plain { body: "body".to_string() },
+        ];
+        assert!(rust_office_section(&lines, "NotASection").is_none());
+    }
+
+    #[test]
+    fn rust_office_section_empty_section_returns_none() {
+        // A Section followed immediately by another Section — empty body.
+        let lines = vec![
+            crate::ordo::RenderedLine::Section { label: "Foo".to_string() },
+            crate::ordo::RenderedLine::Section { label: "Bar".to_string() },
+        ];
+        assert!(rust_office_section(&lines, "Foo").is_none());
     }
 
     #[test]

@@ -52,7 +52,7 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | B | B8 — Year-sweep regression to ≥ 99.7 % (all 8 hours × 5 rubrics) | 🟡 in progress 2026-05-05 — Slices 1-8 ✅. Slice 9: attempted `mass::expand_macros` on office bodies — regressed (63.33% → 46.67%) so reverted; comparator already accepts the unexpanded form via substring match. **60-day Vespera 1570 sweep: 66.67% match (40/60).** All remaining Differs are Tempora-vs-Sancti precedence gaps shared with the Mass side. Documented patterns closed + patterns reverted in `docs/BREVIARY_REGRESSION_RESULTS.md` | — | next wakeup |
 | **C** (correctness) | C1 — Local span-configurable runner (`scripts/regression.sh day|year|decade|century`) | ⏳ pending | — | after B1 |
 | C | C2 — Drive Sancti/01-12 cluster to 0 fail-years | 🟡 spot-checked 2026-05-05 — `Sancti/01-12` did not fire on any of 2008/2013/2019/2030/2035 in current code; the cluster appears already closed by recent precedence work. Needs full ±50yr CI rerun to confirm before marking DONE | — | run CI sweep |
-| C | C3 — Drive Tempora/Pasc1-0t cluster to 0 | ⏳ pending | — | parallel with C2 |
+| C | C3 — Drive Tempora/Pasc1-0t cluster to 0 | 🟡 diagnosed 2026-05-05 — Root cause: kalendar table's `04-28 → 04-28o` (S. Vitalis Simplex) stem override isn't reaching `compute_office`. Data is correct in `kalendaria_by_rubric.json`; the application path in Sancti resolution skips it. Multi-window fix; needs careful threading of rubric-keyed stem override through the precedence pipeline | — | next wakeup |
 | C | C4 — Drive Commune/C10b (Sat-BVM) cluster to 0 | ✅ DONE 2026-05-05 — `@Path::s/PAT/REPL/` (double-colon = caller-section) + keep-from-pattern (`^.*?\sLITERAL`) implemented in `apply_perl_substitution`. **2008: 365/366 → 366/366; 2027: 363/365 → 364/365** (C10b 01-30 closed; Sancti/04-11 = separate Pasc-octave cluster). 2025/2026 still 100% — no regressions | — | — |
 | C | C5 — Drive Sancti/02-23o (bissextile) cluster to 0 | ⏳ pending | — | needs `date.rs` look |
 | C | C6 — Drive Sancti/05-04 cluster to 0 | ⏳ pending | — | low fail-count, late |
@@ -139,12 +139,26 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    B
-ACTIVE TASK:   C3 — Tempora/Pasc1-0t cluster
+ACTIVE TASK:   C3 (slice 1) — wire kalendar stem override
+               into Sancti resolution
                
-C4 ✅ closed (slices 1+2). 2008/2027 fixed; 2025/2026/2008
-all at 100%; 2027 still has Sancti/04-11. Now move to C3:
-the `Tempora/Pasc1-0t` failure on 2019-04-28 / 2030-04-28
-that the spot-check identified.
+DIAGNOSIS:     2030-04-28 fails because Sancti/04-28 in
+               the missa corpus is St. Paul of the Cross
+               (1867 canonization), but the 1570 rubric's
+               kalendar table maps `04-28 → 04-28o`
+               (S. Vitalis Martyris Simplex). The override
+               IS in `data/kalendaria_by_rubric.json` —
+               1570['04-28'].stem = '04-28o' — but it
+               isn't being threaded through the
+               occurrence-resolution path that builds the
+               Sancti winner. Once it is, the Tempora
+               (Pasc1-0t) keeps the body but the headline
+               reflects St. Vitalis, matching Perl byte-
+               for-byte.
+EXIT WHEN:     2030-04-28 Tridentine 1570: winner_perl
+               headline contains "S. Vitalis Martyris";
+               2019-04-28 same. Year-sweep on 2030 should
+               drop from 1 fail-day to 0.
 
 REMAINING:     C10b's Tractus body is 3 lines:
                  `@:Graduale:s/\s+Al.*//s`  ← slice 1 (✅)

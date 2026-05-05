@@ -57,6 +57,38 @@ self-redirect resolver in mass.rs that mirrors what
 Tractus body resolves correctly and `graduale_or_tractus`
 returns the right text under Septuagesima.
 
+**UPDATE 2026-05-05**: ✅ closed in commit `7b49537`. 2008
+year-sweep: 365/366 → 366/366 (100%). 2027: 363/365 → 364/365.
+2025/2026 still 100% — no regressions.
+
+## C3 (Pasc1-0t cluster) diagnosis 2026-05-05
+
+2030-04-28 fails because the Rust resolver picks
+`Tempora/Pasc1-0t` as the winner stem, but Perl's headline
+shows `S. Vitalis Martyris ~ Simplex` (with Tempora/Pasc1-0t
+as the *Scriptura source*). Investigation:
+
+- `vendor/.../Tabulae/Kalendaria/1570.txt` carries
+  `04-28=04-28o=S. Vitalis Martyris=1=` — the 1570 rubric
+  maps stem `04-28` to `04-28o` (the older S. Vitalis form).
+- Our `data/kalendaria_by_rubric.json` correctly stores this:
+  `1570['04-28'] = [{stem: '04-28o', officium: 'S. Vitalis
+  Martyris', rank: '1', kind: 'main'}]`.
+- But the resolver isn't picking up `04-28o` and instead
+  uses `Sancti/04-28` (St. Paul of the Cross, 1867
+  canonization, post-1570) for occurrence/precedence — the
+  Tempora wins because `Sancti/04-28` Paul of the Cross
+  doesn't outrank Pasc1-0t in 1570 precedence.
+- Once we apply the `04-28 → 04-28o` (Simplex St. Vitalis)
+  override at occurrence resolution, the Tempora keeps the
+  Mass body but the headline (Officium) reflects S. Vitalis
+  — matching Perl's render exactly.
+
+**Fix scope** (multi-window): wire the kalendar-by-rubric
+JSON's `stem` override into `occurrence::compute_office`
+so when the Sancti-side stem is overridden by the kalendar
+(e.g. 04-28 → 04-28o), the resolver uses the override.
+
 ## ±50 year sweep (1976–2076, 101 years × 5 rubrics)
 
 Latest run [25328246322] on `master` `b21b7c7`, against upstream Perl

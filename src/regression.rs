@@ -511,6 +511,19 @@ pub fn rust_office_section(lines: &[RenderedLine], name: &str) -> Option<String>
                     | RenderedLine::Spoken { body, .. }
                     | RenderedLine::Macro { body, .. }
                     | RenderedLine::Rubric { body, .. } => {
+                        // Strip Ordinarium-template rubric directives
+                        // that the walker emits but aren't part of the
+                        // proper prayer text — they're conditional
+                        // gates `(sed rubrica X)`, `(rubrica X dicitur)`
+                        // tied to non-active rubrics, plus `$rubrica X`
+                        // section-rubric macros that mark template
+                        // boundaries. Matutinum's #Oratio in particular
+                        // ends with three such lines which would otherwise
+                        // bleed into the comparable body and force a
+                        // false Differ against Perl.
+                        if is_template_rubric_directive(body) {
+                            continue;
+                        }
                         if !buf.is_empty() {
                             buf.push('\n');
                         }
@@ -527,6 +540,40 @@ pub fn rust_office_section(lines: &[RenderedLine], name: &str) -> Option<String>
         }
     }
     None
+}
+
+/// Recognise template-level rubric directives that should NOT count
+/// as section content for Office regression comparison.
+///
+/// Three shapes seen in `Ordinarium/<Hour>.txt` Oratio sections:
+///   * `(sed rubrica X ...)` / `(deinde rubrica X ...)` —
+///     rubric-conditional gate.
+///   * `(rubrica X dicitur)` / `(rubrica X omittitur)` — alternate
+///     rendering tied to a specific rubric.
+///   * `$rubrica <Name>` — section-rubric macro emitted by the
+///     template after a conditional, marking a template boundary.
+///
+/// Any of these on a standalone line are template directives, not
+/// prayer text. Strip them at extraction time so the comparator can
+/// see only the prayer body — Perl renders the prayer-only output
+/// when the active rubric doesn't trigger any of the conditionals.
+fn is_template_rubric_directive(body: &str) -> bool {
+    let s = body.trim();
+    if s.is_empty() {
+        return false;
+    }
+    // Bare-parenthetical line: `(sed rubrica X …)` etc.
+    if s.starts_with('(') && s.ends_with(')') {
+        let inner = &s[1..s.len() - 1].to_lowercase();
+        if inner.contains("rubrica") {
+            return true;
+        }
+    }
+    // `$rubrica <Name>` template macro.
+    if s.starts_with("$rubrica ") || s == "$rubrica" {
+        return true;
+    }
+    false
 }
 
 /// Compare a Rust-rendered Office section body against the Perl

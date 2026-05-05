@@ -191,9 +191,9 @@ fn parse_args() -> Result<Args, String> {
         }
         i += 1;
     }
-    if !KNOWN_HOURS.contains(&args.hour.as_str()) {
+    if args.hour != "all" && !KNOWN_HOURS.contains(&args.hour.as_str()) {
         return Err(format!(
-            "unknown --hour {:?}; valid: {}",
+            "unknown --hour {:?}; valid: {} or 'all'",
             args.hour,
             KNOWN_HOURS.join(" ")
         ));
@@ -377,59 +377,89 @@ fn main() -> Result<(), String> {
         all
     };
 
+    let hours_to_run: Vec<&str> = if args.hour == "all" {
+        KNOWN_HOURS.to_vec()
+    } else {
+        vec![args.hour.as_str()]
+    };
+
     eprintln!(
-        "office_sweep: {} cells · hour={} rubric={:?} section={}",
+        "office_sweep: {} dates × {} hour(s) = {} cells · rubric={:?} section={}",
         dates.len(),
-        args.hour,
+        hours_to_run.len(),
+        dates.len() * hours_to_run.len(),
         rubric,
         args.section,
     );
 
-    let mut stats = Stats::default();
+    let mut overall = Stats::default();
+    let mut per_hour: Vec<(String, Stats)> =
+        hours_to_run.iter().map(|h| (h.to_string(), Stats::default())).collect();
     for (mm, dd, yyyy) in &dates {
-        let (status, info) = run_one_cell(
-            &repo_root,
-            *yyyy, *mm, *dd,
-            &args.hour,
-            rubric,
-            &args.rubric,
-            args.day_key.as_deref(),
-            args.next_day_key.as_deref(),
-            &args.section,
-            args.verbose,
-        );
-        stats.record(status);
-        let mark = match status {
-            SectionStatus::Match | SectionStatus::Empty => "✓",
-            SectionStatus::PerlBlank => "·",
-            _ => "✗",
-        };
-        if args.verbose || matches!(status, SectionStatus::Differ | SectionStatus::RustBlank) {
-            eprintln!(
-                "  {mark} {:02}-{:02}-{:04}  {:?}{}",
-                mm, dd, yyyy, status,
-                info.as_deref().map(|s| format!("  · {s}")).unwrap_or_default(),
+        for (hi, hour) in hours_to_run.iter().enumerate() {
+            let (status, info) = run_one_cell(
+                &repo_root,
+                *yyyy, *mm, *dd,
+                hour,
+                rubric,
+                &args.rubric,
+                args.day_key.as_deref(),
+                args.next_day_key.as_deref(),
+                &args.section,
+                args.verbose,
             );
+            overall.record(status);
+            per_hour[hi].1.record(status);
+            let mark = match status {
+                SectionStatus::Match | SectionStatus::Empty => "✓",
+                SectionStatus::PerlBlank => "·",
+                _ => "✗",
+            };
+            if args.verbose || matches!(status, SectionStatus::Differ | SectionStatus::RustBlank) {
+                eprintln!(
+                    "  {mark} {:02}-{:02}-{:04} {:>13}  {:?}{}",
+                    mm, dd, yyyy, hour, status,
+                    info.as_deref().map(|s| format!("  · {s}")).unwrap_or_default(),
+                );
+            }
         }
     }
 
     println!();
     println!("─── office_sweep summary ───────────────────────────");
-    println!("cells:       {}", stats.cells);
-    println!("matched:     {}", stats.matched);
-    println!("differ:      {}", stats.differ);
-    println!("rust-blank:  {}", stats.rust_blank);
-    println!("perl-blank:  {}", stats.perl_blank);
-    println!("empty:       {}", stats.empty);
-    println!("pass-rate:   {:.2}%", stats.pass_rate_pct());
+    if hours_to_run.len() > 1 {
+        println!("per-hour pass-rates:");
+        for (h, s) in &per_hour {
+            println!(
+                "  {:>13}  {:>4}/{:<4}  ({:>5.2}%)  match={} differ={} rust-blank={} perl-blank={} empty={}",
+                h,
+                s.matched + s.empty,
+                s.cells,
+                s.pass_rate_pct(),
+                s.matched,
+                s.differ,
+                s.rust_blank,
+                s.perl_blank,
+                s.empty,
+            );
+        }
+        println!();
+    }
+    println!("cells:       {}", overall.cells);
+    println!("matched:     {}", overall.matched);
+    println!("differ:      {}", overall.differ);
+    println!("rust-blank:  {}", overall.rust_blank);
+    println!("perl-blank:  {}", overall.perl_blank);
+    println!("empty:       {}", overall.empty);
+    println!("pass-rate:   {:.2}%", overall.pass_rate_pct());
 
     // ≥99.7% bar from SUPER_PLAN exit criteria.
-    if stats.cells > 0 && stats.pass_rate_pct() >= 99.7 {
+    if overall.cells > 0 && overall.pass_rate_pct() >= 99.7 {
         Ok(())
     } else {
         Err(format!(
             "below ≥99.7% bar (got {:.2}%)",
-            stats.pass_rate_pct()
+            overall.pass_rate_pct()
         ))
     }
 }

@@ -47,6 +47,43 @@ Baselines on a 30-day January slice:
 Sancti coverage matches more cleanly than January's heavy
 Octave indirection.
 
+## Slice 10: per-hour distribution + Matutinum rubric strip
+
+Added `--hour all` mode to `office_sweep` that walks all 8
+canonical hours per date and reports match-rate per hour.
+
+**14-day × 8-hour Oratio sweep, T1570:**
+
+| Hour          | Pass rate  | Notes |
+|---------------|-----------:|-------|
+| Matutinum     | 13/14 (92.86%) | was 0% — fixed slice 10 |
+| Laudes        | 13/14 (92.86%) |  |
+| Prima         | 0/14   (0.00%) | fixed `$oratio_Domine` not expanded |
+| Tertia        | 13/14 (92.86%) |  |
+| Sexta         | 13/14 (92.86%) |  |
+| Nona          | 13/14 (92.86%) |  |
+| Vespera       | 13/14 (92.86%) |  |
+| Completorium  | 0/14   (0.00%) | fixed `$oratio_Visita` not expanded |
+| **Aggregate** | **78/112 (69.64%)** | up from 58.04% pre-slice-10 |
+
+Slice-10 fix: `rust_office_section` now strips Ordinarium-
+template rubric directives — `(sed rubrica X)`,
+`(rubrica X dicitur)`, `$rubrica <Name>` — from extracted
+section bodies. These are template-level conditionals tied to
+non-active rubrics (Cisterciensis, Monastic, Triduum) that
+the walker emits but the Perl render skips when the gate
+doesn't fire. Matutinum was the worst offender: its `#Oratio`
+template ends with three such lines after the actual Oratio
+body, which forced a false Differ on every cell.
+
+Prima and Completorium remain at 0% because their `#Oratio`
+template embeds a FIXED Oratio (`$oratio_Domine` for Prima,
+`$oratio_Visita` for Completorium) plus surrounding macros
+(Pater noster, Kyrie, Dominus vobiscum, Per Dominum). The
+walker emits `$oratio_<Name>` as a literal token; Perl looks
+the macro up in `Psalterium/Common/Prayers` and renders the
+expanded prayer. Slice 11 fixes this.
+
 ## Remaining divergence patterns (slice 8 baseline)
 
 The 11 residual Differs on the 30-day Jan slice all fall into

@@ -2730,6 +2730,36 @@ fn expand_inline_at_lines(
                     }
                 }
             }
+            // `@Path::s/PAT/REPL/FLAGS` — cross-file with empty
+            // section (defaults to caller's section name) and a
+            // regex substitution applied. Used by Commune/C10b's
+            // `[Tractus] = … @Commune/C11::s/^.*?\s(\!)//s` to
+            // pull C11's [Tractus] body and strip everything up
+            // to the inline `!Tractus` marker. The double-colon
+            // is the syntactic marker for "use caller's section".
+            else if let Some(double_colon_at) = stripped_trim.find("::s/") {
+                let path = stripped_trim[..double_colon_at].trim();
+                let sub_spec = stripped_trim[double_colon_at + 2..].to_string();
+                if path.contains('/') {
+                    let key = FileKey::parse(path);
+                    if let Some(file) = corpus.mass_file(&key) {
+                        if let Some(target_body) = file
+                            .sections
+                            .get(section)
+                            .map(|s| s.trim())
+                            .filter(|s| !s.is_empty())
+                        {
+                            let nested = expand_inline_at_lines(
+                                target_body, section, corpus, &key, via_commune,
+                            );
+                            let final_body = apply_perl_substitution(&nested, &sub_spec)
+                                .unwrap_or(nested);
+                            out.push(final_body);
+                            continue;
+                        }
+                    }
+                }
+            }
             // `@Path:Section` — cross-file selector. Drives the
             // Petri-half of the Pauli/Petri pair on Sancti/06-30
             // ([Oratio] = `... @Sancti/01-25:Oratio Petri`).
@@ -3212,6 +3242,43 @@ fn apply_perl_substitution(text: &str, spec: &str) -> Option<String> {
     // Find the next unescaped `/` for end-of-PAT.
     let (pattern, after_pattern) = split_unescaped(rest, '/')?;
     let (replacement, flags) = split_unescaped(after_pattern, '/')?;
+    // Keep-from-pattern shape: `^.*?\sLITERAL` (with optional `s`
+    // flag) with the literal optionally wrapped in `(...)` capture
+    // parens. Used by Commune/C10b's second-hop
+    // `@Commune/C11::s/^.*?\s(\!)//s` — strip everything from
+    // start of body up to (but not including) the first
+    // whitespace+literal occurrence, keeping only the LITERAL
+    // onward portion. Inverse of the `\s+LITERAL.*` truncate
+    // handled below.
+    if replacement.is_empty() && pattern.starts_with(r"^.*?\s") {
+        let after_anchor = &pattern[r"^.*?\s".len()..];
+        let inner = if after_anchor.starts_with('(') && after_anchor.ends_with(')') {
+            &after_anchor[1..after_anchor.len() - 1]
+        } else {
+            after_anchor
+        };
+        if let Some(literal) = unescape_literal(inner) {
+            let bytes = text.as_bytes();
+            let lit_bytes = literal.as_bytes();
+            for i in 0..bytes.len() {
+                if !matches!(bytes[i], b' ' | b'\t' | b'\n' | b'\r') {
+                    continue;
+                }
+                let start = i + 1;
+                if start + lit_bytes.len() > bytes.len() {
+                    break;
+                }
+                if &bytes[start..start + lit_bytes.len()] == lit_bytes {
+                    // Keep from LITERAL onward (skip past the
+                    // whitespace prefix, keep the literal itself).
+                    return Some(text[start..].to_string());
+                }
+            }
+            // No match — `s/^.*?\s(\!)//s` on a body without `\s!`
+            // means nothing to strip, return unchanged.
+            return Some(text.to_string());
+        }
+    }
     // Truncate-from-pattern shape: `\s+LITERAL.*` (with optional `s`
     // flag). Used by Commune/C10b `[Tractus] = @:Graduale:s/\s+Al.*//s`
     // — strip everything from the first whitespace before "Al" to
@@ -3590,6 +3657,23 @@ mod tests {
         let out = apply_perl_substitution(body, r"s/\s+Al.*//s").expect("sub applies");
         assert!(out.ends_with("scribéntis."), "out: {out:?}");
         assert!(!out.contains("Allelúja"), "Allelúja leaked: {out:?}");
+    }
+
+    #[test]
+    fn perl_sub_keep_from_whitespace_literal_with_capture() {
+        // Commune/C10b's second-hop `@Commune/C11::s/^.*?\s(\!)//s`
+        // strips C11's [Tractus] body up to the first `\s!` so only
+        // the `!Tractus`-onward block remains.
+        let body = "Benedícta et venerábilis es, Virgo María: …\n\
+                    V. Virgo, Dei Génetrix…\n\
+                    _\n\
+                    !Tractus\n\
+                    Gaude, María Virgo, cunctas hǽreses sola interemísti.\n\
+                    V. Quæ Gabriélis Archángeli dictis credidísti.";
+        let out = apply_perl_substitution(body, r"s/^.*?\s(\!)//s").expect("sub applies");
+        assert!(out.starts_with("!Tractus"), "out: {out:?}");
+        assert!(out.contains("Gaude, María Virgo"));
+        assert!(!out.contains("Benedícta"), "leak: {out}");
     }
 
     #[test]

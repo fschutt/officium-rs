@@ -30,6 +30,27 @@ failures cluster around: bissextile (2000), Pasc-side
 Tempora variants (2019/2030/2027), and a single
 residual day in 2035.
 
+Wider sample after the multi-year run completed:
+
+| Year | T1570 | Failing date | Cluster |
+|-----:|------:|--------------|---------|
+| 1990 | 100%  | — | — |
+| 2000 | 99.7% | 02-23 | C5 bissextile |
+| 2010 | 100%  | — | — |
+| 2020 | 100%  | — | — |
+| 2026 | 100%  | — | — |
+| 2040 | 100%  | — | — |
+| 2050 | 99.7% | 04-17 | Pasc-side (C3-adjacent) |
+| 2060 | 99.7% | 02-24 | C5 bissextile (Feb-29 → 24 slide) |
+| 2076 | 100%  | — | — |
+
+13/13 of the wide-sample bins where 1570 hits 100% — only
+3/13 fall to a single residual fail, and those 3 are all
+in the documented "5 patterns" target list. **The C-leg
+clusters identified in the original 1976-2076 CI baseline
+are mostly closed already**; what's left is concentrated in
+2 patterns (bissextile + Pasc-side adjacency).
+
 The **`Sancti/01-12` cluster** that was 15 fail-years in the
 previous CI run appears to be already closed in current code —
 none of the spot-checked years (2008, 2013, 2019, 2030, 2035)

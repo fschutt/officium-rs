@@ -1013,4 +1013,55 @@ mod leap_shift_tests {
         assert_eq!(get_sday(2, 25, 2024), "02-24");
         assert_eq!(get_sday(2, 24, 2025), "02-24");
     }
+
+    #[test]
+    fn sancti_kalendar_key_suppresses_leap_feb_23() {
+        // C5 fix: leap-year Feb 23 has no kalendar entry — the Vigil
+        // of Matthias is held on real Feb 24 (kalendar 02-29) under
+        // the leap-year intercalation. Without this suppression the
+        // Vigil fires twice (Feb 23 AND Feb 24) and 02-23 wrongly
+        // wins on Feb 23.
+        assert_eq!(sancti_kalendar_key(2024, 2, 23), None);
+        assert_eq!(sancti_kalendar_key(2000, 2, 23), None);
+        assert_eq!(sancti_kalendar_key(2060, 2, 23), None);
+    }
+
+    #[test]
+    fn sancti_kalendar_key_passes_through_non_leap() {
+        // Non-leap years: Feb 23 is the Vigil of Matthias as usual.
+        assert_eq!(sancti_kalendar_key(2025, 2, 23), Some((2, 23)));
+        assert_eq!(sancti_kalendar_key(1900, 2, 23), Some((2, 23)));
+        assert_eq!(sancti_kalendar_key(2100, 2, 23), Some((2, 23)));
+    }
+
+    #[test]
+    fn sancti_kalendar_key_leap_feb_24_resolves_to_bissextile() {
+        // Real Feb 24 in leap years routes to kalendar 02-29 (the
+        // bissextile day encoded as the Vigil). The suppression rule
+        // does NOT cover Feb 24 — under 1570 the Vigil correctly
+        // fires here when not preempted by a higher-rank Tempora
+        // ferial.
+        assert_eq!(sancti_kalendar_key(2024, 2, 24), Some((2, 29)));
+        assert_eq!(sancti_kalendar_key(2000, 2, 24), Some((2, 29)));
+    }
+
+    #[test]
+    fn sancti_kalendar_key_leap_post_feb_24_shifts() {
+        // Feb 25..29 in leap years shift down by one (saint table
+        // stays at original distance from March 1).
+        assert_eq!(sancti_kalendar_key(2024, 2, 25), Some((2, 24)));
+        assert_eq!(sancti_kalendar_key(2024, 2, 28), Some((2, 27)));
+        assert_eq!(sancti_kalendar_key(2024, 2, 29), Some((2, 28)));
+    }
+
+    #[test]
+    fn sancti_kalendar_key_non_february_unchanged() {
+        for (m, d, y) in [(1, 23, 2024), (3, 23, 2024), (12, 24, 2024)] {
+            assert_eq!(
+                sancti_kalendar_key(y, m, d),
+                Some((m, d)),
+                "non-Feb date should pass through: {y}-{m:02}-{d:02}"
+            );
+        }
+    }
 }

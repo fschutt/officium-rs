@@ -458,9 +458,11 @@ fn parse_vide_targets(rule: &str) -> Vec<String> {
 
 /// First whitespace-delimited token of a string, accepting only if
 /// it looks like a corpus path: `Sancti/...`, `Tempora/...`,
-/// `Commune/...`. Returns the path-shaped token verbatim.
+/// `Commune/...`. Strips trailing `;` and `,` punctuation that
+/// upstream rule bodies sprinkle around tokens.
 fn first_path_token(s: &str) -> Option<String> {
     let token = s.split_whitespace().next()?;
+    let token = token.trim_end_matches(|c: char| c == ';' || c == ',');
     if token.starts_with("Sancti/")
         || token.starts_with("Tempora/")
         || token.starts_with("Commune/")
@@ -1073,6 +1075,19 @@ mod tests {
         let r = "@Sancti/01-25\n9 lectiones";
         let targets = parse_vide_targets(r);
         assert!(targets.contains(&"Sancti/01-25".to_string()));
+    }
+
+    #[test]
+    fn commune_chain_resolves_st_john_octave() {
+        // Sancti/01-03 [Rule] = `vide Sancti/12-27;` — the chain
+        // must reach St. John's principal feast for the Oratio.
+        let chain = commune_chain("Sancti/01-03");
+        let oratio = find_section_in_chain(&chain, "Oratio");
+        assert!(
+            oratio.as_deref().map(|s| s.contains("Ecclésiam tuam")).unwrap_or(false),
+            "Sancti/01-03 chain should reach Sancti/12-27 Oratio. Got: {:?}",
+            oratio
+        );
     }
 
     #[test]

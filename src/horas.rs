@@ -469,7 +469,29 @@ fn splice_matins_lectios(out: &mut Vec<RenderedLine>, chain: &[&HorasFile]) {
         .and_then(|f| f.sections.get("Rule"))
         .map(|r| rule_lectio_count(r))
         .unwrap_or(9);
+    // Pre-load nocturn antiphons. Three upstream layouts:
+    //   (1) Single `[Ant Matutinum]` body holding 9 antiphons (one
+    //       per psalm, separated by newlines + `;;<psalm-num>`
+    //       suffix). Common case for apostles/martyrs.
+    //   (2) Per-nocturn `[Ant Matutinum 1]`/`[Ant Matutinum 2]`/
+    //       `[Ant Matutinum 3]` keys. Newer corpus.
+    //   (3) Some Communes have only `[Ant Matutinum]` with fewer
+    //       than 9 lines (Vidua C7 has 1).
+    let nocturn_antiphons = collect_nocturn_antiphons(chain);
     for n in 1..=lectio_count {
+        // At each nocturn boundary, emit the nocturn-N antiphon block
+        // before the lectio trio (Lectio1 → nocturn 1; Lectio4 →
+        // nocturn 2; Lectio7 → nocturn 3).
+        let nocturn_idx_opt = match (lectio_count, n) {
+            (9, 1) => Some(0),
+            (9, 4) => Some(1),
+            (9, 7) => Some(2),
+            (3, 1) => Some(0),
+            _ => None,
+        };
+        if let Some(nocturn_idx) = nocturn_idx_opt {
+            emit_nocturn_antiphon_block(out, &nocturn_antiphons, nocturn_idx);
+        }
         let key = format!("Lectio{n}");
         if let Some(body) = find_section_in_chain(chain, &key) {
             // The trailing `&teDeum` directive in the per-day Lectio
@@ -503,6 +525,72 @@ fn splice_matins_lectios(out: &mut Vec<RenderedLine>, chain: &[&HorasFile]) {
                 body: body.to_string(),
             });
         }
+    }
+}
+
+/// Collect Matins antiphons grouped per nocturn (3 nocturns of up
+/// to 3 antiphons each). The walker tries, in order:
+///   1. Per-nocturn keys: `Ant Matutinum 1`, `Ant Matutinum 2`,
+///      `Ant Matutinum 3` (newer corpus shape).
+///   2. Single `Ant Matutinum` body — split it into lines, take
+///      groups of 3.
+fn collect_nocturn_antiphons(chain: &[&HorasFile]) -> [Vec<String>; 3] {
+    let mut out: [Vec<String>; 3] = Default::default();
+    let mut any_per_nocturn = false;
+    for n in 1..=3 {
+        let key = format!("Ant Matutinum {n}");
+        if let Some(body) = find_section_in_chain(chain, &key) {
+            out[n - 1] = parse_antiphon_lines(body);
+            any_per_nocturn = true;
+        }
+    }
+    if any_per_nocturn {
+        return out;
+    }
+    // Fallback: single multi-line `Ant Matutinum` body.
+    if let Some(body) = find_section_in_chain(chain, "Ant Matutinum") {
+        let all = parse_antiphon_lines(body);
+        // Distribute: first 3 → nocturn 1, next 3 → nocturn 2,
+        // remainder → nocturn 3. When we have fewer than 9 lines,
+        // dump everything in nocturn 1 (Vidua C7 has only 1).
+        if all.len() >= 9 {
+            out[0] = all[0..3].to_vec();
+            out[1] = all[3..6].to_vec();
+            out[2] = all[6..9].to_vec();
+        } else {
+            out[0] = all;
+        }
+    }
+    out
+}
+
+/// Split a multi-line `[Ant Matutinum]` body into individual antiphon
+/// lines. Drops blank lines but preserves the upstream `;;<psalm-num>`
+/// suffix so render-side formatters can extract the psalm number.
+fn parse_antiphon_lines(body: &str) -> Vec<String> {
+    body.lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .map(str::to_string)
+        .collect()
+}
+
+/// Push the nocturn-N antiphon block: one `Section` marker followed
+/// by one `Plain` per antiphon. No-op when the nocturn slot is empty.
+fn emit_nocturn_antiphon_block(
+    out: &mut Vec<RenderedLine>,
+    nocturn_antiphons: &[Vec<String>; 3],
+    nocturn_idx: usize,
+) {
+    let antiphons = match nocturn_antiphons.get(nocturn_idx) {
+        Some(a) if !a.is_empty() => a,
+        _ => return,
+    };
+    out.push(RenderedLine::Section {
+        label: format!("Ant Matutinum {}", nocturn_idx + 1),
+    });
+    for ant in antiphons {
+        out.push(RenderedLine::Plain { body: ant.clone() });
     }
 }
 
@@ -1056,6 +1144,81 @@ mod tests {
             assert!(
                 !lectio_labels.iter().any(|s| s == forbidden),
                 "{forbidden} leaked into 3-lectio Matins on Sancti/12-24"
+            );
+        }
+    }
+
+    #[test]
+    fn parse_antiphon_lines_filters_blank() {
+        let body = "Ant 1 body;;18\n\n  \nAnt 2 body;;33\nAnt 3 body;;44";
+        let out = parse_antiphon_lines(body);
+        assert_eq!(out.len(), 3);
+        assert!(out[0].contains("Ant 1 body"));
+        assert!(out[2].contains("Ant 3 body"));
+    }
+
+    #[test]
+    fn matutinum_emits_nocturn_antiphons_for_apostles() {
+        // Sancti/06-29 (Peter & Paul) → Commune/C1 (Apostles), which
+        // has 9 antiphons in `[Ant Matutinum]`. The walker must
+        // emit a nocturn-N antiphon block before each Lectio trio.
+        let args = OfficeArgs {
+            year: 2026,
+            month: 6,
+            day: 29,
+            rubric: crate::core::Rubric::Tridentine1570,
+            hour: HOUR_MATUTINUM,
+            rubrics: true,
+            day_key: Some("Sancti/06-29"),
+        };
+        let lines = compute_office_hour(&args);
+        assert!(!lines.is_empty(), "Peter+Paul Matutinum empty");
+
+        // Each nocturn marker must appear exactly once.
+        for nocturn in 1..=3 {
+            let label = format!("Ant Matutinum {nocturn}");
+            let count = lines
+                .iter()
+                .filter(|l| matches!(l, RenderedLine::Section { label: l2 } if l2 == &label))
+                .count();
+            assert_eq!(
+                count, 1,
+                "expected exactly 1 `{label}` section marker; got {count}"
+            );
+        }
+
+        // The Apostle antiphon "In omnem terram" (psalm 18) must
+        // appear in the rendered output.
+        let any_apostle_antiphon = lines.iter().any(|l| match l {
+            RenderedLine::Plain { body } => body.contains("In omnem terram"),
+            _ => false,
+        });
+        assert!(
+            any_apostle_antiphon,
+            "Apostle antiphon `In omnem terram` not spliced into Matins"
+        );
+    }
+
+    #[test]
+    fn matutinum_3_lectiones_emits_single_nocturn_antiphon_block() {
+        // Christmas Eve uses 3-lectio form; the nocturn-1 block
+        // should fire (if antiphons exist on the chain) and no
+        // nocturn 2 or 3 markers should be emitted.
+        let args = OfficeArgs {
+            year: 2026,
+            month: 12,
+            day: 24,
+            rubric: crate::core::Rubric::Tridentine1570,
+            hour: HOUR_MATUTINUM,
+            rubrics: true,
+            day_key: Some("Sancti/12-24"),
+        };
+        let lines = compute_office_hour(&args);
+        for nocturn in 2..=3 {
+            let forbidden = format!("Ant Matutinum {nocturn}");
+            assert!(
+                !lines.iter().any(|l| matches!(l, RenderedLine::Section { label } if label == &forbidden)),
+                "{forbidden} leaked into 3-lectio Christmas-Vigil Matins"
             );
         }
     }

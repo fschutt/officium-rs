@@ -1383,12 +1383,38 @@ fn resolve_sancti_for_tridentine_1570(
     let kalendar_entry_for_date = kalendar_key.and_then(|(m, d)| {
         kalendarium_1570::lookup_for_layer(layer, m, d)
     });
+    // Perl's `Directorium::transfered()` consults the year's explicit
+    // Sunday-letter Transfer table and returns TRUE whenever the
+    // current date's stem is moved by an explicit rule. The
+    // suppression is unconditional — Perl does NOT also gate on a
+    // preemption check. Earlier the Rust port wrapped this in
+    // `was_sancti_preempted_1570(...)` (a heuristic that asks whether
+    // the saint would have lost on rank to the Tempora) which worked
+    // for the most common cases (Annunciation in Holy Week — saint
+    // does lose on rank) but blocked the c-letter `04-12=04-11` rule
+    // for 2027-04-11 (St. Leo would *win* on rank against Pasc2-0
+    // Dominica minor 2.9 < Duplex 3.0, so the heuristic refused to
+    // suppress, but Perl's explicit table moves him anyway). Drop
+    // the gate — the upstream letter file already encodes which
+    // saints move and which don't, so the rank check is redundant
+    // and counter-productive.
+    // Collect the stems that the kalendar entry could match against
+    // a transfer rule's extras (e.g. `02-23o` for the Vigil of
+    // Matthias on the bissextile shift). Without this, the
+    // date-target match alone misses leap-year Feb 24, where mm_dd =
+    // "02-29" and the rule is `02-23=02-22~02-23o` (target is "02-22",
+    // extras has "02-23o" — only the stem mention catches it).
+    let candidate_stems: Vec<&str> = kalendar_entry_for_date
+        .iter()
+        .flat_map(|e| {
+            std::iter::once(e.main.stem.as_str())
+                .chain(e.commemorations.iter().map(|c| c.stem.as_str()))
+        })
+        .collect();
     let suppressed_by_transfer =
-        crate::transfer_table::stem_transferred_away(
-            year, rubric.transfer_rubric_tag(), look_m, look_d,
-        ) && kalendar_entry_for_date
-            .map(|e| was_sancti_preempted_1570(year, month, day, e, layer, corpus))
-            .unwrap_or(false);
+        crate::transfer_table::stem_transferred_away_with_stems(
+            year, rubric.transfer_rubric_tag(), look_m, look_d, &candidate_stems,
+        );
     let native_entry = if suppressed_by_transfer {
         None
     } else {

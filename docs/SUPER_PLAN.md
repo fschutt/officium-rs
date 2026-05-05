@@ -139,24 +139,29 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    C
-ACTIVE TASK:   ⏳ next — port the Sunday-letter Sancti
-               transfer table (`Tabulae/Transfer/d.txt`,
-               `e.txt`, etc.) to Rust. Currently we apply
-               the Sunday-letter Transfer table only to
-               TEMPORA stems via `apply_transfer_temporal_1570`;
-               the same letter files have Sancti rules like
-               `02-29=02-22~02-23o;;1570 M1617` (move
-               Vigil-of-Matthias from leap-year Feb 29 to
-               Feb 22 in years where Easter conflicts).
-               Closes the 02-24 Pre-Lent Tuesday vs Vigil
-               cluster (2004 + 2060 in the wide sample) plus
-               the 2035-05-05 Sat-in-Oct-Ascensionis case —
-               2-3 fail-days, lifting ~99.88 % to ~99.91 %.
+ACTIVE TASK:   ⏳ next — port the same Sunday-letter
+               Sancti transfer logic to ALSO close the
+               05-05 Sat-in-Oct-Ascensionis cluster (1940,
+               2035 still failing). The mechanism for
+               those is similar but the rule format
+               differs — `Tabulae/Transfer/<easter>.txt`
+               for the year-specific Pasc-octave shifts
+               vs. the Sunday-letter Sancti transfers
+               just landed. Once 05-05 closes, only the
+               C3 (Pasc1-0t upstream typo) cluster
+               remains as the single multi-year residual.
+
+CT STATUS:     ✅ DONE 2026-05-04. Sunday-letter Sancti
+               transfer ported via `stem_transferred_away_
+               with_stems` (date-target match + stem-extras
+               match + `val !~ /^key/` guard mirroring Perl
+               `Directorium::transfered`). Removed the
+               `was_sancti_preempted_1570` gate that was
+               blocking explicit transfers when the saint
+               would have won on rank.
 
 C6 STATUS:     ✅ DONE 2026-05-04. 35-year confirmation
-               sweep showed zero 05-04 fails. Wide-sample
-               match rate documented in
-               `docs/REGRESSION_RESULTS.md` Post-C6 section.
+               sweep showed zero 05-04 fails.
 
 K3 STATUS:     ✅ DONE 2026-05-04. Verification only —
                the WASM build already does

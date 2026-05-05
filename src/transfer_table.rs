@@ -211,6 +211,30 @@ pub fn stem_transferred_away(
     month: u32,
     day: u32,
 ) -> bool {
+    stem_transferred_away_with_stems(year, rubric, month, day, &[])
+}
+
+/// Like [`stem_transferred_away`], but also checks whether any of
+/// the supplied saint stems (e.g. `"02-23o"`, `"04-08o"`) appear in
+/// a transfer rule's `extras` list. Mirrors Perl
+/// `Directorium::transfered`: the upstream function asks "is this
+/// stem mentioned anywhere in the year's transfer table?", not "is
+/// this DATE the target?". Both checks are needed to catch the full
+/// upstream behaviour:
+///
+/// - Date-target match: `04-12=04-11;;1570 M1617` (c.txt) — St. Leo's
+///   stem 04-11 appears as a target main, suppressing him on 04-11.
+/// - Stem-extras match: `02-23=02-22~02-23o;;1570 M1617` (d.txt) —
+///   Vigil stem `02-23o` lives in the extras of the 02-23 rule, and
+///   Perl uses it to suppress the Vigil on real Feb 24 leap (kalendar
+///   02-29) where the bissextile shift would otherwise re-fire it.
+pub fn stem_transferred_away_with_stems(
+    year: i32,
+    rubric: &str,
+    month: u32,
+    day: u32,
+    stems: &[&str],
+) -> bool {
     let mm_dd = format!("{month:02}-{day:02}");
     let parsed = parsed();
     let files_to_consult = transfer_files_for(year, month, day);
@@ -226,7 +250,40 @@ pub fn stem_transferred_away(
                 if !rubric_matches(rubrics, rubric) {
                     continue;
                 }
-                if target.main == mm_dd {
+                // Mirror Perl `transfered()`'s `val !~ /^$key/` guard:
+                // a transfer only counts as "moved away" when the
+                // rule's target does NOT start with its own source
+                // key. `02-23=02-22~02-23o` (key 02-23, target prefix
+                // 02-22) → moved. `02-22=02-22~02-23o` (key 02-22,
+                // target prefix 02-22 = key) → not moved (placement,
+                // not transfer).
+                if target.main.starts_with(source_mmdd.as_str()) {
+                    continue;
+                }
+                // Two ways the rule mentions THIS date or stem:
+                //   (a) date-target match — `04-12=04-11;;1570` puts
+                //       the saint of 04-12 on 04-11; on 04-11 the
+                //       native saint (St. Leo, stem 04-11) is
+                //       suppressed because target.main == mm_dd.
+                //       Only valid when one of the candidate stems
+                //       *of this date* is mentioned in the rule's
+                //       val (or when no stems were supplied — the
+                //       legacy date-only check).
+                //   (b) stem-extras match — `02-23=02-22~02-23o`
+                //       moves stem 02-23o from 02-23 to 02-22; any
+                //       date where the kalendar serves stem 02-23o
+                //       (e.g. real Feb 24 leap = kalendar 02-29)
+                //       sees this stem in extras and suppresses.
+                let target_matches_date = target.main == mm_dd;
+                let mentions_a_candidate_stem = stems.iter().any(|stem| {
+                    target.main.eq_ignore_ascii_case(stem)
+                        || target.extras.iter().any(|e| e.eq_ignore_ascii_case(stem))
+                });
+                if target_matches_date {
+                    if stems.is_empty() || mentions_a_candidate_stem {
+                        return true;
+                    }
+                } else if mentions_a_candidate_stem {
                     return true;
                 }
             }

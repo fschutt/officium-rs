@@ -138,24 +138,45 @@ The row currently being worked. Only one across all legs at a time
 (this is a single-threaded loop). When we wake up:
 
 ```
-ACTIVE LEG:    — (Mass parity 100% on 28-year sample;
-               leg-K is the next exit-criterion to close
-               but its data shrink work defers cleanly
-               past the V1 demo)
-ACTIVE TASK:   ⏳ next — extend the regression sweep to
-               more years (currently 28) and broader
-               rubric coverage (T1910 / DA-1939 / R55 /
-               R60); each rubric layer runs through the
-               same compute_office path so the 100 %
-               number should hold or surface specific
-               post-1570 reform-only patterns. Not a
-               correctness gap — purely a measurement
-               extension to back the SUPER_PLAN exit
-               criterion (≥ 99.95 % across 100-year
-               sweep × 5 rubrics).
+ACTIVE LEG:    — (T1570 Mass parity 100 % on 42-year
+               sample. T1910 spot-check shows post-1570
+               sanctoral additions firing (Blasius 02-03,
+               Servites 02-11, Peter Damian 02-23) — that's
+               exactly the work tracked under Phases 7-10
+               (reform layers); not a correctness gap in
+               the 1570 baseline.)
+ACTIVE TASK:   ⏳ next — pick the next non-1570 exit
+               criterion. Options:
+                 (a) **K-leg compression** — bundle is
+                     1.50 MB brotli vs 700 KB target; the
+                     ~800 KB shave needs structural work
+                     (per-rubric corpus split,
+                     `MassFile` field trimming, drop the
+                     `regression`-feature-only fields
+                     from the embed). Concrete byte
+                     savings per slice.
+                 (b) **B-leg Breviary** — currently
+                     70.54 % on 14-day × 8-hour 1570
+                     Oratio; blocked on Prima/Compline
+                     `specials()` rubric-conditional
+                     evaluator. Multi-window port.
+                 (c) **R-leg hardcode-audit** — R2-R5
+                     are smaller code-cleanup slices
+                     (no functional change). Small
+                     wins, low risk.
+                 (d) **Phase 7 (T1910)** — would close
+                     the multi-rubric Mass-parity gap.
+                     Multi-window port.
+               Pick (a) — bundle compression — for the
+               next slice; concrete delta per attempt
+               and ships a visible improvement to the
+               demo-deploy path.
 
-🎯 MASS PARITY 100 % (2026-05-04, 28-year sample × T1570):
-   - **0 fail-days out of 10,228 cells**
+🎯 MASS PARITY 100 % (2026-05-04, 42-year sample × T1570):
+   - **0 fail-days out of 15,343 cells**
+
+🎯 MASS PARITY 100 % (2026-05-04, 42-year sample × T1570):
+   - **0 fail-days out of 15,343 cells**
    - All 5 documented exit-criterion clusters closed:
      C2 ✅ Sancti/01-12 (precedence baseline closed earlier)
      C3 ✅ Tempora/Pasc1-0t (this slice — mass_broken_redirect)

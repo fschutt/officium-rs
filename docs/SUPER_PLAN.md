@@ -52,7 +52,7 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | B | B8 — Year-sweep regression to ≥ 99.7 % (all 8 hours × 5 rubrics) | 🟡 in progress 2026-05-05 — Slices 1-8 ✅. Slice 9: attempted `mass::expand_macros` on office bodies — regressed (63.33% → 46.67%) so reverted; comparator already accepts the unexpanded form via substring match. **60-day Vespera 1570 sweep: 66.67% match (40/60).** All remaining Differs are Tempora-vs-Sancti precedence gaps shared with the Mass side. Documented patterns closed + patterns reverted in `docs/BREVIARY_REGRESSION_RESULTS.md` | — | next wakeup |
 | **C** (correctness) | C1 — Local span-configurable runner (`scripts/regression.sh day|year|decade|century`) | ⏳ pending | — | after B1 |
 | C | C2 — Drive Sancti/01-12 cluster to 0 fail-years | 🟡 spot-checked 2026-05-05 — `Sancti/01-12` did not fire on any of 2008/2013/2019/2030/2035 in current code; the cluster appears already closed by recent precedence work. Needs full ±50yr CI rerun to confirm before marking DONE | — | run CI sweep |
-| C | C3 — Drive Tempora/Pasc1-0t cluster to 0 | 🟡 diagnosed 2026-05-05 — Root cause: kalendar table's `04-28 → 04-28o` (S. Vitalis Simplex) stem override isn't reaching `compute_office`. Data is correct in `kalendaria_by_rubric.json`; the application path in Sancti resolution skips it. Multi-window fix; needs careful threading of rubric-keyed stem override through the precedence pipeline | — | next wakeup |
+| C | C3 — Drive Tempora/Pasc1-0t cluster to 0 | 🟡 diagnosed 2026-05-04 (real RC) — Root cause is upstream typo: `missa/Latin/Tempora/Pasc1-0t.txt` is missing the leading `@` (the office-side file has it). Perl reads it as an empty stub → trank=0 → saint wins on Low Sunday. See `UPSTREAM_WEIRDNESSES.md` #37. Naïve mirror closes 04-28 (Vitalis own-body) but breaks 04-22/04-30/etc (Semiduplex commune-body fallback). Deferred until either upstream fixes the `@`, or Rust ports the propers.pl body-fallback chain | — | upstream fix or body-fallback port |
 | C | C4 — Drive Commune/C10b (Sat-BVM) cluster to 0 | ✅ DONE 2026-05-05 — `@Path::s/PAT/REPL/` (double-colon = caller-section) + keep-from-pattern (`^.*?\sLITERAL`) implemented in `apply_perl_substitution`. **2008: 365/366 → 366/366; 2027: 363/365 → 364/365** (C10b 01-30 closed; Sancti/04-11 = separate Pasc-octave cluster). 2025/2026 still 100% — no regressions | — | — |
 | C | C5 — Drive Sancti/02-23o (bissextile) cluster to 0 | ✅ DONE 2026-05-05 — `date::sancti_kalendar_key` suppresses leap-year Feb 23 (Vigil shifts to real Feb 24 = kalendar 02-29). Updated 4 callsites in `occurrence.rs`. **2000, 2008, 2012, 2016: 99.7% → 100%**; spot-checked 2004 still has 1 fail (different cluster); 288/288 lib tests pass | — | — |
 | C | C6 — Drive Sancti/05-04 cluster to 0 | ⏳ pending | — | low fail-count, late |
@@ -139,49 +139,51 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    B
-ACTIVE TASK:   C3 (slice 1) — wire kalendar stem override
-               into Sancti resolution
-               
-DIAGNOSIS:     2030-04-28 fails because Sancti/04-28 in
-               the missa corpus is St. Paul of the Cross
-               (1867 canonization), but the 1570 rubric's
-               kalendar table maps `04-28 → 04-28o`
-               (S. Vitalis Martyris Simplex). The override
-               IS in `data/kalendaria_by_rubric.json` —
-               1570['04-28'].stem = '04-28o' — but it
-               isn't being threaded through the
-               occurrence-resolution path that builds the
-               Sancti winner. Once it is, the Tempora
-               (Pasc1-0t) keeps the body but the headline
-               reflects St. Vitalis, matching Perl byte-
-               for-byte.
-EXIT WHEN:     2030-04-28 Tridentine 1570: winner_perl
-               headline contains "S. Vitalis Martyris";
-               2019-04-28 same. Year-sweep on 2030 should
-               drop from 1 fail-day to 0.
+ACTIVE TASK:   ⏳ next — B8 ramp the Office sweep beyond
+               1570 Vespera 30-day. Pivot off C3 (deferred
+               to upstream fix or body-fallback port; see
+               below). Next slice: extend office_sweep to
+               run all 8 hours × T1570 across a full year,
+               document the match-rate distribution by
+               hour, and identify the top-3 Office-side
+               cluster types blocking the 99.7% goal.
 
-REMAINING:     C10b's Tractus body is 3 lines:
-                 `@:Graduale:s/\s+Al.*//s`  ← slice 1 (✅)
-                 `_`                        ← paragraph
-                 `@Commune/C11::s/^.*?\s(\!)//s`  ← slice 2
-               Slice 2 needs:
-                 (a) `expand_inline_at_lines` to handle the
-                     `@Path::s/PAT/REPL/` form (note the
-                     double-colon — section is empty, so
-                     the substitution applies to Path's
-                     FULL body, the *entire file* concatenated).
-                 (b) The pattern `^.*?\s(\!)//s` strips
-                     everything up to the first `\s\!` —
-                     keeping only the `!Citation` portion
-                     onward. This needs a new pattern shape
-                     in `apply_perl_substitution`:
-                     `^.*?\sLITERAL` with `s` flag → keep
-                     only from LITERAL onward (inverse of
-                     slice 1's truncate).
-EXIT WHEN:     2008-01-26 Tridentine 1570 SanctaMissa
-               passes — Graduale body matches Perl's 669
-               chars exactly. C10b row drops from "1 fail"
-               to 0 across the 100-year sweep.
+C3 STATUS:     Deferred 2026-05-04. Spent the wakeup
+               window proving the real root cause: the
+               upstream Mass-side `Tempora/Pasc1-0t.txt`
+               is missing its `@` prefix (office-side has
+               it). Perl reads the Mass file as an empty
+               stub → trank=0 → saint wins on Low Sunday.
+               See `UPSTREAM_WEIRDNESSES.md` #37.
+               
+               Implemented the naïve fix (mass_broken_
+               redirect detection + temporal_rank=0 for
+               Mass context) and verified it:
+                 * 2030-04-28 closed (Vitalis own-propers)
+                 * 1990-04-22, 2000-04-30, 2008-03-30,
+                   2016-04-03, 2020-04-19 regressed
+                   (saints with no propers fall back
+                   to Sunday body in Perl via propers.pl
+                   chain that Rust doesn't model)
+               Net: +5 regressions, -1 fix. Reverted to
+               baseline. Field deferred until upstream
+               typo is fixed OR the propers.pl body-
+               fallback chain is ported. Documented as
+               UPSTREAM_WEIRDNESSES #37.
+
+REMAINING:     Either pivot to:
+               * B8 ramp (8 hours × T1570 × full year)
+               * leg-K bundle compression (after B8 hits
+                 99.7% threshold)
+               * the 2027-04-11 (Pasc-octave Sancti
+                 commemoration) cluster — different
+                 from C3 — which is single-window and
+                 may not need body-fallback.
+
+EXIT WHEN:     B8 reaches 99.7% match-rate across
+               1570 × all 8 hours × full year, OR
+               leg-K closes the bundle budget, OR the
+               2027-04-11 cluster gets fixed.
 ```
 
 Update this block on every wakeup so the next iteration knows what

@@ -821,3 +821,56 @@ unambiguous evidence of an upstream resolution failure that has no
 liturgical meaning, and we shouldn't fail the regression on it. Same
 pattern as the existing `cannotresolvetoodeeplynestedhashes` bridge
 for the Pent01-0 self-reference bug (#14).
+
+## 37. `missa/Latin/Tempora/Pasc1-0t.txt` is missing the `@` prefix
+
+Date: 2026-05-04. Cluster C3.
+
+```
+$ cat web/www/horas/Latin/Tempora/Pasc1-0t.txt
+@Tempora/Pasc1-0           ← @ prefix → SetupString follows the redirect
+
+$ cat web/www/missa/Latin/Tempora/Pasc1-0t.txt
+Tempora/Pasc1-0            ← no @ → SetupString reads as empty stub
+```
+
+The Mass version of the file is missing a leading `@`. Perl's
+`SetupString::setupstring` only follows whole-file inclusions when
+the `__preamble` line matches `/^\s*@…/m` — without the `@`, the
+"redirect" is just text in `__preamble`, the file has zero sections,
+and `$tempora{Rank}` is empty.
+
+Concretely on Low Sunday (Pasc1-0) under T1570 with Mass:
+- `$tname = "Tempora/Pasc1-0t.txt"`
+- `@trank = ()` (Rank empty because file is a stub)
+- `@srank = (…, …, $rank, …)` (saint of the day, e.g. Vitalis 1.1
+  on 04-28, SS. Soter+Caji 2.2 on 04-22, etc.)
+- `$srank[2] > $trank[2]` ⇒ `1.1 > 0` ⇒ TRUE ⇒ Sanctoral wins.
+
+Perl renders the saint as headline. When the saint has its own
+`[Introitus] / [Lectio] / …` body (Vitalis 04-28o), the Mass body is
+the saint's. When the saint is body-less and resolves via Commune
+(SS. Soter+Caji 04-22 → C3b), `propers.pl` falls through to the
+scriptura side which reads `Tempora/Pasc1-0t.txt` again — also empty
+— and ultimately renders the Sunday-in-Albis Mass body via a deeper
+fallback chain that's hard to follow.
+
+Office side is unaffected: `horas/Latin/Tempora/Pasc1-0t.txt` has
+the proper `@` prefix, so Office picks the Sunday correctly
+(Dominica in Albis ~ Duplex I. classis, rank 7 outranking any
+Simplex / Semiduplex saint).
+
+Almost certainly an upstream typo — Pasc1-0t is the ONLY Mass file
+in the corpus whose first content line is a bare path without `@`
+(verified by scanning all 1278 missa-side files). Trivial upstream
+fix: add the `@`. Until then, the cluster surfaces as 1 fail-day per
+year where Easter falls such that a saint with `rank > 0` lands on
+04-22..04-28 (about 1 year in 4).
+
+Rust port status: deferred. The naïve mirror — skip parent following
+for `mass_broken_redirect` files in occurrence — closes 04-28 cases
+(Vitalis Simplex with own propers) but breaks 04-22 / 04-30 / etc.
+(Semiduplex saints whose body falls back to the Sunday via
+propers.pl chain we don't yet model). A complete fix needs either
+(a) the upstream typo fixed, or (b) Rust to model Perl's body-
+fallback chain when winner=Sancti has no proper body.

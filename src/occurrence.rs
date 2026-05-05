@@ -124,6 +124,21 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     // For body-less redirect files (Tempora/Adv1-0o is just a single
     // `@Tempora/Adv1-0` parent-inherit line), follow the parent chain
     // to find the file that actually carries the rank/officium.
+    //
+    // C3 note: `missa/Latin/Tempora/Pasc1-0t.txt` is the ONE Mass-
+    // side file in the upstream corpus whose first line is a bare
+    // path (`Tempora/Pasc1-0`) with no `@` prefix — Perl's
+    // `SetupString::setupstring` reads it as an empty stub, so
+    // Mass-context gets `trank[2]=0` and the saint wins on Low
+    // Sunday. Naïvely mirroring that here closes 2030-04-28
+    // (Vitalis Simplex with own propers) but breaks any year where
+    // Pasc1-0 lands on a saint that uses Commune-only propers
+    // (1990-04-22 SS. Soter+Caji, 2000-04-30 St. Catherine of
+    // Siena, etc.) — Perl's `propers.pl` body-fallback path keeps
+    // the Sunday body in those cases, and we don't yet model that
+    // fallback. The C3 cluster stays open until either upstream
+    // adds the missing `@` or we port the body-fallback chain.
+    // See `docs/UPSTREAM_WEIRDNESSES.md` #37.
     let effective_tempora_key = effective_tempora_key(&tempora_key, corpus);
     let tempora_file = corpus.mass_file(&effective_tempora_key);
     // Rubric-aware rank pick. The corpus carries up to four

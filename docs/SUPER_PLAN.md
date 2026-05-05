@@ -48,7 +48,7 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | B | B4 — Lauds + Prime + Tertia/Sexta/Nona + Compline | ✅ DONE 2026-05-05 (commit `104630a`) | — | — |
 | B | B5 — Matins (the densest hour) | ✅ DONE 2026-05-05 — Invitatorium splice + multi-Lectio emission (Lectio1..9 with intervening Responsories) via `splice_matins_lectios`; 3 new tests; Lectio4 (Monica proper) + Invitatorium antiphon both verified | — | — |
 | B | B6 — Concurrence + first-vespers split | ✅ DONE 2026-05-05 — 4 slices: Te Deum (`a653808`), `[Rule] 3 lectiones` (`20c350b`), nocturn-antiphon grouping (`f58dbcd`), first-vespers concurrence helpers (`parse_horas_rank` + `first_vespers_day_key` — caller-driven rank compare so the walker stays a pure projection). 9 new tests across the 4 slices | — | — |
-| B | B7 — Demo `/breviary.html` page + WASM API | ⏳ next | — | wire `compute_office_hour` through `wasm.rs::compute_office_full(year, month, day, rubric, hour, day_key, next_day_key)` returning JSON; build a minimal `demo/breviary.html` that lets the user pick hour + date and renders the structured `RenderedLine`s |
+| B | B7 — Demo `/breviary.html` page + WASM API | 🟡 in progress 2026-05-05 — Slice a ✅ `wasm::compute_office_full(year, month, day, rubric, hour, day_key, next_day_key, rubrics)` shipped — JSON output `{office:{rubric, hour, day_key, first_vespers}, lines:[…]}` with first-vespers swap on Vespera, error responses for unknown rubric / missing day_key. 5 new tests. Remaining slices: (b) `demo/breviary.html` + render.js loop, (c) three-page nav | — | next wakeup |
 | B | B8 — Year-sweep regression to ≥ 99.7 % (all 8 hours × 5 rubrics) | ⏳ pending | — | gates leg-B "done" |
 | **C** (correctness) | C1 — Local span-configurable runner (`scripts/regression.sh day|year|decade|century`) | ⏳ pending | — | after B1 |
 | C | C2 — Drive Sancti/01-12 cluster to 0 fail-years | ⏳ pending | — | after C1 |
@@ -139,28 +139,24 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    B
-ACTIVE TASK:   B7 — Demo `/breviary.html` page + WASM API
-ESTIMATED:     1-2 loop windows. Pieces:
-                 (a) Add `wasm::compute_office_full(year, month,
-                     day, rubric, hour, day_key, next_day_key)`
-                     mirroring `compute_mass_full`. Returns
-                     JSON with the `Vec<RenderedLine>` and a
-                     small metadata block (chosen day_key after
-                     first-vespers swap, rank, etc.).
-                 (b) Build `demo/breviary.html` — a thin shell
-                     that mirrors `index.html` but for the
-                     8 hours. Hour selector + date picker; loads
-                     WASM and walks the rendered lines into
-                     HTML. Reuse `demo/render.js` patterns.
+ACTIVE TASK:   B7 (slice b) — `demo/breviary.html` page
+ESTIMATED:     1-2 loop windows. Slice a ✅ shipped (WASM API).
+               Remaining:
+                 (b) Build `demo/breviary.html` — thin shell
+                     mirroring `index.html` but for the 8 hours.
+                     Hour selector + date picker; loads WASM
+                     and walks the rendered `lines[]` into HTML.
+                     Reuse `demo/render.js` patterns; the
+                     line-shape (`{k, body, label, role,
+                     level, name}`) is identical to
+                     `compute_mass_full`'s `ordinary` field.
                  (c) Add `breviary.html` to the navigation in
-                     `demo/index.html` and the Calendar page so
-                     the three-page nav (Mass / Breviary /
-                     Calendar) is in place.
+                     `demo/index.html` and the Calendar page
+                     so the three-page nav lands.
 EXIT WHEN:     Browsing to `/breviary.html?date=2026-05-04&
                hour=Vespera` renders the Vespera of St. Monica
-               with the proper Oratio body visible — same data
-               flow we already test in Rust just exposed at the
-               page boundary.
+               with the proper Oratio body visible. Pages CI
+               passes.
 ```
 
 Update this block on every wakeup so the next iteration knows what

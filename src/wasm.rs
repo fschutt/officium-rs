@@ -13,6 +13,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::core::{Date, Locale, OfficeInput, ProperBlock, Rubric};
 use crate::corpus::{BundledCorpus, Corpus};
+use crate::horas::{self, OfficeArgs};
 use crate::mass::mass_propers;
 use crate::ordo::{self, Mode, RenderArgs, RenderedLine};
 use crate::precedence::compute_office;
@@ -360,6 +361,89 @@ fn render_lines_to_json(lines: &[RenderedLine]) -> String {
     buf
 }
 
+/// Compute the full Divine Office (one hour) for a date, rubric,
+/// and pre-resolved day key. Mirrors [`compute_mass_full`] but for
+/// the Breviary side.
+///
+/// Inputs:
+///   * `year` / `month` / `day` — the date.
+///   * `rubric` — slug (`trid-1570`, `divino-afflatu`, …).
+///   * `hour` — liturgical hour stem (`Matutinum`, `Laudes`, `Prima`,
+///     `Tertia`, `Sexta`, `Nona`, `Vespera`, `Completorium`).
+///   * `day_key` — pre-resolved per-day office file key (e.g.
+///     `Sancti/05-04`). The caller is responsible for the
+///     calendar/precedence resolution that picks this; full Breviary
+///     calendar wiring lands in B8+.
+///   * `next_day_key` — optional next-day office key. When non-empty
+///     **and the hour is `Vespera`**, [`horas::first_vespers_day_key`]
+///     compares ranks and may swap `day_key` for `next_day_key` to
+///     render the first Vespers of a higher-rank feast. Pass an empty
+///     string to skip the swap.
+///   * `rubrics` — emit level-1 italic rubrics? defaults true.
+///
+/// Returns JSON shaped:
+///
+/// ```json
+/// {
+///   "office": { "rubric": "...", "hour": "...", "day_key": "...",
+///               "first_vespers": false },
+///   "lines":  [ { "k": "section", "label": "Incipit" }, ... ]
+/// }
+/// ```
+///
+/// `office.day_key` reflects the post-swap key actually rendered;
+/// `first_vespers` is true when the swap fired.
+#[wasm_bindgen]
+pub fn compute_office_full(
+    year: i32,
+    month: u32,
+    day: u32,
+    rubric: &str,
+    hour: &str,
+    day_key: &str,
+    next_day_key: &str,
+    rubrics: bool,
+) -> String {
+    let Some(rubric_enum) = parse_rubric(rubric) else {
+        return r#"{"error":"unknown rubric"}"#.to_string();
+    };
+    if day_key.is_empty() {
+        return r#"{"error":"day_key required"}"#.to_string();
+    }
+
+    // First-vespers swap: only on Vespera, only when next_day_key is
+    // supplied. Pure rank compare via the corpus — see
+    // `horas::first_vespers_day_key`.
+    let (resolved_key, first_vespers) =
+        if hour == horas::HOUR_VESPERA && !next_day_key.is_empty() {
+            let chosen = horas::first_vespers_day_key(day_key, next_day_key);
+            (chosen.to_string(), chosen == next_day_key)
+        } else {
+            (day_key.to_string(), false)
+        };
+
+    let args = OfficeArgs {
+        year,
+        month,
+        day,
+        rubric: rubric_enum,
+        hour,
+        rubrics,
+        day_key: Some(resolved_key.as_str()),
+    };
+    let lines = horas::compute_office_hour(&args);
+    let lines_json = render_lines_to_json(&lines);
+
+    format!(
+        r#"{{"office":{{"rubric":"{rubric}","hour":"{hour}","day_key":"{day_key}","first_vespers":{first_vespers}}},"lines":[{lines}]}}"#,
+        rubric = format!("{:?}", rubric_enum),
+        hour = json_escape(hour),
+        day_key = json_escape(&resolved_key),
+        first_vespers = first_vespers,
+        lines = lines_json,
+    )
+}
+
 /// Returns the list of supported rubric slugs as a JSON array.
 #[wasm_bindgen]
 pub fn supported_rubrics() -> String {
@@ -410,5 +494,81 @@ mod tests {
         // Low Mass: `!*R` blocks emitted.
         let json = compute_mass_full(2026, 4, 5, "divino-afflatu", false, true);
         assert!(json.contains("Leonis XIII"), "Leonine prayers should appear under low Mass");
+    }
+
+    #[test]
+    fn compute_office_full_renders_vespera_for_st_monica() {
+        // Vespera 2026-05-04 (St. Monica): the Oratio splice should
+        // appear in the JSON output, and `first_vespers` is false.
+        let json = compute_office_full(
+            2026, 5, 4,
+            "trid-1570",
+            "Vespera",
+            "Sancti/05-04",
+            "",
+            true,
+        );
+        assert!(json.contains(r#""hour":"Vespera""#));
+        assert!(json.contains(r#""day_key":"Sancti/05-04""#));
+        assert!(json.contains(r#""first_vespers":false"#));
+        // Proper Oratio body must reach the JSON.
+        assert!(
+            json.contains("Mónicæ"),
+            "Oratio body did not surface in office JSON"
+        );
+        // Macro lookups still resolve.
+        assert!(json.contains("Glória Patri"), "Glória Patri missing");
+    }
+
+    #[test]
+    fn compute_office_full_unknown_rubric_returns_error() {
+        let json = compute_office_full(
+            2026, 5, 4, "no-such-rubric", "Vespera",
+            "Sancti/05-04", "", true,
+        );
+        assert!(json.contains("\"error\""));
+    }
+
+    #[test]
+    fn compute_office_full_missing_day_key_returns_error() {
+        let json = compute_office_full(
+            2026, 5, 4, "trid-1570", "Vespera",
+            "", "", true,
+        );
+        assert!(json.contains("\"error\""));
+    }
+
+    #[test]
+    fn compute_office_full_first_vespers_swap_fires_on_vespera() {
+        // Vespera + a higher-rank next_day_key → the resolver swaps,
+        // and `first_vespers` flag flips to true. Use 05-04 (rank 3)
+        // → 06-29 (rank 6.5). The actual proper body should now
+        // come from Peter+Paul.
+        let json = compute_office_full(
+            2026, 5, 4,
+            "trid-1570",
+            "Vespera",
+            "Sancti/05-04",
+            "Sancti/06-29",
+            true,
+        );
+        assert!(json.contains(r#""day_key":"Sancti/06-29""#));
+        assert!(json.contains(r#""first_vespers":true"#));
+    }
+
+    #[test]
+    fn compute_office_full_no_first_vespers_swap_outside_vespera() {
+        // Lauds: even with a higher-rank next_day_key, the swap
+        // doesn't fire (Lauds is the morning office of *today*).
+        let json = compute_office_full(
+            2026, 5, 4,
+            "trid-1570",
+            "Laudes",
+            "Sancti/05-04",
+            "Sancti/06-29",
+            true,
+        );
+        assert!(json.contains(r#""day_key":"Sancti/05-04""#));
+        assert!(json.contains(r#""first_vespers":false"#));
     }
 }

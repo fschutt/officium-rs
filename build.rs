@@ -48,12 +48,16 @@ fn brotli_compress(input: &[u8]) -> Vec<u8> {
     use std::io::Write;
     let mut out = Vec::with_capacity(input.len() / 3);
     {
-        // K2 (slice 1): bump lgwin to 24 (16 MB window). Default
-        // 22 = 4 MB; for a 2.5 MB raw `missa_latin.postcard` and
-        // 4.3 MB `horas_latin.json` source this is leaving table
-        // value on the floor — brotli's match-finder benefits from
-        // a larger window when repeated phrases (`Per Dóminum`,
-        // `Glória Patri`, etc.) span more than 4 MB of context.
+        // K-leg compression knobs:
+        // - quality 11    — max (slowest encode, best ratio).
+        // - lgwin 24      — 16 MB window. Default 22 = 4 MB; for the
+        //                   combined ~7 MB raw corpus this lets the
+        //                   match-finder reach across the whole stream.
+        // - mode GENERIC  — left at default. Tried `BROTLI_MODE_TEXT`
+        //                   and it ADDED 603 bytes on the bundle —
+        //                   postcard is binary (length tags, varint
+        //                   sizes, type bytes) so the TEXT-mode prior
+        //                   model isn't a fit. Generic wins.
         let params = brotli::enc::BrotliEncoderParams {
             quality: 11,
             lgwin: 24,

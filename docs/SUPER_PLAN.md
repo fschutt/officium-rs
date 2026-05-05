@@ -58,7 +58,7 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | C | C6 — Drive Sancti/05-04 cluster to 0 | ⏳ pending | — | low fail-count, late |
 | **K** (compression / size) | K1 — Bundle-size budget table + per-data-file breakdown | ✅ DONE 2026-05-04 — `docs/BUNDLE_BUDGET.md` lays out the ~1.77 MB brotli starting line. `horas_latin.postcard.br` = 1.10 MB (61%) and `missa_latin.postcard.br` = 518 KB (29%) account for 90% of the bundle. K2 target: shared brotli dictionary on liturgical phrasing → ~15-25% combined savings | — | — |
 | K | K2 — Combined missa+horas brotli stream | ✅ DONE 2026-05-04 — `build.rs` writes one `corpus.postcard.br` containing horas+missa with an 8-byte length-prefix header. Runtime decompresses once into shared `OnceLock<Vec<u8>>` via `embed::horas_postcard()` / `embed::missa_postcard()`. **Bundle brotli: 1.77 MB → 1.50 MB (−268,461 bytes / −15.2 %)**. lgwin bumped 22 → 24 (window ~4 MB → 16 MB). Need another 800 KB to hit the 700 KB target | — | — |
-| K | K3 — Drop `regression` feature from default; smaller release artefact | ⏳ pending | — | small win |
+| K | K3 — Drop `regression` feature from default; smaller release artefact | ✅ DONE 2026-05-04 (verified-only) — `.github/workflows/pages.yml:52-53` already builds with `--no-default-features --features wasm`, and `src/lib.rs:52-56` double-gates the `regression` module behind both `feature = "regression"` AND `not(target_arch = "wasm32")` (with a `compile_error!` belt-and-suspenders). `cargo tree --target wasm32-unknown-unknown --no-default-features --features wasm` confirms `serde_json` is absent from the runtime tree. No code change needed | — | — |
 | K | K4 — `wasm-opt -Oz` already wired; revisit after each leg ships | ✅ already wired in pages.yml | — | — |
 | K | K5 — Final published budget: ≤ 1 MB raw / ≤ 700 KB brotli total | ⏳ pending | — | super-plan exit |
 | **D** (deploy) | D1 — Calendar page (`/calendar.html`) | ⏳ pending — defer to after B7 | — | bundles with leg-B |
@@ -138,22 +138,30 @@ The row currently being worked. Only one across all legs at a time
 (this is a single-threaded loop). When we wake up:
 
 ```
-ACTIVE LEG:    K
-ACTIVE TASK:   ⏳ next — K3: drop the `regression`
-               feature from default features so WASM
-               builds don't pull in the comparator HTML
-               walker, Perl-interop helpers, and
-               `serde_json`. Confirm `Cargo.toml`'s
-               `[features]` block has the right
-               `default = []` shape and that the
-               `wasm-bindgen` build path doesn't activate
-               `regression` transitively. Measure the
-               WASM `.wasm` byte delta. Goal: shave any
-               WASM-bundled regression code, since
-               Anthropic's BUNDLE_BUDGET measures the
-               combined WASM + data brotli. Won't change
-               data brotli sizes; the win is in the
-               `.wasm` itself.
+ACTIVE LEG:    C  (after K1-K3 ship; K4 already wired,
+               K5 is a CI measurement; data brotli at
+               1.50 MB still 800 KB over the 700 KB
+               target — further shrink probably needs
+               structural changes (per-rubric corpus
+               splits, smaller MassFile shape) which
+               defer cleanly past the V1 demo.)
+ACTIVE TASK:   ⏳ next — C6 confirmation sweep: spot-
+               checks across 7 years showed zero
+               Sancti/05-04 fails; run a wider sweep
+               (1900-2076 every 5 years, 1570 rubric)
+               to confirm and mark C6 DONE in the status
+               board. If any 05-04 fails surface, drill
+               into one and document the cluster.
+
+K3 STATUS:     ✅ DONE 2026-05-04. Verification only —
+               the WASM build already does
+               `--no-default-features --features wasm`
+               and `cargo tree` confirms `serde_json`
+               isn't in the WASM dep tree. Tried
+               `BROTLI_MODE_TEXT` as a tweak; it added
+               603 bytes (postcard is binary, not pure
+               text), so reverted with a doc-comment
+               in `build.rs::brotli_compress`.
 
 K2 STATUS:     ✅ DONE 2026-05-04. Bundle brotli:
                1.77 MB → 1.50 MB (−268,461 bytes /

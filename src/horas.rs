@@ -375,17 +375,34 @@ fn rule_lectio_count(rule: &str) -> u8 {
     count
 }
 
-/// Extract `CXX` / `CXXa` targets from a `[Rule]` body. Recognises
-/// `vide CXX`, `vide CXX;`, and bare `CXX;` lines (the older
-/// pre-1955 syntax). Returns fully-qualified `Commune/CXX` keys.
+/// Extract chain-targets from a `[Rule]` body.
+///
+/// Recognises three upstream conventions:
+///
+///   1. **Commune chain (`C2`)**: `vide CXX`, `vide CXX;`, or bare
+///      `CXX;`. Returns `Commune/CXX`.
+///   2. **`ex Sancti/MM-DD` / `ex Tempora/Foo`**: explicit inherit-
+///      from-this-other-day directive. Returns the path verbatim.
+///      Used heavily by Octave-of-Christmas / Octave-of-Epiphany
+///      days (e.g. `Sancti/01-08` carries `ex Sancti/01-06` to
+///      pick up Epiphany's `[Oratio]`).
+///   3. **`@Path` parent-inherit**: a leading `@` followed by a
+///      Sancti/Tempora path on its own line. Mirrors the Mass-side
+///      `@Commune/CXX` shorthand. Returns the path.
+///
+/// Targets are deduped in caller order.
 fn parse_vide_targets(rule: &str) -> Vec<String> {
     let mut out = Vec::new();
-    for token in rule.split(|c: char| c.is_whitespace() || c == ';') {
-        if token.is_empty() {
-            continue;
+    let mut seen = std::collections::HashSet::new();
+    let mut push = |s: String, out: &mut Vec<String>, seen: &mut std::collections::HashSet<String>| {
+        if seen.insert(s.clone()) {
+            out.push(s);
         }
-        // Match `C` followed by digits and optional letter suffix
-        // (`C7`, `C7a`, `C10b`, …).
+    };
+
+    // (1) Commune `C2`/`C7a`-style targets — match anywhere in the
+    // body (whitespace- or `;`-separated tokens).
+    for token in rule.split(|c: char| c.is_whitespace() || c == ';') {
         let bytes = token.as_bytes();
         if bytes.first() != Some(&b'C') {
             continue;
@@ -397,17 +414,52 @@ fn parse_vide_targets(rule: &str) -> Vec<String> {
         if i == 1 {
             continue;
         }
-        // Optional letter suffix.
         if i < bytes.len() && bytes[i].is_ascii_lowercase() {
             i += 1;
         }
-        // Reject if there's leftover non-trivial content (e.g. `Conf`).
         if i != bytes.len() {
             continue;
         }
-        out.push(format!("Commune/{token}"));
+        push(format!("Commune/{token}"), &mut out, &mut seen);
+    }
+
+    // (2) `ex Sancti/MM-DD` / `ex Tempora/Foo`.
+    // (3) `@Sancti/MM-DD` / `@Tempora/Foo` parent-inherit.
+    for raw_line in rule.lines() {
+        let line = raw_line.trim();
+        if line.starts_with('(') {
+            continue;
+        }
+        if let Some(rest) = line.strip_prefix("ex ") {
+            if let Some(path) = first_path_token(rest) {
+                push(path, &mut out, &mut seen);
+            }
+            continue;
+        }
+        if let Some(rest) = line.strip_prefix('@') {
+            if let Some(path) = first_path_token(rest) {
+                push(path, &mut out, &mut seen);
+            }
+        }
     }
     out
+}
+
+/// First whitespace-delimited token of a string, accepting only if
+/// it looks like a corpus path: `Sancti/...`, `Tempora/...`,
+/// `Commune/...`. Returns the path-shaped token verbatim.
+fn first_path_token(s: &str) -> Option<String> {
+    let token = s.split_whitespace().next()?;
+    if token.starts_with("Sancti/")
+        || token.starts_with("Tempora/")
+        || token.starts_with("Commune/")
+        || token.starts_with("SanctiM/")
+        || token.starts_with("SanctiOP/")
+    {
+        Some(token.to_string())
+    } else {
+        None
+    }
 }
 
 /// Map an Ordinarium section label to the per-day section names that
@@ -886,6 +938,56 @@ mod tests {
         // Should not match `Conf` or `Class III`.
         let r = "Confessor; Class III";
         assert!(parse_vide_targets(r).is_empty());
+    }
+
+    #[test]
+    fn parse_vide_targets_handles_ex_inherit() {
+        // Sancti/01-08 (3rd day in Octave of Epiphany) inherits from
+        // Sancti/01-06 (Epiphany itself).
+        let r = "ex Sancti/01-06\nLectio1 tempora\n9 lectiones\nFeria Te Deum";
+        let targets = parse_vide_targets(r);
+        assert!(targets.contains(&"Sancti/01-06".to_string()));
+
+        // Mixed: `ex Tempora/Pasc1-1` + commune `vide C12`.
+        let r = "ex Tempora/Pasc1-0\nvide C12\n9 lectiones";
+        let targets = parse_vide_targets(r);
+        assert!(targets.contains(&"Tempora/Pasc1-0".to_string()));
+        assert!(targets.contains(&"Commune/C12".to_string()));
+    }
+
+    #[test]
+    fn parse_vide_targets_handles_at_inherit() {
+        // `@Sancti/MM-DD` form (some Tempora files).
+        let r = "@Sancti/01-25\n9 lectiones";
+        let targets = parse_vide_targets(r);
+        assert!(targets.contains(&"Sancti/01-25".to_string()));
+    }
+
+    #[test]
+    fn commune_chain_resolves_octave_inherit() {
+        // Sancti/01-08's [Rule] points at Sancti/01-06 (Epiphany).
+        // The chain must include 01-06 so the Oratio splice picks up
+        // Epiphany's `[Oratio]` body.
+        let chain = commune_chain("Sancti/01-08");
+        // Look for an entry whose [Rank] body identifies Epiphany.
+        let has_epiphany = chain.iter().any(|f| {
+            f.sections
+                .get("Rank")
+                .map(|r| r.contains("Epiphania"))
+                .unwrap_or(false)
+        });
+        assert!(
+            has_epiphany,
+            "commune_chain on Sancti/01-08 should reach Sancti/01-06 (Epiphany)"
+        );
+        // Direct: find the Oratio via the chain.
+        let oratio = find_section_in_chain(&chain, "Oratio")
+            .expect("Sancti/01-08 chain should resolve Oratio via Sancti/01-06");
+        assert!(
+            oratio.contains("Unigénitum tuum géntibus stella duce"),
+            "expected Epiphany Oratio body, got: {}",
+            &oratio[..oratio.len().min(120)]
+        );
     }
 
     #[test]

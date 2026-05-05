@@ -18,13 +18,17 @@ use std::sync::OnceLock;
 
 pub use crate::data_types::MassFile;
 
-static MISSA_BR: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/missa_latin.postcard.br"));
 static PARSED: OnceLock<HashMap<String, MassFile>> = OnceLock::new();
 
 fn parsed() -> &'static HashMap<String, MassFile> {
     PARSED.get_or_init(|| {
-        let pc = crate::embed::decompress(MISSA_BR);
-        postcard::from_bytes(&pc).unwrap_or_default()
+        // K2 (slice 2): postcard bytes come from the combined
+        // `corpus.postcard.br` blob which is shared with horas — see
+        // `crate::embed::missa_postcard` for the layout. Saves ~16 %
+        // on the brotli output by letting the encoder share match-
+        // finder context across both corpora.
+        let pc = crate::embed::missa_postcard();
+        postcard::from_bytes(pc).unwrap_or_default()
     })
 }
 

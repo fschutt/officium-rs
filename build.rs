@@ -48,9 +48,15 @@ fn brotli_compress(input: &[u8]) -> Vec<u8> {
     use std::io::Write;
     let mut out = Vec::with_capacity(input.len() / 3);
     {
+        // K2 (slice 1): bump lgwin to 24 (16 MB window). Default
+        // 22 = 4 MB; for a 2.5 MB raw `missa_latin.postcard` and
+        // 4.3 MB `horas_latin.json` source this is leaving table
+        // value on the floor — brotli's match-finder benefits from
+        // a larger window when repeated phrases (`Per Dóminum`,
+        // `Glória Patri`, etc.) span more than 4 MB of context.
         let params = brotli::enc::BrotliEncoderParams {
             quality: 11,
-            lgwin: 22,
+            lgwin: 24,
             ..Default::default()
         };
         let mut writer = brotli::CompressorWriter::with_params(&mut out, 4096, &params);
@@ -95,36 +101,61 @@ fn main() {
         &out.join("kalendaria_by_rubric.postcard.br"),
     );
 
-    transcode::<HashMap<String, MassFile>>(
-        &data.join("missa_latin.json"),
-        &out.join("missa_latin.postcard.br"),
-    );
-
     transcode::<OrdoCorpus>(
         &data.join("ordo_latin.json"),
         &out.join("ordo_latin.postcard.br"),
     );
 
-    // Breviary corpus — only encoded if the JSON file exists. The
-    // upstream tree is large (~4.5 MB raw → ~700 KB brotli) so this
-    // is gated by the existence of the JSON; runs of `data/build_
-    // horas_json.py` produce it. Lib code that depends on this
-    // (`src/horas.rs`) must handle the corpus being empty / missing
-    // until B1+ ships completely.
-    let horas_json = data.join("horas_latin.json");
-    if horas_json.exists() {
-        transcode::<HashMap<String, HorasFile>>(
-            &horas_json,
-            &out.join("horas_latin.postcard.br"),
-        );
-    } else {
-        // Write an empty postcard blob so include_bytes! has
-        // something to pull at runtime.
-        let empty: HashMap<String, HorasFile> = HashMap::new();
-        let bytes = postcard::to_allocvec(&empty).expect("empty horas postcard");
-        let compressed = brotli_compress(&bytes);
-        std::fs::write(out.join("horas_latin.postcard.br"), compressed).unwrap();
-    }
+    // K2 — combined missa+horas brotli stream. The two corpora share
+    // most of their liturgical phrasing (every "Per Dóminum", "Glória
+    // Patri", "Sicut erat", "℣./℟." marker) and brotli's match-finder
+    // benefits from seeing them in one stream: separate compression
+    // gives 1,617,856 bytes; concat-and-compress gives 1,350,463
+    // bytes (-16.5%). We emit ONE `corpus.postcard.br` containing
+    // a small length-prefix header (8 bytes) followed by the two
+    // raw postcards back-to-back; the runtime decompresses once and
+    // hands each module a slice into the shared blob.
+    //
+    // Header layout (little-endian u32 × 2):
+    //   bytes 0..4   = horas postcard length
+    //   bytes 4..8   = missa postcard length
+    //   bytes 8..    = horas postcard bytes followed by missa
+    let missa_postcard = {
+        let bytes = fs::read(data.join("missa_latin.json"))
+            .expect("read missa_latin.json");
+        let value: HashMap<String, MassFile> = serde_json::from_slice(&bytes)
+            .expect("parse missa_latin.json");
+        postcard::to_allocvec(&value).expect("postcard missa")
+    };
+    let horas_postcard: Vec<u8> = {
+        let horas_json = data.join("horas_latin.json");
+        if horas_json.exists() {
+            let bytes = fs::read(&horas_json).expect("read horas_latin.json");
+            let value: HashMap<String, HorasFile> = serde_json::from_slice(&bytes)
+                .expect("parse horas_latin.json");
+            postcard::to_allocvec(&value).expect("postcard horas")
+        } else {
+            // Empty stub so the runtime always has SOMETHING to read.
+            let empty: HashMap<String, HorasFile> = HashMap::new();
+            postcard::to_allocvec(&empty).expect("empty horas postcard")
+        }
+    };
+    let mut combined = Vec::with_capacity(8 + horas_postcard.len() + missa_postcard.len());
+    combined.extend_from_slice(&(horas_postcard.len() as u32).to_le_bytes());
+    combined.extend_from_slice(&(missa_postcard.len() as u32).to_le_bytes());
+    combined.extend_from_slice(&horas_postcard);
+    combined.extend_from_slice(&missa_postcard);
+    let combined_br = brotli_compress(&combined);
+    fs::write(out.join("corpus.postcard.br"), &combined_br)
+        .expect("write corpus.postcard.br");
+    println!(
+        "cargo:warning=corpus.postcard.br: horas {} + missa {} → combined {} → brotli {} ({:.1}%)",
+        horas_postcard.len(),
+        missa_postcard.len(),
+        combined.len(),
+        combined_br.len(),
+        combined_br.len() as f64 / combined.len() as f64 * 100.0,
+    );
 
     let psalms_json = data.join("psalms_latin.json");
     if psalms_json.exists() {

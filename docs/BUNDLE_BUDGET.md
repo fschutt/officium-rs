@@ -1,25 +1,61 @@
-# Bundle budget — leg-K starting line
+# Bundle budget — leg-K progress
 
 The SUPER_PLAN exit criterion is **≤ 1 MB raw / ≤ 700 KB brotli** for
-the WASM `.wasm`, with the demo site under 1.2 MB total payload. This
-file is the leg-K1 baseline measurement: where each data file sits
-right now, and how much each one needs to shrink.
+the WASM `.wasm`, with the demo site under 1.2 MB total payload.
 
-## Current byte breakdown (postcard + brotli)
+## K2 — combined missa+horas brotli (✅ DONE 2026-05-04)
 
-Measured `target/release/build/officium-rs-*/out/*.postcard.br` on
-master at commit `b70f113` (2026-05-04, post-B8 slice 11):
+Pack the two largest postcard outputs (`horas_latin` + `missa_latin`)
+into one brotli stream so the encoder sees their shared liturgical
+phrasing in a single context. Header is 8 bytes (two little-endian
+u32 lengths), then the two raw postcards back-to-back. Runtime
+decompresses once into a shared `OnceLock<Vec<u8>>`, then exposes
+the two slices via `embed::horas_postcard()` / `embed::missa_postcard()`.
 
-| File                              | Raw postcard | Brotli `.br` | Share of brotli |
-|-----------------------------------|-------------:|-------------:|----------------:|
-| `horas_latin.postcard.br`         |          n/a |    1,099,586 |          61.4 % |
-| `missa_latin.postcard.br`         |    2,523,258 |      517,673 |          28.9 % |
-| `psalms_latin.postcard.br`        |          n/a |       84,924 |           4.7 % |
-| `ordo_latin.postcard.br`          |          n/a |       50,324 |           2.8 % |
-| `kalendaria_by_rubric.postcard.br`|      154,248 |       11,811 |           0.7 % |
-| `sancti.postcard.br`              |       27,342 |        5,784 |           0.3 % |
-| `kalendaria_1962.postcard.br`     |        3,029 |        1,169 |           0.1 % |
-| **Total brotli**                  |              | **1,771,271** |       100.0 % |
+Sizes (post-K2):
+
+| File                              | Brotli `.br` | Share |
+|-----------------------------------|-------------:|------:|
+| `corpus.postcard.br`              |    1,348,822 | 89.8 % |
+|   (horas + missa combined)        |              |       |
+| `psalms_latin.postcard.br`        |       84,913 |  5.6 % |
+| `ordo_latin.postcard.br`          |       50,241 |  3.3 % |
+| `kalendaria_by_rubric.postcard.br`|       11,807 |  0.8 % |
+| `sancti.postcard.br`              |        5,833 |  0.4 % |
+| `kalendaria_1962.postcard.br`     |        1,194 |  0.1 % |
+| **Total brotli**                  | **1,502,810** | 100 % |
+
+K1 → K2 delta:
+
+| Stage      | Bundle brotli | Delta |
+|------------|--------------:|------:|
+| K1 baseline | 1,771,271 | — |
+| K2 ship    | 1,502,810 | **−268,461 (−15.2 %)** |
+
+K2 also bumped `lgwin` from 22 to 24 in `brotli_compress` (default
+~4 MB → 16 MB window). lgwin alone gave only ~3 KB; the combined
+stream is the load-bearing change.
+
+## Distance from target
+
+- Total brotli today: **1.50 MB**
+- Target brotli:     **0.70 MB**
+- Need to shave:     **~0.80 MB** (≈ 53 %)
+
+## K1 baseline (snapshot, pre-K2)
+
+Captured at commit `b70f113` for reference:
+
+| File                              | Brotli `.br` | Share |
+|-----------------------------------|-------------:|------:|
+| `horas_latin.postcard.br`         |    1,099,586 | 61.4 % |
+| `missa_latin.postcard.br`         |      517,673 | 28.9 % |
+| `psalms_latin.postcard.br`        |       84,924 |  4.7 % |
+| `ordo_latin.postcard.br`          |       50,324 |  2.8 % |
+| `kalendaria_by_rubric.postcard.br`|       11,811 |  0.7 % |
+| `sancti.postcard.br`              |        5,784 |  0.3 % |
+| `kalendaria_1962.postcard.br`     |        1,169 |  0.1 % |
+| **Total brotli**                  | **1,771,271** | 100 % |
 
 (WASM binary itself is separate; this is just embedded data.)
 

@@ -13,6 +13,7 @@
 //! dependency.
 
 use std::io::Read;
+use std::sync::OnceLock;
 
 /// Brotli-decompress an embedded `.postcard.br` blob into a fresh
 /// `Vec<u8>`. Panics on malformed input — these are build-time
@@ -25,4 +26,48 @@ pub fn decompress(compressed: &[u8]) -> Vec<u8> {
         .read_to_end(&mut out)
         .expect("brotli decompress: malformed embedded data");
     out
+}
+
+// ─── Combined corpus blob (K2) ───────────────────────────────────────
+//
+// `build.rs` packs `horas_latin.postcard` + `missa_latin.postcard`
+// into one brotli stream. Sharing the compression context across
+// both corpora (which share most of their liturgical phrasing) cuts
+// 16% off the brotli output vs separate compression: ~1.62 MB →
+// ~1.35 MB.
+//
+// Header (8 bytes, little-endian u32 × 2):
+//   0..4 = horas postcard length
+//   4..8 = missa postcard length
+//   8..  = horas bytes followed by missa bytes
+//
+// We decompress the whole thing once into a `Vec<u8>` stored in a
+// `OnceLock`, then expose `&'static [u8]` slices for the two
+// portions. Each consumer postcard-decodes its own slice on first
+// access (still gated by its own `OnceLock`).
+
+static CORPUS_BR: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/corpus.postcard.br"));
+
+static CORPUS_BLOB: OnceLock<Vec<u8>> = OnceLock::new();
+
+fn corpus_blob() -> &'static [u8] {
+    CORPUS_BLOB
+        .get_or_init(|| decompress(CORPUS_BR))
+        .as_slice()
+}
+
+/// Slice covering the horas postcard inside the combined blob.
+pub fn horas_postcard() -> &'static [u8] {
+    let blob = corpus_blob();
+    let horas_len = u32::from_le_bytes([blob[0], blob[1], blob[2], blob[3]]) as usize;
+    &blob[8..8 + horas_len]
+}
+
+/// Slice covering the missa postcard inside the combined blob.
+pub fn missa_postcard() -> &'static [u8] {
+    let blob = corpus_blob();
+    let horas_len = u32::from_le_bytes([blob[0], blob[1], blob[2], blob[3]]) as usize;
+    let missa_len = u32::from_le_bytes([blob[4], blob[5], blob[6], blob[7]]) as usize;
+    let start = 8 + horas_len;
+    &blob[start..start + missa_len]
 }

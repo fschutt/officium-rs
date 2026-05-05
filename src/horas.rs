@@ -25,7 +25,6 @@ use std::sync::OnceLock;
 pub use crate::data_types::{HorasFile, OrdoLine, PsalmFile};
 pub use crate::ordo::RenderedLine;
 
-static HORAS_BR: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/horas_latin.postcard.br"));
 static PSALMS_BR: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/psalms_latin.postcard.br"));
 
 static HORAS: OnceLock<HashMap<String, HorasFile>> = OnceLock::new();
@@ -33,8 +32,11 @@ static PSALMS: OnceLock<HashMap<String, PsalmFile>> = OnceLock::new();
 
 fn horas_corpus() -> &'static HashMap<String, HorasFile> {
     HORAS.get_or_init(|| {
-        let pc = crate::embed::decompress(HORAS_BR);
-        postcard::from_bytes(&pc).unwrap_or_default()
+        // K2 (slice 2): postcard bytes come from the combined
+        // `corpus.postcard.br` blob which is shared with missa — see
+        // `crate::embed::horas_postcard` for the layout.
+        let pc = crate::embed::horas_postcard();
+        postcard::from_bytes(pc).unwrap_or_default()
     })
 }
 

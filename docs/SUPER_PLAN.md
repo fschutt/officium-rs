@@ -57,7 +57,7 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | C | C5 — Drive Sancti/02-23o (bissextile) cluster to 0 | ✅ DONE 2026-05-05 — `date::sancti_kalendar_key` suppresses leap-year Feb 23 (Vigil shifts to real Feb 24 = kalendar 02-29). Updated 4 callsites in `occurrence.rs`. **2000, 2008, 2012, 2016: 99.7% → 100%**; spot-checked 2004 still has 1 fail (different cluster); 288/288 lib tests pass | — | — |
 | C | C6 — Drive Sancti/05-04 cluster to 0 | ⏳ pending | — | low fail-count, late |
 | **K** (compression / size) | K1 — Bundle-size budget table + per-data-file breakdown | ✅ DONE 2026-05-04 — `docs/BUNDLE_BUDGET.md` lays out the ~1.77 MB brotli starting line. `horas_latin.postcard.br` = 1.10 MB (61%) and `missa_latin.postcard.br` = 518 KB (29%) account for 90% of the bundle. K2 target: shared brotli dictionary on liturgical phrasing → ~15-25% combined savings | — | — |
-| K | K2 — Try shared-dictionary brotli for `missa_latin` + `horas_latin` | ⏳ pending | — | after K1 |
+| K | K2 — Combined missa+horas brotli stream | ✅ DONE 2026-05-04 — `build.rs` writes one `corpus.postcard.br` containing horas+missa with an 8-byte length-prefix header. Runtime decompresses once into shared `OnceLock<Vec<u8>>` via `embed::horas_postcard()` / `embed::missa_postcard()`. **Bundle brotli: 1.77 MB → 1.50 MB (−268,461 bytes / −15.2 %)**. lgwin bumped 22 → 24 (window ~4 MB → 16 MB). Need another 800 KB to hit the 700 KB target | — | — |
 | K | K3 — Drop `regression` feature from default; smaller release artefact | ⏳ pending | — | small win |
 | K | K4 — `wasm-opt -Oz` already wired; revisit after each leg ships | ✅ already wired in pages.yml | — | — |
 | K | K5 — Final published budget: ≤ 1 MB raw / ≤ 700 KB brotli total | ⏳ pending | — | super-plan exit |
@@ -138,28 +138,30 @@ The row currently being worked. Only one across all legs at a time
 (this is a single-threaded loop). When we wake up:
 
 ```
-ACTIVE LEG:    K (after K1 baseline; B8 Prima/Compline
-               deferred — see PARKED below)
-ACTIVE TASK:   ⏳ next — K2: shared-dictionary brotli on
-               `horas_latin.postcard` and
-               `missa_latin.postcard`. Target: build a
-               static brotli dictionary from the most-
-               frequent liturgical n-grams (`Per Dominum`,
-               `Gloria Patri`, `Sicut erat`, `℣.`/`℟.`,
-               etc.) and pass it to the brotli encoder
-               in `build.rs`. Both corpora share the same
-               Latin phrasing, so a shared dictionary
-               should compress both better than per-file
-               brotli. Estimated savings: 15-25% off the
-               combined 1.62 MB → ~1.25-1.40 MB. See
-               `docs/BUNDLE_BUDGET.md` for the K-leg plan.
+ACTIVE LEG:    K
+ACTIVE TASK:   ⏳ next — K3: drop the `regression`
+               feature from default features so WASM
+               builds don't pull in the comparator HTML
+               walker, Perl-interop helpers, and
+               `serde_json`. Confirm `Cargo.toml`'s
+               `[features]` block has the right
+               `default = []` shape and that the
+               `wasm-bindgen` build path doesn't activate
+               `regression` transitively. Measure the
+               WASM `.wasm` byte delta. Goal: shave any
+               WASM-bundled regression code, since
+               Anthropic's BUNDLE_BUDGET measures the
+               combined WASM + data brotli. Won't change
+               data brotli sizes; the win is in the
+               `.wasm` itself.
+
+K2 STATUS:     ✅ DONE 2026-05-04. Bundle brotli:
+               1.77 MB → 1.50 MB (−268,461 bytes /
+               −15.2 %) by combining horas + missa into
+               one brotli stream. lgwin bumped to 24.
 
 K1 STATUS:     ✅ DONE 2026-05-04. Baseline measured
-               and documented. Total brotli today is
-               1.77 MB; target is 700 KB. `horas_latin`
-               (1.10 MB) + `missa_latin` (518 KB) = 90 %
-               of the bundle, so leg-K work targets the
-               two big files first.
+               and documented in `docs/BUNDLE_BUDGET.md`.
 
 PARKED — Prima / Compline 0% Office regression:
                Their Ordinarium template emits a thick

@@ -49,7 +49,7 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | B | B5 — Matins (the densest hour) | ✅ DONE 2026-05-05 — Invitatorium splice + multi-Lectio emission (Lectio1..9 with intervening Responsories) via `splice_matins_lectios`; 3 new tests; Lectio4 (Monica proper) + Invitatorium antiphon both verified | — | — |
 | B | B6 — Concurrence + first-vespers split | ✅ DONE 2026-05-05 — 4 slices: Te Deum (`a653808`), `[Rule] 3 lectiones` (`20c350b`), nocturn-antiphon grouping (`f58dbcd`), first-vespers concurrence helpers (`parse_horas_rank` + `first_vespers_day_key` — caller-driven rank compare so the walker stays a pure projection). 9 new tests across the 4 slices | — | — |
 | B | B7 — Demo `/breviary.html` page + WASM API | ✅ DONE 2026-05-05 — Slice a (`ae21198`): `compute_office_full` WASM API. Slice b/c (this commit): `demo/breviary.html` + `demo/breviary.js` with hour selector + day_key field + first-vespers swap surfaced in UI; three-page nav (Mass / Breviary / Calendar) wired in `index.html`. Pages CI rebuilds the WASM pkg on push | — | — |
-| B | B8 — Year-sweep regression to ≥ 99.7 % (all 8 hours × 5 rubrics) | 🟡 in progress 2026-05-05 — Slice 1 ✅ Office regression plumbing: pure helpers `rust_office_section` (extract a Section's body from `Vec<RenderedLine>`) and `compare_office_section` (round-trip compare Rust body vs Perl HTML's same section); `src/bin/office_sweep.rs` single-cell driver that shells to `do_render.sh` for any of the 8 hours and reports a verdict. End-to-end run on Vespera 2026-05-04 returns `Differ` (legitimate — Perl resolved Tempora/Pasc4 winner where we forced Sancti/05-04, exactly the divergence the sweep is meant to surface). 3 new lib tests + bin builds. Remaining: multi-day loop, manifest emission, ≥99.7% bar | — | next wakeup |
+| B | B8 — Year-sweep regression to ≥ 99.7 % (all 8 hours × 5 rubrics) | 🟡 in progress 2026-05-05 — Slice 1 ✅ pure helpers + single-cell bin (`f3faada`). Slice 2 ✅ multi-day loop + auto day_key — `office_sweep` now drives `--smoke`/`--year`/`--limit` modes, derives day_key via `precedence::compute_office`, aggregates `Stats { matched, differ, rust_blank, perl_blank, empty }`, prints pass-rate, exits non-zero below ≥99.7% bar. **First end-to-end smoke result: Vespera Tridentine 1570 4-cell smoke = 75% (3/4 match: Circumcision, Peter+Paul, Christmas all hit; 05-04 differs — known Tempora-vs-Sancti precedence gap)**. Remaining: ramp to year sweep, scale to 8 hours × 5 rubrics, drive divergences down | — | next wakeup |
 | **C** (correctness) | C1 — Local span-configurable runner (`scripts/regression.sh day|year|decade|century`) | ⏳ pending | — | after B1 |
 | C | C2 — Drive Sancti/01-12 cluster to 0 fail-years | ⏳ pending | — | after C1 |
 | C | C3 — Drive Tempora/Pasc1-0t cluster to 0 | ⏳ pending | — | parallel with C2 |
@@ -139,32 +139,31 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    B
-ACTIVE TASK:   B8 (slice 2) — multi-day loop + manifest
-ESTIMATED:     2-3 loop windows. Slice 1 ✅ shipped: pure
-               extract+compare helpers, single-cell bin
-               (`office_sweep`). Remaining:
-                 (a) Loop the bin over a date span (`--year
-                     2026 --hour Vespera --rubric ...`) and
-                     emit a JSON manifest analogous to
-                     year_sweep's `target/regression/...`.
-                 (b) Wire winner-resolution: today the bin
-                     forces day_key from CLI; it should call
-                     `precedence::compute_office` (Mass-side)
-                     to *derive* the per-day Sancti/Tempora
-                     key the Office should use, mirroring
-                     what `horas.pl` does internally. This
-                     is the same logic the Mass already uses
-                     and lets us drop the user-supplied
-                     day_key from the CLI for the loop.
-                 (c) Aggregate verdicts; print pass-rate.
-                     Exit non-zero when below ≥99.7% bar.
+ACTIVE TASK:   B8 (slice 3) — drive Vespera year-sweep to ≥99.7%
+ESTIMATED:     2-3 loop windows. Slice 2 baseline measured:
+               4-cell smoke = 75% (3/4 match). The single
+               failing cell (Sancti/05-04 in Easter season)
+               is a Tempora-vs-Sancti rank-precedence gap
+               that's already known on the Mass side. Now:
+                 (a) Run a full Vespera-1570 year sweep
+                     (cargo run --bin office_sweep --
+                     --year 2026 --hour Vespera --rubric
+                     'Tridentine - 1570'); record the
+                     baseline match rate.
+                 (b) Triage divergences by category. Most
+                     should be calendar-resolution gaps
+                     shared with the Mass side (R2-R5 from
+                     the hardcode-audit map directly to
+                     these). A few will be horas-specific
+                     (Tempora -a variants, etc.).
+                 (c) Drive the rate to ≥99.7% by closing the
+                     low-hanging fruit. Document in
+                     `UPSTREAM_WEIRDNESSES_BREVIARY.md`.
 EXIT WHEN:     `cargo run --bin office_sweep -- --year 2026
                --hour Vespera --rubric 'Tridentine - 1570'`
-               renders a year of Vespera cells, reports a
-               match percentage, and passes ≥99.7% on a
-               single year × hour × rubric combo (the easy
-               cases first; harder rubric/hour combos drive
-               additional B8 slices).
+               reports ≥99.7% on a full year of Vespera
+               cells. Other hours / rubrics drive subsequent
+               slices.
 ```
 
 Update this block on every wakeup so the next iteration knows what

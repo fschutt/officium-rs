@@ -139,30 +139,35 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    B
-ACTIVE TASK:   C4 — Sat-BVM (Commune/C10b) Graduale +
-               Offertorium seasonal-variant resolution
-ESTIMATED:     1-2 loop windows. Local spot-check found the
-               concrete gap: 2008-01-26 (Saturday in
-               Septuagesima) — both sides agree the day's
-               winner is Commune/C10b (Sat-BVM Mariæ), but
-               the Graduale section content differs.
-               Perl emits "Speciósus forma præ fíliis…"
-               (the Septuagesima-variant Graduale + a
-               trailing Tractus). Rust emits the
-               Per-Annum default Graduale.
-               Root cause: `Commune/C10b` upstream has
-               multiple `[Graduale]` headers annotated by
-               season — `[Graduale](tempore Septuagesima)`,
-               `[Graduale](tempore Quadragesima)`, etc.
-               The Mass resolver currently picks the bare
-               `[Graduale]` (Per-Annum default). Need to
-               select the seasonal variant matching the
-               date's `season`.
-EXIT WHEN:     2008-01-26 Tridentine 1570 SanctaMissa
-               renders the Septuagesima Sat-BVM Graduale
-               byte-for-byte (Speciósus forma…). Same fix
-               likely closes 2027-01-30, the other C10b
-               failures across years.
+ACTIVE TASK:   C4 (slice 1) — `@:Section:s/PAT/REPL/`
+               self-redirect resolver in mass.rs
+ESTIMATED:     1-2 loop windows. Updated diagnosis after
+               reading the upstream `[Tractus]` body:
+               the gap is NOT a missing seasonal variant —
+               C10b has only one `[Graduale]` upstream. The
+               gap is that upstream `[Tractus]` carries
+               an `@:Graduale:s/\s+Al.*//s` self-redirect
+               with a regex substitution which our
+               resolver returns verbatim. Perl evaluates
+               the regex sub against the named target's
+               body and substitutes; we don't.
+               Slice 1: implement
+               `expand_at_self_redirect_with_sub(body)`
+               in mass.rs, used inside `read_section`.
+               It detects the `@:Section:s/PAT/REPL/FLAGS`
+               shape, fetches the named section's body
+               from the same file, applies the regex
+               substitution, and returns the resolved
+               body. (Multi-line bodies use the same
+               resolver; the trailing `_\n@Commune/C11…`
+               in C10b's Tractus is then a second
+               redirect that the existing chain handles.)
+EXIT WHEN:     `expand_at_self_redirect_with_sub("@:Graduale:s/\\s+Al.*//s", c10b_body)`
+               returns the Graduale stripped of the
+               trailing Alleluja content, with a unit test
+               pinning the exact byte-for-byte transform.
+               Year-sweep on 2008 should drop from 1
+               failing day to 0.
 ```
 
 Update this block on every wakeup so the next iteration knows what

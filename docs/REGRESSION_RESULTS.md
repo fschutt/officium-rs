@@ -27,10 +27,35 @@ remaining clusters (C10b Sat-BVM, Pasc1-0t) still fire.
 
 The **C10b Graduale/Offertorium** failure (e.g. 2008-01-26)
 is a section-content gap, not a winner-resolution gap: both
-Rust and Perl agree the office is Sat-BVM, but the Graduale
-under Septuagesima needs the seasonal-variant text
-(`(tempore Septuagesima)` annotation) — currently the
-resolver picks the Per-Annum default.
+Rust and Perl agree the office is Sat-BVM. Diagnosis:
+
+- Upstream `Commune/C10b` carries one `[Graduale]` block with
+  the Per-Annum body PLUS trailing `Allelúja, allelúja.`
+  + a second `V. Post partum…Allelúja.` verse-of-Alleluja.
+- `[Tractus]` is an `@:Graduale:s/\s+Al.*//s` self-redirect
+  with regex substitution: take Graduale, strip everything
+  from the first whitespace before `Al…` to end → keeps only
+  the Per-Annum portion. Then `_` (paragraph) followed by
+  `@Commune/C11::s/^.*?\s(\!)//s` — pull C11's content with
+  the leading rubric-tagged comment trimmed.
+- Perl's `propers.pl::Graduale` under Septuagesima/Quad
+  resolves the Tractus *and* concatenates the stripped
+  Graduale prelude in front, which is why the rendered cell
+  carries both `Speciósus forma…velóciter scribéntis.` and
+  `Tractus / Gaude, María Virgo…`.
+- Rust's `graduale_or_tractus` probes Tractus before
+  Graduale under `in_tractus_season` (correct), but the
+  returned C10b `[Tractus]` body is the unresolved `@:` regex
+  self-redirect literal — the Mass-side resolver doesn't
+  handle this `@:Section:s/…/` pattern. Result: 770-char body
+  (the unresolved Graduale Per-Annum + Alleluja, no Tractus
+  splice) vs Perl's 669-char rendered Graduale + Tractus.
+
+**Fix scope** (multi-window): add a `@:Section:s/PATTERN/REPL/`
+self-redirect resolver in mass.rs that mirrors what
+`SetupString` does in upstream Perl. Once that lands, C10b's
+Tractus body resolves correctly and `graduale_or_tractus`
+returns the right text under Septuagesima.
 
 ## ±50 year sweep (1976–2076, 101 years × 5 rubrics)
 

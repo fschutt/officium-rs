@@ -3,8 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>officium-rs — Divinum Officium liturgical engine in Rust/WASM</title>
+<title>officium-rs — Breviary (Divine Office)</title>
+<link rel="stylesheet" href="./style.css">
 <style>
+  /* breviary.html owns no styles of its own — every visual rule
+     is shared with the Mass page via the inline stylesheet below.
+     We re-import the same `<style>` block from `index.html` so
+     the two pages render identically without ever duplicating
+     CSS in two files. The block lives once in `style.css` (kept
+     in lockstep with `index.html` until we extract it cleanly). */
+</style>
+<style>
+  /* ── Site shell (mirrors index.html) ────────────────────────── */
   :root {
     --bg: #f8f4ec;
     --fg: #1a1612;
@@ -18,9 +28,7 @@
     --mono: ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
     --serif: "EB Garamond", Garamond, Georgia, "Times New Roman", serif;
   }
-
   * { box-sizing: border-box }
-
   html, body {
     margin: 0;
     background: var(--bg);
@@ -29,15 +37,12 @@
     font-size: 18px;
     line-height: 1.55;
   }
-
   header.page, main, footer.page {
     max-width: 880px;
     margin: 0;
     padding: 0 36px;
     text-align: left;
   }
-
-  /* Top nav: Mass / Calendar links */
   nav.toplinks {
     margin: 6px 0 0;
     padding: 0;
@@ -57,41 +62,32 @@
     border-bottom-color: var(--fg);
     font-weight: 500;
   }
-
   header.page {
     padding-top: 56px;
     padding-bottom: 28px;
     border-bottom: 1px solid var(--rule);
   }
-
   header.page h1 {
     font-size: 32px;
     margin: 0 0 6px;
     letter-spacing: -0.01em;
   }
-
   header.page h1 .crate {
     font-family: var(--mono);
     font-size: 0.85em;
     color: var(--accent);
     font-weight: 500;
   }
-
   header.page .tagline {
     color: var(--muted);
     margin: 0;
     font-style: italic;
   }
-
   main {
     padding-top: 32px;
     padding-bottom: 64px;
   }
-
-  section + section {
-    margin-top: 40px;
-  }
-
+  section + section { margin-top: 40px; }
   h2.section-h {
     font-size: 14px;
     font-family: var(--mono);
@@ -103,21 +99,18 @@
     padding-bottom: 6px;
     border-bottom: 1px solid var(--rule);
   }
-
   form {
     display: grid;
     grid-template-columns: auto 1fr auto;
     gap: 12px 16px;
     align-items: center;
   }
-
   label {
     font-family: var(--mono);
     font-size: 13px;
     color: var(--muted);
   }
-
-  input[type=date], select {
+  input[type=date], input[type=text], select {
     font-family: var(--serif);
     font-size: 16px;
     padding: 8px 10px;
@@ -127,13 +120,11 @@
     color: var(--fg);
     width: 100%;
   }
-
-  input[type=date]:focus, select:focus {
+  input[type=date]:focus, input[type=text]:focus, select:focus {
     outline: 2px solid var(--accent-soft);
     outline-offset: -1px;
     border-color: var(--accent);
   }
-
   button {
     grid-column: 1 / -1;
     justify-self: end;
@@ -148,10 +139,8 @@
     cursor: pointer;
     transition: background 0.15s;
   }
-
   button:hover:not(:disabled) { background: var(--accent-soft); }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
-
   .checkboxes {
     display: flex;
     gap: 18px;
@@ -169,13 +158,10 @@
     gap: 6px;
     cursor: pointer;
   }
-  .checkboxes input[type=checkbox] {
-    accent-color: var(--accent);
-  }
+  .checkboxes input[type=checkbox] { accent-color: var(--accent); }
 
-  /* ── Mass renderer ─────────────────────────────────────────── */
-
-  article.mass {
+  /* ── Office renderer (mirrors mass with `.office` namespace) ── */
+  article.office {
     background: var(--card);
     border: 1px solid var(--rule);
     border-radius: 6px;
@@ -184,45 +170,35 @@
     line-height: 1.55;
     text-align: left;
   }
-  article.mass * { text-align: left; }
-
-  .mass-head {
+  article.office * { text-align: left; }
+  .office-head {
     border-bottom: 1px solid var(--rule);
     padding-bottom: 18px;
     margin-bottom: 24px;
   }
-
-  .mass-head h2 {
+  .office-head h2 {
     margin: 0 0 8px;
     font-family: var(--mono);
     font-size: 14px;
     color: var(--accent);
     font-weight: 500;
   }
-
-  .mass-head h2 code {
+  .office-head h2 code {
     font-family: var(--mono);
     background: rgba(139,28,43,0.06);
     padding: 1px 6px;
     border-radius: 3px;
   }
-
-  dl.mass-meta {
+  dl.office-meta {
     display: grid;
     grid-template-columns: max-content 1fr;
     gap: 2px 12px;
     margin: 8px 0 10px;
     font-size: 14px;
   }
-  dl.mass-meta dt { color: var(--muted); font-family: var(--mono); font-size: 12px; }
-  dl.mass-meta dd { margin: 0; }
-
-  .mass-toggles {
-    font-size: 13px;
-    color: var(--muted);
-  }
-
-  .mass h3.ord-heading {
+  dl.office-meta dt { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+  dl.office-meta dd { margin: 0; }
+  .office h3.ord-heading {
     font-family: var(--mono);
     font-size: 12px;
     text-transform: uppercase;
@@ -232,86 +208,37 @@
     padding-bottom: 3px;
     border-bottom: 1px dashed var(--rule);
   }
-  .mass h3.proper-h {
-    color: var(--fg);
-  }
-
-  .mass .rubric {
+  .office .rubric {
     color: var(--rubric-red);
     font-style: italic;
     font-size: 14px;
     margin: 8px 0;
   }
-
-  .mass .spoken {
-    margin: 4px 0;
-  }
-
-  .mass .role {
+  .office .spoken { margin: 4px 0; }
+  .office .role {
     color: var(--rubric-red);
     font-style: italic;
     font-weight: 500;
     margin-right: 4px;
   }
-
-  .mass .proper p {
-    margin: 6px 0;
-  }
-
-  .mass .vers {
-    margin: 4px 0;
-  }
-
-  .mass .citation {
+  .office .vers { margin: 4px 0; }
+  .office .citation {
     color: var(--rubric-red);
     font-style: italic;
     font-size: 14px;
     margin: 6px 0 2px;
   }
-
-  .mass .inline-rubric {
+  .office .inline-rubric {
     color: var(--rubric-red);
     font-style: italic;
     font-size: 14px;
     margin: 2px 0;
   }
-
-  .mass hr.sep {
+  .office hr.sep {
     border: 0;
     border-top: 1px solid var(--rule);
     margin: 12px 0;
   }
-
-  .mass .proper-source {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--muted);
-    margin: -4px 0 8px;
-  }
-  .mass .proper-source code {
-    background: rgba(139,28,43,0.05);
-    padding: 1px 4px;
-    border-radius: 3px;
-  }
-  .mass .proper-source .via {
-    color: var(--accent);
-  }
-
-  .mass .commem {
-    margin: 14px 0;
-    padding-left: 16px;
-    border-left: 3px solid var(--rule);
-  }
-
-  .mass .commem-h {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
-    margin-bottom: 4px;
-  }
-
-  /* ── Initial empty / status ────────────────────────────────── */
-
   .empty-state, #status {
     color: var(--muted);
     font-style: italic;
@@ -321,7 +248,6 @@
     border: 1px dashed var(--rule);
     border-radius: 6px;
   }
-
   #status {
     font-family: var(--mono);
     font-size: 13px;
@@ -330,12 +256,8 @@
     background: none;
     border: none;
   }
-
   #status.error { color: var(--rubric-red); }
   #status.ok    { color: #2e6b3e; }
-
-  /* ── API code block ────────────────────────────────────────── */
-
   pre.api-example {
     background: #1a1612;
     color: #e8dfc8;
@@ -350,7 +272,6 @@
   pre.api-example .kw { color: #d49a93 }
   pre.api-example .str { color: #c8b88a }
   pre.api-example .com { color: #6b6358; font-style: italic }
-
   footer.page {
     padding-top: 32px;
     padding-bottom: 56px;
@@ -367,11 +288,11 @@
 <body>
 
 <header class="page">
-  <h1><span class="crate">officium-rs</span></h1>
-  <p class="tagline">A pure-Rust port of the Divinum Officium liturgical engine. Resolves the day's office and renders the Tridentine Mass under any of five Roman rubrics — 1570, 1910, 1939, 1955, 1960.</p>
+  <h1><span class="crate">officium-rs</span> — Breviary</h1>
+  <p class="tagline">Renders one Hour of the Divine Office — Matins, Lauds, Prime, Tertia, Sexta, Nona, Vespers, or Compline — from the upstream Divinum Officium corpus, walked entirely in WebAssembly.</p>
   <nav class="toplinks">
-    <a href="./" aria-current="page">Mass</a>
-    <a href="./breviary.html">Breviary</a>
+    <a href="./">Mass</a>
+    <a href="./breviary.html" aria-current="page">Breviary</a>
     <a href="./calendar.html">Calendar</a>
     <a href="https://github.com/fschutt/officium-rs">GitHub</a>
   </nav>
@@ -380,10 +301,23 @@
 <main>
 
   <section>
-    <h2 class="section-h">Pick a date</h2>
+    <h2 class="section-h">Pick an hour</h2>
     <form id="query-form">
       <label for="date">Date</label>
       <input type="date" id="date" required>
+      <span></span>
+
+      <label for="hour">Hour</label>
+      <select id="hour">
+        <option value="Matutinum">Matutinum</option>
+        <option value="Laudes">Laudes</option>
+        <option value="Prima">Prima</option>
+        <option value="Tertia">Tertia</option>
+        <option value="Sexta">Sexta</option>
+        <option value="Nona">Nona</option>
+        <option value="Vespera" selected>Vespera</option>
+        <option value="Completorium">Completorium</option>
+      </select>
       <span></span>
 
       <label for="rubric">Rubric</label>
@@ -396,41 +330,53 @@
       </select>
       <span></span>
 
-      <label for="solemn">Mode</label>
+      <label for="day-key">Day key</label>
+      <input type="text" id="day-key" value="Sancti/05-04"
+             placeholder="Sancti/05-04 or Tempora/Pasc3-0">
+      <span></span>
+
+      <label for="next-day-key">Next day key</label>
+      <input type="text" id="next-day-key" value=""
+             placeholder="(optional — for first-vespers swap on Vespera)">
+      <span></span>
+
+      <label for="rubrics-on">Rubrics</label>
       <span class="checkboxes">
-        <label class="cb"><input type="checkbox" id="solemn" checked> Solemn (sung)</label>
         <label class="cb"><input type="checkbox" id="rubrics-on" checked> Show rubrics</label>
       </span>
       <span></span>
 
-      <button type="submit" id="submit-btn" disabled>Render Mass</button>
+      <button type="submit" id="submit-btn" disabled>Render Hour</button>
     </form>
     <p id="status">Loading WASM…</p>
   </section>
 
   <section>
-    <h2 class="section-h">Mass</h2>
-    <div id="result" class="empty-state">No query yet — pick a date and click "Render Mass".</div>
+    <h2 class="section-h">Office</h2>
+    <div id="result" class="empty-state">No query yet — pick a date, hour, and day key, then click "Render Hour".</div>
   </section>
 
   <section>
     <h2 class="section-h">API</h2>
 <pre class="api-example"><span class="com">// Browser:</span>
-<span class="kw">import</span> init, { compute_mass_full } <span class="kw">from</span> <span class="str">'./pkg/officium_rs.js'</span>;
+<span class="kw">import</span> init, { compute_office_full } <span class="kw">from</span> <span class="str">'./pkg/officium_rs.js'</span>;
 
 <span class="kw">await</span> init();
-<span class="kw">const</span> json = compute_mass_full(<span class="str">2026</span>, <span class="str">5</span>, <span class="str">2</span>, <span class="str">'rubrics-1960'</span>, <span class="kw">true</span>, <span class="kw">true</span>);
-<span class="kw">const</span> mass = JSON.parse(json);
-<span class="com">// → { office:    {winner, color, season, rank, rubric, commemorations},</span>
-<span class="com">//     propers:   {introitus, oratio, lectio, graduale, evangelium, …,</span>
-<span class="com">//                 commemorations: […]},</span>
-<span class="com">//     rules:     {gloria, credo, prefatio_name, solemn, defunctorum},</span>
-<span class="com">//     ordinary:  [{k:"section",label:"Incipit"}, {k:"rubric",body,level},</span>
-<span class="com">//                 {k:"spoken",role:"V",body}, {k:"plain",body},</span>
-<span class="com">//                 {k:"macro",name:"Gloria",body},</span>
-<span class="com">//                 {k:"proper",section:"introitus"},</span>
-<span class="com">//                 {k:"hook",hook:"Introibo",message:"omit. psalm"},</span>
-<span class="com">//                 …] }</span>
+<span class="kw">const</span> json = compute_office_full(
+  <span class="str">2026</span>, <span class="str">5</span>, <span class="str">4</span>,
+  <span class="str">'trid-1570'</span>,
+  <span class="str">'Vespera'</span>,
+  <span class="str">'Sancti/05-04'</span>,
+  <span class="str">''</span>,                <span class="com">// next_day_key — empty disables first-vespers swap</span>
+  <span class="kw">true</span>,              <span class="com">// rubrics on</span>
+);
+<span class="kw">const</span> office = JSON.parse(json);
+<span class="com">// → { office: { rubric, hour, day_key, first_vespers },</span>
+<span class="com">//     lines:  [{k:"section", label:"Incipit"},</span>
+<span class="com">//              {k:"plain",   body:"..."},</span>
+<span class="com">//              {k:"macro",   name:"Deus_in_adjutorium", body:"..."},</span>
+<span class="com">//              {k:"rubric",  body:"...",  level:1},</span>
+<span class="com">//              ...] }</span>
 </pre>
   </section>
 
@@ -445,6 +391,6 @@
   <p class="meta" id="version">officium-rs · WASM</p>
 </footer>
 
-<script type="module" src="./app.js"></script>
+<script type="module" src="./breviary.js"></script>
 </body>
 </html>

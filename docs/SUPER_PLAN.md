@@ -48,8 +48,8 @@ Mass + Breviary as the upstream Perl site, in 100 % parity, in
 | B | B4 — Lauds + Prime + Tertia/Sexta/Nona + Compline | ✅ DONE 2026-05-05 (commit `104630a`) | — | — |
 | B | B5 — Matins (the densest hour) | ✅ DONE 2026-05-05 — Invitatorium splice + multi-Lectio emission (Lectio1..9 with intervening Responsories) via `splice_matins_lectios`; 3 new tests; Lectio4 (Monica proper) + Invitatorium antiphon both verified | — | — |
 | B | B6 — Concurrence + first-vespers split | ✅ DONE 2026-05-05 — 4 slices: Te Deum (`a653808`), `[Rule] 3 lectiones` (`20c350b`), nocturn-antiphon grouping (`f58dbcd`), first-vespers concurrence helpers (`parse_horas_rank` + `first_vespers_day_key` — caller-driven rank compare so the walker stays a pure projection). 9 new tests across the 4 slices | — | — |
-| B | B7 — Demo `/breviary.html` page + WASM API | 🟡 in progress 2026-05-05 — Slice a ✅ `wasm::compute_office_full(year, month, day, rubric, hour, day_key, next_day_key, rubrics)` shipped — JSON output `{office:{rubric, hour, day_key, first_vespers}, lines:[…]}` with first-vespers swap on Vespera, error responses for unknown rubric / missing day_key. 5 new tests. Remaining slices: (b) `demo/breviary.html` + render.js loop, (c) three-page nav | — | next wakeup |
-| B | B8 — Year-sweep regression to ≥ 99.7 % (all 8 hours × 5 rubrics) | ⏳ pending | — | gates leg-B "done" |
+| B | B7 — Demo `/breviary.html` page + WASM API | ✅ DONE 2026-05-05 — Slice a (`ae21198`): `compute_office_full` WASM API. Slice b/c (this commit): `demo/breviary.html` + `demo/breviary.js` with hour selector + day_key field + first-vespers swap surfaced in UI; three-page nav (Mass / Breviary / Calendar) wired in `index.html`. Pages CI rebuilds the WASM pkg on push | — | — |
+| B | B8 — Year-sweep regression to ≥ 99.7 % (all 8 hours × 5 rubrics) | ⏳ next | — | gates leg-B "done" — extend the regression harness to drive `compute_office_full` over a year × 8 hours × 5 rubrics matrix and diff against upstream Perl |
 | **C** (correctness) | C1 — Local span-configurable runner (`scripts/regression.sh day|year|decade|century`) | ⏳ pending | — | after B1 |
 | C | C2 — Drive Sancti/01-12 cluster to 0 fail-years | ⏳ pending | — | after C1 |
 | C | C3 — Drive Tempora/Pasc1-0t cluster to 0 | ⏳ pending | — | parallel with C2 |
@@ -139,24 +139,29 @@ The row currently being worked. Only one across all legs at a time
 
 ```
 ACTIVE LEG:    B
-ACTIVE TASK:   B7 (slice b) — `demo/breviary.html` page
-ESTIMATED:     1-2 loop windows. Slice a ✅ shipped (WASM API).
-               Remaining:
-                 (b) Build `demo/breviary.html` — thin shell
-                     mirroring `index.html` but for the 8 hours.
-                     Hour selector + date picker; loads WASM
-                     and walks the rendered `lines[]` into HTML.
-                     Reuse `demo/render.js` patterns; the
-                     line-shape (`{k, body, label, role,
-                     level, name}`) is identical to
-                     `compute_mass_full`'s `ordinary` field.
-                 (c) Add `breviary.html` to the navigation in
-                     `demo/index.html` and the Calendar page
-                     so the three-page nav lands.
-EXIT WHEN:     Browsing to `/breviary.html?date=2026-05-04&
-               hour=Vespera` renders the Vespera of St. Monica
-               with the proper Oratio body visible. Pages CI
-               passes.
+ACTIVE TASK:   B8 — Breviary year-sweep regression ≥99.7%
+ESTIMATED:     2-3 loop windows. The Mass-side regression
+               harness (`crate::regression`) already drives
+               `compute_mass_full` against upstream Perl HTML
+               for a 100-year sweep. Extend it for the
+               Breviary:
+                 (a) Add `compute_office_full` invocation per
+                     (date, rubric, hour) cell. Shape the
+                     output for diff comparison against the
+                     Perl `horas.pl` rendering of the same
+                     cell.
+                 (b) Run a smaller initial slice (1 year × 5
+                     rubrics × 8 hours = 14,600 cells) to
+                     validate the diff plumbing before
+                     scaling to ±50 years.
+                 (c) Reach ≥99.7% match across 8 × 5 × 100yr
+                     ≈ 14.6M cells. Document divergences in
+                     `UPSTREAM_WEIRDNESSES_BREVIARY.md`.
+EXIT WHEN:     `scripts/regression.sh year` (or equivalent)
+               reports ≥99.7% match across all hours × all
+               5 rubrics for a single year, with the diff
+               loop runnable on demand for incremental
+               drives toward the 100-year target.
 ```
 
 Update this block on every wakeup so the next iteration knows what

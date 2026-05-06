@@ -998,17 +998,7 @@ fn match_class(class: &[u8], b: u8) -> bool {
     false
 }
 
-// ─── Conditional parser (B10b-slice-2 — not yet implemented) ────────
-
-/// Parse a `(sed rubrica X aut Y)` style conditional expression into
-/// a structured [`Conditional`].
-///
-/// Mirror of `SetupString.pl::parse_conditional` line 139-167.
-/// Lands in B10b-slice-2.
-pub fn parse_conditional(_text: &str) -> Option<Conditional> {
-    // TODO(B10b-slice-2): port SetupString.pl:139-167.
-    unimplemented!("B10b-slice-2: parse_conditional")
-}
+// ─── Conditional parser (B10b-slice-2) ──────────────────────────────
 
 /// One parsed conditional expression. Used by [`process_conditional_lines`]
 /// to evaluate `(...)` guards line-by-line with backward / forward
@@ -1020,7 +1010,8 @@ pub struct Conditional {
     /// frames in the stack get popped when this one fires. See
     /// `SetupString.pl:77-86`.
     pub strength: u8,
-    /// Whether the condition body itself evaluates true.
+    /// Whether the condition body itself evaluates true under the
+    /// active subjects.
     pub result: bool,
     /// What lines before this conditional get retroactively dropped
     /// when the conditional fires.
@@ -1041,6 +1032,305 @@ pub enum Scope {
     Chunk,
     /// Until a (weakly) stronger conditional.
     Nest,
+}
+
+/// One match of the upstream `conditional_regex` (line 135-137).
+/// Captures the three ordered fields:
+///
+///   `( stopwords <whitespace> condition_body <whitespace> scope_keywords )`
+///
+/// Where:
+///   * `stopwords` — zero or more of `sed` / `vero` / `atque` /
+///     `attamen` / `si` / `deinde`, space-separated.
+///   * `condition_body` — the part fed to [`vero`].
+///   * `scope_keywords` — optional trailing tokens like `dicitur
+///     semper`, `omittitur`, `omittuntur`, optionally prefixed by
+///     `loco hujus versus` / `loco horum versuum`.
+///
+/// `start` and `end` are byte offsets in the original input string —
+/// useful for `process_conditional_lines` which needs to emit the
+/// rest of the line ("sequel") after stripping the directive.
+#[derive(Debug, Clone)]
+pub struct ConditionalMatch<'a> {
+    pub start: usize,
+    pub end: usize,
+    pub stopwords: &'a str,
+    pub condition: &'a str,
+    pub scope: &'a str,
+}
+
+/// Find the first `(... )` conditional directive in `body`. Returns
+/// `None` when no balanced `(...)` is present, or when the matched
+/// `(...)` doesn't look like a conditional (no recognised stopword
+/// or scope keyword AND a non-Latin-condition body).
+///
+/// Mirror of `SetupString.pl::conditional_regex` (line 135-137) used
+/// in match context. The Perl regex is anchored mid-line (no `^`)
+/// which means it finds the first `(...)` anywhere; we replicate
+/// that by scanning for `(` then balancing.
+///
+/// We deliberately accept any `(...)` parenthesised text and let the
+/// caller decide whether the body is conditional-like. That mirrors
+/// the upstream behaviour where `process_conditional_lines` matches
+/// `^\s*$conditional_regex\s*(.*)$` line-anchored — every `(...)` at
+/// the start of a line is treated as a conditional, even ones with
+/// non-Latin bodies (the regex-fallback in `vero` makes those
+/// interpretable).
+pub fn find_conditional(body: &str) -> Option<ConditionalMatch<'_>> {
+    let bytes = body.as_bytes();
+    let n = bytes.len();
+    let mut i = 0usize;
+    while i < n {
+        if bytes[i] == b'(' {
+            // Find matching `)` (no nesting allowed — the upstream
+            // regex doesn't recurse).
+            let close = i + 1 + bytes[i + 1..].iter().position(|&c| c == b')')?;
+            if close <= i + 1 {
+                i += 1;
+                continue;
+            }
+            let inside = &body[i + 1..close];
+            return Some(parse_conditional_inside(inside, i, close + 1));
+        }
+        i += 1;
+    }
+    None
+}
+
+/// Parse the interior of a `(...)` directive — the part between the
+/// parentheses. Splits into stopwords + condition + scope.
+fn parse_conditional_inside(inside: &str, start: usize, end: usize) -> ConditionalMatch<'_> {
+    let trimmed = inside.trim_start_matches(|c: char| c.is_whitespace());
+    // Split off leading stopwords.
+    let (stopwords, after_stop) = take_leading_stopwords(trimmed);
+    // The remainder is condition + optional trailing scope.
+    let (condition, scope) = split_off_trailing_scope(after_stop);
+    ConditionalMatch {
+        start,
+        end,
+        stopwords,
+        condition: condition.trim(),
+        scope: scope.trim(),
+    }
+}
+
+/// Take leading stopwords from a directive interior. Returns
+/// `(stopwords, rest)`. Stopwords are case-insensitive.
+fn take_leading_stopwords(s: &str) -> (&str, &str) {
+    // Run the leading-stopword scanner repeatedly; each pass strips
+    // one whitespace-delimited stopword.
+    let mut consumed = 0usize;
+    loop {
+        // Skip whitespace.
+        let after_ws = s[consumed..]
+            .find(|c: char| !c.is_whitespace())
+            .map(|n| consumed + n)
+            .unwrap_or(s.len());
+        // Find next whitespace boundary or end.
+        let word_end = s[after_ws..]
+            .find(|c: char| c.is_whitespace())
+            .map(|n| after_ws + n)
+            .unwrap_or(s.len());
+        let word = &s[after_ws..word_end];
+        if !is_stopword(word) {
+            break;
+        }
+        consumed = word_end;
+    }
+    let stop = s[..consumed].trim();
+    let rest = &s[consumed..];
+    (stop, rest)
+}
+
+fn is_stopword(word: &str) -> bool {
+    matches!(
+        word.to_ascii_lowercase().as_str(),
+        "sed" | "vero" | "atque" | "attamen" | "si" | "deinde"
+    )
+}
+
+/// Split off a trailing scope clause (`dicitur ...`, `omittitur`,
+/// etc., optionally prefixed by `loco hujus versus`/`loco horum versuum`).
+/// Returns `(condition, scope_keywords)`.
+fn split_off_trailing_scope(s: &str) -> (&str, &str) {
+    // Scope keywords (case-insensitive, word-boundary):
+    //   dicitur, dicuntur, omittitur, omittuntur — possibly preceded
+    //   by `loco hujus versus`, `loco horum versuum`, `hic versus`,
+    //   `hoc versus`, `hæc versus`, `hi versus`, `haec versus`.
+    //
+    // The Perl regex (lines 87-107) is wide-open — it matches any of
+    // those preambles followed by any of the scope keywords. We
+    // approximate by scanning for the FIRST trailing scope keyword
+    // and including any recognized preamble before it.
+    let lower = s.to_ascii_lowercase();
+    let mut best_split: Option<usize> = None;
+    // The four scope verbs (with `dicuntur` checked before `dicitur`
+    // so the longer match wins).
+    for needle in ["dicuntur", "dicitur", "omittuntur", "omittitur"] {
+        if let Some(idx) = find_word(&lower, needle) {
+            // Walk back through optional preamble: the words `semper`
+            // doesn't go before; preamble would be `loco hujus versus`
+            // / `loco horum versuum` / `hic versus` / `hoc versus` /
+            // `hæc versus` / `hi versus` / `haec versus`.
+            let pre_start = walk_back_preamble(&lower, idx);
+            best_split = Some(match best_split {
+                Some(b) if pre_start >= b => b,
+                _ => pre_start,
+            });
+        }
+    }
+    if let Some(split_at) = best_split {
+        let cond = &s[..split_at];
+        let scope = &s[split_at..];
+        return (cond, scope);
+    }
+    (s, "")
+}
+
+/// Find a word `needle` in `haystack` (lowercase). Returns the byte
+/// offset of the first whole-word match, or `None`.
+fn find_word(haystack: &str, needle: &str) -> Option<usize> {
+    let h = haystack.as_bytes();
+    let n = needle.as_bytes();
+    let mut i = 0usize;
+    while i + n.len() <= h.len() {
+        if word_at(h, i, n) {
+            return Some(i);
+        }
+        i += 1;
+    }
+    None
+}
+
+/// Walk back through optional scope-preamble words ending at `idx`.
+/// Returns the byte offset where the preamble starts (or `idx` itself
+/// if no recognised preamble precedes `idx`).
+fn walk_back_preamble(haystack: &str, idx: usize) -> usize {
+    let mut start = idx;
+    let preambles: [&[&str]; 7] = [
+        &["loco", "hujus", "versus"],
+        &["loco", "horum", "versuum"],
+        &["hic", "versus"],
+        &["hoc", "versus"],
+        &["hæc", "versus"],
+        &["hi", "versus"],
+        &["haec", "versus"],
+    ];
+    'outer: for preamble in preambles.iter() {
+        let mut try_start = start;
+        for word in preamble.iter().rev() {
+            // Skip whitespace before try_start.
+            let skip = haystack[..try_start]
+                .trim_end_matches(|c: char| c.is_whitespace())
+                .len();
+            // Find the word ending at `skip`.
+            if !haystack[..skip].ends_with(*word) {
+                continue 'outer;
+            }
+            try_start = skip - word.len();
+        }
+        start = try_start;
+        break;
+    }
+    start
+}
+
+/// Parse a `(...)`-directive interior into a structured [`Conditional`]
+/// under the active state. Mirror of `SetupString.pl::parse_conditional`
+/// line 139-167.
+///
+/// Inputs:
+///   * `stopwords` — leading stopword text (e.g. `"sed"` or `"sed vero"`).
+///   * `condition` — the body fed to [`vero`].
+///   * `scope` — trailing scope keyword text (e.g. `"dicitur semper"`
+///     or `""` when absent).
+///   * `subjects` — active state for `vero` evaluation.
+pub fn parse_conditional(
+    stopwords: &str,
+    condition: &str,
+    scope: &str,
+    subjects: &Subjects<'_>,
+) -> Conditional {
+    // Strength = sum of stopword weights.
+    //   sed, vero  -> 1
+    //   atque      -> 2
+    //   attamen    -> 3
+    //   si, deinde -> 0
+    let mut strength: u8 = 0;
+    for tok in stopwords.split_whitespace() {
+        strength += stopword_weight(tok);
+    }
+    let result = vero(condition, subjects);
+
+    // Implicit backscope from a backscoped stopword (sed, vero, atque,
+    // attamen — i.e. any with non-zero weight).
+    let implicit_backscope = stopwords
+        .split_whitespace()
+        .any(|t| has_implicit_backscope(t));
+
+    // Backscope:
+    //   versuum / omittuntur  -> SCOPE_NEST
+    //   versus  / omittitur   -> SCOPE_CHUNK
+    //   no `semper` AND implicit backscope -> SCOPE_LINE
+    //   else                  -> SCOPE_NULL
+    let scope_lower = scope.to_ascii_lowercase();
+    let backscope = if scope_lower.contains("versuum") || scope_lower.contains("omittuntur") {
+        Scope::Nest
+    } else if scope_lower.contains("versus") || scope_lower.contains("omittitur") {
+        Scope::Chunk
+    } else if !scope_lower.contains("semper") && implicit_backscope {
+        Scope::Line
+    } else {
+        Scope::Null
+    };
+
+    // Forwardscope:
+    //   omittitur / omittuntur -> SCOPE_NULL
+    //   dicuntur               -> SCOPE_CHUNK if backscope==CHUNK else SCOPE_NEST
+    //   else                   -> SCOPE_CHUNK if back is CHUNK or NEST else SCOPE_LINE
+    let forwardscope = if scope_lower.contains("omittitur") || scope_lower.contains("omittuntur") {
+        Scope::Null
+    } else if scope_lower.contains("dicuntur") {
+        if backscope == Scope::Chunk {
+            Scope::Chunk
+        } else {
+            Scope::Nest
+        }
+    } else if backscope == Scope::Chunk || backscope == Scope::Nest {
+        Scope::Chunk
+    } else {
+        Scope::Line
+    };
+
+    Conditional {
+        strength,
+        result,
+        backscope,
+        forwardscope,
+    }
+}
+
+fn stopword_weight(word: &str) -> u8 {
+    // SetupString.pl:77-84 — sed=1, vero=1, atque=2, attamen=3,
+    // si=0, deinde=1. (deinde is added to %stopword_weights AFTER
+    // the %backscoped_stopwords copy, so it counts toward strength
+    // but doesn't trigger implicit backscope.)
+    match word.to_ascii_lowercase().as_str() {
+        "sed" | "vero" | "deinde" => 1,
+        "atque" => 2,
+        "attamen" => 3,
+        _ => 0, // si and unknown words contribute 0.
+    }
+}
+
+fn has_implicit_backscope(word: &str) -> bool {
+    // The `%backscoped_stopwords` set in SetupString.pl:80 is the
+    // weight-1+ stopwords minus `si` and `deinde`. So: sed, vero,
+    // atque, attamen.
+    matches!(
+        word.to_ascii_lowercase().as_str(),
+        "sed" | "vero" | "atque" | "attamen"
+    )
 }
 
 // ─── process_conditional_lines (B10b-slice-4) ───────────────────────
@@ -1658,6 +1948,188 @@ mod tests {
         // Same condition on a random day — fails.
         let s = tempus_subj(Rubric::Tridentine1570, "Pent10", 1, 8);
         assert!(!vero("die Epiphaniæ", &s));
+    }
+
+    // ─── B10b-slice-2: find_conditional + parse_conditional ─────
+
+    #[test]
+    fn find_conditional_extracts_simple_directive() {
+        let m = find_conditional("(sed rubrica 1960)").unwrap();
+        assert_eq!(m.start, 0);
+        assert_eq!(m.end, 18);
+        assert_eq!(m.stopwords, "sed");
+        assert_eq!(m.condition, "rubrica 1960");
+        assert_eq!(m.scope, "");
+    }
+
+    #[test]
+    fn find_conditional_with_no_stopword() {
+        let m = find_conditional("(rubrica 1960)").unwrap();
+        assert_eq!(m.stopwords, "");
+        assert_eq!(m.condition, "rubrica 1960");
+        assert_eq!(m.scope, "");
+    }
+
+    #[test]
+    fn find_conditional_with_scope_keyword() {
+        let m = find_conditional("(sed rubrica 1960 omittitur)").unwrap();
+        assert_eq!(m.stopwords, "sed");
+        assert_eq!(m.condition.trim(), "rubrica 1960");
+        assert_eq!(m.scope.trim(), "omittitur");
+    }
+
+    #[test]
+    fn find_conditional_with_dicuntur_scope() {
+        let m = find_conditional("(sed rubrica monastica dicuntur)").unwrap();
+        assert_eq!(m.stopwords, "sed");
+        assert_eq!(m.condition.trim(), "rubrica monastica");
+        assert_eq!(m.scope.trim(), "dicuntur");
+    }
+
+    #[test]
+    fn find_conditional_with_dicitur_semper() {
+        let m = find_conditional("(sed rubrica 1960 dicitur semper)").unwrap();
+        assert_eq!(m.condition.trim(), "rubrica 1960");
+        // The "semper" is part of the trailing scope text.
+        assert!(m.scope.to_lowercase().contains("dicitur"));
+        assert!(m.scope.to_lowercase().contains("semper"));
+    }
+
+    #[test]
+    fn find_conditional_with_two_stopwords() {
+        let m = find_conditional("(atque vero rubrica 1960)").unwrap();
+        // Both `atque` and `vero` are stopwords — but only word-by-word
+        // peeling. The scanner stops at the first non-stopword (`rubrica`).
+        assert_eq!(m.stopwords.split_whitespace().count(), 2);
+        assert_eq!(m.condition, "rubrica 1960");
+    }
+
+    #[test]
+    fn find_conditional_returns_none_for_no_parens() {
+        assert!(find_conditional("rubrica 1960").is_none());
+        assert!(find_conditional("").is_none());
+        assert!(find_conditional("plain text").is_none());
+    }
+
+    #[test]
+    fn find_conditional_skips_unmatched_parens() {
+        // Open paren with no closer — no match.
+        assert!(find_conditional("(rubrica 1960").is_none());
+    }
+
+    #[test]
+    fn parse_conditional_strength_from_stopwords() {
+        let s = tempus_subj(Rubric::Rubrics1960, "Adv1", 5, 12);
+        let c = parse_conditional("sed", "rubrica 1960", "", &s);
+        assert_eq!(c.strength, 1);
+        let c = parse_conditional("atque", "rubrica 1960", "", &s);
+        assert_eq!(c.strength, 2);
+        let c = parse_conditional("attamen", "rubrica 1960", "", &s);
+        assert_eq!(c.strength, 3);
+        let c = parse_conditional("sed vero", "rubrica 1960", "", &s);
+        assert_eq!(c.strength, 2);
+        let c = parse_conditional("", "rubrica 1960", "", &s);
+        assert_eq!(c.strength, 0);
+    }
+
+    #[test]
+    fn parse_conditional_si_has_weight_zero() {
+        // `si` is a stopword (so it gets stripped by find_conditional)
+        // but contributes 0 strength.
+        let s = tempus_subj(Rubric::Rubrics1960, "Adv1", 5, 12);
+        let c = parse_conditional("si", "rubrica 1960", "", &s);
+        assert_eq!(c.strength, 0);
+    }
+
+    #[test]
+    fn parse_conditional_implicit_line_backscope_for_sed() {
+        // `(sed rubrica 1960)` — sed is implicitly backscoped to LINE
+        // when no explicit scope keyword is present.
+        let s = tempus_subj(Rubric::Rubrics1960, "Adv1", 5, 12);
+        let c = parse_conditional("sed", "rubrica 1960", "", &s);
+        assert_eq!(c.backscope, Scope::Line);
+    }
+
+    #[test]
+    fn parse_conditional_no_implicit_backscope_without_stopword() {
+        let s = tempus_subj(Rubric::Rubrics1960, "Adv1", 5, 12);
+        let c = parse_conditional("", "rubrica 1960", "", &s);
+        assert_eq!(c.backscope, Scope::Null);
+    }
+
+    #[test]
+    fn parse_conditional_si_no_implicit_backscope() {
+        // si is a stopword but NOT in %backscoped_stopwords.
+        let s = tempus_subj(Rubric::Rubrics1960, "Adv1", 5, 12);
+        let c = parse_conditional("si", "rubrica 1960", "", &s);
+        assert_eq!(c.backscope, Scope::Null);
+    }
+
+    #[test]
+    fn parse_conditional_explicit_chunk_scope() {
+        // `omittitur` -> SCOPE_CHUNK back, SCOPE_NULL forward.
+        let s = tempus_subj(Rubric::Rubrics1960, "Adv1", 5, 12);
+        let c = parse_conditional("sed", "rubrica 1960", "omittitur", &s);
+        assert_eq!(c.backscope, Scope::Chunk);
+        assert_eq!(c.forwardscope, Scope::Null);
+    }
+
+    #[test]
+    fn parse_conditional_explicit_nest_scope() {
+        // `omittuntur` -> SCOPE_NEST back, SCOPE_NULL forward.
+        let s = tempus_subj(Rubric::Rubrics1960, "Adv1", 5, 12);
+        let c = parse_conditional("sed", "rubrica 1960", "omittuntur", &s);
+        assert_eq!(c.backscope, Scope::Nest);
+        assert_eq!(c.forwardscope, Scope::Null);
+    }
+
+    #[test]
+    fn parse_conditional_dicitur_semper_disables_line_backscope() {
+        // `dicitur semper` — `semper` suppresses implicit LINE backscope.
+        // Backscope: NULL. Forwardscope: LINE (default for non-CHUNK/NEST).
+        let s = tempus_subj(Rubric::Rubrics1960, "Adv1", 5, 12);
+        let c = parse_conditional("sed", "rubrica 1960", "dicitur semper", &s);
+        assert_eq!(c.backscope, Scope::Null);
+        // No back-CHUNK/NEST -> forwardscope LINE.
+        assert_eq!(c.forwardscope, Scope::Line);
+    }
+
+    #[test]
+    fn parse_conditional_dicuntur_back_chunk_forward_chunk() {
+        // `dicuntur` with CHUNK backscope (e.g. via `versus dicuntur`)
+        // gives forward CHUNK; without explicit back gives forward NEST.
+        let s = tempus_subj(Rubric::Rubrics1960, "Adv1", 5, 12);
+        let c = parse_conditional("sed", "rubrica 1960", "dicuntur", &s);
+        // No `versus` / `versuum` in scope, no `semper` either, but
+        // `sed` is implicit-backscoped — gives LINE back, then forward
+        // is computed from back: not CHUNK, so forward = NEST.
+        assert_eq!(c.backscope, Scope::Line);
+        assert_eq!(c.forwardscope, Scope::Nest);
+    }
+
+    #[test]
+    fn parse_conditional_result_evaluates_under_subjects() {
+        let s_1960 = tempus_subj(Rubric::Rubrics1960, "Adv1", 5, 12);
+        let s_1570 = tempus_subj(Rubric::Tridentine1570, "Adv1", 5, 12);
+        let c = parse_conditional("sed", "rubrica 1960", "", &s_1960);
+        assert!(c.result);
+        let c = parse_conditional("sed", "rubrica 1960", "", &s_1570);
+        assert!(!c.result);
+    }
+
+    #[test]
+    fn find_conditional_real_world_corpus_examples() {
+        // Examples lifted from the actual corpus.
+        let m = find_conditional("(sed rubrica 1955 aut rubrica 1960)").unwrap();
+        assert_eq!(m.stopwords, "sed");
+        assert_eq!(m.condition, "rubrica 1955 aut rubrica 1960");
+        assert_eq!(m.scope, "");
+
+        let m = find_conditional("(nisi rubrica monastica)").unwrap();
+        // "nisi" is not a stopword — it's part of the condition
+        // (handled by `vero`'s et/nisi splitter).
+        assert_eq!(m.stopwords, "");
+        assert_eq!(m.condition, "nisi rubrica monastica");
     }
 
     // ─── regex_lite_match unit tests ─────────────────────────────

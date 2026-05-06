@@ -173,12 +173,14 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     let sanctoral_rank = sancti_entry.and_then(|e| e.rank_num).unwrap_or(0.0);
 
     // ── Precedence ───────────────────────────────────────────────────
+    let sancti_mass_file = corpus.mass_file(&sancti_key);
     let sanctoral_office = decide_sanctoral_wins_1570(
         sancti_entry,
         tempora_file,
         temporal_rank,
         sanctoral_rank,
         input.rubric,
+        sancti_mass_file,
     );
 
     // ── Anticipated Sunday-Within-Octave-of-Epiphany ────────────────
@@ -398,6 +400,7 @@ fn decide_sanctoral_wins_1570(
     mut trank: f32,
     srank: f32,
     rubric: Rubric,
+    sancti_file: Option<&MassFile>,
 ) -> bool {
     let _sancti = match sancti {
         None => return false, // no sanctoral entry → temporal wins
@@ -433,6 +436,11 @@ fn decide_sanctoral_wins_1570(
 
     let temporal_name = tempora.officium.as_deref().unwrap_or("");
     let is_dominica = temporal_name.starts_with("Dominica");
+    // Capture pre-adjustment trank so the Festum Domini elif (which
+    // mirrors Perl's `$trank[2] <= 5` against the original rank, not
+    // the Dominica-minor-downgraded one) can still fire on DA where
+    // we'd otherwise have downgraded trank to 4.9.
+    let trank_before_dominica_adjust = trank;
 
     // Dominica-minor rank handling — three regimes per
     // `horascommon.pl:422-433`:
@@ -461,13 +469,49 @@ fn decide_sanctoral_wins_1570(
         trank = 2.9;
     }
 
+    // "Festum Domini" exception (pre-1960): a Feast of the Lord with
+    // rank ≥ 2 outranks ANY Sunday whose pre-adjustment rank ≤ 5.
+    // Mirrors `horascommon.pl:477-481`:
+    //   `} elsif ($trank[0] =~ /Dominica/i && ...
+    //     elsif ($saint{Rule} =~ /Festum Domini/i && $srank[2] >= 2
+    //     && $trank[2] <= 5) { $sanctoraloffice = 1; ... }`
+    // Drives Sancti/09-14 (Exaltation of the Cross, Duplex majus
+    // rank 4) outranking Pent14-18 Sunday under T1570/T1910/DA;
+    // closes DA_SeptEmbersCross + R55_SeptEmbersCross. Must use the
+    // PRE-Dominica-minor-adjustment trank or DA's trank=4.9 downgrade
+    // would falsely satisfy `srank > trank` and bypass this branch.
+    let is_pre_1960 = matches!(
+        rubric,
+        Rubric::Tridentine1570
+            | Rubric::Tridentine1910
+            | Rubric::DivinoAfflatu1911
+            | Rubric::Reduced1955
+            | Rubric::Monastic
+    );
+    if is_pre_1960
+        && is_dominica
+        && srank >= 2.0
+        && trank_before_dominica_adjust <= 5.0
+        && srank < trank_before_dominica_adjust
+    {
+        if let Some(sf) = sancti_file {
+            if sf
+                .sections
+                .get("Rule")
+                .map(|r| r.to_lowercase().contains("festum domini"))
+                .unwrap_or(false)
+            {
+                return true;
+            }
+        }
+    }
+
     // Sunday handling. Detect via the rendered name — pre-1960 Sundays
     // are written as `Dominica …`. (The Perl uses regex on `$trank[0]`
     // and `$dayname[0]`; we approximate with the officium string.)
     let is_sunday = is_dominica && trank >= 5.1;
     if is_sunday {
         // Pre-1960: Class I sanctoral wins over Class II Sundays.
-        // reform-PHASE-8: add the "Festum Domini ≥ rank 5" exception.
         return srank >= 6.0;
     }
 

@@ -17,12 +17,12 @@ returns 100% on every rubric.**
 |  6 | T1570_12_08o                |   0 | ✅ | `c093c2f` (driver-cache fix) |
 |  7 | T1910_Cathedra_Matthias     |   9 | ✅ | leap-year transfer-table filter (Perl filter-1 port) |
 |  8 | T1910_Annunciation          |   5 | ⏳ | needs T1910 Sunday-vs-Sancti precedence |
-|  9 | DA_SeptEmbersCross          |  14 | ⏳ | needs DA Sept-Embers/Cross precedence |
-| 10 | R55_SeptEmbersCross         |  14 | ⏳ | needs R55 Sept-Embers/Cross precedence |
+|  9 | DA_SeptEmbersCross          |  14 | ✅ | Festum Domini precedence in `decide_sanctoral_wins_1570` |
+| 10 | R55_SeptEmbersCross         |  14 | ✅ | extended Festum Domini gate to include R55 |
 | 11 | Pent19_23_SelfRef_R55       |  15 | ⏳ | needs R55 rank-aware commemoration suppression |
 | 12 | Quadp_Quad_Commune_C4a      |  29 | ⏳ | needs T1910 commune-redirect for Quadp ferias |
 
-**Closed: 7 / 12 clusters, 216 / 463 fail-days (47%).**
+**Closed: 9 / 12 clusters, 244 / 463 fail-days (53%).**
 
 ## Iteration plan
 

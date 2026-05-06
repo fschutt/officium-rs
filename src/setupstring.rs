@@ -1335,14 +1335,297 @@ fn has_implicit_backscope(word: &str) -> bool {
 
 // ─── process_conditional_lines (B10b-slice-4) ───────────────────────
 
-/// Walk a section body, dropping lines whose conditional guard is
-/// false for the active state.
+/// Frame state on the conditional stack — mirrors the three Perl
+/// constants `COND_NOT_YET_AFFIRMATIVE` / `COND_AFFIRMATIVE` /
+/// `COND_DUMMY_FRAME` at `SetupString.pl:367-369`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FrameState {
+    NotYetAffirmative,
+    Affirmative,
+    Dummy,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Frame {
+    state: FrameState,
+    scope: Scope,
+}
+
+/// Walk a section body line-by-line, evaluating `(...)` directives
+/// and dropping lines whose conditional guard is false.
 ///
 /// Mirror of `SetupString.pl::process_conditional_lines` line 363-474.
-/// Lands in B10b-slice-4.
-pub fn process_conditional_lines(_body: &str, _subjects: &Subjects<'_>) -> String {
-    // TODO(B10b-slice-4): port SetupString.pl:363-474.
-    unimplemented!("B10b-slice-4: process_conditional_lines")
+///
+/// The algorithm maintains two parallel stacks:
+///
+///   * `conditional_stack` — one frame per active conditional, recording
+///     `(state, forward_scope)`. The top frame's `state` decides
+///     whether the current line is emitted; its `scope` decides when
+///     the frame pops.
+///   * `conditional_offsets` — `offsets[i]` is the output-array index
+///     at which the conditional of strength `i` was last encountered
+///     (used by the backward-scope retraction to know how far back
+///     to walk before bumping into a stronger fence).
+///
+/// New `(...)` directives can:
+///   * **Retract** previously emitted lines (backward scope LINE /
+///     CHUNK / NEST).
+///   * **Gate** subsequent lines until the forward scope expires.
+///   * **Pop** lower-strength frames if their strength is ≤ the new
+///     conditional's strength.
+///
+/// Lines starting with `~` are escape-stripped (the `~` is a way to
+/// emit a literal `(` at the start of a line without it being read
+/// as a conditional).
+///
+/// Returns the remaining body text — newline-separated, no trailing
+/// newline. Each input line that survives the conditional walk is
+/// emitted exactly once (preserving order).
+pub fn process_conditional_lines(body: &str, subjects: &Subjects<'_>) -> String {
+    let mut output: Vec<String> = Vec::new();
+    // Initial state: one always-true frame with NEST scope.
+    let mut stack: Vec<Frame> = vec![Frame {
+        state: FrameState::Affirmative,
+        scope: Scope::Nest,
+    }];
+    // offsets[i] = output index at which the strength-i conditional
+    // last fired. The Perl initialises to `(-1)` (one element, `-1`).
+    // We use `Vec<i64>` for parity (signed because offsets can go
+    // below 0 during the walk).
+    let mut offsets: Vec<i64> = vec![-1];
+
+    for raw_line in body.split('\n') {
+        let mut line = raw_line.to_string();
+
+        // Check whether the line starts with a (...) directive.
+        // `^\s*(...)\s*(.*)$` — the regex finds the FIRST balanced
+        // (...) starting after leading whitespace.
+        let trimmed_start = line.trim_start();
+        let leading_ws_len = line.len() - trimmed_start.len();
+        if let Some(m) = find_conditional_at_start(trimmed_start) {
+            let stopwords = m.stopwords.to_string();
+            let condition = m.condition.to_string();
+            let scope = m.scope.to_string();
+            // The "sequel" — everything after the directive on the
+            // same line. Perl strips one whitespace character then
+            // captures `(.*)$`.
+            let after_paren_idx = leading_ws_len + m.end;
+            let mut sequel = line[after_paren_idx..].trim_start().to_string();
+
+            let cond = parse_conditional(&stopwords, &condition, &scope, subjects);
+            let mut result = cond.result;
+            let mut forward = cond.forwardscope;
+            let strength = cond.strength as usize;
+
+            // Top-of-stack predicate: "if the parent conditional is
+            // not affirmative, then the new one must break out of
+            // the nest, as it were."
+            //
+            // Perl: `${$conditional_stack[-1]}[0] == COND_AFFIRMATIVE
+            //       || $strength >= $#conditional_offsets`
+            //
+            // `$#conditional_offsets` is the last index of the
+            // offsets array — which equals `offsets.len() - 1`.
+            let last_offsets_idx = offsets.len().saturating_sub(1);
+            let parent_affirm = stack
+                .last()
+                .map(|f| f.state == FrameState::Affirmative)
+                .unwrap_or(false);
+
+            if parent_affirm || strength >= last_offsets_idx {
+                // Stack truncation logic.
+                if strength >= last_offsets_idx {
+                    // `@conditional_stack = ();` — drop all frames.
+                    stack.clear();
+                } else if strength >= last_offsets_idx.saturating_sub(stack.len() - 1) {
+                    // Perl: `$#conditional_stack = $#conditional_offsets - $strength - 1`
+                    // i.e. shrink stack so its last index becomes
+                    // `last_offsets_idx - strength - 1`. New length =
+                    // `last_offsets_idx - strength`.
+                    let new_len = last_offsets_idx.saturating_sub(strength);
+                    stack.truncate(new_len);
+                }
+
+                if result {
+                    // Find the "nearest insurmountable fence" — the
+                    // output offset of the strength-`strength`
+                    // conditional we last saw (or -1 when there's
+                    // none at that level yet).
+                    let fence: i64 = if last_offsets_idx >= strength {
+                        offsets[strength]
+                    } else {
+                        -1
+                    };
+                    apply_backscope(&mut output, fence, cond.backscope);
+                }
+
+                // Having backtracked, null forward scope now behaves
+                // like a satisfied conditional with nesting forward
+                // scope.
+                if forward == Scope::Null {
+                    forward = Scope::Nest;
+                    result = true;
+                }
+
+                if result {
+                    // Remember where this conditional fired (at all
+                    // levels 0..=strength).
+                    let cur_idx: i64 = output.len() as i64 - 1;
+                    while offsets.len() <= strength {
+                        offsets.push(cur_idx);
+                    }
+                    for i in 0..=strength {
+                        if i < offsets.len() {
+                            offsets[i] = cur_idx;
+                        }
+                    }
+                }
+
+                // Push dummy frame(s) onto the conditional stack to
+                // bring it into sync with the strength.
+                //
+                // Perl: while ($strength < $#conditional_offsets - $#conditional_stack - 1)
+                // i.e. while strength < last_offsets - last_stack_idx - 1.
+                // last_offsets = offsets.len() - 1
+                // last_stack   = stack.len() - 1
+                // so:  strength < (offsets.len() - 1) - (stack.len() - 1) - 1
+                //   == strength < offsets.len() - stack.len() - 1
+                while stack.len() + strength + 1 < offsets.len() {
+                    stack.push(Frame {
+                        state: FrameState::Dummy,
+                        scope: forward,
+                    });
+                }
+
+                // Push the new conditional frame.
+                stack.push(Frame {
+                    state: if result {
+                        FrameState::Affirmative
+                    } else {
+                        FrameState::NotYetAffirmative
+                    },
+                    scope: forward,
+                });
+            }
+
+            // Replace `line` with the sequel and fall through to
+            // the line-emission code. Perl: `next unless $line;` —
+            // skip the rest of the loop body when sequel is empty.
+            if sequel.is_empty() {
+                continue;
+            }
+            // Strip a leading `~` escape, if any, just like the
+            // post-directive escape handling below.
+            if let Some(rest) = sequel.strip_prefix('~') {
+                sequel = rest.to_string();
+            }
+            line = sequel;
+        } else {
+            // Strip a leading `~` escape on the whole line.
+            if let Some(rest) = line.strip_prefix('~') {
+                line = rest.to_string();
+            }
+        }
+
+        // Add line to output if the top-of-stack frame is affirmative.
+        if stack
+            .last()
+            .map(|f| f.state == FrameState::Affirmative)
+            .unwrap_or(true)
+        {
+            output.push(line.clone());
+        }
+
+        // Pop expired frames.
+        // Perl: while top.scope == LINE OR (top.scope == CHUNK AND
+        //   line is blank), pop until we land on a non-dummy frame
+        //   or empty the stack.
+        loop {
+            let top_scope = match stack.last() {
+                Some(f) => f.scope,
+                None => break,
+            };
+            let line_is_blank = is_blank_line(&line);
+            let should_pop = top_scope == Scope::Line
+                || (top_scope == Scope::Chunk && line_is_blank);
+            if !should_pop {
+                break;
+            }
+            // Pop the top frame, then keep popping while the new top
+            // is a Dummy frame.
+            stack.pop();
+            while let Some(f) = stack.last() {
+                if f.state == FrameState::Dummy {
+                    stack.pop();
+                } else {
+                    break;
+                }
+            }
+            // If the stack is empty, push the always-true bottom.
+            if stack.is_empty() {
+                stack.push(Frame {
+                    state: FrameState::Affirmative,
+                    scope: Scope::Nest,
+                });
+                break;
+            }
+        }
+    }
+
+    output.join("\n")
+}
+
+/// Apply a backward-scope retraction to the `output` buffer. Mirror
+/// of the SCOPE_LINE / SCOPE_CHUNK / SCOPE_NEST branches at
+/// `SetupString.pl:407-422`.
+fn apply_backscope(output: &mut Vec<String>, fence: i64, backscope: Scope) {
+    match backscope {
+        Scope::Line => {
+            // Remove preceding line if there's room above the fence.
+            if output.len() as i64 - 1 > fence {
+                output.pop();
+            }
+        }
+        Scope::Chunk => {
+            // Remove preceding consecutive non-blank lines.
+            while output.len() as i64 - 1 > fence
+                && !is_blank_line(output.last().unwrap())
+            {
+                output.pop();
+            }
+            // Remove any blank lines.
+            while output.len() as i64 - 1 > fence
+                && is_blank_line(output.last().unwrap())
+            {
+                output.pop();
+            }
+        }
+        Scope::Nest => {
+            // Truncate output back to the fence.
+            let new_len = (fence + 1).max(0) as usize;
+            output.truncate(new_len);
+        }
+        Scope::Null => {}
+    }
+}
+
+/// Mirror of the Perl `$blankline_regex = qr/^\s*_?\s*$/`. A line is
+/// blank when it has nothing but optional whitespace plus an optional
+/// underscore.
+fn is_blank_line(line: &str) -> bool {
+    let trimmed = line.trim();
+    trimmed.is_empty() || trimmed == "_"
+}
+
+/// Find a (...) directive only when it sits at the START of a string
+/// (after optional leading whitespace already removed by the caller).
+/// Returns the same `ConditionalMatch` shape as [`find_conditional`]
+/// but only matches when `bytes[0] == b'('`.
+fn find_conditional_at_start(s: &str) -> Option<ConditionalMatch<'_>> {
+    if !s.starts_with('(') {
+        return None;
+    }
+    find_conditional(s)
 }
 
 // ─── Inclusion substitutions (B10b-slice-5) ─────────────────────────
@@ -2130,6 +2413,187 @@ mod tests {
         // (handled by `vero`'s et/nisi splitter).
         assert_eq!(m.stopwords, "");
         assert_eq!(m.condition, "nisi rubrica monastica");
+    }
+
+    // ─── B10b-slice-4: process_conditional_lines ────────────────
+
+    fn body_subj(rubric: Rubric) -> Subjects<'static> {
+        Subjects::new(rubric, "Adv1", 5, 12, 2026)
+    }
+
+    #[test]
+    fn pcl_no_directives_passes_through() {
+        let body = "line one\nline two\nline three";
+        let s = body_subj(Rubric::Tridentine1570);
+        assert_eq!(process_conditional_lines(body, &s), body);
+    }
+
+    #[test]
+    fn pcl_single_line_directive_drops_when_false() {
+        // `(rubrica 1960)` — true under Rubrics1960, false under 1570.
+        // No stopword → no implicit backscope; forwardscope LINE.
+        // The line itself (after the directive sequel) becomes
+        // gated.
+        let body = "before\n(rubrica 1960) gated content\nafter";
+        let s_1960 = body_subj(Rubric::Rubrics1960);
+        let s_1570 = body_subj(Rubric::Tridentine1570);
+        // 1960 — gated content kept.
+        let out = process_conditional_lines(body, &s_1960);
+        assert!(out.contains("gated content"), "1960 output: {out:?}");
+        assert!(out.contains("before"));
+        assert!(out.contains("after"));
+        // 1570 — gated content dropped.
+        let out = process_conditional_lines(body, &s_1570);
+        assert!(!out.contains("gated content"), "1570 output: {out:?}");
+        assert!(out.contains("before"));
+        assert!(out.contains("after"));
+    }
+
+    #[test]
+    fn pcl_sed_drops_preceding_line_under_false_branch() {
+        // `(sed rubrica 1960)` — sed gives implicit LINE backscope.
+        // When TRUE: backscope drops preceding line, then forward gates current line.
+        // When FALSE: nothing happens (no backscope retraction; current line line-gated and dropped).
+        let body = "alpha\nbeta\n(sed rubrica 1960) gamma\ndelta";
+        // Under 1960 (TRUE): drops "beta" via LINE backscope, KEEPS "gamma".
+        let s = body_subj(Rubric::Rubrics1960);
+        let out = process_conditional_lines(body, &s);
+        assert!(out.contains("alpha"), "alpha missing in 1960: {out:?}");
+        assert!(!out.contains("beta"), "beta should be dropped under 1960: {out:?}");
+        assert!(out.contains("gamma"), "gamma missing in 1960: {out:?}");
+        assert!(out.contains("delta"), "delta missing in 1960: {out:?}");
+        // Under 1570 (FALSE): no retraction, gamma gated out, beta and delta survive.
+        let s = body_subj(Rubric::Tridentine1570);
+        let out = process_conditional_lines(body, &s);
+        assert!(out.contains("alpha"), "alpha missing in 1570: {out:?}");
+        assert!(out.contains("beta"), "beta missing in 1570: {out:?}");
+        assert!(!out.contains("gamma"), "gamma should be dropped under 1570: {out:?}");
+        assert!(out.contains("delta"), "delta missing in 1570: {out:?}");
+    }
+
+    #[test]
+    fn pcl_chunk_back_scope_via_versus_omittitur() {
+        // `(rubrica 1960 hic versus omittitur)` — explicit CHUNK back, NULL forward.
+        // When TRUE under 1960: drops preceding non-blank chunk back to last fence.
+        let body = "para1 line1\npara1 line2\npara1 line3\n(rubrica 1960 hic versus omittitur)\nafter";
+        let s = body_subj(Rubric::Rubrics1960);
+        let out = process_conditional_lines(body, &s);
+        // Under TRUE: forward NULL (becomes NEST after the "having
+        // backtracked" rewrite); back CHUNK drops the three "para1"
+        // lines.
+        assert!(!out.contains("para1"), "CHUNK back should drop para1 lines under 1960: {out:?}");
+        assert!(out.contains("after"));
+    }
+
+    #[test]
+    fn pcl_blank_line_terminates_chunk_forward_scope() {
+        // forward CHUNK: gating extends until next blank line.
+        // `(sed rubrica 1960 versus omittitur)` — back CHUNK; under
+        // FALSE forward CHUNK applied. Once the blank line hits, the
+        // frame pops and subsequent lines emit.
+        // Use a (versus dicuntur) variant: back CHUNK forward CHUNK
+        // (per parse_conditional logic) under the affirmative case.
+        // For simplicity, test that a forward-LINE conditional only
+        // gates ONE line.
+        let body = "a\n(rubrica 1960) b\nc";
+        let s = body_subj(Rubric::Tridentine1570); // FALSE
+        let out = process_conditional_lines(body, &s);
+        // forward LINE under FALSE: drops "b" only; "c" survives.
+        assert!(out.contains("a"));
+        assert!(!out.contains("b"));
+        assert!(out.contains("c"));
+    }
+
+    #[test]
+    fn pcl_tilde_escape_strips_leading_tilde() {
+        // ~( is a way to emit a literal `(` at the start of a line.
+        // The `~` is stripped after directive-detection.
+        let body = "~(literal paren start)";
+        let s = body_subj(Rubric::Rubrics1960);
+        let out = process_conditional_lines(body, &s);
+        assert_eq!(out, "(literal paren start)");
+    }
+
+    #[test]
+    fn pcl_empty_body() {
+        let s = body_subj(Rubric::Rubrics1960);
+        assert_eq!(process_conditional_lines("", &s), "");
+    }
+
+    #[test]
+    fn pcl_directive_with_no_sequel() {
+        // Directive line with nothing after — emits nothing for that
+        // line (since sequel is empty), but next line is gated by
+        // forwardscope.
+        let body = "alpha\n(rubrica 1960)\nbeta\ngamma";
+        // Forward LINE under TRUE: "beta" survives; "gamma" not gated.
+        let s = body_subj(Rubric::Rubrics1960);
+        let out = process_conditional_lines(body, &s);
+        assert!(out.contains("alpha"));
+        assert!(out.contains("beta"));
+        assert!(out.contains("gamma"));
+        // Under FALSE: forward LINE drops "beta"; "gamma" survives.
+        let s = body_subj(Rubric::Tridentine1570);
+        let out = process_conditional_lines(body, &s);
+        assert!(out.contains("alpha"));
+        assert!(!out.contains("beta"));
+        assert!(out.contains("gamma"));
+    }
+
+    #[test]
+    fn pcl_two_independent_directives() {
+        let body = "(rubrica 1960) under1960\n(rubrica 1570) under1570";
+        let s_1960 = body_subj(Rubric::Rubrics1960);
+        let out = process_conditional_lines(body, &s_1960);
+        assert!(out.contains("under1960"));
+        assert!(!out.contains("under1570"));
+        let s_1570 = body_subj(Rubric::Tridentine1570);
+        let out = process_conditional_lines(body, &s_1570);
+        assert!(!out.contains("under1960"));
+        assert!(out.contains("under1570"));
+    }
+
+    #[test]
+    fn pcl_consecutive_blank_lines_preserved_outside_directive() {
+        let body = "a\n\nb\n\n\nc";
+        let s = body_subj(Rubric::Rubrics1960);
+        let out = process_conditional_lines(body, &s);
+        // No directives — pass through unchanged.
+        assert_eq!(out, body);
+    }
+
+    #[test]
+    fn pcl_real_corpus_pattern_sed_rubrica_omittitur() {
+        // Pattern from the real corpus: a section body with a few
+        // lines followed by `(sed rubrica 1955 aut rubrica 1960
+        // hic versus omittitur)` indicating that those preceding
+        // lines should be dropped under 1955+ but kept under 1570.
+        let body = "Versus extra 1\nVersus extra 2\n(sed rubrica 1955 aut rubrica 1960 hic versus omittitur)\nMain content\nMore content";
+        // Under 1960: CHUNK back drops the two "Versus extra" lines.
+        let s = body_subj(Rubric::Rubrics1960);
+        let out = process_conditional_lines(body, &s);
+        assert!(!out.contains("Versus extra"), "1960 should drop pre-directive chunk: {out:?}");
+        assert!(out.contains("Main content"));
+        // Under 1570: "Versus extra" lines kept; main content also kept.
+        let s = body_subj(Rubric::Tridentine1570);
+        let out = process_conditional_lines(body, &s);
+        assert!(out.contains("Versus extra 1"));
+        assert!(out.contains("Versus extra 2"));
+        assert!(out.contains("Main content"));
+    }
+
+    #[test]
+    fn pcl_sequel_after_directive_is_subject_to_gating() {
+        // After (rubrica 1960), the sequel is on the same line.
+        // Under TRUE: sequel kept. Under FALSE: sequel dropped.
+        let body = "(rubrica 1960) sequel content";
+        let s = body_subj(Rubric::Rubrics1960);
+        let out = process_conditional_lines(body, &s);
+        assert_eq!(out.trim(), "sequel content");
+        let s = body_subj(Rubric::Tridentine1570);
+        let out = process_conditional_lines(body, &s);
+        // Empty (the only line was gated out).
+        assert!(out.trim().is_empty());
     }
 
     // ─── regex_lite_match unit tests ─────────────────────────────

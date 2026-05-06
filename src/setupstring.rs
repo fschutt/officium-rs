@@ -610,32 +610,392 @@ fn eq_ci_contains(haystack: &str, needle: &str) -> bool {
 /// `SetupString.pl::get_tempus_id` line 169-221. Returns the season
 /// keyword that `(... tempore X)` clauses test against.
 ///
-/// ## Status
+/// Maps `dayname[0]` → seasonal label per the upstream cascade:
 ///
-/// **B10b-slice-1 stub.** Returns `dayname[0]` unchanged so simple
-/// `(... Adv …)` regex-fallback predicates still work for the
-/// regression harness. The full season-keyword mapper (Adventus /
-/// Nativitatis / Epiphaniæ / post Epiphaniam / Septuagesimæ /
-/// Quadragesimæ / Passionis / 8va Paschæ / etc.) lands in B10b-slice-3.
+/// - `Adv*` → "Adventus"
+/// - `Nat*` → "Nativitatis" or "Epiphaniæ" (depending on Jan 5/6)
+/// - `Epi*` → "Epiphaniæ" / "post Epiphaniam post partum" / "post
+///   Epiphaniam" / "post Pentecosten in hieme" (depending on date)
+/// - `Quadp*` → "Septuagesimæ" / "Septuagesimæ post partum"
+/// - `Quad1`-`Quad4` → "Quadragesimæ"
+/// - `Quad5`/`Quad6` → "Passionis"
+/// - `Pasc0` → "Octava Paschæ" or "Vigilia Paschalis" (Sat eve)
+/// - `Pasc1`-`Pasc4` → "post Octavam Paschæ"
+/// - `Pasc5` (early) → "post Octavam Paschæ"; (late) → "Octava Ascensionis"
+/// - `Pasc6-(5|6)` → "post Octavam Ascensionis"
+/// - `Pasc6-other` → "Octava Ascensionis"
+/// - `Pasc7` → "Octava Pentecostes"
+/// - `Pent01` Thursday → "Corpus Christi post Pentecosten"
+/// - `Pent01`/`Pent02` interior → "Octava Corpus Christi post Pentecosten"
+///   (pre-1955)
+/// - `Pent02` Friday → "SSmi Cordis post Pentecosten" (post-Tridentine)
+/// - `Pent02`/`Pent03` interior → "Octava SSmi Cordis post Pentecosten"
+///   (Divino only)
+/// - `Pent*` Oct/Nov → "post Pentecosten in hieme"
+/// - `Pent*` else → "post Pentecosten"
 pub fn get_tempus_id(subjects: &Subjects<'_>) -> String {
-    // TODO(B10b-slice-3): port SetupString.pl:169-221.
-    // For now return dayname[0] — predicates that match against the
-    // upstream season tag (`Adv1`, `Quad3`, `Pasc0`, etc.) via the
-    // regex-fallback path will still work.
-    subjects.dayname0.to_string()
+    let d = subjects.dayname0;
+    let day = subjects.day as i32;
+    let month = subjects.month as i32;
+    let dayofweek = subjects.dayofweek as i32;
+    let vesp_or_comp = subjects.is_vesp_or_comp();
+    let rubric_label = subjects
+        .rubric
+        .map(|r| r.as_perl_version())
+        .unwrap_or("");
+
+    // Adv*
+    if d.starts_with("Adv") {
+        return "Adventus".to_string();
+    }
+
+    // Nat*
+    if d.starts_with("Nat") {
+        return if month == 1 && (day >= 6 || (day == 5 && vesp_or_comp)) {
+            "Epiphaniæ".to_string()
+        } else {
+            "Nativitatis".to_string()
+        };
+    }
+
+    // Epi*
+    if d.starts_with("Epi") {
+        return if month == 1 && day <= 13 {
+            "Epiphaniæ".to_string()
+        } else if month == 1 || (month == 2 && (day == 1 || (day == 2 && !vesp_or_comp))) {
+            "post Epiphaniam post partum".to_string()
+        } else if month == 2 {
+            "post Epiphaniam".to_string()
+        } else {
+            "post Pentecosten in hieme".to_string()
+        };
+    }
+
+    // Quadp(\d) where digit < 3 OR dayofweek < 3
+    if let Some(rest) = d.strip_prefix("Quadp") {
+        if let Some(digit) = rest.chars().next().and_then(|c| c.to_digit(10)) {
+            if digit < 3 || dayofweek < 3 {
+                return if month == 1 || (month == 2 && (day == 1 || (day == 2 && !vesp_or_comp))) {
+                    "Septuagesimæ post partum".to_string()
+                } else {
+                    "Septuagesimæ".to_string()
+                };
+            }
+        }
+    }
+
+    // Quad(\d) where digit < 5
+    if let Some(rest) = d.strip_prefix("Quad") {
+        if let Some(digit) = rest.chars().next().and_then(|c| c.to_digit(10)) {
+            if digit < 5 {
+                return "Quadragesimæ".to_string();
+            }
+        }
+        // Quad5/Quad6 → Passionis (any Quad without a digit < 5 falls
+        // through here, including the bare "Quad" form).
+        return "Passionis".to_string();
+    }
+
+    // Pasc0 — Octava Paschæ, with Saturday-eve special case
+    if d.starts_with("Pasc0") {
+        return if vesp_or_comp && dayofweek == 6 {
+            "Vigilia Paschalis".to_string()
+        } else {
+            "Octava Paschæ".to_string()
+        };
+    }
+
+    // Pasc(\d) — split on weeks; Pasc5 has the Vigil-of-Ascension carve-out
+    if let Some(rest) = d.strip_prefix("Pasc") {
+        if let Some(digit) = rest.chars().next().and_then(|c| c.to_digit(10)) {
+            if digit < 5
+                || (digit == 5
+                    && (dayofweek < 3 || (!vesp_or_comp && dayofweek == 3)))
+            {
+                return "post Octavam Paschæ".to_string();
+            }
+            // Pasc6-(5|6) → post Octavam Ascensionis
+            if digit == 6 {
+                let after_digit = &rest[1..];
+                if matches!(after_digit, "-5" | "-6") {
+                    return "post Octavam Ascensionis".to_string();
+                }
+            }
+            if digit < 7 {
+                return "Octava Ascensionis".to_string();
+            }
+            return "Octava Pentecostes".to_string();
+        }
+    }
+
+    // Pent01 with Thursday is Corpus Christi
+    if d.starts_with("Pent01") && dayofweek == 4 {
+        return "Corpus Christi post Pentecosten".to_string();
+    }
+
+    // Pent0(\d) Octave-of-Corpus-Christi window (pre-1955)
+    let after_pent = d.strip_prefix("Pent0");
+    if let Some(rest) = after_pent {
+        if let Some(digit) = rest.chars().next().and_then(|c| c.to_digit(10)) {
+            let in_oct_cc_window = (digit == 1
+                && dayofweek > 4
+                && !(dayofweek == 6 && vesp_or_comp))
+                || (digit == 2 && (dayofweek < 5 || (dayofweek == 6 && vesp_or_comp)));
+            // Perl: $version !~ /19(?:55|6)/ — exclude 1955 and 1960+.
+            let pre_1955 = !(rubric_label.contains("1955")
+                || rubric_label.contains("1960")
+                || rubric_label.contains("196"));
+            if in_oct_cc_window && pre_1955 {
+                return "Octava Corpus Christi post Pentecosten".to_string();
+            }
+        }
+    }
+
+    // Pent02 Friday → SSmi Cordis (post-Tridentine — i.e. NOT 1570)
+    if d.starts_with("Pent02") && dayofweek == 5 && !rubric_label.contains("1570") {
+        return "SSmi Cordis post Pentecosten".to_string();
+    }
+
+    // Octava SSmi Cordis (Divino only)
+    if let Some(rest) = after_pent {
+        if let Some(digit) = rest.chars().next().and_then(|c| c.to_digit(10)) {
+            let in_oct_ssmi_window = (digit == 2
+                && dayofweek > 5
+                && !(dayofweek == 6 && vesp_or_comp))
+                || (digit == 3 && (dayofweek < 6 || (dayofweek == 6 && vesp_or_comp)));
+            // Perl: $version =~ /Divino/i
+            if in_oct_ssmi_window && rubric_label.to_lowercase().contains("divino") {
+                return "Octava SSmi Cordis post Pentecosten".to_string();
+            }
+        }
+    }
+
+    // Pent* — fall through to "post Pentecosten" or "post Pentecosten in hieme"
+    if d.starts_with("Pent") {
+        // oct_or_nov approximation: month is October or November.
+        // Perl uses the `monthday` global which has the form `10X-Y` /
+        // `11X-Y` for Oct/Nov week-X-day-Y; for the post-Pentecost
+        // tempus we just need the broad month check.
+        let oct_or_nov = month == 10 || month == 11;
+        if !oct_or_nov {
+            return "post Pentecosten".to_string();
+        }
+    }
+
+    // Final fallback (Perl line 220).
+    "post Pentecosten in hieme".to_string()
 }
 
 /// Get the dayname keyword for `(... die X)` clauses. Mirror of
 /// `SetupString.pl::get_dayname_for_condition` line 224-257.
 ///
-/// ## Status
+/// Returns one of:
 ///
-/// **B10b-slice-1 stub.** Returns empty string. The full feast-
-/// keyword mapper (Epiphaniæ / Tridui Sacri / Omnium Defunctorum /
-/// transfigurationis / etc.) lands in B10b-slice-3.
-pub fn dayname_for_condition(_subjects: &Subjects<'_>) -> String {
-    // TODO(B10b-slice-3): port SetupString.pl:224-257.
+/// - `"Epiphaniæ"` — Jan 6 (or Jan 5 eve)
+/// - `"Baptismatis Domini"` — Jan 13 (or Jan 12 eve)
+/// - `"Tridui Sacri"` — Maundy Thu / Good Fri / Holy Sat
+/// - `"in Cœna Domini"` — Maundy Thu specifically
+/// - `"in Parasceve"` — Good Fri specifically
+/// - `"Sabbato Sancto"` — Holy Sat specifically
+/// - `"Vigilia Paschalis"` — Easter Sat eve
+/// - `"regis DNJC"` — Christ the King (10-DU)
+/// - `"Omnium Defunctorum"` — All Souls (Nov 2 + adjacent)
+/// - `"Malachiae"` / `"Caroli"` / `"Nicolai"` — fixed feast keywords
+/// - `"Nat28"` / `"Nat29"` — Holy Innocents window
+/// - `"doctorum"` — winner is a Doctor of the Church
+/// - `"transfigurationis"` — Aug 6 (or Aug 5 eve)
+/// - `"septem doloris"` — Seven Sorrows (Sep 15 / Quad5-5)
+/// - `"Nativitatis"` — Christmas Day (winner = 12-25)
+/// - `"post Dominicam infra Octavam Epiphaniæ"` — Epi1-1..6
+/// - `"Bernardi"` — Aug 20
+/// - `"3 lectionum"` — when winner has 3-lectio rule
+/// - `""` — none of the above
+pub fn dayname_for_condition(subjects: &Subjects<'_>) -> String {
+    let d = subjects.day as i32;
+    let m = subjects.month as i32;
+    let y = subjects.year;
+    let dayofweek = subjects.dayofweek as i32;
+    let vesp_or_comp = subjects.is_vesp_or_comp();
+    let winner = subjects.winner;
+    let commemoratio = subjects.commemoratio;
+
+    // Each `return` in the Perl runs in order; we mirror that.
+    if m == 1 && (d == 6 || (d == 5 && vesp_or_comp)) {
+        return "Epiphaniæ".to_string();
+    }
+    if m == 1 && (d == 13 || (d == 12 && vesp_or_comp)) {
+        return "Baptismatis Domini".to_string();
+    }
+    if regex_lite_match(winner, "Quad6-[456]") {
+        // Order matters: more-specific Tridui keywords come AFTER the
+        // umbrella one, but Perl returns on the FIRST match. So if
+        // winner is Quad6-4, we'd return "Tridui Sacri" not "in Cœna
+        // Domini". That's the upstream behaviour — replicate it.
+        return "Tridui Sacri".to_string();
+    }
+    if regex_lite_match(winner, "Quad6-4") {
+        return "in Cœna Domini".to_string();
+    }
+    if regex_lite_match(winner, "Quad6-5") {
+        return "in Parasceve".to_string();
+    }
+    if regex_lite_match(winner, "Quad6-6") {
+        return "Sabbato Sancto".to_string();
+    }
+    if regex_lite_match(winner, "Pasc0-0") && vesp_or_comp && dayofweek == 6 {
+        return "Vigilia Paschalis".to_string();
+    }
+    if winner.contains("10-DU") || commemoratio.contains("10-DU") {
+        return "regis DNJC".to_string();
+    }
+    // All Souls window: Nov 2; or Nov 3 when Nov 2 fell on a Sunday;
+    // or Nov 1 eve when Nov 1 itself isn't a Saturday.
+    if m == 11 {
+        let nov1_dow = crate::date::day_of_week(1, 11, y) as i32;
+        if d == 2
+            || (d == 3 && dayofweek == 1)
+            || (d == 1 && nov1_dow != 6 && vesp_or_comp)
+        {
+            return "Omnium Defunctorum".to_string();
+        }
+    }
+    if m == 11 && d == 3 {
+        return "Malachiae".to_string();
+    }
+    if m == 11 && d == 4 {
+        return "Caroli".to_string();
+    }
+    if m == 12 && d == 6 {
+        return "Nicolai".to_string();
+    }
+    if m == 12 && d == 28 {
+        return "Nat28".to_string();
+    }
+    if m == 12 && d == 29 {
+        return "Nat29".to_string();
+    }
+    // Doctor check — dayname[1] or dayname[2] contains "Doctor".
+    if contains_ci(subjects.dayname1, "Doctor") || contains_ci(subjects.dayname2, "Doctor") {
+        return "doctorum".to_string();
+    }
+    if m == 8 && (d == 6 || (d == 5 && vesp_or_comp)) {
+        return "transfigurationis".to_string();
+    }
+    // Septem doloris — 09-15 (Sept 15) OR 09-DT (movable) OR Quad5-5.
+    if regex_lite_match(winner, "09-15$")
+        || winner.contains("09-DT")
+        || regex_lite_match(winner, "Quad5-5$")
+    {
+        return "septem doloris".to_string();
+    }
+    if winner.contains("12-25") {
+        return "Nativitatis".to_string();
+    }
+    // Epi1-(1..6) — first Sunday after Epiphany interior days.
+    if regex_lite_match(subjects.dayname0, "Epi1-[1-6]") {
+        // Perl line 251 returns first; line 252 is dead code (same
+        // pattern, different return value). Replicate the upstream
+        // behaviour — the second return never fires.
+        return "post Dominicam infra Octavam Epiphaniæ".to_string();
+    }
+    if winner.contains("08-20") || winner.contains("00-VB") {
+        return "Bernardi".to_string();
+    }
+    // Lines 254-255: both fire on `3 lectio` substring; the first one
+    // wins, so we always return "3 lectionum" (line 255 is dead code).
+    if contains_ci(subjects.winner_rule, "3 lectio") {
+        return "3 lectionum".to_string();
+    }
+
     String::new()
+}
+
+/// Lightweight regex matcher — supports `^` / `$` anchors and literal
+/// character classes like `[1-6]`. Sufficient for the
+/// `dayname_for_condition` checks (none of which use full regex).
+/// Returns true on the first match anywhere in `haystack`.
+fn regex_lite_match(haystack: &str, pattern: &str) -> bool {
+    // Strip optional `^` and `$` anchors.
+    let (anchored_start, mut p) = if let Some(rest) = pattern.strip_prefix('^') {
+        (true, rest)
+    } else {
+        (false, pattern)
+    };
+    let anchored_end = p.ends_with('$');
+    if anchored_end {
+        p = &p[..p.len() - 1];
+    }
+
+    let h_bytes = haystack.as_bytes();
+    let h_len = h_bytes.len();
+
+    // Try every possible start position (or just position 0 for
+    // anchored-start patterns).
+    let positions: Box<dyn Iterator<Item = usize>> = if anchored_start {
+        Box::new(0..=0)
+    } else {
+        Box::new(0..=h_len)
+    };
+
+    for start in positions {
+        if let Some(end) = match_at(h_bytes, start, p) {
+            if !anchored_end || end == h_len {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// Try to match `pattern` against `bytes` starting at `pos`. Returns
+/// the end index on success, `None` on failure.
+fn match_at(bytes: &[u8], pos: usize, pattern: &str) -> Option<usize> {
+    let pat = pattern.as_bytes();
+    let mut bi = pos;
+    let mut pi = 0usize;
+    while pi < pat.len() {
+        if pat[pi] == b'[' {
+            // Character class — find the closing `]`.
+            let class_end = pat[pi..].iter().position(|&c| c == b']')?;
+            let class = &pat[pi + 1..pi + class_end];
+            if bi >= bytes.len() {
+                return None;
+            }
+            if !match_class(class, bytes[bi]) {
+                return None;
+            }
+            bi += 1;
+            pi += class_end + 1;
+        } else {
+            // Literal byte.
+            if bi >= bytes.len() || bytes[bi] != pat[pi] {
+                return None;
+            }
+            bi += 1;
+            pi += 1;
+        }
+    }
+    Some(bi)
+}
+
+/// True when `b` matches a character class body (e.g. `1-6` matches
+/// digits 1..=6; `1-6abc` matches those plus literal a/b/c).
+fn match_class(class: &[u8], b: u8) -> bool {
+    let mut i = 0;
+    while i < class.len() {
+        if i + 2 < class.len() && class[i + 1] == b'-' {
+            if b >= class[i] && b <= class[i + 2] {
+                return true;
+            }
+            i += 3;
+        } else {
+            if b == class[i] {
+                return true;
+            }
+            i += 1;
+        }
+    }
+    false
 }
 
 // ─── Conditional parser (B10b-slice-2 — not yet implemented) ────────
@@ -847,18 +1207,22 @@ mod tests {
         // subject defaults to `tempore` (resolved by get_tempus_id).
         //
         // The named "post septuagesimam" predicate matches values
-        // containing /Septua|Quadra|Passio/i. The B10b-slice-1
-        // get_tempus_id stub returns dayname[0] verbatim, so we use
-        // dayname[0]s that already contain the needed substring.
-        // The full slice-3 mapper will translate "Quadp1" → "Septuagesimæ"
-        // which also matches.
-        let subj = s(Rubric::Tridentine1570, "Septuagesima");
+        // containing /Septua|Quadra|Passio/i. With slice-3 in place,
+        // get_tempus_id maps:
+        //   Quadp1 → "Septuagesimæ" (matches "Septua")
+        //   Quad1  → "Quadragesimæ" (matches "Quadra")
+        //   Quad5  → "Passionis"    (matches "Passio")
+        //   Adv1   → "Adventus"     (no match)
+        let subj = Subjects::new(Rubric::Tridentine1570, "Quadp1", 5, 2, 2026)
+            .with_dayofweek(0);
         assert!(vero("post septuagesimam", &subj));
 
-        let subj = s(Rubric::Tridentine1570, "Quadragesima");
+        let subj = Subjects::new(Rubric::Tridentine1570, "Quad1", 20, 2, 2026);
         assert!(vero("post septuagesimam", &subj));
 
-        // dayname0 "Adv1" doesn't contain Septua/Quadra/Passio.
+        let subj = Subjects::new(Rubric::Tridentine1570, "Quad5", 20, 3, 2026);
+        assert!(vero("post septuagesimam", &subj));
+
         let subj = s(Rubric::Tridentine1570, "Adv1");
         assert!(!vero("post septuagesimam", &subj));
     }
@@ -913,26 +1277,22 @@ mod tests {
 
     #[test]
     fn paschali_predicate() {
-        // tempore Paschæ → matches "paschali" predicate via named lookup
-        let subj = Subjects {
-            rubric: Some(Rubric::Tridentine1570),
-            dayname0: "Pasc0",
-            ..Default::default()
-        };
-        // dayname0 "Pasc0" — get_tempus_id stub returns "Pasc0";
-        // "Pasc0" doesn't contain "Paschæ" / "Ascensionis" /
-        // "Octava Pentecostes". So named "paschali" fails.
-        // But the regex fallback for "Pasc" (literal) hits. We test
-        // the named one via a mocked tempore subject explicitly:
-        let subj_tempus = Subjects {
-            rubric: Some(Rubric::Tridentine1570),
-            // Once get_tempus_id is real (slice 3), `Pasc0` → "Octava Paschæ".
-            // For now we test the named predicate against an explicit
-            // tempus value via the dayname-fallback path.
-            dayname0: "Octava Paschæ",
-            ..Default::default()
-        };
-        assert!(vero("tempore paschali", &subj_tempus));
+        // (tempore paschali) — fires when get_tempus_id returns a value
+        // containing /Paschæ|Ascensionis|Octava Pentecostes/i.
+        //
+        // With slice-3 in place: Pasc0 → "Octava Paschæ", Pasc7 →
+        // "Octava Pentecostes", Pasc6-1 → "Octava Ascensionis".
+        let subj = Subjects::new(Rubric::Tridentine1570, "Pasc0", 5, 4, 2026);
+        assert!(vero("tempore paschali", &subj));
+
+        let subj = Subjects::new(Rubric::Tridentine1570, "Pasc7", 24, 5, 2026);
+        assert!(vero("tempore paschali", &subj));
+
+        let subj = Subjects::new(Rubric::Tridentine1570, "Pasc6-1", 18, 5, 2026);
+        assert!(vero("tempore paschali", &subj));
+
+        // Outside Paschal time, fails.
+        let subj = Subjects::new(Rubric::Tridentine1570, "Adv1", 5, 12, 2026);
         assert!(!vero("tempore paschali", &subj));
     }
 
@@ -1008,6 +1368,322 @@ mod tests {
         let subj_monastic = s(Rubric::Monastic, "Adv1");
         assert!(!vero("nisi rubrica monastica", &subj_monastic));
         assert!(vero("nisi rubrica monastica", &subj_1570));
+    }
+
+    // ─── B10b-slice-3: get_tempus_id ────────────────────────────
+
+    fn tempus_subj(rubric: Rubric, dayname0: &str, day: u32, month: u32) -> Subjects<'_> {
+        Subjects::new(rubric, dayname0, day, month, 2026)
+    }
+
+    #[test]
+    fn tempus_id_advent() {
+        let s = tempus_subj(Rubric::Tridentine1570, "Adv1", 5, 12);
+        assert_eq!(get_tempus_id(&s), "Adventus");
+        let s = tempus_subj(Rubric::Tridentine1570, "Adv4", 22, 12);
+        assert_eq!(get_tempus_id(&s), "Adventus");
+    }
+
+    #[test]
+    fn tempus_id_christmastide_to_epiphany_eve() {
+        // Christmas Day — `Nat0`, Dec 25 → Nativitatis.
+        let s = tempus_subj(Rubric::Tridentine1570, "Nat0", 25, 12);
+        assert_eq!(get_tempus_id(&s), "Nativitatis");
+        // Jan 5 daytime — Nat tag, NOT Vespera → still Nativitatis.
+        let s = tempus_subj(Rubric::Tridentine1570, "Nat1", 5, 1);
+        assert_eq!(get_tempus_id(&s), "Nativitatis");
+        // Jan 5 Vespera — first Vespers of Epiphany.
+        let s = tempus_subj(Rubric::Tridentine1570, "Nat1", 5, 1)
+            .with_hora("Vespera");
+        assert_eq!(get_tempus_id(&s), "Epiphaniæ");
+        // Jan 6 — Epiphany.
+        let s = tempus_subj(Rubric::Tridentine1570, "Nat1", 6, 1);
+        assert_eq!(get_tempus_id(&s), "Epiphaniæ");
+    }
+
+    #[test]
+    fn tempus_id_post_epiphany_window() {
+        // Jan 7-13 — within Octave of Epiphany.
+        let s = tempus_subj(Rubric::Tridentine1570, "Epi", 10, 1);
+        assert_eq!(get_tempus_id(&s), "Epiphaniæ");
+        // Jan 14 — post Epiphaniam post partum (the GABC-season carve-out).
+        let s = tempus_subj(Rubric::Tridentine1570, "Epi1", 14, 1);
+        assert_eq!(get_tempus_id(&s), "post Epiphaniam post partum");
+        // Feb 2 daytime — still post-partum.
+        let s = tempus_subj(Rubric::Tridentine1570, "Epi4", 2, 2);
+        assert_eq!(get_tempus_id(&s), "post Epiphaniam post partum");
+        // Feb 2 Vespera — out of post-partum window.
+        let s = tempus_subj(Rubric::Tridentine1570, "Epi4", 2, 2)
+            .with_hora("Vespera");
+        assert_eq!(get_tempus_id(&s), "post Epiphaniam");
+        // Feb 4 — post Epiphaniam (no longer post-partum).
+        let s = tempus_subj(Rubric::Tridentine1570, "Epi4", 4, 2);
+        assert_eq!(get_tempus_id(&s), "post Epiphaniam");
+    }
+
+    #[test]
+    fn tempus_id_septuagesima_lent_passion() {
+        let s = tempus_subj(Rubric::Tridentine1570, "Quadp1", 1, 2);
+        // Quadp1 in Feb 1 → Septuagesimæ post partum (Feb 1 is in window).
+        assert_eq!(get_tempus_id(&s), "Septuagesimæ post partum");
+        // Quadp2 Feb 5 → Septuagesimæ.
+        let s = tempus_subj(Rubric::Tridentine1570, "Quadp2", 5, 2);
+        assert_eq!(get_tempus_id(&s), "Septuagesimæ");
+        // Quad1 → Quadragesimæ.
+        let s = tempus_subj(Rubric::Tridentine1570, "Quad1", 20, 2);
+        assert_eq!(get_tempus_id(&s), "Quadragesimæ");
+        // Quad4 → Quadragesimæ.
+        let s = tempus_subj(Rubric::Tridentine1570, "Quad4", 13, 3);
+        assert_eq!(get_tempus_id(&s), "Quadragesimæ");
+        // Quad5 → Passionis.
+        let s = tempus_subj(Rubric::Tridentine1570, "Quad5", 20, 3);
+        assert_eq!(get_tempus_id(&s), "Passionis");
+        // Quad6 → Passionis.
+        let s = tempus_subj(Rubric::Tridentine1570, "Quad6", 27, 3);
+        assert_eq!(get_tempus_id(&s), "Passionis");
+    }
+
+    #[test]
+    fn tempus_id_easter_octave() {
+        let s = tempus_subj(Rubric::Tridentine1570, "Pasc0", 5, 4);
+        assert_eq!(get_tempus_id(&s), "Octava Paschæ");
+        // Saturday eve of Pasc0 → Vigilia Paschalis.
+        let s = tempus_subj(Rubric::Tridentine1570, "Pasc0", 4, 4)
+            .with_hora("Vespera")
+            .with_dayofweek(6);
+        assert_eq!(get_tempus_id(&s), "Vigilia Paschalis");
+    }
+
+    #[test]
+    fn tempus_id_post_easter() {
+        // Pasc1-4 → post Octavam Paschæ.
+        let s = tempus_subj(Rubric::Tridentine1570, "Pasc2", 19, 4)
+            .with_dayofweek(0);
+        assert_eq!(get_tempus_id(&s), "post Octavam Paschæ");
+        // Pasc5 early-week (dayofweek<3) → post Octavam Paschæ.
+        let s = tempus_subj(Rubric::Tridentine1570, "Pasc5", 11, 5)
+            .with_dayofweek(1);
+        assert_eq!(get_tempus_id(&s), "post Octavam Paschæ");
+        // Pasc5 Wed daytime → still post Octavam Paschæ.
+        let s = tempus_subj(Rubric::Tridentine1570, "Pasc5", 13, 5)
+            .with_dayofweek(3);
+        assert_eq!(get_tempus_id(&s), "post Octavam Paschæ");
+        // Pasc5 Wed Vespera → Octava Ascensionis (the eve of Ascension).
+        let s = tempus_subj(Rubric::Tridentine1570, "Pasc5", 13, 5)
+            .with_dayofweek(3)
+            .with_hora("Vespera");
+        assert_eq!(get_tempus_id(&s), "Octava Ascensionis");
+    }
+
+    #[test]
+    fn tempus_id_pasc6_special_branches() {
+        // Pasc6-5 / Pasc6-6 → post Octavam Ascensionis.
+        let s = tempus_subj(Rubric::Tridentine1570, "Pasc6-5", 22, 5);
+        assert_eq!(get_tempus_id(&s), "post Octavam Ascensionis");
+        let s = tempus_subj(Rubric::Tridentine1570, "Pasc6-6", 23, 5);
+        assert_eq!(get_tempus_id(&s), "post Octavam Ascensionis");
+        // Pasc6-other → Octava Ascensionis.
+        let s = tempus_subj(Rubric::Tridentine1570, "Pasc6-1", 18, 5);
+        assert_eq!(get_tempus_id(&s), "Octava Ascensionis");
+        // Pasc7 → Octava Pentecostes.
+        let s = tempus_subj(Rubric::Tridentine1570, "Pasc7", 24, 5);
+        assert_eq!(get_tempus_id(&s), "Octava Pentecostes");
+    }
+
+    #[test]
+    fn tempus_id_corpus_christi_thursday() {
+        // Pent01 Thursday → Corpus Christi post Pentecosten.
+        let s = tempus_subj(Rubric::Tridentine1570, "Pent01", 4, 6)
+            .with_dayofweek(4);
+        assert_eq!(get_tempus_id(&s), "Corpus Christi post Pentecosten");
+    }
+
+    #[test]
+    fn tempus_id_octava_corpus_christi_pre_1955_only() {
+        // Pent01 Friday (dayofweek 5) — pre-1955 → Octava CC.
+        let s = tempus_subj(Rubric::Tridentine1570, "Pent01", 5, 6)
+            .with_dayofweek(5);
+        assert_eq!(get_tempus_id(&s), "Octava Corpus Christi post Pentecosten");
+        // Same date 1955 — no Octave CC.
+        let s = tempus_subj(Rubric::Reduced1955, "Pent01", 5, 6)
+            .with_dayofweek(5);
+        assert_ne!(get_tempus_id(&s), "Octava Corpus Christi post Pentecosten");
+        // Same date 1960 — also no Octave CC.
+        let s = tempus_subj(Rubric::Rubrics1960, "Pent01", 5, 6)
+            .with_dayofweek(5);
+        assert_ne!(get_tempus_id(&s), "Octava Corpus Christi post Pentecosten");
+    }
+
+    #[test]
+    fn tempus_id_post_pentecost_default() {
+        // Pent10 mid-summer → post Pentecosten (not Oct/Nov).
+        let s = tempus_subj(Rubric::Rubrics1960, "Pent10", 1, 8);
+        assert_eq!(get_tempus_id(&s), "post Pentecosten");
+        // Pent22 in November → post Pentecosten in hieme.
+        let s = tempus_subj(Rubric::Rubrics1960, "Pent22", 5, 11);
+        assert_eq!(get_tempus_id(&s), "post Pentecosten in hieme");
+        // Pent20 in October → post Pentecosten in hieme.
+        let s = tempus_subj(Rubric::Rubrics1960, "Pent20", 20, 10);
+        assert_eq!(get_tempus_id(&s), "post Pentecosten in hieme");
+    }
+
+    #[test]
+    fn tempus_id_via_vero_in_tempore_clause() {
+        // The chain `(in tempore Adventus)` should now fire on an
+        // Adv* dayname — exercising the integration between vero
+        // and get_tempus_id.
+        let s = tempus_subj(Rubric::Tridentine1570, "Adv1", 5, 12);
+        assert!(vero("tempore Adventus", &s));
+        assert!(!vero("tempore Nativitatis", &s));
+        let s = tempus_subj(Rubric::Tridentine1570, "Quad3", 13, 3);
+        assert!(vero("tempore Quadragesimæ", &s));
+        assert!(!vero("tempore Adventus", &s));
+    }
+
+    // ─── B10b-slice-3: dayname_for_condition ────────────────────
+
+    #[test]
+    fn dayname_epiphany() {
+        let s = tempus_subj(Rubric::Tridentine1570, "Nat1", 6, 1);
+        assert_eq!(dayname_for_condition(&s), "Epiphaniæ");
+        // Jan 5 Vespera → Epiphaniæ.
+        let s = tempus_subj(Rubric::Tridentine1570, "Nat1", 5, 1)
+            .with_hora("Vespera");
+        assert_eq!(dayname_for_condition(&s), "Epiphaniæ");
+    }
+
+    #[test]
+    fn dayname_baptism_of_lord() {
+        let s = tempus_subj(Rubric::Tridentine1570, "Epi1", 13, 1);
+        assert_eq!(dayname_for_condition(&s), "Baptismatis Domini");
+    }
+
+    #[test]
+    fn dayname_holy_week_triduum() {
+        let s = tempus_subj(Rubric::Tridentine1570, "Quad6", 2, 4)
+            .with_winner("Tempora/Quad6-4", "");
+        // Quad6-4..6 → "Tridui Sacri" (the umbrella label fires before
+        // the more-specific ones because the regex matches first).
+        assert_eq!(dayname_for_condition(&s), "Tridui Sacri");
+    }
+
+    #[test]
+    fn dayname_all_souls_window() {
+        // Nov 2 — All Souls.
+        let s = tempus_subj(Rubric::Tridentine1570, "Pent20", 2, 11);
+        assert_eq!(dayname_for_condition(&s), "Omnium Defunctorum");
+        // Nov 3 Monday — All Souls transferred.
+        let s = tempus_subj(Rubric::Tridentine1570, "Pent20", 3, 11)
+            .with_dayofweek(1);
+        assert_eq!(dayname_for_condition(&s), "Omnium Defunctorum");
+        // Nov 3 not Monday — falls through (Malachiae handles it).
+        let s = tempus_subj(Rubric::Tridentine1570, "Pent20", 3, 11)
+            .with_dayofweek(2);
+        assert_eq!(dayname_for_condition(&s), "Malachiae");
+    }
+
+    #[test]
+    fn dayname_st_nicholas() {
+        let s = tempus_subj(Rubric::Tridentine1570, "Adv2", 6, 12);
+        assert_eq!(dayname_for_condition(&s), "Nicolai");
+    }
+
+    #[test]
+    fn dayname_doctor_winner() {
+        // dayname[1] containing "Doctor" — drives the `(officio doctorum)`
+        // clauses.
+        let s = tempus_subj(Rubric::Tridentine1570, "Pent20", 15, 8)
+            .with_dayname("Pent20", "S. Bernardi Abbatis et Doctoris", "");
+        assert_eq!(dayname_for_condition(&s), "doctorum");
+    }
+
+    #[test]
+    fn dayname_transfiguration() {
+        let s = tempus_subj(Rubric::Tridentine1570, "Pent10", 6, 8);
+        assert_eq!(dayname_for_condition(&s), "transfigurationis");
+        // Aug 5 Vespera — eve of Transfiguration.
+        let s = tempus_subj(Rubric::Tridentine1570, "Pent10", 5, 8)
+            .with_hora("Vespera");
+        assert_eq!(dayname_for_condition(&s), "transfigurationis");
+    }
+
+    #[test]
+    fn dayname_christmas() {
+        let s = tempus_subj(Rubric::Tridentine1570, "Nat0", 25, 12)
+            .with_winner("Sancti/12-25", "");
+        assert_eq!(dayname_for_condition(&s), "Nativitatis");
+    }
+
+    #[test]
+    fn dayname_post_epiphany_octave_interior() {
+        // Epi1-1..6 → post Dominicam infra Octavam Epiphaniæ.
+        let s = tempus_subj(Rubric::Tridentine1570, "Epi1-3", 9, 1);
+        assert_eq!(
+            dayname_for_condition(&s),
+            "post Dominicam infra Octavam Epiphaniæ",
+        );
+    }
+
+    #[test]
+    fn dayname_three_lectiones_rule() {
+        // winner_rule containing "3 lectio" → "3 lectionum".
+        let s = tempus_subj(Rubric::Rubrics1960, "Pent05", 1, 7)
+            .with_winner("Sancti/07-01", "Simplex;;1.1\n3 lectiones");
+        assert_eq!(dayname_for_condition(&s), "3 lectionum");
+    }
+
+    #[test]
+    fn dayname_septem_doloris_movable() {
+        // Friday-after-Passion-Sunday — winner key 09-DT.
+        let s = tempus_subj(Rubric::Tridentine1570, "Quad5", 7, 4)
+            .with_winner("Sancti/09-DT", "");
+        assert_eq!(dayname_for_condition(&s), "septem doloris");
+        // Quad5-5 — alternate trigger.
+        let s = tempus_subj(Rubric::Tridentine1570, "Quad5", 8, 4)
+            .with_winner("Tempora/Quad5-5", "");
+        assert_eq!(dayname_for_condition(&s), "septem doloris");
+    }
+
+    #[test]
+    fn dayname_no_match_returns_empty() {
+        let s = tempus_subj(Rubric::Tridentine1570, "Pent12", 15, 7);
+        assert_eq!(dayname_for_condition(&s), "");
+    }
+
+    #[test]
+    fn dayname_via_vero_die_clause() {
+        // (die Epiphaniæ) on Jan 6 — fires.
+        let s = tempus_subj(Rubric::Tridentine1570, "Nat1", 6, 1);
+        assert!(vero("die Epiphaniæ", &s));
+        // Same condition on a random day — fails.
+        let s = tempus_subj(Rubric::Tridentine1570, "Pent10", 1, 8);
+        assert!(!vero("die Epiphaniæ", &s));
+    }
+
+    // ─── regex_lite_match unit tests ─────────────────────────────
+
+    #[test]
+    fn regex_lite_anchors() {
+        assert!(regex_lite_match("Quad5-5", "Quad5-5$"));
+        assert!(regex_lite_match("Sancti/Quad5-5", "Quad5-5$"));
+        assert!(!regex_lite_match("Quad5-5z", "Quad5-5$"));
+        assert!(regex_lite_match("Sancti/09-15", "09-15$"));
+        assert!(!regex_lite_match("Sancti/09-150", "09-15$"));
+    }
+
+    #[test]
+    fn regex_lite_char_class() {
+        assert!(regex_lite_match("Epi1-3", "Epi1-[1-6]"));
+        assert!(regex_lite_match("Epi1-1", "Epi1-[1-6]"));
+        assert!(regex_lite_match("Epi1-6", "Epi1-[1-6]"));
+        assert!(!regex_lite_match("Epi1-0", "Epi1-[1-6]"));
+        assert!(!regex_lite_match("Epi1-7", "Epi1-[1-6]"));
+        // Quad6-[456]
+        assert!(regex_lite_match("Tempora/Quad6-4", "Quad6-[456]"));
+        assert!(regex_lite_match("Tempora/Quad6-5", "Quad6-[456]"));
+        assert!(regex_lite_match("Tempora/Quad6-6", "Quad6-[456]"));
+        assert!(!regex_lite_match("Tempora/Quad6-3", "Quad6-[456]"));
+        assert!(!regex_lite_match("Tempora/Quad6-7", "Quad6-[456]"));
     }
 
     #[test]

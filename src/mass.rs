@@ -188,7 +188,17 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         let mut rubric_variant_key = winner_file.and_then(|f| {
             rubric_variant_section_for(effective_sect, office.rubric, &f.sections)
         });
-        if rubric_variant_key.is_none() {
+        // Parent-fallback for the rubric variant ONLY when the winner
+        // has no local section of its own. Octave-of-Ascension files
+        // (Pasc5-5, Pasc6-1/2/3) carry their own `[Evangelium]` body
+        // — typically a `@Tempora/Pasc5-5` or `@Tempora/Pasc5-4::s/.../`
+        // chain — and that local chain MUST resolve before any
+        // parent-side `(rubrica 1960)` variant kicks in. Without this
+        // gate, R1960 picked Pasc5-4's `Evangelium (rubrica 1960)`
+        // straight, skipping Pasc5-5's `s/\!(?!M).*//` rubric strip
+        // → the trailing `!Dicto Evangelio…` line leaked into 124
+        // R1960 days (cluster R60_RogationDays / Octave of Ascension).
+        if rubric_variant_key.is_none() && !winner_has_local {
             let parent_path = winner_file.and_then(|f| {
                 f.parent_1570.as_deref().or(f.parent.as_deref())
             });

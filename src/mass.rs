@@ -1436,7 +1436,7 @@ fn graduale_or_tractus(
         }
     }
     if matches!(office.winner.category, FileCategory::Tempora) {
-        if let Some(mut sunday_key) = tempora_feria_sunday_fallback(&office.winner) {
+        if let Some(mut sunday_key) = tempora_feria_sunday_fallback_for(&office.winner, Some(office.rubric), Some("Graduale")) {
             if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
                 if is_post_1570_octave_file(sunday_file, office.rubric) {
                     let r_key = FileKey {
@@ -1550,7 +1550,7 @@ fn gradualep_or_graduale(
         }
     }
     if matches!(office.winner.category, FileCategory::Tempora) {
-        if let Some(mut sunday_key) = tempora_feria_sunday_fallback(&office.winner) {
+        if let Some(mut sunday_key) = tempora_feria_sunday_fallback_for(&office.winner, Some(office.rubric), Some("Graduale")) {
             if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
                 if is_post_1570_octave_file(sunday_file, office.rubric) {
                     let r_key = FileKey {
@@ -1701,7 +1701,7 @@ pub fn proper_block(
     // DO carry a commune `vide Tempora/<octave-day>`) reach the
     // octave Mass via the commune branch first.
     if matches!(office.winner.category, FileCategory::Tempora) {
-        if let Some(mut sunday_key) = tempora_feria_sunday_fallback(&office.winner) {
+        if let Some(mut sunday_key) = tempora_feria_sunday_fallback_for(&office.winner, Some(office.rubric), Some(section)) {
             // If the bare Sunday is itself post-1570 (e.g. Pent03-0
             // = Sacred Heart Octave Day), try its `-r` variant first.
             if let Some(sunday_file) = corpus.mass_file(&sunday_key) {
@@ -2754,6 +2754,30 @@ fn paschal_commune_swap(
 /// variants (`Adv1-2o` → `Adv1-0`, `Pasc2-2t` → `Pasc2-0`); the
 /// suffix marks files that are the 1570-baseline body for a slot.
 fn tempora_feria_sunday_fallback(key: &FileKey) -> Option<FileKey> {
+    tempora_feria_sunday_fallback_for(key, None, None)
+}
+
+/// Section-and-rubric-aware variant. The Pent01 special-case differs
+/// per upstream code path:
+///
+/// * Body sections (Introitus / Lectio / Graduale / Evangelium /
+///   Offertorium / Communio): always fall back to Pent01-0a, the
+///   older "Sunday I after Pentecost" body, regardless of rubric.
+///   Mirrors `propers.pl::getitem` line 862:
+///   `if ($name =~ /Pent01/i) { $name = 'Pent01-0a'; }`.
+/// * Prayer sections (Oratio / Secreta / Postcommunio) under R55/R60:
+///   fall back to Pent01-0 (Trinity Sunday's prayers) — Pius XII
+///   "Cum nostra hac aetate" abolished the Octave of Pentecost so
+///   the entire week reads Trinity's collects. Mirrors
+///   `propers.pl::oratio` line 207 which uses `dayname[0]-0`
+///   directly, resolving to Pent01-0 (no `-a` suffix).
+/// * Prayer sections under T1570/T1910/DA: still Pent01-0a (the
+///   octave-of-Pentecost prayer cycle).
+fn tempora_feria_sunday_fallback_for(
+    key: &FileKey,
+    rubric: Option<crate::core::Rubric>,
+    section: Option<&str>,
+) -> Option<FileKey> {
     let (week, mut dow_str) = key.stem.rsplit_once('-')?;
     // Strip a trailing `Feriat` (Pasc2-3Feriat → dow_str="3") OR
     // `Feria` (Pasc2-5Feria → "5") OR a single-letter variant suffix
@@ -2790,10 +2814,33 @@ fn tempora_feria_sunday_fallback(key: &FileKey) -> Option<FileKey> {
     // form), but the week's ferias inherit from "Sunday I after
     // Pentecost" propers, which lives at Pent01-0a. Trinity is a
     // festal-only displacement; the week's prayer-cycle is otherwise.
+    //
+    // EXCEPT under R55/R60: Pius XII's "Cum nostra hac aetate"
+    // (1955) abolished the Octave of Pentecost, so the Pent01 week
+    // ferias inherit Trinity Sunday's body directly from Pent01-0
+    // — Pent01-0a is the older 1570 form that no longer applies.
+    // Mirrors `propers.pl::oratio` line 207 which falls through to
+    // `subdirname('Tempora', $version) . "$dayname[0]-0.txt"`,
+    // resolving via subdirname's per-version layer to the right
+    // Sunday file.
     if week == "Pent01" {
+        let is_prayer = matches!(
+            section,
+            Some("Oratio") | Some("Secreta") | Some("Postcommunio")
+        );
+        let is_r55_or_r60 = matches!(
+            rubric,
+            Some(crate::core::Rubric::Reduced1955)
+                | Some(crate::core::Rubric::Rubrics1960)
+        );
+        let stem = if is_prayer && is_r55_or_r60 {
+            "Pent01-0"
+        } else {
+            "Pent01-0a"
+        };
         return Some(FileKey {
             category: key.category.clone(),
-            stem: "Pent01-0a".to_string(),
+            stem: stem.to_string(),
         });
     }
     Some(FileKey {

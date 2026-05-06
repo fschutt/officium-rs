@@ -15,14 +15,14 @@ returns 100% on every rubric.**
 |  4 | R55_Propaganda              |  11 | ✅ | `f040d62` |
 |  5 | R55_TrinityFriday           |  24 | ✅ | `789cc19` |
 |  6 | T1570_12_08o                |   0 | ✅ | `c093c2f` (driver-cache fix) |
-|  7 | T1910_Annunciation          |   5 | ⏳ | needs T1910 Sunday-vs-Sancti precedence |
-|  8 | T1910_Cathedra_Matthias     |   9 | ⏳ | needs T1910 Cathedra Petri Romae rule |
+|  7 | T1910_Cathedra_Matthias     |   9 | ✅ | leap-year transfer-table filter (Perl filter-1 port) |
+|  8 | T1910_Annunciation          |   5 | ⏳ | needs T1910 Sunday-vs-Sancti precedence |
 |  9 | DA_SeptEmbersCross          |  14 | ⏳ | needs DA Sept-Embers/Cross precedence |
 | 10 | R55_SeptEmbersCross         |  14 | ⏳ | needs R55 Sept-Embers/Cross precedence |
 | 11 | Pent19_23_SelfRef_R55       |  15 | ⏳ | needs R55 rank-aware commemoration suppression |
 | 12 | Quadp_Quad_Commune_C4a      |  29 | ⏳ | needs T1910 commune-redirect for Quadp ferias |
 
-**Closed: 6 / 12 clusters, 207 / 463 fail-days (45%).**
+**Closed: 7 / 12 clusters, 216 / 463 fail-days (47%).**
 
 ## Iteration plan
 

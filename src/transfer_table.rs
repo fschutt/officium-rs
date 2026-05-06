@@ -122,6 +122,16 @@ pub fn easter_code(year: i32) -> u32 {
 /// dates from Feb 24 (which kalendar-shifts to 02-29 → Vigil of
 /// Matthias) onward follow the post-leap-day letter. Mirrors
 /// `Directorium::load_transfers` lines 132-149.
+///
+/// Mirrors Perl `Directorium::load_transfer_file` line-filter logic
+/// for leap years (`filter == 1`): rules from the bare-letter and
+/// bare-easter files whose LHS matches the early-Feb regex OR whose
+/// RHS starts with `02-2[0123]` are EXCLUDED. This is what makes
+/// `02-25=02-23r;;1888 1906` (letter e) NOT fire on real Feb 25 in
+/// leap year — both e.txt's filter-1 (excludes-when-RHS=02-23r) and
+/// f.txt's filter-2 (only Jan + Feb 23) drop it. Without the
+/// filter, real Feb 25 wrongly resolves to St. Peter Damian
+/// (02-23r) instead of St. Matthias on the bissextile-shift date.
 pub fn transfers_for(
     year: i32,
     rubric: &str,
@@ -131,6 +141,13 @@ pub fn transfers_for(
     let mm_dd = format!("{month:02}-{day:02}");
     let mut out = Vec::new();
     let parsed = parsed();
+    let leap = leap_year(year);
+    // Perl filter 1: leap year + bare-letter / bare-easter file +
+    // post-leap-day date. Skip rules with LHS in the early-Feb
+    // regex OR RHS starting with `02-2[0123]`. We apply the
+    // exclusion at lookup time rather than re-parsing the files
+    // per (year, date), which keeps the OnceLock cache hot.
+    let apply_filter1_exclusion = leap && is_post_leap_day(month, day);
     let files_to_consult = transfer_files_for(year, month, day);
     for fname in files_to_consult {
         let Some(entries) = parsed.get(&fname) else {
@@ -140,12 +157,100 @@ pub fn transfers_for(
             continue;
         };
         for (target, rubrics) in targets {
-            if rubric_matches(rubrics, rubric) {
-                out.push(target.clone());
+            if !rubric_matches(rubrics, rubric) {
+                continue;
             }
+            if apply_filter1_exclusion
+                && entry_is_early_feb_relevant(&mm_dd, target)
+            {
+                continue;
+            }
+            out.push(target.clone());
         }
     }
     out
+}
+
+/// Real date is Feb 24..28 (the leap-shifted range that follows the
+/// bissextile day). Mirrors the inverse of `is_pre_leap_day` for
+/// the filter-1 application range.
+fn is_post_leap_day(month: u32, day: u32) -> bool {
+    month == 2 && (24..=28).contains(&day)
+}
+
+/// Mirrors Perl's `regex2` from `Directorium::load_transfer_file`:
+/// `^(?:Hy|seant)?(?:01|02-[01]|02-2[01239]|.*=(01|02-[01]|02-2[0123])|dirge1)`.
+/// Returns true when EITHER the LHS (the date key) OR the RHS (the
+/// transfer target) implicates an "early Feb" date that the
+/// post-leap-day rendering should not see.
+fn entry_is_early_feb_relevant(lhs_mm_dd: &str, target: &TransferTarget) -> bool {
+    if matches_early_feb(lhs_mm_dd) {
+        return true;
+    }
+    // Strip a leading `Tempora/` or `Sancti/` prefix on the RHS
+    // before checking — both forms appear in the parsed targets.
+    let rhs = target
+        .main
+        .strip_prefix("Tempora/")
+        .or_else(|| target.main.strip_prefix("Sancti/"))
+        .unwrap_or(&target.main);
+    if rhs_matches_early_feb_narrow(rhs) {
+        return true;
+    }
+    for extra in &target.extras {
+        let extra = extra
+            .strip_prefix("Tempora/")
+            .or_else(|| extra.strip_prefix("Sancti/"))
+            .unwrap_or(extra.as_str());
+        if rhs_matches_early_feb_narrow(extra) {
+            return true;
+        }
+    }
+    false
+}
+
+/// `^(?:01|02-[01]|02-2[01239]|dirge1)` — early-Feb ranges that
+/// filter 1 excludes.
+fn matches_early_feb(s: &str) -> bool {
+    if let Some(rest) = s.strip_prefix("01") {
+        return rest.is_empty() || rest.starts_with('-');
+    }
+    if let Some(rest) = s.strip_prefix("02-") {
+        // 02-0X or 02-1X
+        if let Some(c) = rest.chars().next() {
+            if matches!(c, '0' | '1') {
+                return true;
+            }
+        }
+        // 02-20, 02-21, 02-22, 02-23, 02-29
+        for prefix in ["20", "21", "22", "23", "29"] {
+            if rest.starts_with(prefix) {
+                return true;
+            }
+        }
+    }
+    s.starts_with("dirge1")
+}
+
+/// RHS narrower regex `02-2[0123]` — only 02-20, 02-21, 02-22, 02-23.
+/// (Not 02-29; the bis day has its own bookkeeping.)
+fn rhs_matches_early_feb_narrow(s: &str) -> bool {
+    if let Some(rest) = s.strip_prefix("01") {
+        return rest.is_empty() || rest.starts_with('-');
+    }
+    if let Some(rest) = s.strip_prefix("02-") {
+        if let Some(c) = rest.chars().next() {
+            if matches!(c, '0' | '1') {
+                return true;
+            }
+        }
+        for prefix in ["20", "21", "22", "23"] {
+            if rest.starts_with(prefix) {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 /// Picks the right transfer files for `(year, month, day)`. In a

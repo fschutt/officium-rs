@@ -1042,8 +1042,19 @@ fn transferred_sancti_for_1570(
         cursor_y = prev.0;
         cursor_m = prev.1;
         cursor_d = prev.2;
-        let Some((look_m, look_d)) = date::sancti_kalendar_key(cursor_y, cursor_m, cursor_d) else {
-            continue;
+        // Layer-aware kalendar key: for the back-walk we only suppress
+        // leap-year Feb 23 on Pius1570 (where 02-23 main is the Vigil
+        // and the leap shift moves it). Under PiusX1906+ the main is
+        // Petri Damiani, which is NOT moved by the bissextile shift —
+        // we must walk through real Feb 23 leap year to find Petri
+        // when she was preempted by Quad1-0 Sunday.
+        let (look_m, look_d) = if matches!(layer, crate::kalendaria_layers::Layer::Pius1570) {
+            let Some(k) = date::sancti_kalendar_key(cursor_y, cursor_m, cursor_d) else {
+                continue;
+            };
+            k
+        } else {
+            date::sday_pair(cursor_m, cursor_d, cursor_y)
         };
         let Some(entry) = kalendarium_1570::lookup_for_layer(layer, look_m, look_d) else {
             continue;
@@ -1592,8 +1603,21 @@ fn resolve_sancti_for_tridentine_1570(
     // to Feb 3 under T1910, where Perl keeps Blasius. Restrict the
     // heuristic to rubrics that share the 1570/M1617 transfer
     // semantics.
+    // T1910 fallback: enable the heuristic walk ONLY when the date has
+    // NO native kalendar entry, OR when the only native entry is a Vigil
+    // (rank class "Vigilia") that itself was moved away by a transfer
+    // rule (e.g. real Feb 24 leap year, kalendar 02-29 = Vigil-of-
+    // Matthias under 1888/1906; explicit rule `02-29=02-22~02-23o`
+    // moves the Vigil to real Feb 22). Letter-'d' Easter years like
+    // 2048 don't get an explicit Petri-Damiani transfer rule, so Perl
+    // reaches the back-walk fallback.
+    let native_is_displaced_vigil = native_entry
+        .map(|e| e.main.stem == "02-23o" && month == 2 && day == 24)
+        .unwrap_or(false);
     let heuristic_transfer_active =
-        matches!(rubric, Rubric::Tridentine1570 | Rubric::Monastic);
+        matches!(rubric, Rubric::Tridentine1570 | Rubric::Monastic)
+        || (matches!(rubric, Rubric::Tridentine1910)
+            && (native_entry.is_none() || native_is_displaced_vigil));
     if heuristic_transfer_active {
     if let Some((stem, name, rank_num)) =
         transferred_sancti_for_1570(year, month, day, layer, corpus)

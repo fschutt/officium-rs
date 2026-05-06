@@ -398,7 +398,7 @@ fn decide_sanctoral_wins_1570(
     sancti: Option<&SanctiEntry>,
     tempora: Option<&MassFile>,
     mut trank: f32,
-    srank: f32,
+    mut srank: f32,
     rubric: Rubric,
     sancti_file: Option<&MassFile>,
 ) -> bool {
@@ -469,6 +469,38 @@ fn decide_sanctoral_wins_1570(
         trank = 2.9;
     }
 
+    // Adv/Quad srank cap (`horascommon.pl:441-444`):
+    //   `} elsif ($dayname[0] =~ /Adv|Quad/ && $srank[2] > 6
+    //              && $sname !~ /12-24/ && $saint{Rule} !~ /Patronus/) {
+    //       $srank[2] = 6.01;
+    //   }`
+    // In Advent and Lent, a Class I sanctoral feast (rank > 6) is
+    // capped to 6.01 so it can't outrank a Class I Sunday (rank 6.9
+    // for Adv1, Quad1, Quad4, Pasc5, Pent01 default). Without this
+    // cap, Annunciation (rank 6.5 from missa file, 6.92 from horas
+    // file) would beat Quad4-0 Sunday (rank 6.9), but Perl gives
+    // the Sunday + Annunciation-as-commemoration. Closes
+    // T1910_Annunciation cluster (5 days). Christmas Eve (12-24)
+    // and Patronus saints (parish patrons) are exempt.
+    let temporal_is_adv_quad = temporal_name.contains("Quadragesim")
+        || temporal_name.contains("Quadragesimam")
+        || temporal_name.contains("Adventu")
+        || temporal_name.contains("Adventum")
+        || temporal_name.contains("Passion");
+    let sancti_is_12_24 = sancti_file
+        .map(|sf| sf.sections.get("__source_stem")
+            .map(|s| s.contains("12-24"))
+            .unwrap_or(false))
+        .unwrap_or(false)
+        || _sancti.name.to_lowercase().contains("vigilia natalis");
+    let sancti_is_patronus = sancti_file
+        .and_then(|sf| sf.sections.get("Rule"))
+        .map(|r| r.to_lowercase().contains("patronus"))
+        .unwrap_or(false);
+    if temporal_is_adv_quad && srank > 6.0 && !sancti_is_12_24 && !sancti_is_patronus {
+        srank = 6.01;
+    }
+
     // "Festum Domini" exception (pre-1960): a Feast of the Lord with
     // rank ≥ 2 outranks ANY Sunday whose pre-adjustment rank ≤ 5.
     // Mirrors `horascommon.pl:477-481`:
@@ -511,7 +543,16 @@ fn decide_sanctoral_wins_1570(
     // and `$dayname[0]`; we approximate with the officium string.)
     let is_sunday = is_dominica && trank >= 5.1;
     if is_sunday {
-        // Pre-1960: Class I sanctoral wins over Class II Sundays.
+        // Class I Sundays (Adv1, Quad1-Quad4, Passion, Pasc5, Pent01)
+        // have trank ≥ 6.0 — strict numeric comparison after the
+        // Adv/Quad srank cap above; Class I sanctoral feasts in Lent
+        // are capped to 6.01 and lose to the Class I Sunday at 6.9.
+        if trank >= 6.0 {
+            return srank > trank;
+        }
+        // Class II Sundays (regular post-Pent/post-Epi) — pre-1960:
+        // Class I sanctoral (rank ≥ 6) outranks; lower sanctoral
+        // commemorates only.
         return srank >= 6.0;
     }
 

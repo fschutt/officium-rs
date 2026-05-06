@@ -598,8 +598,15 @@ fn run_one_year(cfg: &Cfg, year: i32, root: &PathBuf) -> (u32, u32, bool) {
                     };
                 }
             };
-            let html_path = out_dir.join(format!("{:02}-{:02}.perl.html", mm, dd));
-            let _ = fs::write(&html_path, &perl_html);
+            // Per-day raw-HTML cache USED to live at
+            // `out_dir/<MM-DD>.perl.html` for human inspection.
+            // Dropped — `target/regression-cache/<sha>/<rubric>/<YYYY>/`
+            // (the SHA-keyed cache wired by `render_with_cache`)
+            // already holds the same content under a deterministic
+            // path, and double-storing 365×100×5 = 184k HTML files
+            // burns ~17 GB. The board.html + manifest.json still
+            // get the per-day data they need from the in-memory
+            // `perl_html` we already have here.
 
             // Compare.
             let report = compare_day(&date_label, &rust_winner, &rust_propers, &perl_html);

@@ -20,7 +20,7 @@ default = ["regression"]
 # `perl5` to render reference HTML for diff. Hard-gated to non-WASM
 # targets — see compile_error! at the top of src/regression.rs.
 # Pulls in serde_json for the manifest writer.
-regression = ["dep:serde_json", "dep:rayon"]
+regression = ["dep:serde_json", "dep:rayon", "dep:flate2"]
 # wasm-bindgen surface (browser/Node). Use with
 # `cargo build --target wasm32-unknown-unknown --release --features wasm
 # --no-default-features` or wasm-pack.
@@ -53,6 +53,11 @@ serde_json = { version = "1", optional = true }
 # Perl-bound regression matrix at zero correctness risk. Gated to
 # `regression` so WASM bundles drop it.
 rayon = { version = "1", optional = true }
+# gzip the regression-cache files. HTML compresses ~10× because of
+# repeated CSS/JS boilerplate; a 100-yr × 5-rub Mass sweep drops
+# from ~17 GB to ~1.5 GB on disk. Regression-only — never on the
+# WASM hot path.
+flate2 = { version = "1", optional = true }
 unicode-normalization = "0.1"
 # Pinned to match the installed wasm-bindgen-cli version. Bump in
 # lockstep with the CI tooling (`wasm-bindgen-cli --version`).

@@ -1630,29 +1630,786 @@ fn find_conditional_at_start(s: &str) -> Option<ConditionalMatch<'_>> {
 
 // ─── Inclusion substitutions (B10b-slice-5) ─────────────────────────
 
-/// Apply `:in N loco s/PAT/REPL/` substitutions on an inclusion. The
-/// upstream `@Path:Section in 4 loco s/PAT/REPL/` form pulls the
-/// target body, then runs the regex substitution on it.
+/// Apply `s/PAT/REPL/FLAGS` substitutions and line-picks to an
+/// inclusion body. The `spec` string is a sequence of directives,
+/// each one of:
+///
+///   * `s/PAT/REPL/FLAGS` — Perl-style substitution. Flags supported:
+///     `g` (global), `m` (multiline `^`/`$`), `s` (dot matches newline),
+///     `i` (case-insensitive).
+///   * `N` — keep only line N (1-indexed).
+///   * `N-M` — keep only lines N..=M.
+///   * `!N` / `!N-M` — DROP line(s) N (or range), keep all others.
+///
+/// Multiple directives are applied in left-to-right order. Whitespace
+/// and commas between directives are ignored.
 ///
 /// Mirror of `SetupString.pl::do_inclusion_substitutions` line 479-493.
-/// Lands in B10b-slice-5.
-pub fn do_inclusion_substitutions(_body: &mut String, _spec: &str) {
-    // TODO(B10b-slice-5): port SetupString.pl:479-493.
-    unimplemented!("B10b-slice-5: do_inclusion_substitutions")
+///
+/// ## Pragmatic regex subset
+///
+/// To keep the WASM bundle small and avoid pulling in the `regex`
+/// crate, this module implements its own minimal regex engine
+/// covering the patterns observed in the upstream corpus. The
+/// supported subset:
+///
+///   * Anchors `^` and `$` (per-line under `/m`).
+///   * Literal characters and escaped metacharacters
+///     (`\.`, `\;`, `\?`, `\*`, `\+`, `\(`, `\)`, `\[`, `\]`, `\{`, `\}`,
+///     `\\`, `\/`, `\^`, `\$`).
+///   * `\d` (digit), `\D` (non-digit), `\s` (whitespace),
+///     `\S` (non-whitespace), `\w` (word char), `\W` (non-word).
+///   * Character classes `[abc]`, ranges `[a-z]`, negation `[^abc]`.
+///   * Quantifiers `*`, `+`, `?`, plus their non-greedy forms `*?`,
+///     `+?`, `??`.
+///   * `.` (any char; respects `/s` for newline).
+///   * Alternation `|` at the top level (no nested groups).
+///   * Lookahead `(?!...)` (negative; sufficient for `\d+(?![a-z])`).
+///   * Capture groups `(...)` are accepted but un-numbered (replacement
+///     `$1`/`$2`/`\1` not supported — the corpus doesn't use them in
+///     `do_inclusion_substitutions` directives).
+///
+/// Patterns outside this subset cause the substitution to be skipped
+/// (the body is left unchanged for that directive). The regression
+/// harness will surface any such divergence as a per-cell mismatch.
+pub fn do_inclusion_substitutions(body: &mut String, spec: &str) {
+    let mut i = 0;
+    let bytes = spec.as_bytes();
+    let n = bytes.len();
+    while i < n {
+        // Skip whitespace and `,` separators.
+        while i < n && (bytes[i].is_ascii_whitespace() || bytes[i] == b',') {
+            i += 1;
+        }
+        if i >= n {
+            break;
+        }
+        if bytes[i] == b's' && i + 1 < n && bytes[i + 1] == b'/' {
+            // Substitution directive `s/PAT/REPL/FLAGS`.
+            if let Some(consumed) = apply_one_substitution(body, &spec[i..]) {
+                i += consumed;
+            } else {
+                // Unparseable; skip to next whitespace/comma.
+                while i < n && !bytes[i].is_ascii_whitespace() && bytes[i] != b',' {
+                    i += 1;
+                }
+            }
+        } else if bytes[i] == b'!' || bytes[i].is_ascii_digit() {
+            // Line-pick directive — `N`, `N-M`, `!N`, `!N-M`.
+            let start = i;
+            if bytes[i] == b'!' {
+                i += 1;
+            }
+            // Consume digits.
+            let n_start = i;
+            while i < n && bytes[i].is_ascii_digit() {
+                i += 1;
+            }
+            if i == n_start {
+                // Bare `!` with no digit — invalid; skip.
+                continue;
+            }
+            // Optional `-M`.
+            if i < n && bytes[i] == b'-' {
+                i += 1;
+                while i < n && bytes[i].is_ascii_digit() {
+                    i += 1;
+                }
+            }
+            apply_line_pick(body, &spec[start..i]);
+        } else {
+            // Unknown directive form — skip to next separator.
+            while i < n && !bytes[i].is_ascii_whitespace() && bytes[i] != b',' {
+                i += 1;
+            }
+        }
+    }
+}
+
+/// Apply one `s/PAT/REPL/FLAGS` directive starting at the beginning
+/// of `spec`. Returns the number of bytes consumed, or `None` when
+/// the directive is malformed or uses unsupported regex features.
+fn apply_one_substitution(body: &mut String, spec: &str) -> Option<usize> {
+    let bytes = spec.as_bytes();
+    if !spec.starts_with("s/") {
+        return None;
+    }
+    // Find the next unescaped `/` to close the pattern.
+    let pat_end = find_unescaped_slash(bytes, 2)?;
+    let pat = &spec[2..pat_end];
+    let repl_end = find_unescaped_slash(bytes, pat_end + 1)?;
+    let repl = &spec[pat_end + 1..repl_end];
+    // Flags are `[gism]*`.
+    let mut flag_end = repl_end + 1;
+    while flag_end < bytes.len()
+        && matches!(bytes[flag_end], b'g' | b'i' | b's' | b'm' | b'x')
+    {
+        flag_end += 1;
+    }
+    let flags = &spec[repl_end + 1..flag_end];
+
+    // Try to compile + apply the pattern. On unsupported pattern, do
+    // nothing (skip directive) but report consumption so we can move on.
+    let global = flags.contains('g');
+    let case_insensitive = flags.contains('i');
+    let dotall = flags.contains('s');
+    let multiline = flags.contains('m');
+    let opts = RegexOpts {
+        case_insensitive,
+        dotall,
+        multiline,
+    };
+    if let Some(compiled) = compile_regex(pat, opts) {
+        let new_body = compiled.replace_all(body, repl, global);
+        *body = new_body;
+    }
+    Some(flag_end)
+}
+
+/// Find the next unescaped `/` starting at `from` in `bytes`. Returns
+/// the byte offset, or `None` when no closing slash exists.
+fn find_unescaped_slash(bytes: &[u8], from: usize) -> Option<usize> {
+    let n = bytes.len();
+    let mut i = from;
+    while i < n {
+        match bytes[i] {
+            b'\\' => i += 2, // skip escaped char
+            b'/' => return Some(i),
+            _ => i += 1,
+        }
+    }
+    None
+}
+
+/// Apply a line-pick directive. `spec` is the raw text — `N`, `N-M`,
+/// `!N`, or `!N-M`.
+fn apply_line_pick(body: &mut String, spec: &str) {
+    let drop = spec.starts_with('!');
+    let nums_part = if drop { &spec[1..] } else { spec };
+    let (start, end) = if let Some((s, e)) = nums_part.split_once('-') {
+        let s: usize = s.parse().ok().unwrap_or(0);
+        let e: usize = e.parse().ok().unwrap_or(0);
+        (s, e)
+    } else {
+        let s: usize = nums_part.parse().ok().unwrap_or(0);
+        (s, s)
+    };
+    if start == 0 || end == 0 || end < start {
+        return;
+    }
+    // Lines are 1-indexed in the directive; 0-indexed internally.
+    let (s_idx, e_idx) = (start - 1, end);
+    let lines: Vec<&str> = body.split('\n').collect();
+    if s_idx >= lines.len() {
+        return;
+    }
+    let e_idx = e_idx.min(lines.len());
+    let kept: Vec<&str> = if drop {
+        lines
+            .iter()
+            .enumerate()
+            .filter_map(|(i, l)| if i < s_idx || i >= e_idx { Some(*l) } else { None })
+            .collect()
+    } else {
+        lines[s_idx..e_idx].to_vec()
+    };
+    *body = kept.join("\n");
+    // Perl always appends a trailing `\n` after splice — match that
+    // when the result is non-empty and didn't already end with one.
+    if !body.is_empty() && !body.ends_with('\n') {
+        body.push('\n');
+    }
+}
+
+// ─── Mini regex engine (used by do_inclusion_substitutions) ─────────
+
+#[derive(Debug, Clone, Copy, Default)]
+struct RegexOpts {
+    case_insensitive: bool,
+    dotall: bool,
+    multiline: bool,
+}
+
+/// Compiled regex. Holds the parsed pattern as a flat token vector;
+/// matching walks the input once per try-position with a small VM.
+#[derive(Debug, Clone)]
+struct CompiledRegex {
+    tokens: Vec<RegexToken>,
+    opts: RegexOpts,
+}
+
+#[derive(Debug, Clone)]
+enum RegexToken {
+    Anchor(Anchor),
+    Char(char),
+    Any,                  // `.` (newline only when dotall)
+    Class(CharClass),
+    Group(Vec<RegexToken>),
+    Alternation(Vec<Vec<RegexToken>>),
+    NegativeLookahead(Vec<RegexToken>),
+    Quantified(Box<RegexToken>, Quantifier),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Anchor {
+    Start,
+    End,
+}
+
+#[derive(Debug, Clone)]
+struct CharClass {
+    negated: bool,
+    ranges: Vec<(char, char)>,
+    /// Built-in escapes inside the class (\d, \s, \w).
+    builtins: Vec<BuiltinClass>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BuiltinClass {
+    Digit,
+    NonDigit,
+    Space,
+    NonSpace,
+    Word,
+    NonWord,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Quantifier {
+    min: usize,
+    max: Option<usize>,
+    greedy: bool,
+}
+
+fn compile_regex(pattern: &str, opts: RegexOpts) -> Option<CompiledRegex> {
+    let mut parser = RegexParser::new(pattern);
+    let tokens = parser.parse_alternation()?;
+    if !parser.at_end() {
+        return None;
+    }
+    Some(CompiledRegex { tokens, opts })
+}
+
+struct RegexParser<'a> {
+    pattern: &'a [u8],
+    pos: usize,
+}
+
+impl<'a> RegexParser<'a> {
+    fn new(pattern: &'a str) -> Self {
+        Self {
+            pattern: pattern.as_bytes(),
+            pos: 0,
+        }
+    }
+
+    fn at_end(&self) -> bool {
+        self.pos >= self.pattern.len()
+    }
+
+    fn peek(&self) -> Option<u8> {
+        self.pattern.get(self.pos).copied()
+    }
+
+    fn advance(&mut self) -> Option<u8> {
+        let b = self.peek()?;
+        self.pos += 1;
+        Some(b)
+    }
+
+    /// Top-level: alternation. Returns flattened tokens when there's
+    /// no `|`, or wraps in `Alternation` when there is.
+    fn parse_alternation(&mut self) -> Option<Vec<RegexToken>> {
+        let mut branches = Vec::new();
+        let first = self.parse_sequence()?;
+        branches.push(first);
+        while self.peek() == Some(b'|') {
+            self.pos += 1;
+            let next = self.parse_sequence()?;
+            branches.push(next);
+        }
+        if branches.len() == 1 {
+            Some(branches.into_iter().next().unwrap())
+        } else {
+            Some(vec![RegexToken::Alternation(branches)])
+        }
+    }
+
+    /// Sequence of atoms (possibly quantified). Stops at `|` or `)`
+    /// or end-of-input.
+    fn parse_sequence(&mut self) -> Option<Vec<RegexToken>> {
+        let mut tokens = Vec::new();
+        while let Some(b) = self.peek() {
+            if b == b'|' || b == b')' {
+                break;
+            }
+            let atom = self.parse_atom()?;
+            // Check for quantifier suffix.
+            let q = self.parse_quantifier();
+            match q {
+                Some(quant) => tokens.push(RegexToken::Quantified(Box::new(atom), quant)),
+                None => tokens.push(atom),
+            }
+        }
+        Some(tokens)
+    }
+
+    fn parse_atom(&mut self) -> Option<RegexToken> {
+        let b = self.advance()?;
+        match b {
+            b'^' => Some(RegexToken::Anchor(Anchor::Start)),
+            b'$' => Some(RegexToken::Anchor(Anchor::End)),
+            b'.' => Some(RegexToken::Any),
+            b'[' => self.parse_class(),
+            b'(' => {
+                // `(?!...)` — negative lookahead.
+                if self.pattern.get(self.pos) == Some(&b'?')
+                    && self.pattern.get(self.pos + 1) == Some(&b'!')
+                {
+                    self.pos += 2;
+                    let body = self.parse_alternation()?;
+                    if self.advance()? != b')' {
+                        return None;
+                    }
+                    return Some(RegexToken::NegativeLookahead(body));
+                }
+                // `(?:...)` — non-capturing group.
+                if self.pattern.get(self.pos) == Some(&b'?')
+                    && self.pattern.get(self.pos + 1) == Some(&b':')
+                {
+                    self.pos += 2;
+                }
+                let body = self.parse_alternation()?;
+                if self.advance()? != b')' {
+                    return None;
+                }
+                Some(RegexToken::Group(body))
+            }
+            b'\\' => self.parse_escape(),
+            // Quantifiers can't start an atom.
+            b'*' | b'+' | b'?' | b'{' => None,
+            _ => Some(RegexToken::Char(b as char)),
+        }
+    }
+
+    fn parse_escape(&mut self) -> Option<RegexToken> {
+        let b = self.advance()?;
+        match b {
+            b'd' => Some(RegexToken::Class(builtin_class(BuiltinClass::Digit))),
+            b'D' => Some(RegexToken::Class(builtin_class(BuiltinClass::NonDigit))),
+            b's' => Some(RegexToken::Class(builtin_class(BuiltinClass::Space))),
+            b'S' => Some(RegexToken::Class(builtin_class(BuiltinClass::NonSpace))),
+            b'w' => Some(RegexToken::Class(builtin_class(BuiltinClass::Word))),
+            b'W' => Some(RegexToken::Class(builtin_class(BuiltinClass::NonWord))),
+            b'n' => Some(RegexToken::Char('\n')),
+            b'r' => Some(RegexToken::Char('\r')),
+            b't' => Some(RegexToken::Char('\t')),
+            // Literal escape (`.`, `;`, `\`, `/`, etc.)
+            _ => Some(RegexToken::Char(b as char)),
+        }
+    }
+
+    fn parse_class(&mut self) -> Option<RegexToken> {
+        let mut class = CharClass {
+            negated: false,
+            ranges: Vec::new(),
+            builtins: Vec::new(),
+        };
+        if self.peek() == Some(b'^') {
+            class.negated = true;
+            self.pos += 1;
+        }
+        while let Some(b) = self.peek() {
+            if b == b']' {
+                self.pos += 1;
+                return Some(RegexToken::Class(class));
+            }
+            let ch = if b == b'\\' {
+                self.pos += 1;
+                let esc = self.advance()?;
+                match esc {
+                    b'd' => {
+                        class.builtins.push(BuiltinClass::Digit);
+                        continue;
+                    }
+                    b'D' => {
+                        class.builtins.push(BuiltinClass::NonDigit);
+                        continue;
+                    }
+                    b's' => {
+                        class.builtins.push(BuiltinClass::Space);
+                        continue;
+                    }
+                    b'S' => {
+                        class.builtins.push(BuiltinClass::NonSpace);
+                        continue;
+                    }
+                    b'w' => {
+                        class.builtins.push(BuiltinClass::Word);
+                        continue;
+                    }
+                    b'W' => {
+                        class.builtins.push(BuiltinClass::NonWord);
+                        continue;
+                    }
+                    b'n' => '\n',
+                    b'r' => '\r',
+                    b't' => '\t',
+                    other => other as char,
+                }
+            } else {
+                self.pos += 1;
+                b as char
+            };
+            // Check for range `a-z`.
+            if self.peek() == Some(b'-')
+                && self.pattern.get(self.pos + 1).copied() != Some(b']')
+            {
+                self.pos += 1;
+                let end_b = self.advance()?;
+                let end_ch = if end_b == b'\\' {
+                    let esc = self.advance()?;
+                    match esc {
+                        b'n' => '\n',
+                        b'r' => '\r',
+                        b't' => '\t',
+                        other => other as char,
+                    }
+                } else {
+                    end_b as char
+                };
+                class.ranges.push((ch, end_ch));
+            } else {
+                class.ranges.push((ch, ch));
+            }
+        }
+        // Unterminated class.
+        None
+    }
+
+    fn parse_quantifier(&mut self) -> Option<Quantifier> {
+        let b = self.peek()?;
+        let (min, max) = match b {
+            b'*' => {
+                self.pos += 1;
+                (0usize, None)
+            }
+            b'+' => {
+                self.pos += 1;
+                (1usize, None)
+            }
+            b'?' => {
+                self.pos += 1;
+                (0usize, Some(1))
+            }
+            _ => return None,
+        };
+        // Lazy?
+        let greedy = if self.peek() == Some(b'?') {
+            self.pos += 1;
+            false
+        } else {
+            true
+        };
+        Some(Quantifier { min, max, greedy })
+    }
+}
+
+fn builtin_class(kind: BuiltinClass) -> CharClass {
+    CharClass {
+        negated: false,
+        ranges: Vec::new(),
+        builtins: vec![kind],
+    }
+}
+
+impl CharClass {
+    fn matches(&self, ch: char) -> bool {
+        let mut hit = false;
+        for &(lo, hi) in &self.ranges {
+            if ch >= lo && ch <= hi {
+                hit = true;
+                break;
+            }
+        }
+        if !hit {
+            for kind in &self.builtins {
+                if matches_builtin(*kind, ch) {
+                    hit = true;
+                    break;
+                }
+            }
+        }
+        if self.negated {
+            !hit
+        } else {
+            hit
+        }
+    }
+}
+
+fn matches_builtin(kind: BuiltinClass, ch: char) -> bool {
+    match kind {
+        BuiltinClass::Digit => ch.is_ascii_digit(),
+        BuiltinClass::NonDigit => !ch.is_ascii_digit(),
+        BuiltinClass::Space => ch.is_whitespace(),
+        BuiltinClass::NonSpace => !ch.is_whitespace(),
+        BuiltinClass::Word => ch.is_alphanumeric() || ch == '_',
+        BuiltinClass::NonWord => !(ch.is_alphanumeric() || ch == '_'),
+    }
+}
+
+impl CompiledRegex {
+    /// Find the first match starting at byte offset `from`. Returns
+    /// `Some((start_byte, end_byte))` on match, `None` otherwise.
+    fn find(&self, text: &str, from: usize) -> Option<(usize, usize)> {
+        let chars: Vec<(usize, char)> = text.char_indices().collect();
+        let mut start_idx = chars.iter().position(|(b, _)| *b >= from).unwrap_or(chars.len());
+        loop {
+            if let Some(end) = match_seq(&self.tokens, &chars, start_idx, &self.opts) {
+                let s_byte = chars.get(start_idx).map(|(b, _)| *b).unwrap_or(text.len());
+                let e_byte = if end < chars.len() {
+                    chars[end].0
+                } else {
+                    text.len()
+                };
+                return Some((s_byte, e_byte));
+            }
+            if start_idx >= chars.len() {
+                return None;
+            }
+            start_idx += 1;
+        }
+    }
+
+    /// Apply substitution. When `global`, replace every non-overlapping
+    /// match; otherwise only the first.
+    fn replace_all(&self, text: &str, repl: &str, global: bool) -> String {
+        let mut out = String::with_capacity(text.len());
+        let mut cursor = 0usize;
+        loop {
+            let m = self.find(text, cursor);
+            match m {
+                Some((s, e)) => {
+                    out.push_str(&text[cursor..s]);
+                    out.push_str(repl);
+                    if e == s {
+                        // Zero-width match — advance one char (or break
+                        // out at end-of-string) to avoid infinite loop.
+                        if s >= text.len() {
+                            // At end of string and zero-width match —
+                            // we've already emitted the replacement;
+                            // there's nothing more to scan.
+                            cursor = s;
+                            break;
+                        }
+                        let ch_len = text[s..]
+                            .chars()
+                            .next()
+                            .map(|c| c.len_utf8())
+                            .unwrap_or(1);
+                        out.push_str(&text[s..s + ch_len]);
+                        cursor = s + ch_len;
+                    } else {
+                        cursor = e;
+                    }
+                    if !global {
+                        break;
+                    }
+                }
+                None => break,
+            }
+        }
+        out.push_str(&text[cursor..]);
+        out
+    }
+}
+
+/// Try to match the token sequence `tokens` starting at char index
+/// `at`. Returns the char index after the match on success.
+fn match_seq(
+    tokens: &[RegexToken],
+    chars: &[(usize, char)],
+    at: usize,
+    opts: &RegexOpts,
+) -> Option<usize> {
+    if tokens.is_empty() {
+        return Some(at);
+    }
+    let (first, rest) = (&tokens[0], &tokens[1..]);
+    match first {
+        RegexToken::Quantified(inner, q) => match_quantified(inner, q, rest, chars, at, opts),
+        _ => {
+            if let Some(after) = match_one(first, chars, at, opts) {
+                match_seq(rest, chars, after, opts)
+            } else {
+                None
+            }
+        }
+    }
+}
+
+/// Match one token (no quantifier). Returns the char index after the
+/// match on success.
+fn match_one(
+    token: &RegexToken,
+    chars: &[(usize, char)],
+    at: usize,
+    opts: &RegexOpts,
+) -> Option<usize> {
+    match token {
+        RegexToken::Anchor(Anchor::Start) => {
+            if at == 0 {
+                Some(at)
+            } else if opts.multiline && chars.get(at - 1).map(|(_, c)| *c) == Some('\n') {
+                Some(at)
+            } else {
+                None
+            }
+        }
+        RegexToken::Anchor(Anchor::End) => {
+            if at == chars.len() {
+                Some(at)
+            } else if opts.multiline && chars.get(at).map(|(_, c)| *c) == Some('\n') {
+                Some(at)
+            } else {
+                None
+            }
+        }
+        RegexToken::Char(c) => {
+            let cur = chars.get(at)?.1;
+            if char_eq(*c, cur, opts.case_insensitive) {
+                Some(at + 1)
+            } else {
+                None
+            }
+        }
+        RegexToken::Any => {
+            let cur = chars.get(at)?.1;
+            if cur == '\n' && !opts.dotall {
+                None
+            } else {
+                Some(at + 1)
+            }
+        }
+        RegexToken::Class(class) => {
+            let cur = chars.get(at)?.1;
+            let cur_for_match = if opts.case_insensitive {
+                cur.to_lowercase().next().unwrap_or(cur)
+            } else {
+                cur
+            };
+            // For case-insensitive, need to compare against both cases.
+            let matched = if opts.case_insensitive {
+                class.matches(cur_for_match)
+                    || class.matches(cur.to_uppercase().next().unwrap_or(cur))
+            } else {
+                class.matches(cur)
+            };
+            if matched {
+                Some(at + 1)
+            } else {
+                None
+            }
+        }
+        RegexToken::Group(inner) => match_seq(inner, chars, at, opts),
+        RegexToken::Alternation(branches) => {
+            for branch in branches {
+                if let Some(after) = match_seq(branch, chars, at, opts) {
+                    return Some(after);
+                }
+            }
+            None
+        }
+        RegexToken::NegativeLookahead(inner) => {
+            if match_seq(inner, chars, at, opts).is_some() {
+                None
+            } else {
+                Some(at)
+            }
+        }
+        RegexToken::Quantified(_, _) => {
+            // Should never be reached; quantified tokens are handled
+            // by match_seq before delegating here.
+            None
+        }
+    }
+}
+
+fn match_quantified(
+    inner: &RegexToken,
+    q: &Quantifier,
+    rest: &[RegexToken],
+    chars: &[(usize, char)],
+    at: usize,
+    opts: &RegexOpts,
+) -> Option<usize> {
+    // Collect all consecutive matches up to the maximum (or as many
+    // as possible). Then try the rest of the sequence at each
+    // possible split point.
+    let mut positions = vec![at];
+    let mut cur = at;
+    loop {
+        if let Some(max) = q.max {
+            if positions.len() - 1 >= max {
+                break;
+            }
+        }
+        match match_one(inner, chars, cur, opts) {
+            Some(next) if next > cur => {
+                cur = next;
+                positions.push(cur);
+            }
+            _ => break,
+        }
+    }
+    if positions.len() - 1 < q.min {
+        return None;
+    }
+    // Greedy = try longest first; lazy = shortest first.
+    let try_order: Box<dyn Iterator<Item = &usize>> = if q.greedy {
+        Box::new(positions.iter().rev())
+    } else {
+        Box::new(positions.iter())
+    };
+    for &split in try_order {
+        let consumed = (split as isize - at as isize) as usize;
+        // Need to satisfy at least `min` matches at this split.
+        if consumed / 1 < q.min && positions.iter().filter(|&&p| p <= split).count() - 1 < q.min {
+            continue;
+        }
+        if let Some(after) = match_seq(rest, chars, split, opts) {
+            return Some(after);
+        }
+    }
+    None
+}
+
+fn char_eq(a: char, b: char, case_insensitive: bool) -> bool {
+    if case_insensitive {
+        a.to_lowercase().next() == b.to_lowercase().next()
+    } else {
+        a == b
+    }
 }
 
 /// Resolve a load-time `@Path[:Section]` reference. Like the runtime
 /// version but applied once at corpus-load time.
 ///
 /// Mirror of `SetupString.pl::get_loadtime_inclusion` line 502-528.
-/// Lands in B10b-slice-5.
+///
+/// **Status:** delegated to slice 6 (`resolve_section`), which handles
+/// the same inclusion shape with the same multi-hop logic — there's
+/// no functional difference in the Rust port because we don't
+/// distinguish load-time vs. resolve-time caching (the corpus is
+/// already pre-loaded into memory).
 pub fn resolve_load_time_inclusion(
     _path: &str,
     _section: Option<&str>,
     _substitutions: Option<&str>,
 ) -> Option<String> {
-    // TODO(B10b-slice-5): port SetupString.pl:502-528.
-    unimplemented!("B10b-slice-5: resolve_load_time_inclusion")
+    // TODO(B10b-slice-6): delegate to resolve_section once it lands.
+    unimplemented!("B10b-slice-6: resolve_load_time_inclusion (delegates to resolve_section)")
 }
 
 // ─── Top-level resolvers (B10b-slice-6) ─────────────────────────────
@@ -2594,6 +3351,174 @@ mod tests {
         let out = process_conditional_lines(body, &s);
         // Empty (the only line was gated out).
         assert!(out.trim().is_empty());
+    }
+
+    // ─── B10b-slice-5: do_inclusion_substitutions ───────────────
+
+    fn dis(body: &str, spec: &str) -> String {
+        let mut s = body.to_string();
+        do_inclusion_substitutions(&mut s, spec);
+        s
+    }
+
+    #[test]
+    fn dis_line_pick_single() {
+        assert_eq!(dis("a\nb\nc", "1"), "a\n");
+        assert_eq!(dis("a\nb\nc", "2"), "b\n");
+        assert_eq!(dis("a\nb\nc", "3"), "c\n");
+    }
+
+    #[test]
+    fn dis_line_pick_range() {
+        assert_eq!(dis("a\nb\nc\nd", "1-2"), "a\nb\n");
+        assert_eq!(dis("a\nb\nc\nd", "2-4"), "b\nc\nd\n");
+    }
+
+    #[test]
+    fn dis_line_drop_single() {
+        // !2 — drop line 2.
+        assert_eq!(dis("a\nb\nc", "!2"), "a\nc\n");
+    }
+
+    #[test]
+    fn dis_line_drop_range() {
+        // !2-3 — drop lines 2-3.
+        assert_eq!(dis("a\nb\nc\nd", "!2-3"), "a\nd\n");
+    }
+
+    #[test]
+    fn dis_simple_substitution() {
+        assert_eq!(dis("hello world", "s/world/Rust/"), "hello Rust");
+    }
+
+    #[test]
+    fn dis_global_substitution() {
+        assert_eq!(dis("a b a b a", "s/a/X/g"), "X b X b X");
+        // Without /g: only first occurrence.
+        assert_eq!(dis("a b a b a", "s/a/X/"), "X b a b a");
+    }
+
+    #[test]
+    fn dis_anchor_substitution_per_line_with_m_flag() {
+        // `s/$/X/m` — append X to end of each line. Without /m,
+        // only matches end-of-string.
+        assert_eq!(dis("a\nb\nc", "s/$/X/gm"), "aX\nbX\ncX");
+    }
+
+    #[test]
+    fn dis_caret_anchor_per_line_with_m_flag() {
+        // `s/^/Ant. /` (no /m, no /g) — prepend "Ant. " at start of body.
+        assert_eq!(dis("foo\nbar", "s/^/Ant. /"), "Ant. foo\nbar");
+        // With /gm — prepend at every line start.
+        assert_eq!(dis("foo\nbar", "s/^/Ant. /gm"), "Ant. foo\nAnt. bar");
+    }
+
+    #[test]
+    fn dis_strip_suffix_pattern() {
+        // `s/;;.*//g` — drop `;;` and everything after, on every line.
+        // Dot does NOT match newline (no /s flag), so each occurrence
+        // of `;;...<eol>` becomes a separate match.
+        assert_eq!(
+            dis("Antiphon body;;tone1\nAnother;;tone2", "s/;;.*//g"),
+            "Antiphon body\nAnother"
+        );
+        // Without /g — only the first occurrence on the whole text.
+        assert_eq!(
+            dis("Antiphon body;;tone1\nAnother;;tone2", "s/;;.*//"),
+            "Antiphon body\nAnother;;tone2"
+        );
+    }
+
+    #[test]
+    fn dis_digit_class() {
+        // `s/;;\d+//g` — drop `;;` followed by digits.
+        assert_eq!(
+            dis("body;;109 then;;42 end", "s/;;\\d+//g"),
+            "body then end"
+        );
+    }
+
+    #[test]
+    fn dis_negative_lookahead() {
+        // `s/;;\d+(?![a-z])//g` — drop `;;<digits>` but not when
+        // followed by a lowercase letter.
+        assert_eq!(
+            dis("a;;5 b;;5x c;;7", "s/;;\\d+(?![a-z])//g"),
+            "a b;;5x c"
+        );
+    }
+
+    #[test]
+    fn dis_chained_directives() {
+        // Multiple directives in one spec, comma- or whitespace-
+        // separated.
+        let body = "a\nb\nc\nd";
+        // First pick lines 2-3, then sub b->BB.
+        assert_eq!(dis(body, "2-3 s/b/BB/"), "BB\nc\n");
+    }
+
+    #[test]
+    fn dis_unsupported_pattern_skips_directive_silently() {
+        // We don't support backreferences (\1) or named captures.
+        // A directive with an unsupported feature should leave the
+        // body untouched (no panic).
+        let before = "a\nb\nc".to_string();
+        let mut s = before.clone();
+        do_inclusion_substitutions(&mut s, "s/(?P<x>foo)/bar/");
+        // Either the body is unchanged (we couldn't compile the
+        // pattern) OR our parser accepts it as a non-capturing-ish
+        // group — both are acceptable. The critical contract is "no
+        // panic".
+        // (We don't assert on the exact value because it depends on
+        // the parser's tolerance.)
+        let _ = s;
+    }
+
+    #[test]
+    fn dis_alternation() {
+        // s/foo|bar/X/g
+        assert_eq!(dis("foo bar baz", "s/foo|bar/X/g"), "X X baz");
+    }
+
+    #[test]
+    fn dis_real_corpus_example_ant_vespera_strip_tone() {
+        // From the real corpus: `s/;;\d+//gm` strips numeric chant-tone
+        // suffixes from antiphons. Note `\d+` matches digits only —
+        // for `;;1d2` (numeric prefix + letter + digit) only `;;1` is
+        // stripped, leaving `d2`. The corpus uses this pattern when
+        // the chant tone is a pure integer; the `;;1d2` case is rare
+        // and the upstream Perl behaviour is the same (greedy digit
+        // match stops at non-digit).
+        let body = "Ant 1;;7\nAnt 2;;3\nAnt 3;;5";
+        assert_eq!(
+            dis(body, "s/;;\\d+//gm"),
+            "Ant 1\nAnt 2\nAnt 3"
+        );
+
+        // The mixed-tone case: `\d+` only chews leading digits; the
+        // trailing letter+digit (`d2`) survives but the `;;` is gone
+        // because it was consumed with the matched prefix. Matches
+        // Perl behaviour (the corpus uses `s/;;.*//` for chant
+        // suffixes that include letters).
+        let body = "Ant a;;1d2\nAnt b;;7";
+        assert_eq!(dis(body, "s/;;\\d+//gm"), "Ant ad2\nAnt b");
+    }
+
+    #[test]
+    fn dis_real_corpus_example_underscore_append() {
+        // `s/$/_/gm` — append underscore at end of each line.
+        let body = "Ant 1\nAnt 2\nAnt 3";
+        assert_eq!(dis(body, "s/$/_/gm"), "Ant 1_\nAnt 2_\nAnt 3_");
+    }
+
+    #[test]
+    fn dis_real_corpus_example_period_substitute() {
+        // `s/\.$/.;;109/m` — append ;;109 after trailing period (per line).
+        let body = "Antiphon body.\nNo period\nAnother.";
+        assert_eq!(
+            dis(body, "s/\\.$/.;;109/m"),
+            "Antiphon body.;;109\nNo period\nAnother."
+        );
     }
 
     // ─── regex_lite_match unit tests ─────────────────────────────

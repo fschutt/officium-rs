@@ -29,12 +29,13 @@
 //!
 //! See DIVINUM_OFFICIUM_PORT_PLAN.md Phase 6.
 
+use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::time::Instant;
 
 use rayon::prelude::*;
@@ -43,12 +44,22 @@ use officium_rs::core::{Date, Locale, MassPropers, OfficeInput, Rubric};
 use officium_rs::corpus::BundledCorpus;
 use officium_rs::mass::mass_propers;
 use officium_rs::perl_cache::{perl_submodule_sha, render_with_cache};
+use officium_rs::perl_driver::{PerlDriver, ScriptType};
 use officium_rs::precedence::compute_office;
 use officium_rs::regression::{
     compare_day, explain_divergence, extract_perl_sections, infer_perl_source, normalize,
     strip_perl_rubrics, DayReport, DivergenceCategory, InferredSource, SectionStatus,
     PROPER_SECTIONS,
 };
+
+thread_local! {
+    /// Per-thread Perl driver. `None` = not yet initialised;
+    /// `Some(Ok(d))` = up and running; `Some(Err(e))` = init
+    /// failed, fall back to per-render subprocess for this worker.
+    /// Each rayon worker thread holds one driver for the lifetime
+    /// of the sweep, eliminating per-render perl-startup cost.
+    static PERL_DRIVER: RefCell<Option<Result<PerlDriver, String>>> = const { RefCell::new(None) };
+}
 
 // Perl missa.pl `check_version` accepts only the names declared in
 // `web/www/missa/missa.dialog [versions]`. Bare "Divino Afflatu" is
@@ -191,6 +202,47 @@ fn render_perl(root: &PathBuf, mm: u32, dd: u32, yyyy: i32, rubric: &str) -> Res
         ));
     }
     String::from_utf8(out.stdout).map_err(|e| format!("non-utf8 stdout: {e}"))
+}
+
+/// Render via the thread-local persistent driver. On first call
+/// per worker thread, lazily spawns a `PerlDriver`. If spawn fails
+/// (e.g. system perl missing CGI module), falls back to the
+/// per-render subprocess `render_perl` and remembers the failure
+/// so we don't retry the spawn for every cell.
+///
+/// `subprocess_fallback_logged` is shared across all workers so
+/// the subprocess-fallback warning prints exactly once per sweep,
+/// not once per worker.
+fn render_via_driver(
+    root: &PathBuf,
+    mm: u32,
+    dd: u32,
+    yyyy: i32,
+    rubric: &str,
+    subprocess_fallback_logged: &AtomicBool,
+) -> Result<String, String> {
+    let date = format!("{mm:02}-{dd:02}-{yyyy}");
+    PERL_DRIVER.with(|cell| {
+        let mut opt = cell.borrow_mut();
+        if opt.is_none() {
+            // year_sweep only ever asks for SanctaMissa, so the
+            // missa-only driver is the right one. office_sweep
+            // uses both types and routes per request.
+            *opt = Some(PerlDriver::new(root, ScriptType::Missa));
+        }
+        match opt.as_mut().unwrap() {
+            Ok(driver) => driver.render(&date, rubric, "SanctaMissa"),
+            Err(e) => {
+                if !subprocess_fallback_logged.swap(true, Ordering::Relaxed) {
+                    eprintln!(
+                        "  perl-driver unavailable; falling back to subprocess. \
+                         Reason: {e}"
+                    );
+                }
+                render_perl(root, mm, dd, yyyy, rubric)
+            }
+        }
+    })
 }
 
 /// Per-day outcome carried back from a rayon worker. Carries the
@@ -451,6 +503,12 @@ fn run_one_year(cfg: &Cfg, year: i32, root: &PathBuf) -> (u32, u32, bool) {
     // when run outside a git tree).
     let cache_sha = perl_submodule_sha(root);
 
+    // Logged-once-per-sweep flag for the subprocess-fallback path.
+    // If the persistent driver fails to spawn on a worker thread,
+    // we want exactly ONE diagnostic line in the sweep log, not
+    // 365 of them.
+    let subprocess_fallback_logged = AtomicBool::new(false);
+
     println!(
         "year-sweep: rubric={:?} year={} dates={} out={} perl-cache={}",
         cfg.rubric_str,
@@ -508,7 +566,9 @@ fn run_one_year(cfg: &Cfg, year: i32, root: &PathBuf) -> (u32, u32, bool) {
                 }
             };
 
-            // Perl pipeline (cache-first).
+            // Perl pipeline (cache-first; on miss, route through
+            // the thread-local persistent driver instead of a fresh
+            // subprocess for every render).
             let perl_html = match render_with_cache(
                 &root,
                 &slug,
@@ -517,7 +577,16 @@ fn run_one_year(cfg: &Cfg, year: i32, root: &PathBuf) -> (u32, u32, bool) {
                 *dd,
                 "SanctaMissa",
                 cache_sha.as_deref(),
-                || render_perl(&root, *mm, *dd, year, &cfg.rubric_str),
+                || {
+                    render_via_driver(
+                        &root,
+                        *mm,
+                        *dd,
+                        year,
+                        &cfg.rubric_str,
+                        &subprocess_fallback_logged,
+                    )
+                },
             ) {
                 Ok(h) => h,
                 Err(e) => {

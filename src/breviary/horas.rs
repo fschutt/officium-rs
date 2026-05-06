@@ -112,24 +112,158 @@ pub fn compute_office_hour_full(
 }
 
 /// Convert an upstream `$hora` heading. Mirror of `horas.pl::adhoram`
-/// (lines 18-24): `Vespera` → `Ad Vesperas`, `Tertia` → `Ad Tertiam`,
-/// etc.
+/// (lines 18-24).
 ///
-/// Used by the demo's headline; today the demo synthesises this in JS.
-/// B13 moves it to Rust so the WASM API returns a fully-formatted
-/// banner.
-pub fn ad_horam_heading(_hour: Hour) -> String {
-    // TODO(B13): port `horas.pl::adhoram` — appends the right Latin
-    // suffix to the hour name. Trivial.
-    unimplemented!("phase B13: ad_horam heading formatter")
+/// Perl logic (verbatim port):
+///
+/// ```perl
+/// my $head = "Ad $hora";
+/// $head =~ s/a$/am/;
+/// $head = 'Ad Vesperas' if $hora =~ /vesper/i;
+/// ```
+///
+/// In Roman declension this gives the accusative-of-motion form: "Ad
+/// Tertiam", "Ad Sextam", "Ad Nonam", "Ad Primam", with the special
+/// "Ad Vesperas" (plural) for Vespera and the unchanged forms "Ad
+/// Matutinum" / "Ad Laudes" / "Ad Completorium" (already accusative
+/// or non-`a`-ending).
+pub fn ad_horam_heading(hour: Hour) -> String {
+    if matches!(hour, Hour::Vespera) {
+        return "Ad Vesperas".to_string();
+    }
+    let name = hour.as_str();
+    if name.ends_with('a') {
+        // Perl `s/a$/am/` — replace trailing `a` with `am`.
+        format!("Ad {}m", name)
+    } else {
+        format!("Ad {name}")
+    }
 }
 
-/// Parse the active rubric and the `psalmvar` flag into the runtime
-/// language toggle. Mirror of upstream `officium.pl:130-134` (Latin →
-/// Latin-Bea swap when `psalmvar` is set).
+/// Resolve the active psalter language for a Latin-locale renderer.
 ///
-/// Returns `(use_bea, lang_label)`.
-pub fn resolve_psalter_variant(_rubric: Rubric, _psalmvar: bool) -> (bool, &'static str) {
-    // TODO(B10): port officium.pl:130-134 psalmvar swap. Trivial.
-    unimplemented!("phase B10: psalmvar Latin → Latin-Bea swap")
+/// Mirror of upstream `officium.pl:130-134`:
+///
+/// ```perl
+/// if ($psalmvar) {
+///   $lang1 = 'Latin-Bea' if $lang1 eq 'Latin' && $lang2 ne 'Latin-Bea';
+///   $lang2 = 'Latin-Bea' if $lang2 eq 'Latin' && $lang1 ne 'Latin-Bea';
+/// }
+/// ```
+///
+/// The Rust port is single-column (no `lang2`) so the rule
+/// degenerates to: when `psalmvar` is set, swap `Latin` → `Latin-Bea`.
+/// Other Latin-derived locales (none currently exist) would pass
+/// through unchanged.
+///
+/// `_rubric` is reserved — the upstream Perl never reads `$version`
+/// here, but the parameter is kept on the signature so future
+/// rubric-keyed psalter variants (none defined yet) don't break the
+/// API.
+///
+/// Returns `(use_bea, lang_label)` — `use_bea` is what callers pass
+/// to [`crate::breviary::corpus::psalm`] for the body lookup;
+/// `lang_label` is the canonical language label for headline /
+/// trace output.
+pub fn resolve_psalter_variant(_rubric: Rubric, psalmvar: bool) -> (bool, &'static str) {
+    if psalmvar {
+        (true, "Latin-Bea")
+    } else {
+        (false, "Latin")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hour_as_str_round_trip() {
+        for h in Hour::ALL {
+            assert_eq!(Hour::parse(h.as_str()), Some(h), "round-trip failed for {h:?}");
+        }
+    }
+
+    #[test]
+    fn hour_parse_accepts_vesperae_alias() {
+        // Upstream officium.pl:30 normalises `Vesperae` (plural) →
+        // `Vespera` before dispatch.
+        assert_eq!(Hour::parse("Vesperae"), Some(Hour::Vespera));
+        assert_eq!(Hour::parse("Vespera"), Some(Hour::Vespera));
+    }
+
+    #[test]
+    fn hour_parse_rejects_unknown() {
+        assert_eq!(Hour::parse("NotAnHour"), None);
+        assert_eq!(Hour::parse(""), None);
+        // Case-sensitive — Perl is case-sensitive too at this layer.
+        assert_eq!(Hour::parse("vespera"), None);
+    }
+
+    #[test]
+    fn ordinarium_filename_collapses_minor_hours() {
+        assert_eq!(Hour::Tertia.ordinarium_filename(), "Minor");
+        assert_eq!(Hour::Sexta.ordinarium_filename(), "Minor");
+        assert_eq!(Hour::Nona.ordinarium_filename(), "Minor");
+        // Non-minor hours are 1:1.
+        assert_eq!(Hour::Matutinum.ordinarium_filename(), "Matutinum");
+        assert_eq!(Hour::Laudes.ordinarium_filename(), "Laudes");
+        assert_eq!(Hour::Prima.ordinarium_filename(), "Prima");
+        assert_eq!(Hour::Vespera.ordinarium_filename(), "Vespera");
+        assert_eq!(Hour::Completorium.ordinarium_filename(), "Completorium");
+    }
+
+    #[test]
+    fn ad_horam_heading_matches_perl_adhoram() {
+        // Pinned against Perl `adhoram` output for every hour.
+        assert_eq!(ad_horam_heading(Hour::Matutinum),    "Ad Matutinum");
+        assert_eq!(ad_horam_heading(Hour::Laudes),       "Ad Laudes");
+        assert_eq!(ad_horam_heading(Hour::Prima),        "Ad Primam");
+        assert_eq!(ad_horam_heading(Hour::Tertia),       "Ad Tertiam");
+        assert_eq!(ad_horam_heading(Hour::Sexta),        "Ad Sextam");
+        assert_eq!(ad_horam_heading(Hour::Nona),         "Ad Nonam");
+        assert_eq!(ad_horam_heading(Hour::Vespera),      "Ad Vesperas");
+        assert_eq!(ad_horam_heading(Hour::Completorium), "Ad Completorium");
+    }
+
+    #[test]
+    fn resolve_psalter_variant_swaps_under_psalmvar() {
+        // psalmvar off — Vulgate text (false), `Latin` label.
+        assert_eq!(
+            resolve_psalter_variant(Rubric::Tridentine1570, false),
+            (false, "Latin"),
+        );
+        assert_eq!(
+            resolve_psalter_variant(Rubric::Rubrics1960, false),
+            (false, "Latin"),
+        );
+        // psalmvar on — Bea text (true), `Latin-Bea` label.
+        assert_eq!(
+            resolve_psalter_variant(Rubric::Tridentine1570, true),
+            (true, "Latin-Bea"),
+        );
+        assert_eq!(
+            resolve_psalter_variant(Rubric::Rubrics1960, true),
+            (true, "Latin-Bea"),
+        );
+    }
+
+    #[test]
+    fn hour_all_is_canonical_order() {
+        // Liturgical day order — Matutinum first, Completorium last.
+        let names: Vec<&str> = Hour::ALL.iter().map(|h| h.as_str()).collect();
+        assert_eq!(
+            names,
+            vec![
+                "Matutinum",
+                "Laudes",
+                "Prima",
+                "Tertia",
+                "Sexta",
+                "Nona",
+                "Vespera",
+                "Completorium",
+            ],
+        );
+    }
 }

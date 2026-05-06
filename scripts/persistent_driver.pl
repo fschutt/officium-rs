@@ -146,6 +146,24 @@ sub render_one {
     # script type.
     %main::_dialog = ();
 
+    # CRITICAL: setupstring_parse_file evaluates section-conditional
+    # annotations like `[Graduale] (tempore Adventus)` AT FILE-PARSE
+    # TIME, against globals like `$dayname[0]`. The result is cached
+    # in `%DivinumOfficium::SetupString::setupstring_caches_by_version`
+    # forever. The parent's warmup parsed every commune file with
+    # `$dayname[0]='Pent01'` (warmup date 05-04), so for every saint
+    # whose mass falls in Advent or Easter or Quadragesima, the
+    # cached section is the WRONG conditional branch.
+    #
+    # Forking inherits the cache via CoW. Clearing it in the child
+    # before each render forces re-parse against THIS render's
+    # `dayname` — at the cost of one corpus walk per render, but
+    # that's still only ~100 files (not the full ~3,000 dialog +
+    # everything-else load).
+    # SetupString.pl has NO `package` declaration so its `our`
+    # globals live in `main::`, not in `DivinumOfficium::SetupString::`.
+    %main::setupstring_caches_by_version = ();
+
     # Request-input package globals that the entrypoint scripts
     # READ but don't always RE-INITIALISE before reading. The
     # parent's warmup populated these; without resetting, the

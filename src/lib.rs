@@ -26,6 +26,7 @@
 //! shipped under `data/` (embedded via `include_str!`); consumers can
 //! supply their own impl for custom data sources.
 
+pub mod breviary;
 pub mod core;
 pub mod corpus;
 pub mod data_types;
@@ -44,6 +45,7 @@ pub mod precedence;
 pub mod reform;
 pub mod sancti;
 pub mod scrub;
+pub mod setupstring;
 
 pub mod tempora_table;
 pub mod transfer_table;

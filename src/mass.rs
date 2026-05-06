@@ -329,8 +329,11 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         let coronatio_appended = apply_coronatio_oratio(
             &block.latin, sect, office.date, corpus,
         );
+        let world_mission_appended = apply_world_mission_oratio(
+            &coronatio_appended, sect, office, corpus,
+        );
         let latin = apply_post_septuagesima_conditional(
-            &coronatio_appended, in_post_septuagesima,
+            &world_mission_appended, in_post_septuagesima,
         );
         let latin = apply_spelling_for_active_rubric(&do_expand_macros(&latin));
         let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
@@ -2135,6 +2138,133 @@ fn apply_coronatio_oratio(
         "{}\n_\n!Pro Papa\n{}",
         main_stripped.trim_end_matches('\n'),
         coronatio_with_name
+    )
+}
+
+/// World Mission Sunday "Pro Propagatione Fidei" Oratio/Secreta/
+/// Postcommunio commemoration. Mirrors Perl
+/// `propers.pl::world_mission_sunday` (line 443) +
+/// `propers.pl::oratio` line 222 sub-unica branch.
+///
+/// On the penultimate Sunday of October under
+/// Divino-Afflatu/Reduced-1955/Rubrics-1960 — when the winner is a
+/// Sunday Mass — Perl appends the Commune/Propaganda Oratio/Secreta/
+/// Postcommunio under "sub unica conclusione". The combined block
+/// becomes:
+///
+///   <main body, $Per/$Qui stripped>
+///   _
+///   !Pro fidei propagatione
+///   <Commune/Propaganda Oratio body>
+///
+/// We mirror that here. Drives the Pent19_23_SelfRef_R55/_R60 +
+/// R55_Propaganda clusters (54+ days across the 1976-2076 sweep).
+fn apply_world_mission_oratio(
+    body: &str,
+    sect: &str,
+    office: &OfficeOutput,
+    corpus: &dyn Corpus,
+) -> String {
+    if !matches!(sect, "Oratio" | "Secreta" | "Postcommunio") {
+        return body.to_string();
+    }
+    if !matches!(
+        office.rubric,
+        crate::core::Rubric::DivinoAfflatu1911
+            | crate::core::Rubric::Reduced1955
+            | crate::core::Rubric::Rubrics1960
+    ) {
+        return body.to_string();
+    }
+    // Penultimate Sunday of October. `monthday(d, m, y, true, false)`
+    // returns `"104-0"` for the Sunday in week-4 of liturgical
+    // October. Mirrors Perl's `monthday(... 1, 0) eq '104-0'`.
+    let key = crate::date::monthday(
+        office.date.day, office.date.month, office.date.year, true, false,
+    );
+    if key != "104-0" {
+        return body.to_string();
+    }
+    // Only fires when the winner is a Sunday Mass — a Sancti winner
+    // displaces the World Mission commemoration entirely. Mirrors
+    // Perl's `$winner{Rank} =~ /Dominica/i` check. We approximate
+    // by requiring the winner to be a Pent*-0 Tempora file.
+    let is_sunday_tempora = office.winner.category == FileCategory::Tempora
+        && office.winner.stem.starts_with("Pent")
+        && office.winner.stem.ends_with("-0");
+    if !is_sunday_tempora {
+        return body.to_string();
+    }
+    let prop_key = FileKey {
+        category: FileCategory::Commune,
+        stem: "Propaganda".to_string(),
+    };
+    let prop_file = match corpus.mass_file(&prop_key) {
+        Some(f) => f,
+        None => return body.to_string(),
+    };
+    let prop_body = match prop_file.sections.get(sect) {
+        Some(b) => b.clone(),
+        None => return body.to_string(),
+    };
+    // Strip $Per/$Qui macro lines from the main body — they would
+    // otherwise emit a conclusio mid-block before the appended
+    // Propaganda prayer. The final $Per/$Qui from the Propaganda
+    // body becomes the block's only conclusio (sub unica).
+    let main_stripped: String = body
+        .lines()
+        .filter(|line| {
+            let t = line.trim_start();
+            !t.starts_with("$Per ") && !t.starts_with("$Qui ")
+        })
+        .collect::<Vec<&str>>()
+        .join("\n");
+    // Oratio and Postcommunio get a fresh `Orémus.` heading before
+    // the commemoration's italic-red label UNDER R60 only — R60
+    // strips `$Per/$Qui` macros entirely from the main body, so the
+    // commemoration starts a fully independent prayer with its own
+    // `Orémus.`. Under R55 (DA path through propers.pl), the main
+    // `$Per Dominum` is preserved + appended after all
+    // commemorations, so the commemoration shares the conclusio
+    // and no fresh `Orémus.` is emitted. Mirrors
+    // `propers.pl::oratio` lines 224-238: the `if ($version =~
+    // /196/)` branch substitutes `$Per/$Qui` away (R60), while the
+    // pre-1960 branch saves to `$addconclusio` (R55).
+    //
+    // Secreta gets no `Orémus.` regardless (priest reads sotto-voce).
+    // Mirrors line 242: `$orm = prayer('Oremus', ...) unless $type
+    // =~ /Secreta/i;`.
+    let is_r60 = matches!(office.rubric, crate::core::Rubric::Rubrics1960);
+    let oremus_prefix = if is_r60 && matches!(sect, "Oratio" | "Postcommunio") {
+        "$Oremus\n"
+    } else {
+        ""
+    };
+    // Header form depends on whether the day has another sanctoral
+    // entry that would otherwise commemorate. With one (e.g.
+    // 10-20 St. John Cantius under R60), Perl labels Propaganda
+    // as a SECOND commemoration: "Commemoratio Pro Propagatione
+    // Fidei". Without one (e.g. 10-22 has no kalendar saint),
+    // Propaganda is the lone imperata and gets the simpler header
+    // "Pro fidei propagatione". The kalendar lookup mirrors what
+    // Perl's `$commemoratio` would be set to before the world-
+    // mission injection runs.
+    let has_other_sancti_on_date = {
+        let layer = office.rubric.kalendar_layer();
+        crate::kalendaria_layers::lookup(layer, office.date.month, office.date.day)
+            .is_some()
+    };
+    let header = if has_other_sancti_on_date {
+        "!Commemoratio Pro Propagatione Fidei"
+    } else {
+        "!Pro fidei propagatione"
+    };
+    format!(
+        "{}\n_\n{}{}\n{}",
+        main_stripped.trim_end_matches('\n'),
+        oremus_prefix,
+        header,
+        prop_body
     )
 }
 

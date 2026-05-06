@@ -19,10 +19,20 @@ returns 100% on every rubric.**
 |  8 | T1910_Annunciation          |   5 | ✅ | Adv/Quad srank cap: Class I sancti capped to 6.01 |
 |  9 | DA_SeptEmbersCross          |  14 | ✅ | Festum Domini precedence in `decide_sanctoral_wins_1570` |
 | 10 | R55_SeptEmbersCross         |  14 | ✅ | extended Festum Domini gate to include R55 |
-| 11 | Pent19_23_SelfRef_R55       |  15 | ⏳ | needs R55 rank-aware commemoration suppression |
-| 12 | Quadp_Quad_Commune_C4a      |  29 | ⏳ | needs T1910 commune-redirect for Quadp ferias |
+| 11 | Pent19_23_SelfRef_R55       |  15 | ⏳ | needs R55 commemoration-appendage port (Phase 9) |
+| 12 | Quadp_Quad_Commune_C4a      |  29 | 🟡 | 28/29 closed; 2048-02-24 needs T1910 transferred-saint walk |
 
-**Closed: 10 / 12 clusters, 249 / 463 fail-days (54%).**
+**Closed: 10 / 12 clusters, 277 / 463 fail-days (60%).**
+
+* Cluster 12 partial: stem-extras suppression now requires the rule's
+  source key to actually be the date's kalendar key (closed
+  non-leap-year 02-23 fails); `dirge1=02-12` placement no longer
+  suppresses native 02-12 saints (closed all 02-11 fails); leap-year
+  Feb-23 suppression now layer-aware, only Pius1570 has Vigil-of-
+  Matthias as main, so PiusX1906+ keeps Petri Damiani in leap years
+  (closed all leap-year 02-23 fails). Single remaining day 2048-02-24
+  needs explicit T1910 transferred-feast walk (currently T1570/Monastic
+  only) — separate iteration.
 
 ## Iteration plan
 

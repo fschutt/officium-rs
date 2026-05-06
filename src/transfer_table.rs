@@ -397,6 +397,22 @@ pub fn stem_transferred_away_with_stems(
             if source_mmdd == &mm_dd {
                 continue;
             }
+            // Perl `Directorium::transfered()` line 247 / 262:
+            //   `next if $key =~ /(dirge|Hy)/i;`
+            // Pseudo-keys like `dirge1=02-12` (placement of Office of
+            // the Dead) and `Hy*=...` (hymn-shift markers) are not
+            // saint transfers — they shouldn't trigger native-saint
+            // suppression on the target date. Without this skip, T1910
+            // 02-12 (Septem Fundatorum) was being suppressed every
+            // year because `dirge1=02-12;;1906` mentions stem 02-12 in
+            // its target. Closes Quadp_Quad_Commune_C4a 02-11 days.
+            if source_mmdd.eq_ignore_ascii_case("dirge1")
+                || source_mmdd.starts_with("dirge")
+                || source_mmdd.starts_with("Hy")
+                || source_mmdd.starts_with("hy")
+            {
+                continue;
+            }
             for (target, rubrics) in targets {
                 if !rubric_matches(rubrics, rubric) {
                     continue;

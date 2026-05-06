@@ -1505,7 +1505,18 @@ fn resolve_sancti_for_tridentine_1570(
     //   2. Today's native entry has lower rank than the transferred
     //      saint (the transferred saint then displaces today's native
     //      saint, who gets commemorated).
-    let kalendar_key = date::sancti_kalendar_key(year, month, day);
+    // Leap-year Feb-23 suppression (`sancti_kalendar_key`) only applies
+    // to layers where Feb 23's main is the Vigil-of-Matthias (`02-23o`).
+    // Under Pius1570 / Monastic the Vigil IS the main → suppress in
+    // leap years (the Vigil moves to real Feb 24 = kalendar 02-29).
+    // Under PiusX1906+ the main is `02-23r` (Petri Damiani, Duplex 3),
+    // which is NOT moved by the bissextile shift — so we keep the
+    // entry. Closes Quadp_Quad_Commune_C4a leap-year days.
+    let kalendar_key = if matches!(layer, crate::kalendaria_layers::Layer::Pius1570) {
+        date::sancti_kalendar_key(year, month, day)
+    } else {
+        Some(date::sday_pair(month, day, year))
+    };
     let (look_m, look_d) = kalendar_key.unwrap_or_else(|| date::sday_pair(month, day, year));
     // If the year's transfer table ANNOUNCES that this date's stem
     // (e.g. `03-25` = Annunciation) has been moved to a future date
@@ -1550,16 +1561,22 @@ fn resolve_sancti_for_tridentine_1570(
     // date-target match alone misses leap-year Feb 24, where mm_dd =
     // "02-29" and the rule is `02-23=02-22~02-23o` (target is "02-22",
     // extras has "02-23o" — only the stem mention catches it).
-    let candidate_stems: Vec<&str> = kalendar_entry_for_date
+    // Only the MAIN stem matters for "is this date's office transferred
+    // away?" — when a transfer rule moves a commemoration stem (e.g.
+    // `02-29=02-22~02-23o;;1888 1906` moves the Vigil-of-Matthias
+    // commemoration off real Feb 24 leap), the date's MAIN feast (Petri
+    // Damiani 02-23r on 1981-02-23 T1910) stays put. Without this
+    // narrowing, the date-target heuristic was nuking the whole 02-23
+    // entry on every non-leap T1910 February-23 because the rule
+    // mentions `02-23o` in its extras column. Closes
+    // Quadp_Quad_Commune_C4a (29 days).
+    let candidate_main_stems: Vec<&str> = kalendar_entry_for_date
         .iter()
-        .flat_map(|e| {
-            std::iter::once(e.main.stem.as_str())
-                .chain(e.commemorations.iter().map(|c| c.stem.as_str()))
-        })
+        .map(|e| e.main.stem.as_str())
         .collect();
     let suppressed_by_transfer =
         crate::transfer_table::stem_transferred_away_with_stems(
-            year, rubric.transfer_rubric_tag(), look_m, look_d, &candidate_stems,
+            year, rubric.transfer_rubric_tag(), look_m, look_d, &candidate_main_stems,
         );
     let native_entry = if suppressed_by_transfer {
         None

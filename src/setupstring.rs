@@ -2398,45 +2398,250 @@ fn char_eq(a: char, b: char, case_insensitive: bool) -> bool {
 ///
 /// Mirror of `SetupString.pl::get_loadtime_inclusion` line 502-528.
 ///
-/// **Status:** delegated to slice 6 (`resolve_section`), which handles
-/// the same inclusion shape with the same multi-hop logic — there's
-/// no functional difference in the Rust port because we don't
-/// distinguish load-time vs. resolve-time caching (the corpus is
-/// already pre-loaded into memory).
+/// In the Rust port there's no functional distinction between
+/// load-time and resolve-time inclusions (the corpus is pre-loaded
+/// into memory by the build script, with conditional eval already
+/// baked for the 1570 baseline). This function therefore delegates
+/// to [`resolve_section`] under a default Subjects — callers that
+/// need rubric-aware resolution should use [`resolve_section`]
+/// directly.
 pub fn resolve_load_time_inclusion(
-    _path: &str,
-    _section: Option<&str>,
-    _substitutions: Option<&str>,
+    path: &str,
+    section: Option<&str>,
+    substitutions: Option<&str>,
 ) -> Option<String> {
-    // TODO(B10b-slice-6): delegate to resolve_section once it lands.
-    unimplemented!("B10b-slice-6: resolve_load_time_inclusion (delegates to resolve_section)")
+    let sect = section.unwrap_or("");
+    let subjects = Subjects::default();
+    let mut body = resolve_section(path, sect, &subjects)?;
+    if let Some(subs) = substitutions {
+        do_inclusion_substitutions(&mut body, subs);
+    }
+    Some(body)
 }
 
 // ─── Top-level resolvers (B10b-slice-6) ─────────────────────────────
 
-/// Top-level section resolver. Mirror of `setupstring` line 534-712.
-/// Lands in B10b-slice-6.
-pub fn resolve_section(
-    _path: &str,
-    _section: &str,
-    _subjects: &Subjects<'_>,
-) -> Option<String> {
-    // TODO(B10b-slice-6): port SetupString.pl:534-712.
-    unimplemented!("B10b-slice-6: resolve_section (multi-hop @-redirect)")
+/// Maximum @-hop count before resolution gives up. The Perl source
+/// (`SetupString.pl:679`) hard-caps at 7; we mirror that.
+pub const MAX_AT_HOPS: usize = 7;
+
+/// Top-level section resolver. Mirror of `setupstring` line 534-712,
+/// pared down to the runtime essentials.
+///
+/// Walks the `[Section]` indirection chain:
+///
+///   1. Look up `(path, section)` via the supplied `lookup` closure.
+///   2. If the body starts with `@OtherPath` or `@OtherPath:OtherSection`,
+///      follow the redirect (with `do_inclusion_substitutions` applied
+///      to the target body when a `:s/PAT/REPL/` suffix is present).
+///   3. The redirect target itself may carry its own `@`-line, so we
+///      iterate up to `MAX_AT_HOPS` times.
+///   4. After the chain resolves, run [`process_conditional_lines`]
+///      on the final body to drop rubric-gated lines under the active
+///      `subjects`.
+///
+/// **Note on the `lookup` closure:** the Rust runtime port keeps
+/// resolution corpus-agnostic by accepting the per-`(path, section)`
+/// fetcher as a parameter. Callers wire it to
+/// [`crate::horas::lookup`] for office files or any equivalent for
+/// other corpora. This mirrors the upstream `setupstring_caches_by_version`
+/// hash but as an explicit dependency rather than a global.
+///
+/// The closure should return the **raw** section body (build-time
+/// conditional eval already applied for the 1570 baseline; runtime
+/// conditional eval is applied here on the final body, after the
+/// chain resolves).
+pub fn resolve_section_with<F>(
+    path: &str,
+    section: &str,
+    subjects: &Subjects<'_>,
+    lookup: F,
+) -> Option<String>
+where
+    F: Fn(&str, &str) -> Option<String>,
+{
+    let mut cur_path = path.to_string();
+    let mut cur_section = section.to_string();
+    let mut hops = 0usize;
+    loop {
+        let raw = lookup(&cur_path, &cur_section)?;
+        if let Some(redirect) = parse_at_redirect(&raw, &cur_path, &cur_section) {
+            hops += 1;
+            if hops > MAX_AT_HOPS {
+                // Cycle / too-deep — return the raw body so the
+                // divergence is visible.
+                return Some(process_conditional_lines(&raw, subjects));
+            }
+            cur_path = redirect.path;
+            cur_section = redirect.section;
+            // If the redirect carries inclusion substitutions, fetch
+            // the target body, apply them, then run conditional eval.
+            // We do this by re-entering the loop — but if the
+            // target's body doesn't start with another `@`, we need
+            // a way to capture it for substitution. Handle that by
+            // fetching one more time and applying immediately.
+            if let Some(subs) = redirect.substitutions {
+                let target = lookup(&cur_path, &cur_section)?;
+                // If the target itself is another @-redirect, defer
+                // substitution to its resolution (rare; we don't
+                // model it). Most corpus uses are 1-hop with subs.
+                if !is_at_redirect_line(&target) {
+                    let mut body = process_conditional_lines(&target, subjects);
+                    do_inclusion_substitutions(&mut body, &subs);
+                    return Some(body);
+                }
+                // Fall through: continue chain without applying subs
+                // (TODO: model multi-hop subs if the corpus uses them).
+            }
+            continue;
+        }
+        // Not an @-redirect — apply runtime conditional eval and return.
+        return Some(process_conditional_lines(&raw, subjects));
+    }
 }
 
-/// Office-side section resolver — adds the per-day commune chain
+/// One parsed `@`-redirect line.
+#[derive(Debug, Clone)]
+struct AtRedirect {
+    path: String,
+    section: String,
+    substitutions: Option<String>,
+}
+
+/// Parse the upstream `@Path[:Section][:subs]` shape. Returns `None`
+/// when `body` doesn't start with `@` (after optional leading
+/// whitespace) or doesn't have a balanced shape. The Perl regex
+/// (`SetupString.pl:555-562`) is:
+///
+/// ```text
+/// ^\s*@
+/// ([^\n:]+)?                # filename (self-ref if omitted)
+/// (?::([^\n:]+?))?          # optional keyword (section)
+/// [^\S\n\r]*                # ignore trailing whitespace
+/// (?::(.*))?                # optional substitutions
+/// $
+/// ```
+///
+/// Examples:
+///   * `@Commune/C7` → path=Commune/C7, section=<inherit caller's>, subs=None
+///   * `@Tempora/Pasc1-0:Oratio` → path=Tempora/Pasc1-0, section=Oratio, subs=None
+///   * `@:Ant Vespera` → self-reference, section=Ant Vespera
+///   * `@:Ant Vespera:s/;;.*//gm` → self-reference, section=Ant Vespera, subs=`s/;;.*//gm`
+///
+/// `current_path` and `current_section` are the active resolution
+/// context — used to fill in the implicit-self-reference and
+/// implicit-same-section slots.
+fn parse_at_redirect(body: &str, current_path: &str, current_section: &str) -> Option<AtRedirect> {
+    let trimmed = body.trim_start();
+    let after_at = trimmed.strip_prefix('@')?;
+    // Reject when the body has multiple non-empty lines — those are
+    // long sections that happen to start with `@`, not redirect
+    // markers. (Mirror of the Perl regex's line-anchored shape; the
+    // real Perl checks that the regex matches the WHOLE line, not
+    // just a prefix.)
+    let first_line = after_at.split('\n').next()?;
+    let after_first_line = after_at[first_line.len()..].trim();
+    if !after_first_line.is_empty() {
+        // Multi-line body — only treat as redirect when the trailing
+        // lines are all empty.
+        return None;
+    }
+    let line = first_line.trim_end();
+    // Split on the first `:` (path / section boundary).
+    let (path_part, rest_after_path) = match line.split_once(':') {
+        Some((p, r)) => (p, Some(r)),
+        None => (line, None),
+    };
+    // Self-reference when path is empty.
+    let path = if path_part.is_empty() {
+        current_path.to_string()
+    } else {
+        path_part.to_string()
+    };
+    let (section, substitutions) = match rest_after_path {
+        Some(rest) => {
+            // `rest` may contain another `:` to split section / subs.
+            // Substitutions start with `s/` or a digit / `!` for
+            // line-pick — neither of which is a valid section name
+            // beginning, so we detect the split by looking at what
+            // comes after the next `:`.
+            //
+            // The Perl regex captures section as `[^\n:]+?` (non-greedy,
+            // no `:`), followed by optional ` ... :subs`. So section
+            // is the longest non-`:` run BEFORE a final `:subs` group.
+            //
+            // Simpler heuristic: split on the LAST `:` only when the
+            // tail looks like a substitution directive.
+            if let Some(last_colon) = rest.rfind(':') {
+                let possible_section = &rest[..last_colon];
+                let possible_subs = &rest[last_colon + 1..];
+                if looks_like_substitution(possible_subs) {
+                    (
+                        possible_section.trim().to_string(),
+                        Some(possible_subs.trim().to_string()),
+                    )
+                } else {
+                    (rest.trim().to_string(), None)
+                }
+            } else {
+                (rest.trim().to_string(), None)
+            }
+        }
+        None => (current_section.to_string(), None),
+    };
+    Some(AtRedirect {
+        path,
+        section,
+        substitutions,
+    })
+}
+
+fn looks_like_substitution(s: &str) -> bool {
+    let s = s.trim();
+    s.starts_with("s/") || s.starts_with('!') || s.chars().next().map_or(false, |c| c.is_ascii_digit())
+}
+
+/// True when a body's first non-empty line is an `@`-redirect.
+fn is_at_redirect_line(body: &str) -> bool {
+    body.lines()
+        .find(|l| !l.trim().is_empty())
+        .map_or(false, |l| l.trim_start().starts_with('@'))
+}
+
+/// Resolve a section against the ambient breviary corpus
+/// ([`crate::horas::lookup`]). Convenience wrapper around
+/// [`resolve_section_with`] for the common case.
+///
+/// Mirror of `SetupString.pl::setupstring` line 534-712 in its most
+/// common usage: "fetch this section under the active rubric, follow
+/// any `@`-redirects, run conditional eval, return the body".
+pub fn resolve_section(
+    path: &str,
+    section: &str,
+    subjects: &Subjects<'_>,
+) -> Option<String> {
+    resolve_section_with(path, section, subjects, |p, s| {
+        let file = crate::horas::lookup(p)?;
+        file.sections.get(s).cloned()
+    })
+}
+
+/// Office-side section resolver — adds the per-day commune-chain
 /// fallback that distinguishes office lookups from Mass lookups.
 ///
-/// Mirror of `SetupString.pl::officestring` line 720-777. Lands in
-/// B10b-slice-6.
+/// Mirror of `SetupString.pl::officestring` line 720-777. The
+/// upstream `officestring` is a thin layer over `setupstring` plus
+/// monthly-feria special-case handling for August-December weekday
+/// ferials. The breviary leg's commune-chain fallback (`vide CXX`,
+/// `ex CXX`, `@Path` parent-inherit) lives in
+/// [`crate::breviary::proprium`] and isn't relevant here — this
+/// function just delegates to [`resolve_section`].
 pub fn resolve_office_section(
-    _path: &str,
-    _section: &str,
-    _subjects: &Subjects<'_>,
+    path: &str,
+    section: &str,
+    subjects: &Subjects<'_>,
 ) -> Option<String> {
-    // TODO(B10b-slice-6): port SetupString.pl:720-777.
-    unimplemented!("B10b-slice-6: resolve_office_section")
+    resolve_section(path, section, subjects)
 }
 
 #[cfg(test)]
@@ -3519,6 +3724,239 @@ mod tests {
             dis(body, "s/\\.$/.;;109/m"),
             "Antiphon body.;;109\nNo period\nAnother."
         );
+    }
+
+    // ─── B10b-slice-6: resolve_section ──────────────────────────
+
+    use std::collections::HashMap;
+
+    fn mock_corpus(entries: &[(&str, &str, &str)]) -> HashMap<(String, String), String> {
+        let mut m = HashMap::new();
+        for (path, section, body) in entries {
+            m.insert((path.to_string(), section.to_string()), body.to_string());
+        }
+        m
+    }
+
+    #[test]
+    fn resolve_section_returns_direct_body_when_not_a_redirect() {
+        let corpus = mock_corpus(&[
+            ("Sancti/05-04", "Oratio", "Praesta, quaesumus..."),
+        ]);
+        let s = body_subj(Rubric::Tridentine1570);
+        let result = resolve_section_with("Sancti/05-04", "Oratio", &s, |p, sec| {
+            corpus.get(&(p.to_string(), sec.to_string())).cloned()
+        });
+        assert_eq!(result.as_deref(), Some("Praesta, quaesumus..."));
+    }
+
+    #[test]
+    fn resolve_section_follows_simple_at_redirect() {
+        // Sancti/01-08 [Oratio] = `@Sancti/01-06` — implicit same-section.
+        let corpus = mock_corpus(&[
+            ("Sancti/01-08", "Oratio", "@Sancti/01-06"),
+            ("Sancti/01-06", "Oratio", "Deus, qui hodierna die..."),
+        ]);
+        let s = body_subj(Rubric::Tridentine1570);
+        let result = resolve_section_with("Sancti/01-08", "Oratio", &s, |p, sec| {
+            corpus.get(&(p.to_string(), sec.to_string())).cloned()
+        });
+        assert_eq!(result.as_deref(), Some("Deus, qui hodierna die..."));
+    }
+
+    #[test]
+    fn resolve_section_follows_explicit_at_section_redirect() {
+        // Sancti/05-04 [Hymnus Vespera] = `@Commune/C7:Hymnus Vespera`.
+        let corpus = mock_corpus(&[
+            ("Sancti/05-04", "Hymnus Vespera", "@Commune/C7:Hymnus Vespera"),
+            ("Commune/C7", "Hymnus Vespera", "Fortem virili pectore..."),
+        ]);
+        let s = body_subj(Rubric::Tridentine1570);
+        let result = resolve_section_with("Sancti/05-04", "Hymnus Vespera", &s, |p, sec| {
+            corpus.get(&(p.to_string(), sec.to_string())).cloned()
+        });
+        assert_eq!(result.as_deref(), Some("Fortem virili pectore..."));
+    }
+
+    #[test]
+    fn resolve_section_self_reference_at_colon_section() {
+        // `@:OtherSection` — same file, different section.
+        let corpus = mock_corpus(&[
+            ("Sancti/05-04", "Ant 2C", "@:Ant Vespera"),
+            ("Sancti/05-04", "Ant Vespera", "Mulier fortis..."),
+        ]);
+        let s = body_subj(Rubric::Tridentine1570);
+        let result = resolve_section_with("Sancti/05-04", "Ant 2C", &s, |p, sec| {
+            corpus.get(&(p.to_string(), sec.to_string())).cloned()
+        });
+        assert_eq!(result.as_deref(), Some("Mulier fortis..."));
+    }
+
+    #[test]
+    fn resolve_section_multi_hop_chain() {
+        // Three-hop chain: A -> B -> C -> body.
+        let corpus = mock_corpus(&[
+            ("A", "X", "@B:X"),
+            ("B", "X", "@C:X"),
+            ("C", "X", "Final body"),
+        ]);
+        let s = body_subj(Rubric::Tridentine1570);
+        let result = resolve_section_with("A", "X", &s, |p, sec| {
+            corpus.get(&(p.to_string(), sec.to_string())).cloned()
+        });
+        assert_eq!(result.as_deref(), Some("Final body"));
+    }
+
+    #[test]
+    fn resolve_section_cycle_detection() {
+        // A -> B -> A forms a cycle. After MAX_AT_HOPS the resolver
+        // bails out and returns the raw body of the current loop iter.
+        let corpus = mock_corpus(&[
+            ("A", "X", "@B:X"),
+            ("B", "X", "@A:X"),
+        ]);
+        let s = body_subj(Rubric::Tridentine1570);
+        let result = resolve_section_with("A", "X", &s, |p, sec| {
+            corpus.get(&(p.to_string(), sec.to_string())).cloned()
+        });
+        // We get *some* result — either A's body or B's body — but
+        // not infinite loop / panic. The point of the test is the
+        // termination guarantee.
+        let body = result.expect("cycle should still terminate with a body");
+        assert!(body.starts_with('@'));
+    }
+
+    #[test]
+    fn resolve_section_returns_none_when_path_missing() {
+        let corpus: HashMap<(String, String), String> = HashMap::new();
+        let s = body_subj(Rubric::Tridentine1570);
+        let result = resolve_section_with("Missing/Path", "X", &s, |p, sec| {
+            corpus.get(&(p.to_string(), sec.to_string())).cloned()
+        });
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn resolve_section_applies_substitutions() {
+        // `@:Ant Vespera:s/;;.*//gm` — pull Ant Vespera, strip
+        // chant-tone suffix per line.
+        let corpus = mock_corpus(&[
+            ("Sancti/05-04", "Ant Magnificat", "@:Ant Vespera:s/;;.*//gm"),
+            ("Sancti/05-04", "Ant Vespera", "Mulier fortis;;tone1\nGloria"),
+        ]);
+        let s = body_subj(Rubric::Tridentine1570);
+        let result = resolve_section_with("Sancti/05-04", "Ant Magnificat", &s, |p, sec| {
+            corpus.get(&(p.to_string(), sec.to_string())).cloned()
+        });
+        assert_eq!(result.as_deref(), Some("Mulier fortis\nGloria"));
+    }
+
+    #[test]
+    fn resolve_section_runs_conditional_eval_on_final_body() {
+        // The redirected body has a (rubrica X) directive (no `sed`
+        // → no implicit backscope) that gates a line; runtime
+        // conditional eval should drop or keep depending on the rubric.
+        let corpus = mock_corpus(&[
+            ("Source", "X", "always-on\n(rubrica 1960) only-1960"),
+        ]);
+        let s_1960 = body_subj(Rubric::Rubrics1960);
+        let result = resolve_section_with("Source", "X", &s_1960, |p, sec| {
+            corpus.get(&(p.to_string(), sec.to_string())).cloned()
+        });
+        let body = result.unwrap();
+        assert!(body.contains("always-on"), "1960: {body:?}");
+        assert!(body.contains("only-1960"), "1960: {body:?}");
+
+        let s_1570 = body_subj(Rubric::Tridentine1570);
+        let result = resolve_section_with("Source", "X", &s_1570, |p, sec| {
+            corpus.get(&(p.to_string(), sec.to_string())).cloned()
+        });
+        let body = result.unwrap();
+        assert!(body.contains("always-on"), "1570: {body:?}");
+        assert!(!body.contains("only-1960"), "1570: {body:?}");
+    }
+
+    #[test]
+    fn resolve_section_sed_directive_drops_preceding_line() {
+        // With `sed` stopword the directive has implicit LINE backscope
+        // — when it fires, the immediately-preceding line is retroactively
+        // dropped. This is a Perl bug-for-bug feature used by the
+        // upstream corpus to handle "this line under 1570; that line
+        // under 1960" patterns.
+        let corpus = mock_corpus(&[
+            ("Source", "X", "pre-1955-line\n(sed rubrica 1960) only-1960-line"),
+        ]);
+        let s_1960 = body_subj(Rubric::Rubrics1960);
+        let result = resolve_section_with("Source", "X", &s_1960, |p, sec| {
+            corpus.get(&(p.to_string(), sec.to_string())).cloned()
+        });
+        let body = result.unwrap();
+        // Under 1960: directive fires; LINE backscope drops `pre-1955-line`.
+        assert!(!body.contains("pre-1955-line"), "1960 backscope failure: {body:?}");
+        assert!(body.contains("only-1960-line"), "1960 forward-gated: {body:?}");
+
+        let s_1570 = body_subj(Rubric::Tridentine1570);
+        let result = resolve_section_with("Source", "X", &s_1570, |p, sec| {
+            corpus.get(&(p.to_string(), sec.to_string())).cloned()
+        });
+        let body = result.unwrap();
+        // Under 1570: directive doesn't fire; nothing dropped, sequel gated.
+        assert!(body.contains("pre-1955-line"), "1570: {body:?}");
+        assert!(!body.contains("only-1960-line"), "1570 forward gating: {body:?}");
+    }
+
+    #[test]
+    fn parse_at_redirect_self_reference() {
+        let r = parse_at_redirect("@:Ant Vespera", "Sancti/05-04", "Oratio").unwrap();
+        assert_eq!(r.path, "Sancti/05-04");
+        assert_eq!(r.section, "Ant Vespera");
+        assert!(r.substitutions.is_none());
+    }
+
+    #[test]
+    fn parse_at_redirect_explicit_path_and_section() {
+        let r = parse_at_redirect("@Commune/C7:Hymnus", "Sancti/05-04", "X").unwrap();
+        assert_eq!(r.path, "Commune/C7");
+        assert_eq!(r.section, "Hymnus");
+        assert!(r.substitutions.is_none());
+    }
+
+    #[test]
+    fn parse_at_redirect_path_only_inherits_section() {
+        let r = parse_at_redirect("@Commune/C7", "Sancti/05-04", "Oratio").unwrap();
+        assert_eq!(r.path, "Commune/C7");
+        assert_eq!(r.section, "Oratio");
+    }
+
+    #[test]
+    fn parse_at_redirect_with_substitutions() {
+        let r = parse_at_redirect(
+            "@:Ant Vespera:s/;;.*//gm",
+            "Sancti/05-04",
+            "Ant Magnificat",
+        )
+        .unwrap();
+        assert_eq!(r.path, "Sancti/05-04");
+        assert_eq!(r.section, "Ant Vespera");
+        assert_eq!(r.substitutions.as_deref(), Some("s/;;.*//gm"));
+    }
+
+    #[test]
+    fn parse_at_redirect_rejects_multiline_body() {
+        // A body that starts with `@` but has more content on
+        // subsequent lines isn't a redirect.
+        let result = parse_at_redirect(
+            "@some path\nactual content here",
+            "X",
+            "Y",
+        );
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn parse_at_redirect_rejects_non_at_body() {
+        assert!(parse_at_redirect("plain text", "X", "Y").is_none());
+        assert!(parse_at_redirect("", "X", "Y").is_none());
     }
 
     // ─── regex_lite_match unit tests ─────────────────────────────

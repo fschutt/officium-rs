@@ -31,6 +31,7 @@
 //!   # Smoke: just a few calibration dates.
 //!   cargo run --bin office_sweep -- --smoke --hour Vespera
 
+use std::cell::RefCell;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
@@ -38,10 +39,23 @@ use officium_rs::core::{Date, Locale, OfficeInput, Rubric};
 use officium_rs::corpus::BundledCorpus;
 use officium_rs::horas::{self, OfficeArgs};
 use officium_rs::perl_cache::{perl_submodule_sha, render_with_cache};
+use officium_rs::perl_driver::{PerlDriver, ScriptType};
 use officium_rs::precedence::compute_office;
 use officium_rs::regression::{
     compare_office_section, rust_office_section, SectionStatus,
 };
+
+thread_local! {
+    /// Per-thread persistent perl drivers, one per script-type.
+    /// `--hour all` mixes Mass and Office requests; each gets
+    /// routed to its own driver since missa/ordo.pl and
+    /// horas/horas.pl can't coexist in one perl process (both
+    /// define `sub getordinarium` in `package main`).
+    static MISSA_DRIVER: RefCell<Option<Result<PerlDriver, String>>> =
+        const { RefCell::new(None) };
+    static OFFICIUM_DRIVER: RefCell<Option<Result<PerlDriver, String>>> =
+        const { RefCell::new(None) };
+}
 
 const KNOWN_RUBRICS: &[(&str, Rubric)] = &[
     ("Tridentine - 1570",     Rubric::Tridentine1570),
@@ -92,6 +106,39 @@ fn render_perl_office(
         ));
     }
     String::from_utf8(out.stdout).map_err(|e| format!("non-utf8 stdout: {e}"))
+}
+
+/// Render via the thread-local persistent driver matching the
+/// hour's script type. On first call per (worker, type), lazily
+/// spawns. On spawn failure, logs once and falls back to the
+/// per-render subprocess `render_perl_office`.
+fn render_office_via_driver(
+    repo_root: &PathBuf,
+    date_us: &str,
+    rubric_name: &str,
+    hour: &str,
+) -> Result<String, String> {
+    let script_type = ScriptType::for_hour(hour);
+    let cell = match script_type {
+        ScriptType::Missa => &MISSA_DRIVER,
+        ScriptType::Officium => &OFFICIUM_DRIVER,
+    };
+    cell.with(|c| {
+        let mut opt = c.borrow_mut();
+        if opt.is_none() {
+            *opt = Some(PerlDriver::new(repo_root, script_type));
+        }
+        match opt.as_mut().unwrap() {
+            Ok(driver) => driver.render(date_us, rubric_name, hour),
+            Err(e) => {
+                eprintln!(
+                    "  perl-driver ({:?}) unavailable; using subprocess. Reason: {e}",
+                    script_type
+                );
+                render_perl_office(repo_root, date_us, rubric_name, hour)
+            }
+        }
+    })
 }
 
 fn is_leap(year: i32) -> bool {
@@ -361,7 +408,7 @@ fn run_one_cell(
         dd,
         hour,
         cache_sha,
-        || render_perl_office(repo_root, &date_us, rubric_name, hour),
+        || render_office_via_driver(repo_root, &date_us, rubric_name, hour),
     ) {
         Ok(html) => html,
         Err(e) => return (SectionStatus::PerlBlank, Some(format!("perl failed: {e}"))),

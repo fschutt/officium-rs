@@ -214,6 +214,52 @@ pub fn stem_transferred_away(
     stem_transferred_away_with_stems(year, rubric, month, day, &[])
 }
 
+/// True when an arbitrary Tempora *stem* has been transferred to a
+/// date OTHER than today by the year's transfer table. Used to
+/// suppress a stem on its native calendar position when a transfer
+/// rule has moved it elsewhere.
+///
+/// Concretely: under DA, `01-12=Tempora/Epi1-0` says Holy Family
+/// (Sunday-after-Epiphany) lives on Jan 12 this year. So if today
+/// is Jan 13 (the calendar's default Sunday-after-Epiphany position
+/// when 01-13 is Sunday), Holy Family is NOT here — the temporal
+/// slot is vacated and Sancti/01-13 (Octave of Epiphany) wins.
+///
+/// We DON'T scope this to a single LHS month-day — the caller
+/// passes today's `(month, day)`; we walk every entry of the
+/// year's transfer files and ask "does any rule send `Tempora/<stem>`
+/// somewhere ≠ today?".
+pub fn temporal_stem_moved_elsewhere(
+    year: i32,
+    rubric: &str,
+    month: u32,
+    day: u32,
+    stem: &str,
+) -> bool {
+    let parsed = parsed();
+    let today_mm_dd = format!("{month:02}-{day:02}");
+    let target_path = format!("Tempora/{stem}");
+    for fname in transfer_files_for(year, month, day) {
+        let Some(entries) = parsed.get(&fname) else {
+            continue;
+        };
+        for (lhs_mm_dd, targets) in entries {
+            if lhs_mm_dd == &today_mm_dd {
+                continue; // a rule keyed at today is "place HERE", not "move away"
+            }
+            for (target, rubrics) in targets {
+                if !rubric_matches(rubrics, rubric) {
+                    continue;
+                }
+                if target.main == target_path {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
+
 /// Like [`stem_transferred_away`], but also checks whether any of
 /// the supplied saint stems (e.g. `"02-23o"`, `"04-08o"`) appear in
 /// a transfer rule's `extras` list. Mirrors Perl

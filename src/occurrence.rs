@@ -761,6 +761,21 @@ fn apply_transfer_temporal_1570(
             return stem.to_string();
         }
     }
+    // Inverse: if today's NATIVE temporal stem has been moved to
+    // another date by a transfer rule, vacate today. Drives the
+    // DA case `01-12=Tempora/Epi1-0;;DA` — when Jan 13 is Sunday,
+    // Holy Family transfers to Jan 12 and Jan 13's calendar Sunday
+    // position must be vacated so the kalendar's Sancti/01-13
+    // (Octave of Epiphany / Baptism of the Lord) wins. Same
+    // mechanism covers any future `mm-dd=Tempora/<stem>;;<rubric>`
+    // entry on a non-today LHS for whichever rubric is active.
+    if crate::transfer_table::temporal_stem_moved_elsewhere(
+        year, rubric_tag, month, day, base_stem,
+    ) {
+        // Use a sentinel stem that doesn't resolve to a Tempora
+        // file — falls back through to the kalendar/sancti winner.
+        return String::new();
+    }
     base_stem.to_string()
 }
 

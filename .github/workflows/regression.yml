@@ -86,16 +86,33 @@ jobs:
             && echo "Perl render OK" \
             || { echo "Perl render FAILED"; exit 1; }
 
+      - name: Resolve upstream Perl SHA
+        id: perl_sha
+        run: |
+          sha=$(git -C vendor/divinum-officium rev-parse HEAD)
+          echo "sha=$sha" >> $GITHUB_OUTPUT
+          echo "Upstream Divinum Officium SHA: $sha"
+
       - name: Cache Perl-render outputs
-        # Perl HTML is deterministic for (date, rubric, perl-SHA).
-        # Cache by Perl pin so re-runs against the same upstream
-        # commit don't re-render.
+        # The runtime cache (year-sweep / office-sweep) is keyed on
+        # `<perl-sha>/<rubric>/<year>/<MM-DD>.<hour>.html`. Perl HTML
+        # is a pure function of (date, rubric, hour, upstream-SHA),
+        # so a hit is always safe. After the first sweep populates
+        # the cache, every later run against the same submodule SHA
+        # is essentially Rust-only.
+        #
+        # `target/regression-cache` survives across CI runs via this
+        # action; `target/regression/<rubric>-<year>` (the per-run
+        # board/manifest output) is intentionally NOT cached.
         uses: actions/cache@v4
         with:
-          path: target/regression
-          key: regression-perl-${{ hashFiles('scripts/divinum-officium.pin') }}-${{ matrix.rubric }}-${{ env.YEAR_RANGE }}
-          restore-keys: |
-            regression-perl-${{ hashFiles('scripts/divinum-officium.pin') }}-${{ matrix.rubric }}-
+          path: target/regression-cache
+          # No restore-keys fallback: cache content is only valid for
+          # the exact (sha, rubric) it was rendered under. A partial
+          # restore from a different SHA would be wrong, and a
+          # cross-rubric restore wouldn't help (files are
+          # rubric-namespaced inside the cache directory).
+          key: perl-cache-${{ steps.perl_sha.outputs.sha }}-${{ matrix.rubric }}
 
       - name: Build year-sweep
         run: cargo build --release --bin year-sweep

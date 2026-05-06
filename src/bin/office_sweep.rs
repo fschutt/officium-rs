@@ -37,6 +37,7 @@ use std::process::{Command, Stdio};
 use officium_rs::core::{Date, Locale, OfficeInput, Rubric};
 use officium_rs::corpus::BundledCorpus;
 use officium_rs::horas::{self, OfficeArgs};
+use officium_rs::perl_cache::{perl_submodule_sha, render_with_cache};
 use officium_rs::precedence::compute_office;
 use officium_rs::regression::{
     compare_office_section, rust_office_section, SectionStatus,
@@ -201,6 +202,33 @@ fn parse_args() -> Result<Args, String> {
     Ok(args)
 }
 
+/// Stable slug for a rubric name — used as a directory segment in
+/// `target/regression-cache/`. Mirrors the `year_sweep` slug shape
+/// so both binaries share cache entries.
+fn slugify_rubric(r: &str) -> String {
+    let mapped: String = r
+        .chars()
+        .map(|c| match c {
+            'A'..='Z' | 'a'..='z' | '0'..='9' => c,
+            _ => '_',
+        })
+        .collect();
+    let mut out = String::with_capacity(mapped.len());
+    let mut prev_us = false;
+    for c in mapped.chars() {
+        if c == '_' {
+            if !prev_us {
+                out.push(c);
+            }
+            prev_us = true;
+        } else {
+            out.push(c);
+            prev_us = false;
+        }
+    }
+    out.trim_matches('_').to_string()
+}
+
 fn parse_us_date(s: &str) -> Result<(u32, u32, i32), String> {
     let parts: Vec<&str> = s.split('-').collect();
     if parts.len() != 3 {
@@ -257,6 +285,8 @@ fn run_one_cell(
     hour: &str,
     rubric: Rubric,
     rubric_name: &str,
+    rubric_slug: &str,
+    cache_sha: Option<&str>,
     day_key_override: Option<&str>,
     next_day_key_override: Option<&str>,
     section: &str,
@@ -323,7 +353,16 @@ fn run_one_cell(
     let rust_body = rust_office_section(&lines, section).unwrap_or_default();
 
     let date_us = format!("{mm:02}-{dd:02}-{yyyy}");
-    let perl_html = match render_perl_office(repo_root, &date_us, rubric_name, hour) {
+    let perl_html = match render_with_cache(
+        repo_root,
+        rubric_slug,
+        yyyy,
+        mm,
+        dd,
+        hour,
+        cache_sha,
+        || render_perl_office(repo_root, &date_us, rubric_name, hour),
+    ) {
         Ok(html) => html,
         Err(e) => return (SectionStatus::PerlBlank, Some(format!("perl failed: {e}"))),
     };
@@ -385,13 +424,23 @@ fn main() -> Result<(), String> {
         vec![args.hour.as_str()]
     };
 
+    // Resolve the upstream Perl SHA once per sweep so all cells
+    // share the same cache namespace. Hits skip the Perl invocation
+    // entirely; misses fall through to a fresh `do_render.sh` call.
+    let cache_sha = perl_submodule_sha(&repo_root);
+    let rubric_slug = slugify_rubric(&args.rubric);
+
     eprintln!(
-        "office_sweep: {} dates × {} hour(s) = {} cells · rubric={:?} section={}",
+        "office_sweep: {} dates × {} hour(s) = {} cells · rubric={:?} section={} perl-cache={}",
         dates.len(),
         hours_to_run.len(),
         dates.len() * hours_to_run.len(),
         rubric,
         args.section,
+        cache_sha
+            .as_deref()
+            .map(|s| &s[..12])
+            .unwrap_or("disabled"),
     );
 
     let mut overall = Stats::default();
@@ -405,6 +454,8 @@ fn main() -> Result<(), String> {
                 hour,
                 rubric,
                 &args.rubric,
+                &rubric_slug,
+                cache_sha.as_deref(),
                 args.day_key.as_deref(),
                 args.next_day_key.as_deref(),
                 &args.section,

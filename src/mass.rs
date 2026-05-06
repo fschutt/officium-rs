@@ -781,9 +781,11 @@ fn strip_parenthetical_alleluja(text: &str, paschal: bool) -> String {
 /// non-1960 rubrics (including Tridentine 1570) the rendered Latin
 /// applies these substitutions before output:
 ///
-///     Génetrix → Génitrix
-///     Genetrí  → Genitrí
-///     cot[íi]d[íi] → quot[íi]d[íi]   (whole-word)
+/// ```text
+/// Génetrix → Génitrix
+/// Genetrí  → Genitrí
+/// cot[íi]d[íi] → quot[íi]d[íi]   (whole-word)
+/// ```
 ///
 /// We don't apply the cisterciensis-only substitutions here.
 pub fn spell_var_pre1960(text: &str) -> String {
@@ -858,10 +860,12 @@ pub fn apply_spelling_for_active_rubric(text: &str) -> String {
 /// Substitute the saint's name into commune-template `N.` placeholders.
 /// Reads the `[Name]` section from `winner_file`:
 ///
-///     [Name]
-///     Marcélli                  ← default form
-///     Postcommunio=Marcéllo     ← case override per section
-///     Secreta=Marcéllo
+/// ```text
+/// [Name]
+/// Marcélli                  (default form)
+/// Postcommunio=Marcéllo     (case override per section)
+/// Secreta=Marcéllo
+/// ```
 ///
 /// Default form replaces every `N.` in the body. Section overrides
 /// take precedence for their named section (the `Section=Name`

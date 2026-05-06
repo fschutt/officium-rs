@@ -20,7 +20,7 @@ default = ["regression"]
 # `perl5` to render reference HTML for diff. Hard-gated to non-WASM
 # targets — see compile_error! at the top of src/regression.rs.
 # Pulls in serde_json for the manifest writer.
-regression = ["dep:serde_json"]
+regression = ["dep:serde_json", "dep:rayon"]
 # wasm-bindgen surface (browser/Node). Use with
 # `cargo build --target wasm32-unknown-unknown --release --features wasm
 # --no-default-features` or wasm-pack.
@@ -47,6 +47,12 @@ brotli-decompressor = { version = "5", default-features = false, features = ["st
 # harness + native binaries write JSON manifests. Lib runtime path
 # uses postcard exclusively, so WASM bundles drop this dep entirely.
 serde_json = { version = "1", optional = true }
+# Native-only data-parallelism for the year-sweep / office-sweep
+# harnesses. Each day is independent — Rust render is pure, Perl is
+# a fresh subprocess — so a 4-core CI runner gets ~4× speedup on the
+# Perl-bound regression matrix at zero correctness risk. Gated to
+# `regression` so WASM bundles drop it.
+rayon = { version = "1", optional = true }
 unicode-normalization = "0.1"
 # Pinned to match the installed wasm-bindgen-cli version. Bump in
 # lockstep with the CI tooling (`wasm-bindgen-cli --version`).

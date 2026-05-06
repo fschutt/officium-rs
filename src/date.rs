@@ -507,11 +507,16 @@ pub fn nextday(month: u32, day: u32, year: i32) -> String {
 /// This function replicates the minimal arithmetic approach from the Perl code
 /// in `prevnext`.
 ///
+/// `inc` is the *delta* between `date_to_days` (one-based) and the
+/// reverse `days_to_date` (zero-based), so the net calendar shift
+/// is `inc - 1`. Mirrors upstream Perl `Date.pm::prevnext`.
+///
 /// ```
 /// # use officium_rs::date::prevnext;
-/// let shifted = prevnext("02-26-2024", 2);
-/// // => "02-28-2024", which is "02-30" in the Sancti sense, but here we keep the real calendar date.
-/// assert_eq!(&shifted, "02-28-2024");
+/// // inc = 2 → +1 calendar day; inc = 0 → −1; inc = 1 → same day.
+/// assert_eq!(&prevnext("02-26-2024", 2), "02-27-2024");
+/// assert_eq!(&prevnext("02-26-2024", 1), "02-26-2024");
+/// assert_eq!(&prevnext("02-26-2024", 0), "02-25-2024");
 /// ```
 pub fn prevnext(date_str: &str, inc: i32) -> String {
     // parse "MM-DD-YYYY"
@@ -698,10 +703,10 @@ fn days_to_date_fallback(days: i32) -> (u32, u32, i32) {
 ///
 /// ```
 /// # use officium_rs::date::date_to_days;
-/// let days = date_to_days(1, 1, 1970);
-/// assert_eq!(days, 0);
-/// let days2 = date_to_days(2, 1, 1970);
-/// assert_eq!(days2, 1);
+/// // 1970-01-01 anchors at 1, not 0 — this matches the upstream
+/// // Perl Date.pm baseline (one-based ordinal, not Unix-epoch days).
+/// assert_eq!(date_to_days(1, 1, 1970), 1);
+/// assert_eq!(date_to_days(2, 1, 1970), 2);
 /// ```
 pub fn date_to_days(day: u32, month: u32, year: i32) -> i32 {
     // The original code uses a big chunk logic for wide year handling.

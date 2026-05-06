@@ -52,6 +52,9 @@ pub mod translation;
 #[cfg(all(feature = "regression", not(target_arch = "wasm32")))]
 pub mod regression;
 
+#[cfg(all(feature = "regression", not(target_arch = "wasm32")))]
+pub mod perl_cache;
+
 #[cfg(all(feature = "regression", target_arch = "wasm32"))]
 compile_error!("the `regression` feature is native-only; disable it for wasm32 targets");
 

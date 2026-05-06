@@ -34,11 +34,15 @@ use std::fmt::Write as _;
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
+
+use rayon::prelude::*;
 
 use officium_rs::core::{Date, Locale, MassPropers, OfficeInput, Rubric};
 use officium_rs::corpus::BundledCorpus;
 use officium_rs::mass::mass_propers;
+use officium_rs::perl_cache::{perl_submodule_sha, render_with_cache};
 use officium_rs::precedence::compute_office;
 use officium_rs::regression::{
     compare_day, explain_divergence, extract_perl_sections, infer_perl_source, normalize,
@@ -187,6 +191,33 @@ fn render_perl(root: &PathBuf, mm: u32, dd: u32, yyyy: i32, rubric: &str) -> Res
         ));
     }
     String::from_utf8(out.stdout).map_err(|e| format!("non-utf8 stdout: {e}"))
+}
+
+/// Per-day outcome carried back from a rayon worker. Carries the
+/// payloads needed for the sequential aggregation pass — the report
+/// + winner string for stats, plus the inferred-source extracts
+/// (Perl sections + winner headline) needed for the
+/// `inferred_misses`/`inferred_pairs` BTreeMap merges. The raw HTML
+/// is written to the cache file inside the worker so we don't drag
+/// 365× a few-KB strings through the aggregator.
+struct DayResult {
+    mm: u32,
+    dd: u32,
+    elapsed_ms: u128,
+    payload: DayPayload,
+}
+
+enum DayPayload {
+    Done {
+        rust_winner: String,
+        report: DayReport,
+        /// Pre-extracted Perl sections (only the sections we need
+        /// for the inferred-source aggregation), to avoid re-parsing
+        /// the HTML in the sequential pass.
+        perl_sections: BTreeMap<String, String>,
+    },
+    Panic(String),
+    PerlFail(String),
 }
 
 #[derive(Default)]
@@ -415,142 +446,212 @@ fn run_one_year(cfg: &Cfg, year: i32, root: &PathBuf) -> (u32, u32, bool) {
     let mut stats = Stats::default();
     let mut day_reports: Vec<DayReport> = Vec::with_capacity(total);
 
+    // Resolve the upstream Perl SHA once per year-sweep so workers
+    // share a single cache namespace. `None` disables caching (e.g.
+    // when run outside a git tree).
+    let cache_sha = perl_submodule_sha(root);
+
     println!(
-        "year-sweep: rubric={:?} year={} dates={} out={}",
+        "year-sweep: rubric={:?} year={} dates={} out={} perl-cache={}",
         cfg.rubric_str,
         year,
         total,
-        out_dir.display()
+        out_dir.display(),
+        cache_sha
+            .as_deref()
+            .map(|s| &s[..12])
+            .unwrap_or("disabled")
     );
 
-    for (i, (mm, dd)) in dates.iter().enumerate() {
-        let t0 = Instant::now();
-        let date_label = format!("{:04}-{:02}-{:02}", year, mm, dd);
-        stats.days_total += 1;
+    // ── Parallel per-day work. Each rayon worker runs the
+    // (Rust-render → Perl-render → compare → cache writes) pipeline
+    // for one date. The HTML cache and `--dump` diff write happen
+    // inside the worker so we don't carry the raw HTML through
+    // aggregation memory. The aggregator then walks the returned
+    // `DayResult`s sequentially to merge stats and BTreeMap counts.
+    //
+    // Thread-count: defaults to the rayon global pool (physical
+    // cores). CI runners are 4-core, so this gives a ~4× wall-clock
+    // win for the Perl-bound matrix at zero correctness risk —
+    // the Rust pipeline is pure (BundledCorpus is OnceLock-backed)
+    // and Perl is a fresh subprocess per call.
+    let done_counter = AtomicUsize::new(0);
+    let mut day_results: Vec<DayResult> = dates
+        .par_iter()
+        .map(|(mm, dd)| {
+            let t0 = Instant::now();
+            let date_label = format!("{:04}-{:02}-{:02}", year, mm, dd);
 
-        // ── 1. Rust pipeline (catch panics — Phase 3-5 ports
-        // intentionally call panic!() on unsupported rubrics or
-        // unknown corpus shapes; we don't want to abort the sweep).
-        let input = OfficeInput {
-            date: Date::new(year, *mm, *dd),
-            rubric: cfg.rubric,
-            locale: Locale::Latin,
-            is_mass_context: true,
-        };
-        let rust_result = std::panic::catch_unwind(|| {
-            let office = compute_office(&input, &BundledCorpus);
-            let propers = mass_propers(&office, &BundledCorpus);
-            (office.winner.render(), propers)
-        });
-        let (rust_winner, rust_propers) = match rust_result {
-            Ok(p) => p,
-            Err(e) => {
-                let msg = panic_message(&e);
-                stats.panics.push((*mm, *dd, msg.clone()));
-                eprintln!("  PANIC {:02}-{:02}: {msg}", mm, dd);
-                continue;
-            }
-        };
-
-        // ── 2. Perl pipeline.
-        let perl_html = match render_perl(&root, *mm, *dd, year, &cfg.rubric_str) {
-            Ok(h) => h,
-            Err(e) => {
-                stats.perl_failures.push((*mm, *dd, e.clone()));
-                eprintln!("  PERL-FAIL {:02}-{:02}: {e}", mm, dd);
-                continue;
-            }
-        };
-        // Cache the raw HTML for human inspection later.
-        let html_path = out_dir.join(format!("{:02}-{:02}.perl.html", mm, dd));
-        let _ = fs::write(&html_path, &perl_html);
-
-        // ── 3. Compare.
-        let report = compare_day(&date_label, &rust_winner, &rust_propers, &perl_html);
-        if report.winner_match {
-            stats.days_winner_match += 1;
-        }
-        let perl_sections_for_infer = extract_perl_sections(&perl_html);
-        for (idx, s) in report.sections.iter().enumerate() {
-            match s.status {
-                SectionStatus::Match => stats.section_match += 1,
-                SectionStatus::Differ => stats.section_differ += 1,
-                SectionStatus::RustBlank => stats.section_rust_blank += 1,
-                SectionStatus::PerlBlank => stats.section_perl_blank += 1,
-                SectionStatus::Empty => stats.section_empty += 1,
-            }
-            match s.category {
-                DivergenceCategory::MacroNotExpanded => stats.cat_macro_not_expanded += 1,
-                DivergenceCategory::RubricInjection => stats.cat_rubric_injection += 1,
-                DivergenceCategory::OrthoVariant => stats.cat_ortho_variant += 1,
-                DivergenceCategory::TrailingExtra => stats.cat_trailing_extra += 1,
-                DivergenceCategory::LeadingExtra => stats.cat_leading_extra += 1,
-                DivergenceCategory::Other => stats.cat_other += 1,
-                DivergenceCategory::Match
-                | DivergenceCategory::RustBlank
-                | DivergenceCategory::PerlBlank => {}
-            }
-            if idx < 12 {
-                stats.per_section_total[idx] += 1;
-                if matches!(s.status, SectionStatus::Match | SectionStatus::Empty) {
-                    stats.per_section_pass[idx] += 1;
+            // Rust pipeline (catch panics so one bad day doesn't
+            // abort the whole sweep).
+            let input = OfficeInput {
+                date: Date::new(year, *mm, *dd),
+                rubric: cfg.rubric,
+                locale: Locale::Latin,
+                is_mass_context: true,
+            };
+            let rust_result = std::panic::catch_unwind(|| {
+                let office = compute_office(&input, &BundledCorpus);
+                let propers = mass_propers(&office, &BundledCorpus);
+                (office.winner.render(), propers)
+            });
+            let (rust_winner, rust_propers) = match rust_result {
+                Ok(p) => p,
+                Err(e) => {
+                    let msg = panic_message(&e);
+                    return DayResult {
+                        mm: *mm,
+                        dd: *dd,
+                        elapsed_ms: t0.elapsed().as_millis(),
+                        payload: DayPayload::Panic(msg),
+                    };
                 }
+            };
+
+            // Perl pipeline (cache-first).
+            let perl_html = match render_with_cache(
+                &root,
+                &slug,
+                year,
+                *mm,
+                *dd,
+                "SanctaMissa",
+                cache_sha.as_deref(),
+                || render_perl(&root, *mm, *dd, year, &cfg.rubric_str),
+            ) {
+                Ok(h) => h,
+                Err(e) => {
+                    return DayResult {
+                        mm: *mm,
+                        dd: *dd,
+                        elapsed_ms: t0.elapsed().as_millis(),
+                        payload: DayPayload::PerlFail(e),
+                    };
+                }
+            };
+            let html_path = out_dir.join(format!("{:02}-{:02}.perl.html", mm, dd));
+            let _ = fs::write(&html_path, &perl_html);
+
+            // Compare.
+            let report = compare_day(&date_label, &rust_winner, &rust_propers, &perl_html);
+            let perl_sections = extract_perl_sections(&perl_html);
+
+            if cfg.dump {
+                let dump_path = out_dir.join(format!("{:02}-{:02}.diff.md", mm, dd));
+                let dump_text = render_day_diff(
+                    &date_label,
+                    &rust_winner,
+                    &rust_propers,
+                    &perl_html,
+                    &report,
+                );
+                let _ = fs::write(&dump_path, dump_text);
             }
-            // Aggregate inferred-source data on Differ + RustBlank
-            // cells (the diagnostic-relevant ones).
-            if matches!(s.status, SectionStatus::Differ | SectionStatus::RustBlank) {
-                if let Some(p_raw) = perl_sections_for_infer.get(s.section) {
-                    let p_clean = strip_perl_rubrics(&normalize(p_raw), s.section);
-                    let hits: Vec<InferredSource> = infer_perl_source(&p_clean, s.section);
-                    if let Some(top) = hits.first() {
-                        let key = format!("{}:{}", top.file, top.section);
-                        *stats.inferred_misses.entry(key).or_insert(0) += 1;
-                        // File-pair (no section) — surfaces day-level
-                        // wrong-winner patterns that recur (e.g.
-                        // `Tempora/Epi1-0 → Tempora/Epi1-0a` across
-                        // every section of the Sunday-after-Epiphany).
-                        let pair = format!("{} -> {}", rust_winner, top.file);
-                        *stats.inferred_pairs.entry(pair).or_insert(0) += 1;
+
+            // Live progress: a counter incremented on completion. We
+            // only print every 25 done dates to avoid contention; the
+            // exact ordinal a worker prints isn't deterministic but
+            // total-count and elapsed-ms both are, which is what the
+            // user cares about.
+            let i = done_counter.fetch_add(1, Ordering::Relaxed) + 1;
+            if cfg.progress && (i % 25 == 0 || i == total) {
+                println!(
+                    "  [{:>3}/{:>3}] {:5.1}% {:02}-{:02}  ({} ms)",
+                    i,
+                    total,
+                    i as f32 / total as f32 * 100.0,
+                    mm,
+                    dd,
+                    t0.elapsed().as_millis(),
+                );
+            }
+
+            DayResult {
+                mm: *mm,
+                dd: *dd,
+                elapsed_ms: t0.elapsed().as_millis(),
+                payload: DayPayload::Done {
+                    rust_winner,
+                    report,
+                    perl_sections,
+                },
+            }
+        })
+        .collect();
+
+    // Restore date order — par_iter result order is preserved with
+    // `.collect()` but the cache files / progress log were written
+    // in completion order. Sort by (mm, dd) so the manifest's
+    // `days` array is stable across runs.
+    day_results.sort_by_key(|r| (r.mm, r.dd));
+
+    // ── Sequential aggregation pass. Walks per-day results and
+    // merges into the global Stats + day_reports list.
+    for r in day_results {
+        stats.days_total += 1;
+        match r.payload {
+            DayPayload::Panic(msg) => {
+                eprintln!("  PANIC {:02}-{:02}: {msg}", r.mm, r.dd);
+                stats.panics.push((r.mm, r.dd, msg));
+            }
+            DayPayload::PerlFail(msg) => {
+                eprintln!("  PERL-FAIL {:02}-{:02}: {msg}", r.mm, r.dd);
+                stats.perl_failures.push((r.mm, r.dd, msg));
+            }
+            DayPayload::Done {
+                rust_winner,
+                report,
+                perl_sections,
+            } => {
+                if report.winner_match {
+                    stats.days_winner_match += 1;
+                }
+                for (idx, s) in report.sections.iter().enumerate() {
+                    match s.status {
+                        SectionStatus::Match => stats.section_match += 1,
+                        SectionStatus::Differ => stats.section_differ += 1,
+                        SectionStatus::RustBlank => stats.section_rust_blank += 1,
+                        SectionStatus::PerlBlank => stats.section_perl_blank += 1,
+                        SectionStatus::Empty => stats.section_empty += 1,
+                    }
+                    match s.category {
+                        DivergenceCategory::MacroNotExpanded => stats.cat_macro_not_expanded += 1,
+                        DivergenceCategory::RubricInjection => stats.cat_rubric_injection += 1,
+                        DivergenceCategory::OrthoVariant => stats.cat_ortho_variant += 1,
+                        DivergenceCategory::TrailingExtra => stats.cat_trailing_extra += 1,
+                        DivergenceCategory::LeadingExtra => stats.cat_leading_extra += 1,
+                        DivergenceCategory::Other => stats.cat_other += 1,
+                        DivergenceCategory::Match
+                        | DivergenceCategory::RustBlank
+                        | DivergenceCategory::PerlBlank => {}
+                    }
+                    if idx < 12 {
+                        stats.per_section_total[idx] += 1;
+                        if matches!(s.status, SectionStatus::Match | SectionStatus::Empty) {
+                            stats.per_section_pass[idx] += 1;
+                        }
+                    }
+                    if matches!(s.status, SectionStatus::Differ | SectionStatus::RustBlank) {
+                        if let Some(p_raw) = perl_sections.get(s.section) {
+                            let p_clean = strip_perl_rubrics(&normalize(p_raw), s.section);
+                            let hits: Vec<InferredSource> =
+                                infer_perl_source(&p_clean, s.section);
+                            if let Some(top) = hits.first() {
+                                let key = format!("{}:{}", top.file, top.section);
+                                *stats.inferred_misses.entry(key).or_insert(0) += 1;
+                                let pair = format!("{} -> {}", rust_winner, top.file);
+                                *stats.inferred_pairs.entry(pair).or_insert(0) += 1;
+                            }
+                        }
                     }
                 }
+                if report.is_pass() {
+                    stats.days_passing += 1;
+                }
+                day_reports.push(report);
             }
         }
-        if report.is_pass() {
-            stats.days_passing += 1;
-        }
-
-        // ── 3b. Per-day diff dump (--dump).
-        if cfg.dump {
-            let dump_path = out_dir.join(format!("{:02}-{:02}.diff.md", mm, dd));
-            let dump_text =
-                render_day_diff(&date_label, &rust_winner, &rust_propers, &perl_html, &report);
-            let _ = fs::write(&dump_path, dump_text);
-        }
-
-        day_reports.push(report);
-
-        if cfg.progress && (i % 25 == 0 || i + 1 == total) {
-            let pass_now = stats.section_match;
-            let total_now = stats.section_match
-                + stats.section_differ
-                + stats.section_rust_blank
-                + stats.section_perl_blank;
-            let live_pct = if total_now > 0 {
-                pass_now as f32 / total_now as f32 * 100.0
-            } else {
-                0.0
-            };
-            println!(
-                "  [{:>3}/{:>3}] {:5.1}% {:02}-{:02}  match={:.1}%  ({} ms)",
-                i + 1,
-                total,
-                (i + 1) as f32 / total as f32 * 100.0,
-                mm,
-                dd,
-                live_pct,
-                t0.elapsed().as_millis(),
-            );
-        }
+        let _ = r.elapsed_ms; // currently unused in stats; kept for future per-day metrics
     }
 
     // ── Reports.

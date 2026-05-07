@@ -2225,6 +2225,38 @@ fn apply_world_mission_oratio(
     if r55_simplex_saint_takes_precedence {
         return body.to_string();
     }
+    // R60 Class-II-saint exception: under R60 + WMSunday, a Class II
+    // saint (rank ≥ 5) on the date suppresses Propaganda — Perl's
+    // `delconclusio` `ctotalnum > 2` count limit drops Propaganda
+    // when a Class II saint is already queued. The saint
+    // commemoration is emitted by `apply_r55_simplex_commemoration`'s
+    // R60 branch instead. Drives R60 10-18 Luke (Class II 5.0) on
+    // Pent19-0 II classis Sunday — no Propaganda transfer rule, so
+    // the saint takes Propaganda's slot in the rendered Oratio.
+    let r60_class_ii_saint_takes_precedence = matches!(
+        office.rubric, crate::core::Rubric::Rubrics1960
+    ) && office
+        .commemoratio
+        .as_ref()
+        .and_then(|k| corpus.mass_file(k))
+        .and_then(|f| f.rank_num_1960.or(f.rank_num))
+        .map(|r| r >= 5.0)
+        .unwrap_or(false)
+        && {
+            // Only when there's no Propaganda transfer redirect
+            let entries = crate::transfer_table::transfers_for(
+                office.date.year,
+                office.rubric.transfer_rubric_tag(),
+                office.date.month,
+                office.date.day,
+            );
+            !entries.iter().any(|e|
+                e.main.starts_with("Commune/Propaganda")
+                || e.main.contains("Propaganda"))
+        };
+    if r60_class_ii_saint_takes_precedence {
+        return body.to_string();
+    }
     // R55 transfer-table gate: under R55, the Tempora/104-0
     // Commemoratio sections are gated `(rubrica divino aut rubrica
     // 196)` and don't activate (R55 doesn't match `divino|196`).
@@ -2523,7 +2555,10 @@ fn apply_r55_simplex_commemoration(
     if !matches!(sect, "Oratio" | "Secreta" | "Postcommunio") {
         return body.to_string();
     }
-    if !matches!(office.rubric, crate::core::Rubric::Reduced1955) {
+    if !matches!(
+        office.rubric,
+        crate::core::Rubric::Reduced1955 | crate::core::Rubric::Rubrics1960
+    ) {
         return body.to_string();
     }
     let is_sunday_tempora = office.winner.category == FileCategory::Tempora
@@ -2577,7 +2612,19 @@ fn apply_r55_simplex_commemoration(
             e.main.starts_with("Commune/Propaganda")
             || e.main.contains("Propaganda"))
     };
-    let fires = rank <= 1.1 || (!propaganda_transfer && rank >= 2.0);
+    let is_r60 = matches!(office.rubric, crate::core::Rubric::Rubrics1960);
+    // Under R60: only fire for Class II saints (rank ≥ 5), and only
+    // when no Propaganda transfer redirect. The Class II saint
+    // commemoration suppresses Propaganda emission (Perl
+    // `delconclusio`'s `ctotalnum > 2` count limit drops Propaganda
+    // when a Class II saint is already queued). Drives R60 10-18
+    // Luke (Duplex II classis 5.0) on Pent19-0 II classis Sunday.
+    let fires = if is_r60 {
+        !propaganda_transfer && rank >= 5.0
+    } else {
+        // R55: Simplex (≤ 1.1) OR Class III without Propaganda transfer.
+        rank <= 1.1 || (!propaganda_transfer && rank >= 2.0)
+    };
     if !fires {
         return body.to_string();
     }
@@ -2625,9 +2672,19 @@ fn apply_r55_simplex_commemoration(
     };
     let officium = sancti_file.officium.as_deref().unwrap_or("Sancti");
     let label = format!("!Commemoratio {}", officium);
+    // R60 inserts a `_\n$Oremus\n` separator between the parent
+    // body and the saint commemoration (sub-unica style with new
+    // Orémus opener). R55 keeps them adjacent (sub-unica without
+    // separator since R55's `addconclusio` keeps the parent's
+    // macro semantics and the saint shares the conclusio).
+    let separator = if is_r60 && matches!(sect, "Oratio" | "Postcommunio") {
+        "\n_\n$Oremus\n"
+    } else {
+        "\n"
+    };
     let mut out = String::new();
     out.push_str(parent_no_macro.trim_end_matches('\n'));
-    out.push('\n');
+    out.push_str(separator);
     out.push_str(&label);
     out.push('\n');
     out.push_str(comm_no_macro.trim_end_matches('\n'));
@@ -4331,6 +4388,22 @@ mod tests {
 
     fn propers(year: i32, month: u32, day: u32) -> MassPropers {
         mass_propers(&office(year, month, day), &BundledCorpus)
+    }
+
+    #[test]
+    fn dump_r60_1981_10_18() {
+        let inp = crate::core::OfficeInput {
+            date: Date::new(1981, 10, 18),
+            rubric: Rubric::Rubrics1960,
+            locale: Locale::Latin,
+            is_mass_context: true,
+        };
+        let off = compute_office(&inp, &BundledCorpus);
+        eprintln!("comm: {:?}", off.commemoratio);
+        let p = mass_propers(&off, &BundledCorpus);
+        if let Some(o) = &p.oratio {
+            eprintln!("---ORATIO ({} bytes)---\n{}\n---END---", o.latin.len(), o.latin);
+        }
     }
 
     #[test]

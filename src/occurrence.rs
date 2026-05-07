@@ -908,9 +908,21 @@ fn apply_transfer_sancti_1570(
     corpus: &dyn Corpus,
     rubric: Rubric,
 ) -> Option<(String, f32)> {
-    let entries = crate::transfer_table::transfers_for(
-        year, rubric_tag, month, day,
-    );
+    // Iterate transfer entries in REVERSE so easter-file rules
+    // (loaded second) win over letter-file rules (loaded first).
+    // Mirrors Perl `Directorium::load_transfers` line 135-137 where
+    // the second `push` to `@lines` overrides the first via later
+    // hash insertion. Drives 2032-04-06 T1910: c.txt has
+    // `04-06=04-04;;1888 1906` (Isidore), 328.txt has
+    // `04-06=03-21;;1570 1888 1906` (Benedict). Easter file wins
+    // → Benedict.
+    let entries = {
+        let mut e = crate::transfer_table::transfers_for(
+            year, rubric_tag, month, day,
+        );
+        e.reverse();
+        e
+    };
     for entry in entries {
         // Skip Tempora-targeted entries (handled by
         // `apply_transfer_temporal_1570`).
@@ -1535,8 +1547,18 @@ fn resolve_sancti_for_tridentine_1570(
     // 09-20o` (Vigil of Matthew anticipated when Matthew falls on
     // Sunday) live here and override both the kalendar and the
     // walked-back transfer-of-preempted-saints chain.
+    // Use the date's kalendar key (not the real date) for transfer-
+    // table lookup. Under leap years on real Feb 24 (kalendar 02-29),
+    // the rule `02-29=02-22~02-23o;;1888 1906` is keyed on 02-29 and
+    // resolves the day's saint to Cathedra Petri (target.main 02-22)
+    // with Vigil-of-Matthias as commemoration extra. Closes T1910 +
+    // DA leap-year Feb-24 cases (1976, 1996, 2032).
+    let (transfer_m, transfer_d) = match date::sancti_kalendar_key(year, month, day) {
+        Some((m, d)) => (m, d),
+        None => (month, day),
+    };
     if let Some((stem, rank_num)) =
-        apply_transfer_sancti_1570(year, month, day, rubric.transfer_rubric_tag(), corpus, rubric)
+        apply_transfer_sancti_1570(year, transfer_m, transfer_d, rubric.transfer_rubric_tag(), corpus, rubric)
     {
         let key = resolve_sancti_stem(&stem, corpus);
         let metadata_key = effective_tempora_key(&key, corpus);

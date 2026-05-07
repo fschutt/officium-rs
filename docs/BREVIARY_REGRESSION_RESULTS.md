@@ -124,6 +124,84 @@ fixes that wouldn't have surfaced on the Mass side:
    today's Vespera key to tomorrow's office when tomorrow
    outranks today.
 
+## Slice 11: runtime conditional gating + Dominus_vobiscum slice
+
+The Ordinarium template is read by upstream `getordinarium`
+(`horas.pl:589`) as a flat line list and run through
+`SetupString.pl::process_conditional_lines` once before per-line
+emission. The Rust walker was emitting **every** template line
+unconditionally, so every `(deinde rubrica X dicuntur)` /
+`(sed PRED dicitur)` / `(atque dicitur semper)` block fired
+regardless of the active rubric — Prima/Compline collected three
+overlapping prayer fragments (`$Kyrie`, `$Pater noster Et`,
+`&Dominus_vobiscum1`, `&Dominus_vobiscum`, the proper Oratio,
+`&Dominus_vobiscum`, `&Benedicamus_Domino`, `$Conclusio
+cisterciensis`, …) in one section.
+
+Slice 11 lands two interlocking fixes:
+
+1. `apply_template_conditionals` (in `src/horas.rs`) — synthesises
+   a multi-line text where each `OrdoLine` becomes one line.
+   Plain lines whose body looks like a `(...)` directive emit
+   verbatim; non-directives emit a unique sentinel
+   (`\u{1}OL<idx>\u{1}`); blank lines emit verbatim blank text so
+   `process_conditional_lines`'s SCOPE_CHUNK retraction +
+   forward-expiry see the same boundaries the upstream walker
+   does. Surviving sentinels map back to their original
+   `OrdoLine` indices; surviving non-sentinels (directive sequels
+   like `(rubrica 1960) #De Officio Capituli` under R1960) are
+   dropped for now (TODO: re-classify and emit as section/plain
+   in a later slice).
+
+2. `Dominus_vobiscum*` ScriptFunc lay-default slice — the upstream
+   `horasscripts.pl::Dominus_vobiscum` returns lines [2,3] of the
+   `[Dominus]` body (the V/R Domine exaudi couplet) under the
+   no-priest, no-precesferiales default. The literal lookup of
+   `[Dominus_vobiscum]` doesn't exist in Prayers.txt, so the
+   walker was falling back to the entire 5-line `[Dominus]` body
+   (Dominus vobiscum couplet + Domine exaudi couplet + the
+   `/:secunda «Domine, exaudi» omittitur:/` script directive line).
+   The slice intercepts `Dominus_vobiscum` /
+   `Dominus_vobiscum1` / `Dominus_vobiscum2` and returns just
+   lines [2,3].
+
+**30-day Jan 2026 × T1570 × Oratio sweep — `--hour all`:**
+
+| Hour          | Pre slice 11 | Post slice 11 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 25/30 (83%) | 25/30 (83%) | — |
+| Laudes        | 25/30 (83%) | 25/30 (83%) | — |
+| Prima         | 0/30  (0%)  | 19/30 (63%) | +19 |
+| Tertia        | 25/30 (83%) | 25/30 (83%) | — |
+| Sexta         | 25/30 (83%) | 25/30 (83%) | — |
+| Nona          | 25/30 (83%) | 25/30 (83%) | — |
+| Vespera       | 19/30 (63%) | 19/30 (63%) | — |
+| Completorium  | 7/30  (23%) | 23/30 (77%) | +16 |
+| **Aggregate** | **151/240 (62.92%)** | **186/240 (77.50%)** | **+35** |
+
+R60 30-day aggregate stays at 29/240 (12.08%) — the conditional
+gates that fire under R60 reshape Rust output to closer match
+Perl, but the substring-match comparator was already accepting
+the over-emitting form for the same set of days that pass after
+gating.
+
+Mass-side year sweep T1570 2026 stays at **365/365 (100%)** —
+verified the `apply_template_conditionals` filter is Office-only
+(no `compute_office_hour` call from `mass.rs`).
+
+Remaining residual at Prima/Vespera/Completorium ~37% comes from
+two separate gaps:
+
+- **Preces-firing days** (e.g. 01-14-2026 Wed, 01-23-2026 Fri):
+  `Dominus_vobiscum1` should set `$precesferiales = 1` when
+  `preces('Dominicales et Feriales')` returns true and emit
+  line [4] of `[Dominus]` (the omittitur directive). Closes when
+  B12 (preces predicate) lands.
+- **First-vespers concurrence** for days where the chain swap
+  picks the wrong winner (01-15-2026 picks Paul Eremite instead
+  of Marcellus's first vespers). Closes when concurrence
+  (B11) lands.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

@@ -171,9 +171,19 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
     };
     let prayers_file = lookup("Psalterium/Common/Prayers");
     let chain = args.day_key.map(commune_chain).unwrap_or_default();
-    let mut out = Vec::with_capacity(file.template.len());
 
-    for line in &file.template {
+    // Filter the template through the runtime rubric-conditional
+    // evaluator. The Ordinarium templates carry many `(sed rubrica X
+    // dicitur)` / `(deinde rubrica X dicuntur)` gates that must be
+    // honoured per-rubric — unguarded the walker emits multiple
+    // overlapping prayer fragments in a single Oratio. Mirror of
+    // upstream `SetupString.pl::process_conditional_lines` applied to
+    // the template before per-line emission.
+    let filtered_template =
+        apply_template_conditionals(&file.template, args.rubric, args.hour);
+    let mut out = Vec::with_capacity(filtered_template.len());
+
+    for line in &filtered_template {
         match line.kind.as_str() {
             "blank" => {}
             "section" => {
@@ -332,6 +342,22 @@ fn resolve_self_redirect(body: &str, prayers: &HorasFile) -> String {
 
 fn lookup_horas_macro<'a>(prayers: Option<&'a HorasFile>, name: &str) -> Option<&'a str> {
     let prayers = prayers?;
+    // The `Dominus_vobiscum*` family is a ScriptFunc in upstream
+    // `horasscripts.pl` — it slices specific lines out of `[Dominus]`
+    // based on (priest, precesferiales) state. Here we mirror the
+    // lay-default branch (no priest, no preces): lines [2,3] of the
+    // `[Dominus]` body — the Domine exaudi V/R couplet. The literal
+    // `[Dominus_vobiscum]` section in Prayers.txt does not exist;
+    // without this slice the lookup falls through to `[Dominus]` and
+    // emits the whole 5-line body (Dominus vobiscum couplet + Domine
+    // exaudi couplet + script directive line) which causes Prima /
+    // Compline / minor-hour Oratio sections to over-emit.
+    if matches!(
+        name,
+        "Dominus_vobiscum" | "Dominus_vobiscum1" | "Dominus_vobiscum2"
+    ) {
+        return dominus_vobiscum_lay_default(prayers);
+    }
     // Two upstream conventions coexist in `Prayers.txt`:
     //   * `&Deus_in_adjutorium` → section `[Deus in adjutorium]`
     //     (underscore-as-space form for prose macros).
@@ -349,6 +375,26 @@ fn lookup_horas_macro<'a>(prayers: Option<&'a HorasFile>, name: &str) -> Option<
     // Fallback: first token (`Dominus_vobiscum` → `Dominus`).
     let head = name.split('_').next().unwrap_or(name);
     prayers.sections.get(head).map(String::as_str)
+}
+
+/// Slice lines [2,3] (Domine exaudi V/R couplet) out of the
+/// `[Dominus]` Prayers.txt section. Mirror of
+/// `horasscripts.pl::Dominus_vobiscum` lay-default branch (no
+/// priest, no precesferiales). Returns a `&'static str` slice via
+/// `OnceLock` cache so call sites don't reallocate per render.
+fn dominus_vobiscum_lay_default(prayers: &HorasFile) -> Option<&'static str> {
+    static CACHE: OnceLock<Option<String>> = OnceLock::new();
+    let cached = CACHE.get_or_init(|| {
+        let body = prayers.sections.get("Dominus")?;
+        let lines: Vec<&str> = body.split('\n').collect();
+        // Perl: `$text = "$text[2]\n$text[3]"`. Bounds-check before
+        // slicing — corrupt corpora otherwise silently drop the macro.
+        if lines.len() < 4 {
+            return None;
+        }
+        Some(format!("{}\n{}", lines[2], lines[3]))
+    });
+    cached.as_deref()
 }
 
 // ─── Per-day proper splicing (B3) ────────────────────────────────────
@@ -422,6 +468,107 @@ fn visit_chain(
     let Some(rule) = file.sections.get("Rule") else { return };
     for target in parse_vide_targets(rule) {
         visit_chain(&target, visited, out, depth + 1);
+    }
+}
+
+// ─── Ordinarium template runtime conditional gating (R55-R60 fix) ───
+
+/// Apply rubric-conditional gating to an Ordinarium hour template.
+///
+/// Mirror of upstream `getordinarium`'s `process_conditional_lines`
+/// pass at `vendor/divinum-officium/web/cgi-bin/horas/horas.pl:589`.
+/// Without this, every `(deinde rubrica X dicuntur)` /
+/// `(sed PRED dicitur)` / `(atque dicitur semper)` block in the
+/// template fires unconditionally — multiple Oratio fragments collide
+/// in Prima/Compline/etc.
+///
+/// Implementation: synthesise a multi-line text where each OrdoLine
+/// becomes one line. Plain lines whose body looks like a `(...)`
+/// directive emit verbatim so the upstream walker parses them; all
+/// other lines emit a unique sentinel (`\u{1}OL<idx>\u{1}`) that
+/// can't be mistaken for a directive. After running
+/// `process_conditional_lines` against the active rubric, surviving
+/// sentinels map back to their original OrdoLines.
+///
+/// Non-sentinel survivors are sequels of directive-with-sequel lines
+/// (`(rubrica 1960) #De Officio Capituli` is the upstream form). For
+/// Prima/T1570 these never fire — the gating predicate is false. A
+/// future slice will re-classify them; for now they're dropped.
+fn apply_template_conditionals(
+    template: &[OrdoLine],
+    rubric: crate::core::Rubric,
+    hora: &str,
+) -> Vec<OrdoLine> {
+    use crate::setupstring::{process_conditional_lines, Subjects};
+    let subjects = Subjects {
+        rubric: Some(rubric),
+        hora,
+        ..Default::default()
+    };
+    let mut synth = String::new();
+    for (i, line) in template.iter().enumerate() {
+        if i > 0 {
+            synth.push('\n');
+        }
+        // `kind: blank` OrdoLines must emit as blank text in the
+        // synthetic stream so `process_conditional_lines`'s
+        // SCOPE_CHUNK retraction (back to the most recent blank line)
+        // and SCOPE_CHUNK forward-expiry (on hitting a blank line)
+        // see the same boundaries the upstream Perl evaluator does.
+        // Non-blank sentinels here would cause CHUNK pops to overrun
+        // section breaks (e.g. R60 Vespera: `(sed rubrica 196
+        // omittitur)` after `#Suffragium` would pop back through
+        // `#Oratio` into prior content).
+        if line.kind == "blank" {
+            // empty synthetic line → blank
+            continue;
+        }
+        if let Some(body) = directive_body_for_template(line) {
+            synth.push_str(body);
+        } else {
+            synth.push('\u{1}');
+            synth.push_str("OL");
+            synth.push_str(&i.to_string());
+            synth.push('\u{1}');
+        }
+    }
+    let processed = process_conditional_lines(&synth, &subjects);
+    let mut out = Vec::with_capacity(template.len());
+    for line in processed.split('\n') {
+        let trimmed = line.trim_start();
+        if let Some(rest) = trimmed.strip_prefix('\u{1}') {
+            if let Some(payload) = rest.strip_prefix("OL") {
+                if let Some(idx_str) = payload.strip_suffix('\u{1}') {
+                    if let Ok(idx) = idx_str.parse::<usize>() {
+                        if let Some(ol) = template.get(idx) {
+                            out.push(ol.clone());
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+        // Non-sentinel survivor: directive sequel (e.g.
+        // `(rubrica 1960) #De Officio Capituli` under R1960). Drop
+        // for now — under T1570 the gating predicates fail so this
+        // path is empty.
+    }
+    out
+}
+
+/// Return the verbatim synthetic-text body for a template OrdoLine
+/// when the line is shaped like a `(...)` conditional directive — so
+/// `process_conditional_lines` parses it as a directive. Returns
+/// `None` for all other lines (they get a sentinel).
+fn directive_body_for_template(line: &OrdoLine) -> Option<&str> {
+    if line.kind != "plain" {
+        return None;
+    }
+    let body = line.body.as_deref()?.trim_start();
+    if body.starts_with('(') && body.contains(')') {
+        Some(body)
+    } else {
+        None
     }
 }
 

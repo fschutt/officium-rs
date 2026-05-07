@@ -189,6 +189,7 @@ struct Args {
     limit: Option<usize>,
     smoke: bool,
     verbose: bool,
+    dump_body: bool,
 }
 
 fn parse_args() -> Result<Args, String> {
@@ -203,6 +204,7 @@ fn parse_args() -> Result<Args, String> {
         limit: None,
         smoke: false,
         verbose: false,
+        dump_body: false,
     };
     let raw: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
@@ -218,6 +220,7 @@ fn parse_args() -> Result<Args, String> {
             "--limit" => { i += 1; args.limit = raw.get(i).and_then(|s| s.parse().ok()); }
             "--smoke" => { args.smoke = true; }
             "--verbose" | "-v" => { args.verbose = true; }
+            "--dump-body" => { args.dump_body = true; }
             "--help" | "-h" => {
                 eprintln!(
                     "Usage: office_sweep [--date MM-DD-YYYY | --year YYYY | --smoke] \\\n\
@@ -338,6 +341,7 @@ fn run_one_cell(
     next_day_key_override: Option<&str>,
     section: &str,
     verbose: bool,
+    dump_body: bool,
 ) -> (SectionStatus, Option<String>) {
     // Derive day_key via precedence::compute_office if not overridden.
     let derived_key = if let Some(k) = day_key_override {
@@ -415,6 +419,18 @@ fn run_one_cell(
     };
 
     let status = compare_office_section(&rust_body, &perl_html, section);
+    if dump_body {
+        let perl_sections =
+            officium_rs::regression::extract_perl_sections(&perl_html);
+        let perl_body = perl_sections
+            .get(section)
+            .cloned()
+            .unwrap_or_default();
+        eprintln!("\n─── DUMP {date_us} {hour} {section} ─────────");
+        eprintln!("rust_body ({} bytes):\n{rust_body}", rust_body.len());
+        eprintln!("\nperl_body ({} bytes):\n{perl_body}", perl_body.len());
+        eprintln!("───────────────────────────────────────────────\n");
+    }
     let info = if verbose {
         Some(format!(
             "key={resolved_key} rust_lines={} rust_len={} status={status:?}",
@@ -507,6 +523,7 @@ fn main() -> Result<(), String> {
                 args.next_day_key.as_deref(),
                 &args.section,
                 args.verbose,
+                args.dump_body,
             );
             overall.record(status);
             per_hour[hi].1.record(status);

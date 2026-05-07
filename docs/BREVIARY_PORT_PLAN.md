@@ -1,10 +1,19 @@
 # Breviary Port Plan (B10 onwards)
 
-**Status (2026-05-06):** Mass-side port is finalising 100 % parity across
-all five rubric layers. Breviary leg is at B7 complete + B8 in progress
-(see `SUPER_PLAN.md`). This plan scaffolds the remaining work — B10
-through B20 — into a per-Perl-file/per-subroutine module map and
-slices it for sequential execution.
+**Status (2026-05-07):** Mass-side port is at **100 % Perl-parity
+across all 5 rubric layers × 1976-2076** (184,455 / 184,455 days).
+Breviary leg is at B7 complete + B8 in progress (see `SUPER_PLAN.md`).
+This plan scaffolds the remaining work — B10 through B20 — into a
+per-Perl-file/per-subroutine module map and slices it for sequential
+execution.
+
+**Read first:** [`MASS_PORT_LESSONS.md`](MASS_PORT_LESSONS.md) — 20
+gotchas surfaced during Mass-side cluster closure. Most apply to
+the breviary because the upstream Perl shares helper modules
+(`Directorium`, `SetupString`, `horascommon`) and data files
+(Kalendaria, Transfer/Stransfer, Sancti/, Tempora/, Commune/)
+between Mass and Office. Especially relevant for the
+precedence/occurrence layer.
 
 This is a **scaffolding plan**, not an implementation. The accompanying
 `src/breviary/` skeleton ships with the file/function shape only; every

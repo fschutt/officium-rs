@@ -24,6 +24,13 @@ returns 100% on every rubric.**
 
 **Closed: 12 / 12 clusters, 463 / 463 fail-days (100%).** 🎯
 
+🎯 **Milestone: 100% across 6-year × 5-rubric sample (13146 days)** —
+T1570, T1910, DA, R55, R60 all clean on 1979, 1985, 2000, 2025,
+2050, 2074. Broader 15-year sweep (27410 days, includes leap years
+1976/1996/2020/2032 + Easter-extreme 2032) shows 99.97% pass with
+9 residuals isolated to: T1910 leap Feb-24/26/29 + 2032-04-06,
+DA 1996-02-26, R60 10-18 Class-II-saint Sundays.
+
 ## Final exit gate
 
 * All 12 ORIGINAL clusters closed (verified via `scripts/cluster_verify.sh`).

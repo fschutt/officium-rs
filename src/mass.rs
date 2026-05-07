@@ -2329,6 +2329,20 @@ fn apply_r55_simplex_commemoration(
     if !is_sunday_tempora {
         return body.to_string();
     }
+    // Narrow gate: only fire on World Mission Sunday (penultimate
+    // Sunday of October, monthday key "104-0"). On other R55 Sundays
+    // the saint commemoration is already rendered by the standard
+    // `[Oratio]`/@-ref pipeline; firing here would cause duplicate
+    // emission. The 104-0 case is special because Tempora/104-0's
+    // `(rubrica divino aut rubrica 196)` Commemoratio sections
+    // don't activate under R55, leaving the slot empty for the
+    // Simplex saint to fill.
+    let key = crate::date::monthday(
+        office.date.day, office.date.month, office.date.year, true, false,
+    );
+    if key != "104-0" {
+        return body.to_string();
+    }
     let comm_key = match &office.commemoratio {
         Some(k) if k.category == FileCategory::Sancti => k.clone(),
         _ => return body.to_string(),

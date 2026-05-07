@@ -2279,10 +2279,34 @@ fn apply_world_mission_oratio(
     // "Pro fidei propagatione". The kalendar lookup mirrors what
     // Perl's `$commemoratio` would be set to before the world-
     // mission injection runs.
+    // Under R60, a Simplex (rank ≤ 1.1) main kalendar entry is
+    // abolished entirely (Pius XII's Cum nostra hac aetate +
+    // John XXIII's 1960 rubrics). On a WMSunday with a Simplex-only
+    // saint (e.g. 10-21 Hilarion 1.1), the Propaganda is the LONE
+    // commemoration → simpler header. Class III feasts (Duplex 3)
+    // remain registered for the header form even though their
+    // commemoration body is suppressed at Mass. Drives R60
+    // 10-21 Hilarion → lone header.
     let has_other_sancti_on_date = {
         let layer = office.rubric.kalendar_layer();
-        crate::kalendaria_layers::lookup(layer, office.date.month, office.date.day)
-            .is_some()
+        let cells = crate::kalendaria_layers::lookup(
+            layer, office.date.month, office.date.day,
+        );
+        let is_r60_simplex_demoted = matches!(
+            office.rubric, crate::core::Rubric::Rubrics1960
+        );
+        match cells {
+            None => false,
+            Some(c) if c.is_empty() => false,
+            Some(c) => {
+                if is_r60_simplex_demoted {
+                    c.iter().any(|cell| cell.is_main()
+                        && cell.rank_num().map(|r| r > 1.1).unwrap_or(true))
+                } else {
+                    true
+                }
+            }
+        }
     };
     let header = if has_other_sancti_on_date {
         "!Commemoratio Pro Propagatione Fidei"

@@ -338,6 +338,66 @@ tests pass.
 Prima (preces predicate B12), Vespera (concurrence B11), and
 Completorium (some mix of both).
 
+## Slice 14: `Dominus_vobiscum1` preces-firing branch (line[4] of [Dominus])
+
+`horasscripts.pl::Dominus_vobiscum1` is the "Prima/Compline after
+preces" ScriptFunc — when `preces('Dominicales et Feriales')`
+returns true, it sets `$precesferiales = 1` and the inner
+`Dominus_vobiscum` returns line[4] of `[Dominus]` (the
+`/:secunda «Domine, exaudi» omittitur:/` rubric directive)
+instead of the lay-default V/R Domine exaudi couplet at lines
+[2,3]. Slice 11 wired the lay-default; slice 14 wires the
+preces-firing branch.
+
+`preces_dominicales_et_feriales_fires` is a narrow port of
+`specials/preces.pl::preces` covering:
+
+- Sunday / Saturday-Vespers exclusion.
+- BVM C12 office exclusion.
+- `[Rule]` with "Omit Preces" exclusion (rubric-conditional eval'd
+  first via slice 12's `eval_section_conditionals`).
+- `[Rank]` parsed for active rubric: `duplex >= 3` rejects;
+  Octave-rank rejects (unless "post Octav").
+- 1955/1960 day-of-week gate (Wed/Fri only — emberday detection
+  deferred).
+- Sancti winner branch (b) fires when the above pass.
+- Tempora winner branch (a) — conservative: only fires when
+  `[Rule]` mentions "Preces" explicitly. Adv/Quad/emberday
+  detection deferred to a later slice (the 30-day Jan T1570 sample
+  has no Tempora ferials with active preces; the upstream concentration
+  is in Lent / Septuagesima which slice doesn't cover yet).
+
+The walker's `kind: macro` branch dispatches on `Dominus_vobiscum1`
+and emits `dominus_vobiscum_preces_form(prayers)` (line[4]) when
+the predicate returns true; otherwise falls through to the
+existing `lookup_horas_macro` path which slice 11 already routes
+to `dominus_vobiscum_lay_default` (lines [2,3]).
+
+**30-day Jan 2026 × T1570 × Oratio sweep — `--hour all`:**
+
+| Hour          | Pre slice 14 | Post slice 14 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 30/30 (100%) | 30/30 (100%) | — |
+| Laudes        | 30/30 (100%) | 30/30 (100%) | — |
+| Prima         | 19/30 (63%)  | 27/30 (90%)  | +8 |
+| Tertia        | 30/30 (100%) | 30/30 (100%) | — |
+| Sexta         | 30/30 (100%) | 30/30 (100%) | — |
+| Nona          | 30/30 (100%) | 30/30 (100%) | — |
+| Vespera       | 24/30 (80%)  | 24/30 (80%)  | — |
+| Completorium  | 23/30 (77%)  | 25/30 (83%)  | +2 |
+| **Aggregate** | **216/240 (90.00%)** | **226/240 (94.17%)** | **+10** |
+
+R60 30-day aggregate: 40/240 (16.67%) — unchanged. The 1955/1960
+gating in the predicate suppresses preces on most R60 days, so the
+slice doesn't lift R60. Mass T1570 + R60 year-sweeps stay at
+365/365 (100%). All 431 lib tests pass.
+
+Vespera still at 80% (6 fails) — its residual is first-vespers
+concurrence (`&Dominus_vobiscum1` doesn't appear in Vespera #Oratio,
+so this slice doesn't help). Compline at 83% — 5 remaining fails
+mix preces predicate edge cases (Saturday Vespera adjacency) with
+other patterns.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

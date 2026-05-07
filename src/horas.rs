@@ -226,9 +226,35 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
             }
             "macro" => {
                 if let Some(name) = &line.name {
-                    let body = lookup_horas_macro(prayers_file, name)
-                        .unwrap_or("")
-                        .to_string();
+                    // `Dominus_vobiscum1` is the "Prima/Compline after
+                    // preces" ScriptFunc — when preces would fire, it
+                    // sets `$precesferiales = 1` and emits line[4] of
+                    // [Dominus] (the `secunda Domine, exaudi
+                    // omittitur` directive) instead of the lay-default
+                    // V/R couplet. Mirror of
+                    // `horasscripts.pl::Dominus_vobiscum1`.
+                    let body = if name == "Dominus_vobiscum1"
+                        && args.day_key.is_some()
+                    {
+                        let day_key = args.day_key.unwrap();
+                        let dow = crate::date::day_of_week(args.day, args.month, args.year);
+                        if preces_dominicales_et_feriales_fires(
+                            day_key, args.rubric, args.hour, dow,
+                        ) {
+                            prayers_file
+                                .and_then(dominus_vobiscum_preces_form)
+                                .unwrap_or("")
+                                .to_string()
+                        } else {
+                            lookup_horas_macro(prayers_file, name)
+                                .unwrap_or("")
+                                .to_string()
+                        }
+                    } else {
+                        lookup_horas_macro(prayers_file, name)
+                            .unwrap_or("")
+                            .to_string()
+                    };
                     out.push(RenderedLine::Macro {
                         name: name.clone(),
                         body,
@@ -398,6 +424,137 @@ fn dominus_vobiscum_lay_default(prayers: &HorasFile) -> Option<&'static str> {
         Some(format!("{}\n{}", lines[2], lines[3]))
     });
     cached.as_deref()
+}
+
+/// Slice line [4] (the `/:secunda «Domine, exaudi» omittitur:/`
+/// directive) out of the `[Dominus]` Prayers.txt section. Returned
+/// when preces fire — `horasscripts.pl::Dominus_vobiscum` else
+/// branch with `$precesferiales == 1`.
+fn dominus_vobiscum_preces_form(prayers: &HorasFile) -> Option<&'static str> {
+    static CACHE: OnceLock<Option<String>> = OnceLock::new();
+    let cached = CACHE.get_or_init(|| {
+        let body = prayers.sections.get("Dominus")?;
+        let lines: Vec<&str> = body.split('\n').collect();
+        if lines.len() < 5 {
+            return None;
+        }
+        Some(lines[4].to_string())
+    });
+    cached.as_deref()
+}
+
+/// Narrow port of `specials/preces.pl::preces` for the
+/// `Dominus_vobiscum1` "did preces fire?" gate. Returns true when
+/// the Perl `preces('Dominicales et Feriales')` call would fire on
+/// this day, prompting `Dominus_vobiscum1` to set `$precesferiales
+/// = 1` and the macro to emit the omittitur line[4] instead of the
+/// V/R Domine exaudi couplet at lines [2,3].
+///
+/// First parity pass — handles the Sancti-winner branch (the
+/// typical case for Jan ferials in T1570 Prima/Compline) plus the
+/// duplex-rank early reject. Tempora-ferial branch (a)'s Adv/Quad/
+/// emberday gating + 1955/1960 Wed/Fri restriction are deferred to
+/// a later slice — the upstream Tempora ferials in 1976-2076 with
+/// active preces are concentrated in Adv/Quad/Septuagesima and the
+/// existing 30-day Jan slice doesn't surface those in T1570.
+fn preces_dominicales_et_feriales_fires(
+    day_key: &str,
+    rubric: crate::core::Rubric,
+    hour: &str,
+    dayofweek: u32,
+) -> bool {
+    // Sunday: no preces.
+    if dayofweek == 0 {
+        return false;
+    }
+    // Saturday Vespers: Vespera on Saturday is FIRST vespers of
+    // Sunday — the upstream `preces` rejects this branch.
+    if dayofweek == 6 && (hour == "Vespera" || hour == "Vesperae") {
+        return false;
+    }
+    // BVM Office: no preces.
+    if day_key.contains("/C12") {
+        return false;
+    }
+    let Some(file) = lookup(day_key) else {
+        return false;
+    };
+    // [Rule] containing "Omit Preces" → no preces.
+    if let Some(rule) = file.sections.get("Rule") {
+        let evaluated = eval_section_conditionals(rule, rubric, hour);
+        let lc = evaluated.to_lowercase();
+        if lc.contains("omit") && lc.contains("preces") {
+            return false;
+        }
+    }
+    // Parse the active rubric's [Rank] line.
+    let rank_body = match file.sections.get("Rank") {
+        Some(r) => r,
+        None => return false,
+    };
+    let evaluated_rank = eval_section_conditionals(rank_body, rubric, hour);
+    let mut rank_line: Option<&str> = None;
+    for line in evaluated_rank.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('(') {
+            continue;
+        }
+        rank_line = Some(line);
+        break;
+    }
+    let line = match rank_line {
+        Some(l) => l,
+        None => return false,
+    };
+    let parts: Vec<&str> = line.split(";;").collect();
+    if parts.len() < 3 {
+        return false;
+    }
+    let rank_str = parts.get(1).unwrap_or(&"").trim();
+    let rank_num: f32 = parts.get(2).and_then(|s| s.trim().parse().ok()).unwrap_or(0.0);
+    // duplex > 2 → preces rejected (early-exit in upstream
+    // `preces`).
+    if rank_num >= 3.0 {
+        return false;
+    }
+    // Octave-containing rank (other than "post Octav") rejects
+    // branch (b).
+    let lc_rank = rank_str.to_lowercase();
+    if lc_rank.contains("octav") && !lc_rank.contains("post octav") {
+        return false;
+    }
+    // 1955/1960 only on Wednesdays/Fridays/Ember days. Pre-1955 has
+    // no day-of-week restriction.
+    let pre_1955 = matches!(
+        rubric,
+        crate::core::Rubric::Tridentine1570
+            | crate::core::Rubric::Tridentine1910
+            | crate::core::Rubric::DivinoAfflatu1911
+    );
+    if !pre_1955 && !(dayofweek == 3 || dayofweek == 5) {
+        // Skip emberday check for now.
+        return false;
+    }
+    // Sancti winner: branch (b) fires when low-rank, no octave, no
+    // high-rank commemoratio (commemoratio detection deferred —
+    // false-firing on a day with high-rank commemoratio would set
+    // `precesferiales` wrongly; rare in current 30-day slice).
+    if day_key.starts_with("Sancti/") {
+        return true;
+    }
+    // Tempora winner: branch (a) requires Adv/Quad/emberday OR
+    // [Rule] contains "Preces". Conservative — only fire when
+    // [Rule] has an explicit `Preces` directive for now.
+    if day_key.starts_with("Tempora/") {
+        if let Some(rule) = file.sections.get("Rule") {
+            let evaluated = eval_section_conditionals(rule, rubric, hour);
+            if evaluated.to_lowercase().contains("preces") {
+                return true;
+            }
+        }
+        return false;
+    }
+    false
 }
 
 // ─── Per-day proper splicing (B3) ────────────────────────────────────

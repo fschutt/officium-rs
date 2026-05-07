@@ -487,12 +487,15 @@ fn decide_sanctoral_wins_1570(
         || temporal_name.contains("Adventu")
         || temporal_name.contains("Adventum")
         || temporal_name.contains("Passion");
-    let sancti_is_12_24 = sancti_file
-        .map(|sf| sf.sections.get("__source_stem")
-            .map(|s| s.contains("12-24"))
-            .unwrap_or(false))
-        .unwrap_or(false)
-        || _sancti.name.to_lowercase().contains("vigilia natalis");
+    // Christmas Eve exemption: Perl `horascommon.pl:443` says
+    // `$sname !~ /12-24/`. Match the file stem directly via the
+    // sancti name's "Vigilia Nativitatis" — Class I Vigil of
+    // Christmas (Sancti/12-24, "In Vigilia Nativitatis Domini")
+    // outranks Adv4 Sunday under R60. Drives R60_misc 19c
+    // (2000-12-24 Sunday case).
+    let sancti_lc = _sancti.name.to_lowercase();
+    let sancti_is_12_24 = sancti_lc.contains("vigilia natalis")
+        || sancti_lc.contains("vigilia nativitatis");
     let sancti_is_patronus = sancti_file
         .and_then(|sf| sf.sections.get("Rule"))
         .map(|r| r.to_lowercase().contains("patronus"))

@@ -453,6 +453,56 @@ pub fn stem_transferred_away_with_stems(
                 } else if mentions_a_candidate_stem {
                     return true;
                 }
+                // Perl `Directorium::transfered()` (Directorium.pm:251)
+                // uses regex SUBSTRING matching: `$val =~ /$str/i` OR
+                // `$str =~ /$val/i`. The exact-equality checks above
+                // miss the suffix case where a rule's extras list
+                // includes a stem that CONTAINS our candidate as a
+                // prefix — e.g. `01-28=01-27~01-28t;;1570 M1617 1888
+                // 1906` (Stransfer/331.txt). Under T1910 (1906 layer)
+                // on letter-f easter-331 years, kalendar 01-31 has
+                // Petri Nolasci (file stem 01-28); the rule's val
+                // `01-27~01-28t` mentions `01-28` only as a substring
+                // of `01-28t`, so exact match misses but Perl's
+                // substring regex fires → Petri suppressed on his
+                // native 01-31. Same shape applies to other letter-f
+                // 331 years (1991, 2002, …). Closes the T1910
+                // 01-31 Septuagesima-Thursday residual.
+                // Narrow Perl-substring-match path: mirrors
+                // `$val =~ /$str/i` from `Directorium::transfered`,
+                // gated on `source_mmdd == stem`. Triggers when a
+                // rule keyed at our stem has its val MENTIONING our
+                // stem as a substring (typically because a suffixed
+                // sibling like `01-28t` literally contains `01-28`
+                // as a prefix).
+                //
+                // Closes T1910 letter-f easter-331 years (1991, 2002,
+                // …): rule `01-28=01-27~01-28t;;1570 M1617 1888 1906`
+                // — kalendar 01-31 has Petri Nolasci (file 01-28),
+                // and Perl's substring match suppresses him on his
+                // native day. The exact-equality checks above miss
+                // because no rule's main or extras ever literally
+                // equals `01-28` here.
+                //
+                // Gated on `source_mmdd == stem` so the substring
+                // match doesn't bleed into unrelated rules: a rule
+                // like `02-29=02-22~02-23o` (source 02-29) shouldn't
+                // suppress stem 02-23 just because the extras
+                // happen to contain a `02-23`-prefixed string. The
+                // 1976 letter-c leap-year case (d.txt `01-28=01-18`)
+                // also stays quiet — its val "01-18" doesn't mention
+                // "01-28".
+                let key_matches_a_stem = stems.iter().any(|s| {
+                    source_mmdd.eq_ignore_ascii_case(s)
+                });
+                let val_substring_mentions_stem = stems.iter().any(|stem| {
+                    let s: &str = stem;
+                    target.main.contains(s)
+                        || target.extras.iter().any(|e| e.contains(s))
+                });
+                if key_matches_a_stem && val_substring_mentions_stem {
+                    return true;
+                }
             }
         }
     }

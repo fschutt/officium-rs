@@ -48,6 +48,18 @@ the `default_section` arg before lookup. The rubric-conditional
 pickup at the winner level is unaffected — only the chase target
 sees the bare name.
 
+🎯 **T1910 letter-f easter-331 Petri-Nolasci suppression closed** —
+narrow Perl `transfered()` substring path added to
+`stem_transferred_away_with_stems`: when a rule keyed at our stem
+mentions our stem as a substring of its val (typically a suffixed
+sibling like `01-28t` literally containing `01-28`), suppress.
+Gated on `source_mmdd == stem` so unrelated rules whose val happens
+to mention our stem don't fire. Closes 1991, 2002, and any other
+letter-f easter-331 year where rule
+`01-28=01-27~01-28t;;1570 M1617 1888 1906` (Stransfer/331.txt)
+fires Petri Nolasci feria-suppression on his native 01-31. 28-year
+× 5-rubric wider sweep (140 pairs, ~51,000 days): 0 fails.
+
 ## Final exit gate
 
 * All 12 ORIGINAL clusters closed (verified via `scripts/cluster_verify.sh`).

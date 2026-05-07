@@ -35,17 +35,25 @@ returns 100% on every rubric.**
 
 ## New clusters (discovered post-12-cluster closure)
 
-| # | Cluster | Days/yr | Pattern |
-|---|---------|---------|---------|
-| 13 | T1910_Septem_Fundatorum_0212 | 4× | T1910 02-12 Septem Fundatorum (kalendar-stem `02-12` Duplex 3) — diff in all 9 propers |
-| 14 | T1910_Joseph_0319_0320 | 2× | T1910 03-20 (post-Joseph) — likely related to Joseph transfer |
-| 15 | DA_WMSunday_NonHilarion | 6× | DA 10-19/20/21/22/23 — WMSunday + saint commemoration both need to render simultaneously (currently only Propaganda renders) |
-| 16 | R55_WMSunday_NonHilarion | 3× | R55 10-19/22/23 (years where penultimate Sun ≠ 10-21) — same pattern as DA 15 |
-| 17 | R60_03_06_Perpetua_Felicitas | 3× | R60 03-06 Perpetua/Felicitas Graduale only |
-| 18 | R60_WMSunday | 4× | R60 10-19/21/23 — WMSunday + Sancti commemoration interaction |
-| 19 | R60_misc | 3× | R60 03-20, 12-08 (Imm Conc), 12-24 (Christmas Eve) |
+| # | Cluster | Days/yr | Status | Pattern |
+|---|---------|---------|--------|---------|
+| 13 | T1910_Septem_Fundatorum_0212 | 4× | ✅ | closed by T1910 heuristic over-fire guard |
+| 14 | T1910_Joseph_0319_0320 | 2× | ✅ | closed by same |
+| 15 | DA_WMSunday_NonHilarion | 6× | ⏳ | needs DA-side commemoration appendage co-existing with Propaganda |
+| 16 | R55_WMSunday_NonHilarion | 3× | ⏳ | same as DA-15 (years where penultimate Sun ≠ 10-21) |
+| 17 | R60_03_06_Perpetua_Felicitas | 3× | ✅ | closed by rubric-conditional `[Section] (rubrica 1960)` lookup |
+| 18 | R60_WMSunday | 4× | ⏳ | R60 10-19/21/23 — WMSunday + Sancti commemoration |
+| 19 | R60_misc | 3× | ⏳ | R60 03-20, 12-08 (Imm Conc), 12-24 (Christmas Eve) |
 
-These need investigation in subsequent loop iterations.
+Sample-year sweep (1979, 1985, 2000, 2025, 2050, 2074):
+* **T1570 100%** — 0 fails ✓
+* **T1910 100%** — 0 fails ✓
+* DA: 6 fails (cluster 15)
+* R55: 3 fails (cluster 16)
+* R60: 7 fails (clusters 18 + 19)
+
+Total residuals: **16 fail-days across 6 sample years × 5 rubrics**
+(of 13146 days; 99.88% pass).
 
 ## Closed-cluster regression note
 

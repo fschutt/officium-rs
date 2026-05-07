@@ -538,6 +538,33 @@ fn decide_sanctoral_wins_1570(
         }
     }
 
+    // RG 15 (Rubricæ Generales 1960): the Immaculate Conception
+    // outranks the II Sunday of Advent in occurrence. Mirrors Perl
+    // `horascommon.pl:471-473`:
+    //   `} elsif ($srank[0] =~ /Conceptione Immaculata/) {
+    //       $sanctoraloffice = 1;
+    //   }`
+    // Without this exception the Adv/Quad srank cap above downgrades
+    // Imm Conc (rank 6.5) to 6.01 — equal to Adv2-0's R60 rank 6.01
+    // — and the strict `srank > trank` check leaves the Sunday as
+    // winner. Closes R60_misc 12-08 case.
+    if is_dominica {
+        let sancti_name = sancti
+            .map(|s| s.name.to_lowercase())
+            .unwrap_or_default();
+        // Match both word orders: missa-side `In Conceptione Immaculata
+        // Beatæ Mariæ Virginis` AND kalendar-side `Immaculata
+        // Conceptione Beatae Mariae Virginis` — Perl regex is just
+        // `/Conceptione Immaculata/` against `$srank[0]` which is the
+        // missa-side name, but our SanctiEntry's name comes from the
+        // kalendar layer for non-1570 rubrics.
+        if sancti_name.contains("conceptione immaculata")
+            || sancti_name.contains("immaculata conceptione")
+        {
+            return true;
+        }
+    }
+
     // Sunday handling. Detect via the rendered name — pre-1960 Sundays
     // are written as `Dominica …`. (The Perl uses regex on `$trank[0]`
     // and `$dayname[0]`; we approximate with the officium string.)
@@ -876,6 +903,7 @@ fn apply_transfer_sancti_1570(
     day: u32,
     rubric_tag: &str,
     corpus: &dyn Corpus,
+    rubric: Rubric,
 ) -> Option<(String, f32)> {
     let entries = crate::transfer_table::transfers_for(
         year, rubric_tag, month, day,
@@ -900,8 +928,27 @@ fn apply_transfer_sancti_1570(
         let resolved_key = resolve_sancti_stem(&entry.main, corpus);
         let metadata_key = effective_tempora_key(&resolved_key, corpus);
         let mass = corpus.mass_file(&metadata_key);
+        // Rubric-aware rank pick. Joseph (Sancti/03-19) carries
+        // `rank_num_1570 = 3.0` (Duplex), `rank_num = 6.1`
+        // (1888-elevated Duplex II classis), `rank_num_1960 = 6.0`
+        // (R60 Class I). The previous `rank_num_1570.or(rank_num)`
+        // pick mirrored T1570 only and lost the elevation under
+        // R60 — Joseph transferred to Quad2-1 Mon under R60 should
+        // win at rank 6.0 (vs feria 3.9), not 3.0. Closes R60_misc
+        // 03-20 day.
         let rank = mass
-            .and_then(|m| m.rank_num_1570.or(m.rank_num))
+            .and_then(|m| match rubric {
+                Rubric::Tridentine1570 | Rubric::Monastic => {
+                    m.rank_num_1570.or(m.rank_num)
+                }
+                Rubric::Tridentine1910 => m.rank_num_1906.or(m.rank_num),
+                Rubric::DivinoAfflatu1911 => m.rank_num,
+                Rubric::Reduced1955 => m.rank_num_1955.or(m.rank_num),
+                Rubric::Rubrics1960 => m
+                    .rank_num_1960
+                    .or(m.rank_num_1955)
+                    .or(m.rank_num),
+            })
             .unwrap_or(0.0);
         return Some((entry.main, rank));
     }
@@ -1486,7 +1533,7 @@ fn resolve_sancti_for_tridentine_1570(
     // Sunday) live here and override both the kalendar and the
     // walked-back transfer-of-preempted-saints chain.
     if let Some((stem, rank_num)) =
-        apply_transfer_sancti_1570(year, month, day, rubric.transfer_rubric_tag(), corpus)
+        apply_transfer_sancti_1570(year, month, day, rubric.transfer_rubric_tag(), corpus, rubric)
     {
         let key = resolve_sancti_stem(&stem, corpus);
         let metadata_key = effective_tempora_key(&key, corpus);
@@ -2027,6 +2074,34 @@ mod tests {
         let r = run(2026, 10, 25);
         assert_eq!(winner_path(&r), "Tempora/Pent22-0");
         assert!(!r.sanctoral_office);
+    }
+
+    #[test]
+    fn trace_joseph_r60_2000() {
+        let mut inp = input(2000, 3, 20);
+        inp.rubric = Rubric::Rubrics1960;
+        let r = compute_occurrence(&inp, &BundledCorpus);
+        eprintln!("2000-03-20 R60 winner={} sanc={} srank={} trank={}",
+            r.winner.render(), r.sanctoral_office, r.sanctoral_rank, r.temporal_rank);
+        let entries = crate::transfer_table::transfers_for(2000, "1960", 3, 20);
+        eprintln!("transfers_for: {:?}", entries);
+        let layer = inp.rubric.kalendar_layer();
+        let (skey, sentry) = resolve_sancti_for_tridentine_1570(
+            inp.date.year, inp.date.month, inp.date.day, layer, inp.rubric, &BundledCorpus,
+        );
+        eprintln!("resolved: key={} entry={:?}",
+            skey.render(), sentry.as_ref().map(|e| (&e.name, e.rank_num)));
+    }
+
+    #[test]
+    fn imm_conc_outranks_adv2_sunday_r60() {
+        // RG 15: Immaculate Conception (12-08) on Adv2 Sunday — under
+        // R60 the saint outranks the Sunday in occurrence.
+        let mut inp = input(1985, 12, 8);
+        inp.rubric = Rubric::Rubrics1960;
+        let r = compute_occurrence(&inp, &BundledCorpus);
+        assert_eq!(winner_path(&r), "Sancti/12-08");
+        assert!(r.sanctoral_office);
     }
 
     #[test]

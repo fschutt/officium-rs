@@ -688,6 +688,59 @@ from Septuagesima onward). Prima and Compline don't share the
 $commemoratio-driven preces predicate over-fire we noted in
 slice 17 + new seasonal fail patterns that don't show up in Jan.
 
+## Slice 20: `[Oratio 2]` / `[Oratio 3]` numbered-variant priority — full year T1570 75.27% → 79.04%
+
+Upstream `specials/orationes.pl::oratio` (lines 67-74) sets
+`$ind = $hora eq 'Vespera' ? $vespera : 2` then overrides
+`$winner{Oratio}` with `$winner{"Oratio $ind"}` when the latter
+exists. Lent ferials use this convention densely:
+
+- **Tempora/Quadp3-3 (Ash Wednesday)**:
+  - `[Oratio 2]` = "Praesta, Domine, fidelibus tuis..."
+    (Lauds / Mat / Tertia / Sexta / Nona)
+  - `[Oratio 3]` = "Inclinantes se, Domine..." (second Vespers)
+  - **No bare `[Oratio]`** — without numbered preference, the
+    chain walker falls through to Quadp3-0 Sunday's "Preces
+    nostras..." via `tempora_sunday_fallback`.
+
+`slot_candidates("Oratio", hour)` now returns:
+
+```
+Vespera                   → ["Oratio 3", "Oratio"]
+Prima | Completorium      → []  (fixed prayers in Ordinarium)
+otherwise                 → ["Oratio 2", "Oratio"]
+```
+
+`find_section_in_chain` tries the candidates in order; the
+numbered variant wins when present (53 Sancti+Tempora files have
+`[Oratio 2]`, fewer have `[Oratio 3]`).
+
+**30-day Jan 2026 × T1570:** stays at 240/240 (100.00%).
+
+**Full year 2026 × T1570 × Oratio:** 2198/2920 (75.27%) →
+**2310/2920 (79.04%)** (+112 cells).
+
+| Hour          | Pre slice 20 | Post slice 20 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 269/365 (74%) | 291/365 (80%) | +22 |
+| Laudes        | 269/365 (74%) | 291/365 (80%) | +22 |
+| Prima         | 289/365 (79%) | 289/365 (79%) | — |
+| Tertia        | 269/365 (74%) | 291/365 (80%) | +22 |
+| Sexta         | 269/365 (74%) | 291/365 (80%) | +22 |
+| Nona          | 269/365 (74%) | 291/365 (80%) | +22 |
+| Vespera       | 275/365 (75%) | 275/365 (75%) | — |
+| Completorium  | 289/365 (79%) | 289/365 (79%) | — |
+
+The 5-hour band (M/L/T/S/N) all gained 22 cells — same Lent ferials
+fail/pass across these hours. Vespera gain is hidden in net 0:
+[Oratio 3] preference fixes ~21 Lent-Vespera days but exposes new
+seasonal patterns elsewhere (~21 days lost). Prima/Compline use
+fixed prayers in their Ordinarium templates, so this slice doesn't
+touch them.
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

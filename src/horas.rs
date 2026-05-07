@@ -1138,9 +1138,25 @@ fn slot_candidates(label: &str, hour: &str) -> Vec<String> {
         // the day's proper. Splicing the day's [Oratio] into those
         // two hours would prepend the wrong prayer text — Perl
         // doesn't do this either. Suppress the slot for them.
+        // Mirror of upstream `specials/orationes.pl::oratio` lookup
+        // priority (lines 67-74). Perl uses `$ind = $hora eq
+        // 'Vespera' ? $vespera : 2` and overrides `[Oratio]` with
+        // `[Oratio $ind]` when the latter exists. Drives Lent
+        // ferials (Quadp3-3 Ash Wed has `[Oratio 2]` = "Praesta,
+        // Domine, fidelibus tuis..." for Lauds/Mat AND `[Oratio 3]`
+        // = "Inclinantes se..." for Vespera) — without these
+        // preferences the chain walker falls through to the
+        // Sunday's `[Oratio]` and emits the wrong prayer.
+        //
+        // For Vespera $vespera = 3 in second Vespers (the typical
+        // case). First-Vespers concurrence is handled at the
+        // `office_sweep` layer by swapping to tomorrow's day_key
+        // before the walker runs, so the priority below applies to
+        // the resolved day's Oratio variants.
         "Oratio" => match hour {
             "Prima" | "Completorium" => Vec::new(),
-            _ => vec!["Oratio".to_string()],
+            "Vespera" => vec!["Oratio 3".to_string(), "Oratio".to_string()],
+            _ => vec!["Oratio 2".to_string(), "Oratio".to_string()],
         },
 
         // Vespera + Laudes Capitulum/Hymnus/Versus combo slot.

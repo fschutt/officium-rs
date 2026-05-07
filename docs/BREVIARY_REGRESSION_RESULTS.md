@@ -567,6 +567,50 @@ on Prima 01-24 makes the trade net-positive overall.
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 18: Vespera = 100% via "No prima vespera" + Simplex-no-2V
+
+`first_vespers_day_key_for_rubric` had two remaining bugs:
+
+1. **Tomorrow's `[Rule]` "No prima vespera"** wasn't honoured.
+   `Tempora/Epi4-0tt` (Sat-eve-of-Sun-IV variant Simplex 1.5)
+   carries an explicit `No prima vespera` directive in its
+   `[Rule]` body — its rank 1.5 would otherwise outrank a
+   Friday Tempora ferial (Feria 1.0) and pick the wrong office.
+   Mirror of upstream `concurrence`'s scan for this marker.
+
+2. **Sancti Simplex has no 2nd Vespers.** Wed 01-28 (Sancti/01-28t
+   Agnes Simplex 1.1) is the typical case: 1.1 > Thursday's
+   Tempora ferial 1.0, but Sancti Simplex has no proper 2V.
+   Today's Vespera is empty — falls through to tomorrow's Tempora
+   ferial (which inherits Sun III's office via "Oratio Dominica").
+   Tempora ferials don't have this problem (they always inherit
+   Sunday). Branch fires when `today_key` starts with `Sancti/`
+   and the active rank class is Simplex / Memoria /
+   Commemoratio (or rank num < 2.0).
+
+**30-day Jan 2026 × T1570 × Oratio sweep:**
+
+| Hour          | Pre slice 18 | Post slice 18 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 30/30 (100%) | 30/30 (100%) | — |
+| Laudes        | 30/30 (100%) | 30/30 (100%) | — |
+| Prima         | 30/30 (100%) | 30/30 (100%) | — |
+| Tertia        | 30/30 (100%) | 30/30 (100%) | — |
+| Sexta         | 30/30 (100%) | 30/30 (100%) | — |
+| Nona          | 30/30 (100%) | 30/30 (100%) | — |
+| Vespera       | 28/30 (93%)  | **30/30 (100%)** | +2 |
+| Completorium  | 26/30 (87%)  | 26/30 (87%)  | — |
+| **Aggregate** | **234/240 (97.50%)** | **236/240 (98.33%)** | **+2** |
+
+**7 of 8 hours at 100% on the 30-day slice.** Only Compline
+holds the line below — its 4 residuals are all preces-predicate
+edge cases (01-16, 01-19, 01-24, 01-26) where upstream Perl
+rejects preces but our predicate fires. Hour-specific divergence
+that needs `$commemoratio` propagation from the precedence layer.
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

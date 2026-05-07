@@ -818,12 +818,41 @@ pub fn first_vespers_day_key<'a>(
 /// `;;Duplex;;3` (default) is overridden by `;;Semiduplex;;2.2`
 /// (T1570 variant) — using 3 instead of 2.2 makes today and
 /// tomorrow appear higher than they are and breaks the tie path.
+///
+/// Honours upstream's `No prima vespera` marker: when tomorrow's
+/// `[Rule]` contains that directive, tomorrow's office has no
+/// first Vespers and today wins regardless of rank. Drives
+/// `Tempora/Epi4-0tt` (Sat-eve-of-Sun-IV variant Simplex 1.5),
+/// where rank 1.5 > today's Tempora-ferial 1.0 would otherwise
+/// pick the wrong office.
 pub fn first_vespers_day_key_for_rubric<'a>(
     today_key: &'a str,
     tomorrow_key: &'a str,
     rubric: crate::core::Rubric,
     hora: &str,
 ) -> &'a str {
+    if tomorrow_has_no_prima_vespera(tomorrow_key, rubric, hora) {
+        return today_key;
+    }
+    // Sancti Simplex / Memoria / Commemoratio (rank < 2.0) has no
+    // proper 2nd Vespers — the day's Vespers continues into the
+    // next day's office. Tempora ferials don't have this problem
+    // because they inherit the week-Sunday's Vespers via the
+    // `Oratio Dominica` rule. Mirror of upstream `concurrence`'s
+    // Simplex-skip path: when today.class is Simplex and today is
+    // Sancti, tomorrow always wins regardless of rank ordering.
+    if today_key.starts_with("Sancti/") {
+        if let Some((cls, num)) = active_rank_line_for_rubric(today_key, rubric, hora) {
+            let lc = cls.to_lowercase();
+            let no_2v = num < 2.0
+                || lc.contains("simplex")
+                || lc.contains("memoria")
+                || lc.contains("commemoratio");
+            if no_2v {
+                return tomorrow_key;
+            }
+        }
+    }
     let today_rank = parse_horas_rank_for_rubric(today_key, rubric, hora).unwrap_or(0.0);
     let tomorrow_rank = parse_horas_rank_for_rubric(tomorrow_key, rubric, hora).unwrap_or(0.0);
     if today_rank > tomorrow_rank {
@@ -831,6 +860,36 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     } else {
         tomorrow_key
     }
+}
+
+/// Mirror of upstream's `[Rule]`-level `No prima vespera` /
+/// `Vesperae loco I vesperarum sequentis` markers — when the
+/// tomorrow office's rule explicitly disclaims first Vespers,
+/// today's office continues into the eve. Follows whole-file
+/// `@Path` inheritance so files like `Tempora/Epi4-0tt`
+/// (Sat-of-Sun-IV variant) that store their rule directly are
+/// still detected.
+fn tomorrow_has_no_prima_vespera(
+    day_key: &str,
+    rubric: crate::core::Rubric,
+    hora: &str,
+) -> bool {
+    let Some(file) = lookup(day_key) else {
+        return false;
+    };
+    if let Some(rule) = file.sections.get("Rule") {
+        let evaluated = eval_section_conditionals(rule, rubric, hora);
+        let lc = evaluated.to_lowercase();
+        if lc.contains("no prima vespera") || lc.contains("no first vespers") {
+            return true;
+        }
+    }
+    if let Some(parent) = first_at_path_inheritance(file) {
+        if parent != day_key {
+            return tomorrow_has_no_prima_vespera(&parent, rubric, hora);
+        }
+    }
+    false
 }
 
 /// Parse the active rubric's rank from a horas file's `[Rank]`

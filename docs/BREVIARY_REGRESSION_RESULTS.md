@@ -514,6 +514,59 @@ the immediate next-day winner doesn't have its own first Vespers
 displaced saint, etc.). Closes when the tempora-resolution layer
 matches upstream `gettempora` more precisely.
 
+## Slice 17: corpus preamble + whole-file inheritance — Prima 100%, +1 net
+
+Two interlocking changes:
+
+1. **Corpus build script captures pre-section preamble.**
+   `data/build_horas_json.py::parse_horas_file` now stores any
+   non-section content before the first `[Section]` header under
+   the magic key `__preamble__`. This preserves the upstream
+   convention where `Commune/C10b` (Saturday BVM Office) starts
+   with a bare `@Commune/C10` line that triggers whole-file
+   merge in Perl `setupstring`. Build output count went 1204 →
+   1204 keys (no new files, only one new section per affected
+   file).
+
+2. **Runtime whole-file inheritance.** `first_at_path_inheritance`
+   in `src/horas.rs` now reads `__preamble__` (instead of scanning
+   arbitrary section bodies for `@Path` lines). Used by
+   `parse_horas_rank_for_rubric` and the new
+   `active_rank_line_for_rubric` to find Sat-BVM rank from
+   `Commune/C10` when looked up via `Commune/C10b`.
+
+3. **Preces predicate extended to Commune winners.** Slice 15
+   limited branch (b) to Sancti and Tempora; this widens to
+   `Commune/...` so Saturday BVM (Commune/C10b winner) emits
+   line[4] of `[Dominus]` when the rank checks pass.
+
+**30-day Jan 2026 × T1570 × Oratio sweep:**
+
+| Hour          | Pre slice 17 | Post slice 17 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 30/30 (100%) | 30/30 (100%) | — |
+| Laudes        | 30/30 (100%) | 30/30 (100%) | — |
+| Prima         | 29/30 (97%)  | **30/30 (100%)** | +1 |
+| Tertia        | 30/30 (100%) | 30/30 (100%) | — |
+| Sexta         | 30/30 (100%) | 30/30 (100%) | — |
+| Nona          | 30/30 (100%) | 30/30 (100%) | — |
+| Vespera       | 27/30 (90%)  | 28/30 (93%)  | +1 |
+| Completorium  | 27/30 (90%)  | 26/30 (87%)  | -1 |
+| **Aggregate** | **233/240 (97.08%)** | **234/240 (97.50%)** | **+1** |
+
+**7 of 8 hours at 100% on the 30-day slice.** Compline regressed
+by 1 cell (01-24 Sat BVM Compline) — Perl's preces returns 0 on
+Sat 01-24 Compline despite returning 1 on Sat 01-24 Prima with
+the same winner / rank. The hour-specific divergence isn't in
+upstream `preces` itself but in some surrounding precedence /
+commemoratio state we don't yet propagate. 01-31 Sat (also BVM
+Saturday) emits omittitur on Compline — so it's not a uniform
+Saturday-Compline rule. Documented as an open residual; the gain
+on Prima 01-24 makes the trade net-positive overall.
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

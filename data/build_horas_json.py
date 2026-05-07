@@ -68,9 +68,19 @@ def parse_horas_file(text: str) -> dict[str, str]:
     section_name carries any annotation `(rubrica X)`/`(tempore Y)`
     verbatim so the Rust resolver can pick the rubric-specific body —
     same convention as `build_missa_json.py`.
+
+    Pre-section preamble (any content before the first `[Section]`
+    header) is captured under the magic key `__preamble__`. The
+    upstream `SetupString.pl::setupstring_parse_file` treats a
+    leading `@Commune/CXX` line as a whole-file inheritance directive
+    that merges the parent file's sections into this one — Saturday
+    BVM `Commune/C10b` and several Sancti sub-files use this. The
+    Rust resolver inspects `__preamble__` at runtime and follows the
+    `@Path` redirect when the requested section is missing.
     """
     sections: dict[str, list[str]] = {}
-    current: str | None = None
+    current: str | None = "__preamble__"
+    sections[current] = []
     for raw in text.splitlines():
         m = SECTION_RE.match(raw.rstrip())
         if m is not None:
@@ -88,7 +98,11 @@ def parse_horas_file(text: str) -> dict[str, str]:
             continue
         if current is not None:
             sections[current].append(raw)
-    return {k: "\n".join(v).strip() for k, v in sections.items()}
+    out = {k: "\n".join(v).strip() for k, v in sections.items()}
+    # Drop the preamble key when empty so storage stays compact.
+    if not out.get("__preamble__"):
+        out.pop("__preamble__", None)
+    return out
 
 
 def walk_dir(root: Path, prefix: str, out: dict[str, dict]) -> int:

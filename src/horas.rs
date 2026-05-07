@@ -487,31 +487,13 @@ fn preces_dominicales_et_feriales_fires(
             return false;
         }
     }
-    // Parse the active rubric's [Rank] line.
-    let rank_body = match file.sections.get("Rank") {
+    // Parse the active rubric's [Rank] line. Follow whole-file
+    // `@Commune/CXX` inheritance for files like Commune/C10b
+    // (Saturday BVM Office) that defer their [Rank] to a parent.
+    let (rank_str, rank_num) = match active_rank_line_for_rubric(day_key, rubric, hour) {
         Some(r) => r,
         None => return false,
     };
-    let evaluated_rank = eval_section_conditionals(rank_body, rubric, hour);
-    let mut rank_line: Option<&str> = None;
-    for line in evaluated_rank.lines() {
-        let line = line.trim();
-        if line.is_empty() || line.starts_with('(') {
-            continue;
-        }
-        rank_line = Some(line);
-        break;
-    }
-    let line = match rank_line {
-        Some(l) => l,
-        None => return false,
-    };
-    let parts: Vec<&str> = line.split(";;").collect();
-    if parts.len() < 3 {
-        return false;
-    }
-    let rank_str = parts.get(1).unwrap_or(&"").trim();
-    let rank_num: f32 = parts.get(2).and_then(|s| s.trim().parse().ok()).unwrap_or(0.0);
     // duplex > 2 → preces rejected (early-exit in upstream
     // `preces`).
     if rank_num >= 3.0 {
@@ -535,25 +517,14 @@ fn preces_dominicales_et_feriales_fires(
         // Skip emberday check for now.
         return false;
     }
-    // Sancti winner: branch (b) fires when low-rank, no octave, no
-    // high-rank commemoratio (commemoratio detection deferred —
-    // false-firing on a day with high-rank commemoratio would set
-    // `precesferiales` wrongly; rare in current 30-day slice).
-    if day_key.starts_with("Sancti/") {
-        return true;
-    }
-    // Tempora winner: upstream `preces` branch (a) fires when
-    // `[Rule]` says "Preces", or dayname0 is Adv/Quad, or emberday.
-    // Branch (b) fires for low-rank Tempora ferials too. Both paths
-    // collapse to "fire when winner.Rank is Feria/low" — under
-    // T1570 every Tempora ferial after the Octave-of-Christmas /
-    // Epiphany window has rank 1 and qualifies. Be permissive:
-    // fire for Tempora unless [Rank] explicitly carries an Octave
-    // marker (which the duplex/octave check above already filters).
-    if day_key.starts_with("Tempora/") {
-        return true;
-    }
-    false
+    // After all duplex/octave/dow gates pass, branch (b) of upstream
+    // `preces` fires for any non-C12 low-rank winner — Sancti,
+    // Tempora ferial, or Saturday BVM (Commune/C10b path) alike.
+    // The path-prefix check rejects synthetic `Psalterium/...` keys
+    // and similar that wouldn't be a daily-office winner.
+    day_key.starts_with("Sancti/")
+        || day_key.starts_with("Tempora/")
+        || day_key.starts_with("Commune/")
 }
 
 // ─── Per-day proper splicing (B3) ────────────────────────────────────
@@ -876,6 +847,18 @@ fn parse_horas_rank_for_rubric(
     rubric: crate::core::Rubric,
     hora: &str,
 ) -> Option<f32> {
+    active_rank_line_for_rubric(day_key, rubric, hora).map(|(_, num)| num)
+}
+
+/// Parse the active rubric's `[Rank]` line and return both its
+/// class string ("Semiduplex", "Duplex", "Simplex", "Feria", …)
+/// and its numeric rank. Used by [`preces_dominicales_et_feriales_fires`]
+/// for the `winner.Rank =~ /Octav/` check that filters branch (b).
+fn active_rank_line_for_rubric(
+    day_key: &str,
+    rubric: crate::core::Rubric,
+    hora: &str,
+) -> Option<(String, f32)> {
     let file = lookup(day_key)?;
     if let Some(body) = file.sections.get("Rank") {
         let evaluated = eval_section_conditionals(body, rubric, hora);
@@ -888,40 +871,44 @@ fn parse_horas_rank_for_rubric(
             if parts.len() < 3 {
                 continue;
             }
+            let class = parts.get(1).unwrap_or(&"").trim().to_string();
             if let Ok(rank) = parts[2].trim().parse::<f32>() {
-                return Some(rank);
+                return Some((class, rank));
             }
         }
     }
-    // Whole-file `@Commune/CXX` inheritance: when the day file
-    // lacks a [Rank] section but starts with a bare `@Path` line,
-    // chase to the parent.
+    // Whole-file `@Commune/CXX` inheritance: chase to the parent.
     if let Some(parent_path) = first_at_path_inheritance(file) {
         if parent_path != day_key {
-            return parse_horas_rank_for_rubric(&parent_path, rubric, hora);
+            return active_rank_line_for_rubric(&parent_path, rubric, hora);
         }
     }
     None
 }
 
-/// If the file's first non-blank section body or preamble is a
-/// bare `@Path` whole-file inheritance directive, return the
-/// referenced corpus key. Used to chase `Commune/C10b`'s
-/// `@Commune/C10` inheritance.
+/// If the file's `__preamble__` (pre-section content before the
+/// first `[Section]` header) starts with a bare `@Path` line, return
+/// the referenced corpus key. The build script captures the preamble
+/// so the Rust resolver can follow upstream `setupstring`'s whole-
+/// file inheritance: `Commune/C10b` (Saturday BVM Office) starts
+/// with `@Commune/C10`, which merges C10's `[Rank]` etc. into C10b
+/// at parse time in Perl. Mirror that lazily at lookup time.
 fn first_at_path_inheritance(file: &HorasFile) -> Option<String> {
-    // Many horas files store the bare-line `@Path` inheritance as
-    // the body of the special section name "" (empty preamble) or
-    // it's lost during build-time parsing. Probe the known section
-    // headers we care about (Rank's typical inheritance source) by
-    // scanning every section body for a leading `@Path` line.
-    for body in file.sections.values() {
-        let trimmed = body.trim();
+    let preamble = file.sections.get("__preamble__")?;
+    for line in preamble.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
         if let Some(rest) = trimmed.strip_prefix('@') {
             let path = rest.split(|c: char| c.is_whitespace() || c == ':').next()?;
             if looks_like_corpus_path(path) {
                 return Some(path.to_string());
             }
         }
+        // Stop at the first non-blank non-`@` line — the preamble
+        // is a single inheritance directive, not arbitrary prose.
+        break;
     }
     None
 }

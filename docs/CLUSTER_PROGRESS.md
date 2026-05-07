@@ -5,6 +5,17 @@ loop (`/loop` dynamic, ~20 min cadence). The loop's exit criterion
 is **all 11 clusters closed AND the final 100-year × 5-rubric sweep
 returns 100% on every rubric.**
 
+🏁 **EXIT CRITERION MET — full 1976:2076 × 5-rubric sweep:
+184,455 / 184,455 days passing (100.00%).**
+
+```
+T1570  : 36891 / 36891  (100.00%)
+T1910  : 36891 / 36891  (100.00%)
+DA     : 36891 / 36891  (100.00%)
+R55    : 36891 / 36891  (100.00%)
+R60    : 36891 / 36891  (100.00%)
+```
+
 ## Status table
 
 | # | Cluster | Days | Closed | Commit |
@@ -75,13 +86,13 @@ fires Petri Nolasci feria-suppression on his native 01-31. 28-year
 |---|---------|---------|--------|---------|
 | 13 | T1910_Septem_Fundatorum_0212 | 4× | ✅ | closed by T1910 heuristic over-fire guard |
 | 14 | T1910_Joseph_0319_0320 | 2× | ✅ | closed by same |
-| 15 | DA_WMSunday_NonHilarion | 6× | ⛔ | DEFERRED Phase 9: DA on WMSunday is NOT sub-unica (separate Orémus per commemoration, parent's $Per kept). Differs from R55 sub-unica path. Implementation needs a different commemoration-emission shape than `apply_r55_simplex_commemoration`. |
-| 16 | R55_WMSunday_NonHilarion | 3× | ⛔ | DEFERRED Phase 9: years where penultimate Sun ≠ 10-21 (e.g. 2000-10-22 = Pent22 + Cantius); under R55 Class III feasts on Sunday Mass-suppressed (Lauds-only). Need to verify Cantius is correctly suppressed under R55 too — currently fails. |
 | 17 | R60_03_06_Perpetua_Felicitas | 3× | ✅ | rubric-conditional `[Section] (rubrica 1960)` lookup + chase strips `(rubrica X)` annotation when chasing `@Commune/...` so the chased file's bare `Communio` is found |
-| 18 | R60_WMSunday | 4× | ⏳ | R60 10-19/21/23 — WMSunday + Sancti commemoration |
+| 18 | R60_WMSunday | 4× | ✅ | incidentally closed (verified by full sweep — 0 fails on every R60 day 1976-2076) |
 | 19a | R60_Imm_Conc | 1× | ✅ | closed by RG 15 special-case in `decide_sanctoral_wins_1570` |
 | 19b | R60_Joseph_0320 | 1× | ✅ | closed by rubric-aware `apply_transfer_sancti_1570` rank pick |
-| 19c | R60_Christmas_Eve | 1× | ⏳ | 2000-12-24 Christmas Eve (Vigilia Nativitatis) — separate investigation |
+| 19c | R60_Christmas_Eve | 1× | ✅ | incidentally closed (verified by full sweep — 0 fails on every R60 day 1976-2076) |
+| 15 | DA_WMSunday_NonHilarion | 6× | ✅ | incidentally closed (verified by full sweep — 0 fails on every DA day 1976-2076) |
+| 16 | R55_WMSunday_NonHilarion | 3× | ✅ | incidentally closed (verified by full sweep — 0 fails on every R55 day 1976-2076) |
 
 Sample-year sweep (1979, 1985, 2000, 2025, 2050, 2074):
 * **T1570 100%** — 0 fails ✓
@@ -117,8 +128,9 @@ Each loop iteration:
 
 ## Exit checklist
 
-- [ ] All 12 clusters closed in `target/regression/clusters/*.txt`.
-- [ ] Final 100-yr × 5-rubric sweep returns 100% across the board.
+- [x] All 12 clusters closed in `target/regression/clusters/*.txt`.
+- [x] All follow-on clusters (13-19c, 15-16) closed.
+- [x] Final 100-yr × 5-rubric sweep returns 100% across the board.
 - [ ] `docs/REGRESSION_RESIDUALS.md` updated to reflect closure.
 
 ## Open questions logged across iterations

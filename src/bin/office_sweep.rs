@@ -360,13 +360,17 @@ fn run_one_cell(
         }
     };
 
-    // For Vespera: auto-derive the next day's office key (using the
-    // same `precedence::compute_office` path) and let
-    // `first_vespers_day_key` swap if tomorrow outranks today. This
-    // mirrors what `horas.pl` does internally — Vespera on the eve
-    // of a higher-rank feast is the first Vespers of that feast.
+    // For Vespera AND Completorium: auto-derive the next day's
+    // office key and let `first_vespers_day_key` swap if tomorrow
+    // outranks today. The Roman liturgical day starts at Vespers
+    // (eve of feast) and extends through Compline — so when 01-16
+    // Vespera resolves to first Vespers of 01-17 Antony Abbot,
+    // 01-16 Compline runs with the SAME 01-17 winner. Without this,
+    // Compline's preces predicate sees the wrong winner (e.g.
+    // Marcellus Semiduplex 2.2 instead of Antony Duplex 3) and
+    // mis-fires omittitur on days where Perl emits lines [2,3].
     // The CLI override still wins if explicitly set.
-    let next_derived_key: Option<String> = if hour == "Vespera" {
+    let next_derived_key: Option<String> = if hour == "Vespera" || hour == "Completorium" {
         if let Some(k) = next_day_key_override {
             Some(k.to_string())
         } else {

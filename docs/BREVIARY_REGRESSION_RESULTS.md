@@ -611,6 +611,83 @@ that needs `$commemoratio` propagation from the precedence layer.
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 19: Compline = 100% on 30-day Jan via liturgical-day extension
+
+The Roman liturgical day spans Vespers → Compline → Matins → Lauds
+→ Prima → Minor → Vespers → Compline. Compline is the **last** hour
+of a liturgical day; when Vespers of calendar day X resolves to
+first Vespers of calendar day Y, the **same Y winner extends through
+Compline** of calendar day X.
+
+`office_sweep` already auto-derived `next_day_key` and called
+`first_vespers_day_key_for_rubric` for Vespera. Slice 19 extends
+the same swap to Compline:
+
+```
+let next_derived_key = if hour == "Vespera" || hour == "Completorium" {
+    /* compute_office for tomorrow + first-vespers swap */
+}
+```
+
+For 01-16 Fri Compline T1570:
+- Without swap: `winner = Sancti/01-16` (Marcellus Semiduplex 2.2)
+  → preces predicate fires → Rust emits omittitur
+- Perl: `winner = Sancti/01-17` (Antony Abbot Duplex 3, swapped via
+  Vespera) → duplex>2 → preces returns 0 → Perl emits lines [2,3]
+
+Slice 19's swap matches Perl's behaviour: Compline 01-16 now sees
+Antony Abbot as winner, predicate's `duplex>=3` early-exit fires,
+and Rust emits lines [2,3]. Match.
+
+Same pattern closes 01-19 Compline (Mon eve of Fab/Seb Duplex 4),
+01-24 Sat Compline (eve of Conv Pauli Duplex II classis), and
+01-26 Mon Compline (eve of John Chrysostom Duplex 3).
+
+**30-day Jan 2026 × T1570 × Oratio sweep — `--hour all`:**
+
+| Hour          | Pre slice 19 | Post slice 19 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 30/30 (100%) | 30/30 (100%) | — |
+| Laudes        | 30/30 (100%) | 30/30 (100%) | — |
+| Prima         | 30/30 (100%) | 30/30 (100%) | — |
+| Tertia        | 30/30 (100%) | 30/30 (100%) | — |
+| Sexta         | 30/30 (100%) | 30/30 (100%) | — |
+| Nona          | 30/30 (100%) | 30/30 (100%) | — |
+| Vespera       | 30/30 (100%) | 30/30 (100%) | — |
+| Completorium  | 26/30 (87%)  | **30/30 (100%)** | +4 |
+| **Aggregate** | **236/240 (98.33%)** | **240/240 (100.00%)** | **+4** |
+
+🎯 **30-day Jan slice = 100% across all 8 hours under T1570.**
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
+## Year sweep snapshot (post-slice-19)
+
+Full 2026 × T1570 × Oratio (`--hour all`, 365 days × 8 hours =
+2920 cells): **2198/2920 = 75.27%**.
+
+Per-hour:
+
+| Hour          | Year 2026 | rust-blank | differ |
+|---------------|----------:|-----------:|-------:|
+| Matutinum     | 269/365 (73.70%) | 26 | 70 |
+| Laudes        | 269/365 (73.70%) | 26 | 70 |
+| Prima         | 289/365 (79.18%) | 0  | 76 |
+| Tertia        | 269/365 (73.70%) | 26 | 70 |
+| Sexta         | 269/365 (73.70%) | 26 | 70 |
+| Nona          | 269/365 (73.70%) | 26 | 70 |
+| Vespera       | 275/365 (75.34%) | 22 | 67 |
+| Completorium  | 289/365 (79.18%) | 0  | 74 |
+
+The Matutinum/Laudes/Tertia/Sexta/Nona band shares the same 26
+rust-blank + 70 differ — same days fail across those five hours,
+suggesting per-day issues (likely calendar resolution edge cases
+from Septuagesima onward). Prima and Compline don't share the
+26 rust-blank, but ~76 differ each — likely the
+$commemoratio-driven preces predicate over-fire we noted in
+slice 17 + new seasonal fail patterns that don't show up in Jan.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

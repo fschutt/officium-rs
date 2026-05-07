@@ -819,29 +819,111 @@ pub fn parse_horas_rank(body: &str) -> Option<f32> {
 ///
 /// In the Roman office, Vespers is sung from a feast's first day
 /// when that feast outranks the day on whose evening it falls
-/// (the "first vespers" of a I- or II-class feast). If
-/// `tomorrow_key` outranks `today_key`, tomorrow's office wins
-/// today's Vespera; otherwise today's office is used.
+/// (the "first vespers" of a I- or II-class feast). The tie rule
+/// favours **tomorrow's first Vespers** — only a strictly higher
+/// today-rank keeps today's second Vespers. This mirrors upstream
+/// `concurrence` at `horascommon.pl:810-1426` for the common
+/// equal-rank-Sancti vs equal-rank-Sancti case (e.g. Hilary 2.2
+/// vs Paul Eremite 2.2 under T1570 — Perl picks Paul).
 ///
-/// Returns the chosen `day_key`, in 'static-borrowed form taken
-/// directly from the corpus map keys (no allocations).
+/// Compatibility shim — defaults to T1570/Vespera. Production code
+/// should call [`first_vespers_day_key_for_rubric`].
 pub fn first_vespers_day_key<'a>(
     today_key: &'a str,
     tomorrow_key: &'a str,
 ) -> &'a str {
-    let today_rank = lookup(today_key)
-        .and_then(|f| f.sections.get("Rank"))
-        .and_then(|r| parse_horas_rank(r))
-        .unwrap_or(0.0);
-    let tomorrow_rank = lookup(tomorrow_key)
-        .and_then(|f| f.sections.get("Rank"))
-        .and_then(|r| parse_horas_rank(r))
-        .unwrap_or(0.0);
-    if tomorrow_rank > today_rank {
-        tomorrow_key
-    } else {
+    first_vespers_day_key_for_rubric(
+        today_key,
+        tomorrow_key,
+        crate::core::Rubric::Tridentine1570,
+        "Vespera",
+    )
+}
+
+/// Rubric-aware variant of [`first_vespers_day_key`]. Uses the
+/// active rubric's `[Rank]` line (after running
+/// `eval_section_conditionals`) so MAX-across-variants doesn't
+/// inflate the comparison: under T1570, Sancti/01-14 Hilary
+/// `;;Duplex;;3` (default) is overridden by `;;Semiduplex;;2.2`
+/// (T1570 variant) — using 3 instead of 2.2 makes today and
+/// tomorrow appear higher than they are and breaks the tie path.
+pub fn first_vespers_day_key_for_rubric<'a>(
+    today_key: &'a str,
+    tomorrow_key: &'a str,
+    rubric: crate::core::Rubric,
+    hora: &str,
+) -> &'a str {
+    let today_rank = parse_horas_rank_for_rubric(today_key, rubric, hora).unwrap_or(0.0);
+    let tomorrow_rank = parse_horas_rank_for_rubric(tomorrow_key, rubric, hora).unwrap_or(0.0);
+    if today_rank > tomorrow_rank {
         today_key
+    } else {
+        tomorrow_key
     }
+}
+
+/// Parse the active rubric's rank from a horas file's `[Rank]`
+/// section. Mirrors the build-time `parse_horas_rank` MAX behaviour
+/// for backward compat with B5 callers, but evaluates conditional
+/// `(sed rubrica X)` gates first via `eval_section_conditionals` so
+/// the active rubric's variant wins. Falls back to whole-file
+/// `@Commune/CXX` inheritance when the day file's `[Rank]` body
+/// is missing — Sancti/01-XX whole-file redirects (Sancti/01-18
+/// Cathedra Petri = `@Sancti/02-22`) and Saturday BVM
+/// `Commune/C10b` (= `@Commune/C10`) need this path.
+fn parse_horas_rank_for_rubric(
+    day_key: &str,
+    rubric: crate::core::Rubric,
+    hora: &str,
+) -> Option<f32> {
+    let file = lookup(day_key)?;
+    if let Some(body) = file.sections.get("Rank") {
+        let evaluated = eval_section_conditionals(body, rubric, hora);
+        for line in evaluated.lines() {
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('(') {
+                continue;
+            }
+            let parts: Vec<&str> = line.split(";;").collect();
+            if parts.len() < 3 {
+                continue;
+            }
+            if let Ok(rank) = parts[2].trim().parse::<f32>() {
+                return Some(rank);
+            }
+        }
+    }
+    // Whole-file `@Commune/CXX` inheritance: when the day file
+    // lacks a [Rank] section but starts with a bare `@Path` line,
+    // chase to the parent.
+    if let Some(parent_path) = first_at_path_inheritance(file) {
+        if parent_path != day_key {
+            return parse_horas_rank_for_rubric(&parent_path, rubric, hora);
+        }
+    }
+    None
+}
+
+/// If the file's first non-blank section body or preamble is a
+/// bare `@Path` whole-file inheritance directive, return the
+/// referenced corpus key. Used to chase `Commune/C10b`'s
+/// `@Commune/C10` inheritance.
+fn first_at_path_inheritance(file: &HorasFile) -> Option<String> {
+    // Many horas files store the bare-line `@Path` inheritance as
+    // the body of the special section name "" (empty preamble) or
+    // it's lost during build-time parsing. Probe the known section
+    // headers we care about (Rank's typical inheritance source) by
+    // scanning every section body for a leading `@Path` line.
+    for body in file.sections.values() {
+        let trimmed = body.trim();
+        if let Some(rest) = trimmed.strip_prefix('@') {
+            let path = rest.split(|c: char| c.is_whitespace() || c == ':').next()?;
+            if looks_like_corpus_path(path) {
+                return Some(path.to_string());
+            }
+        }
+    }
+    None
 }
 
 /// Read a `[Rule]` body and decide whether the office is the
@@ -2228,12 +2310,16 @@ mod tests {
     }
 
     #[test]
-    fn first_vespers_keeps_today_on_rank_tie() {
-        // Equal-rank neighbours: today wins (no swap). Christmas Eve
-        // (rank 6.9) and Christmas Day (rank 6.9 in pre-1960 rubric)
-        // both share the I-class Vigil/Octave rank.
+    fn first_vespers_swaps_to_tomorrow_on_rank_tie() {
+        // Equal-rank neighbours: tomorrow wins — first Vespers of
+        // tomorrow's feast takes precedence. Mirrors upstream
+        // `concurrence` (`horascommon.pl:810-1426`) for the
+        // common Sancti vs Sancti equal-Semiduplex case (Hilary
+        // 2.2 vs Paul Eremite 2.2 under T1570 — Perl picks Paul).
+        // Christmas Eve has its own special concurrence, but the
+        // generic helper yields tomorrow on tie.
         let chosen = first_vespers_day_key("Sancti/12-24", "Sancti/12-25");
-        assert_eq!(chosen, "Sancti/12-24");
+        assert_eq!(chosen, "Sancti/12-25");
     }
 
     #[test]

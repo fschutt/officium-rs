@@ -386,7 +386,7 @@ fn run_one_cell(
     };
 
     let resolved_key = if let Some(next) = next_derived_key.as_deref() {
-        horas::first_vespers_day_key(&derived_key, next).to_string()
+        horas::first_vespers_day_key_for_rubric(&derived_key, next, rubric, hour).to_string()
     } else {
         derived_key.clone()
     };

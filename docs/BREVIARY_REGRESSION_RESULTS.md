@@ -450,6 +450,70 @@ Residual fails on T1570 30-day:
   `dominicales=0`. Deferred — needs `$commemoratio` propagation
   from the precedence layer.
 
+## Slice 16: rubric-aware first-Vespers concurrence — tomorrow-wins-on-tie
+
+`first_vespers_day_key` had two bugs:
+
+1. **Rank parsed across rubric variants via MAX.** Sancti/01-14
+   (Hilary) `[Rank]` body lists `;;Duplex;;3;;vide C4a` (default)
+   and `;;Semiduplex;;2.2;;vide C4` (T1570 variant). The MAX
+   approach picked 3 instead of 2.2 — so today vs tomorrow
+   comparisons used inflated ranks that masked real ties.
+
+2. **Today wins on tie.** Roman Office concurrence privileges
+   tomorrow's first Vespers when ranks are equal — only a
+   strictly-higher today-rank keeps today's second Vespers. The
+   old comparator (`tomorrow_rank > today_rank`) flipped the
+   default the wrong way: equal ranks went to today.
+
+`parse_horas_rank_for_rubric` (`src/horas.rs`) reuses slice 12's
+`eval_section_conditionals` to filter the `[Rank]` body by the
+active rubric, then returns the first surviving rank-num. When
+the day file has no `[Rank]` section (Sancti/01-18 Cathedra Petri
+= `@Sancti/02-22`, Commune/C10b BVM Saturday = `@Commune/C10`),
+chase via `first_at_path_inheritance` — scan section bodies for a
+leading `@Path` line and recurse.
+
+`first_vespers_day_key_for_rubric(today, tomorrow, rubric, hora)`
+is the new entry. The legacy `first_vespers_day_key(today,
+tomorrow)` shim defaults to T1570/Vespera. `office_sweep` now
+calls the rubric-aware variant.
+
+**30-day Jan 2026 × T1570 × Oratio sweep — `--hour all`:**
+
+| Hour          | Pre slice 16 | Post slice 16 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 30/30 (100%) | 30/30 (100%) | — |
+| Laudes        | 30/30 (100%) | 30/30 (100%) | — |
+| Prima         | 29/30 (97%)  | 29/30 (97%)  | — |
+| Tertia        | 30/30 (100%) | 30/30 (100%) | — |
+| Sexta         | 30/30 (100%) | 30/30 (100%) | — |
+| Nona          | 30/30 (100%) | 30/30 (100%) | — |
+| Vespera       | 24/30 (80%)  | 27/30 (90%)  | +3 |
+| Completorium  | 27/30 (90%)  | 27/30 (90%)  | — |
+| **Aggregate** | **230/240 (95.83%)** | **233/240 (97.08%)** | **+3** |
+
+Closes Vespera 01-14 (Hilary→Paul Eremite tie), 01-15 (Paul→
+Marcellus tie), 01-23 (Emerentiana→BVM Saturday — slice's `@Path`
+inheritance for [Rank] picks up Commune/C10's rank 1.3 from
+inheritance), 01-26 (Polycarp Simplex 1.1 → John Chrysostom
+Duplex 3, tomorrow strictly higher).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass (the `first_vespers_keeps_today_on_rank_tie` test was
+inverted by this slice — replaced with
+`first_vespers_swaps_to_tomorrow_on_rank_tie` to reflect the
+upstream tie rule).
+
+Vespera residual (3 fails: 01-24, 01-28, 01-30): the precedence
+engine's day_key for Saturday/Sunday-eve uses Tempora-Sunday
+codes (`Tempora/Epi4-0tt`) instead of the upstream's "Sat
+ferial of week III" path. Affects ferial Vespera resolution when
+the immediate next-day winner doesn't have its own first Vespers
+(low-rank Simplex with no `[Vespera]` proper, BVM Saturday with
+displaced saint, etc.). Closes when the tempora-resolution layer
+matches upstream `gettempora` more precisely.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

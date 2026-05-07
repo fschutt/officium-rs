@@ -2225,6 +2225,31 @@ fn apply_world_mission_oratio(
     if r55_simplex_saint_takes_precedence {
         return body.to_string();
     }
+    // R55 no-saint exception: under R55, the Tempora/104-0
+    // Commemoratio sections are gated `(rubrica divino aut rubrica
+    // 196)` and don't activate (R55 doesn't match `divino|196`).
+    // Perl renders Propaganda only when another saint (Class III+)
+    // is present on the date — observed `R55 10-20 = Cantius
+    // (Duplex 3) → Propaganda fires; R55 10-22 = no saint → no
+    // Propaganda` in cached HTML. On dates with NO Class III+
+    // kalendar entry, R55 emits just the Sunday Oratio. Closes
+    // R55 cluster 16: 2000-10-22, 2025-10-19, 2050-10-23 — all
+    // dates where the kalendar 1955 layer has no main saint.
+    if matches!(office.rubric, crate::core::Rubric::Reduced1955) {
+        let layer = office.rubric.kalendar_layer();
+        let cells = crate::kalendaria_layers::lookup(
+            layer, office.date.month, office.date.day,
+        );
+        let has_class_3_plus_saint = match cells {
+            None => false,
+            Some(c) if c.is_empty() => false,
+            Some(c) => c.iter().any(|cell| cell.is_main()
+                && cell.rank_num().map(|r| r >= 2.0).unwrap_or(false)),
+        };
+        if !has_class_3_plus_saint {
+            return body.to_string();
+        }
+    }
     let prop_key = FileKey {
         category: FileCategory::Commune,
         stem: "Propaganda".to_string(),

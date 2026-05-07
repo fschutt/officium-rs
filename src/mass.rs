@@ -2363,53 +2363,84 @@ fn apply_world_mission_oratio(
         // Resolve the saint commemoration body (parallel to
         // apply_r55_simplex_commemoration). For DA it appears with
         // its own macro, between parent and Propaganda.
+        // Helper: render one saint's commemoration block (label +
+        // body, macros stripped). Returns "" when the saint can't
+        // be resolved.
+        let render_one_sancti = |stem: &str, leading: &str| -> String {
+            let key = FileKey { category: FileCategory::Sancti, stem: stem.to_string() };
+            let Some(sf) = corpus.mass_file(&key) else { return String::new() };
+            let mut comm_body = sf.sections.get(sect).cloned().unwrap_or_default();
+            if comm_body.trim().is_empty() {
+                let commune_ref = sf.commune.as_deref().unwrap_or("");
+                if let Some(commune_stem) = parse_vide_or_ex_commune(commune_ref) {
+                    if let Some(hf) = crate::horas::lookup(&format!("Commune/{}", commune_stem)) {
+                        if let Some(b) = hf.sections.get(sect) {
+                            comm_body = b.clone();
+                        }
+                    }
+                }
+            }
+            if comm_body.trim().is_empty() {
+                return String::new();
+            }
+            let name = sf
+                .sections
+                .get("Name")
+                .map(|s| name_for_section(s, sect))
+                .unwrap_or_default();
+            if !name.is_empty() {
+                comm_body = replace_n_dot_plural(&comm_body, &name);
+            }
+            comm_body = drop_final_per_qui_line(&comm_body);
+            let officium = sf.officium.as_deref().unwrap_or("Sancti");
+            format!(
+                "{}!Commemoratio {}\n{}",
+                leading,
+                officium,
+                comm_body.trim_end_matches('\n'),
+            )
+        };
+        // Main saint commemoration (office.commemoratio).
         let saint_section = office
             .commemoratio
             .as_ref()
             .filter(|k| k.category == FileCategory::Sancti)
-            .and_then(|k| corpus.mass_file(k))
-            .and_then(|sf| {
-                let mut comm_body = sf.sections.get(sect).cloned().unwrap_or_default();
-                if comm_body.trim().is_empty() {
-                    let commune_ref = sf.commune.as_deref().unwrap_or("");
-                    if let Some(stem) = parse_vide_or_ex_commune(commune_ref) {
-                        if let Some(hf) = crate::horas::lookup(&format!("Commune/{}", stem)) {
-                            if let Some(b) = hf.sections.get(sect) {
-                                comm_body = b.clone();
-                            }
-                        }
-                    }
-                }
-                if comm_body.trim().is_empty() {
-                    return None;
-                }
-                let name = sf
-                    .sections
-                    .get("Name")
-                    .map(|s| name_for_section(s, sect))
-                    .unwrap_or_default();
-                if !name.is_empty() {
-                    comm_body = comm_body.replace("N.", &name);
-                }
-                // Strip the saint's own $Per/$Qui macro — under DA
-                // WMSunday Perl shares the conclusion between saint
-                // commemoration and Propaganda (sub-unica WITHIN the
-                // commemoration block; the parent body keeps its own
-                // macro). Only the FINAL macro from Propaganda survives.
-                comm_body = drop_final_per_qui_line(&comm_body);
-                let officium = sf.officium.as_deref().unwrap_or("Sancti");
-                Some(format!(
-                    "{}!Commemoratio {}\n{}",
-                    oremus_inner,
-                    officium,
-                    comm_body.trim_end_matches('\n'),
-                ))
-            })
+            .map(|k| render_one_sancti(&k.stem, oremus_inner))
             .unwrap_or_default();
+        // Secondary commemorations from the kalendar layer (e.g.
+        // 10-21cc Ursula alongside main 10-21 Hilarion). DA emits
+        // each commemoration as its own block, sharing the trailing
+        // sub-unica conclusio with Propaganda.
+        let secondary_sections: String = if !saint_section.is_empty() {
+            let layer = office.rubric.kalendar_layer();
+            crate::kalendaria_layers::lookup(
+                layer, office.date.month, office.date.day,
+            )
+            .map(|cells| {
+                cells
+                    .iter()
+                    .filter(|c| !c.is_main() && !c.stem.is_empty())
+                    .map(|c| render_one_sancti(&c.stem, "_\n"))
+                    .filter(|s| !s.is_empty())
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            })
+            .unwrap_or_default()
+        } else {
+            String::new()
+        };
+        let saint_section = if secondary_sections.is_empty() {
+            saint_section
+        } else {
+            format!("{}\n{}", saint_section, secondary_sections)
+        };
         // Under DA WMSunday with a saint commemoration: the saint and
         // Propaganda share one `Orémus` opener; Propaganda's label
         // follows the saint body directly without a second `Orémus`.
-        // Without a saint, Propaganda gets its own Orémus.
+        // Without a saint, Propaganda gets its own Orémus AND a
+        // Suffragium "Ad poscenda suffragia Sanctorum" prayer is
+        // emitted as a third commemoration (sub-unica with Propaganda).
+        // Mirrors Perl `propers.pl::oratio` Suffragium handling.
         let comm_block = if !saint_section.is_empty() {
             // saint_section already starts with `_\n$Oremus\n!Commemoratio...`
             // Append Pro fidei header + body directly after saint body
@@ -2421,12 +2452,33 @@ fn apply_world_mission_oratio(
                 prop_body,
             )
         } else {
-            format!(
-                "{}{}\n{}",
-                oremus_inner,
-                header,
-                prop_body,
-            )
+            // No saint commemoration → add Suffragium Sanctorum after
+            // Propaganda (sub-unica between the two — Propaganda's
+            // macro stripped, Suffragium's macro is the final).
+            let prop_no_macro = drop_final_per_qui_line(&prop_body);
+            let suffr_body = corpus
+                .mass_file(&FileKey {
+                    category: FileCategory::Other("Ordo".to_string()),
+                    stem: "Suffragium".to_string(),
+                })
+                .and_then(|f| f.sections.get(&format!("{} Sanctorum", sect)).cloned())
+                .unwrap_or_default();
+            if suffr_body.trim().is_empty() {
+                format!(
+                    "{}{}\n{}",
+                    oremus_inner,
+                    header,
+                    prop_body,
+                )
+            } else {
+                format!(
+                    "{}{}\n{}\n_\n{}",
+                    oremus_inner,
+                    header,
+                    prop_no_macro.trim_end_matches('\n'),
+                    suffr_body.trim_end_matches('\n'),
+                )
+            }
         };
         return format!(
             "{}\n{}",
@@ -2620,6 +2672,30 @@ fn name_for_section(name_body: &str, sect: &str) -> String {
         .find(|l| !l.is_empty() && !l.contains('='))
         .unwrap_or("")
         .to_string()
+}
+
+/// Replace `N. ... N.` plural form with a single name (mirrors
+/// Perl `replaceNdot`: `$s =~ s/N\. .*? N\./$name/`), then any
+/// remaining bare `N.` with the same name. Drives commune
+/// templates like `C6b [Oratio]: tuárum N. et N. palmas` →
+/// `tuárum <name> palmas` (single substitution rather than
+/// duplicating the name).
+fn replace_n_dot_plural(body: &str, name: &str) -> String {
+    let mut out = body.to_string();
+    // First pass: collapse `N. <middle> N.` to one `name`.
+    if let Some(start) = out.find("N. ") {
+        // search for the next `N.` after `N. `
+        if let Some(rel) = out[start + 3..].find(" N.") {
+            let end = start + 3 + rel + 3; // include trailing `N.`
+            out = format!("{}{}{}", &out[..start], name, &out[end..]);
+        }
+    }
+    // Second pass: replace any remaining `N.` (single occurrence
+    // semantics — Perl's second `s/N\./$name/` is non-global).
+    if let Some(idx) = out.find("N.") {
+        out = format!("{}{}{}", &out[..idx], name, &out[idx + 2..]);
+    }
+    out
 }
 
 fn final_per_qui_line(body: &str) -> String {
@@ -4255,6 +4331,22 @@ mod tests {
 
     fn propers(year: i32, month: u32, day: u32) -> MassPropers {
         mass_propers(&office(year, month, day), &BundledCorpus)
+    }
+
+    #[test]
+    fn dump_da_1979_oratio_v2() {
+        let inp = crate::core::OfficeInput {
+            date: Date::new(1979, 10, 21),
+            rubric: Rubric::DivinoAfflatu1911,
+            locale: Locale::Latin,
+            is_mass_context: true,
+        };
+        let off = compute_office(&inp, &BundledCorpus);
+        eprintln!("comm: {:?}", off.commemoratio);
+        let p = mass_propers(&off, &BundledCorpus);
+        if let Some(o) = &p.oratio {
+            eprintln!("---ORATIO ({} bytes)---\n{}\n---END---", o.latin.len(), o.latin);
+        }
     }
 
     #[test]

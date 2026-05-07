@@ -1955,41 +1955,65 @@ impl<'a> RegexParser<'a> {
     }
 
     fn parse_atom(&mut self) -> Option<RegexToken> {
-        let b = self.advance()?;
-        match b {
-            b'^' => Some(RegexToken::Anchor(Anchor::Start)),
-            b'$' => Some(RegexToken::Anchor(Anchor::End)),
-            b'.' => Some(RegexToken::Any),
-            b'[' => self.parse_class(),
-            b'(' => {
-                // `(?!...)` — negative lookahead.
-                if self.pattern.get(self.pos) == Some(&b'?')
-                    && self.pattern.get(self.pos + 1) == Some(&b'!')
-                {
-                    self.pos += 2;
+        // Peek the lead byte to decide single-byte ASCII metachars vs
+        // multi-byte UTF-8 atom. We use byte-level advance for ASCII
+        // operators (anchors, classes, groups, escapes, quantifier
+        // sentinels) and a UTF-8-aware read for literal characters
+        // — so that multi-byte chars like `á` (`0xC3 0xA1`) become
+        // one `Char(U+00E1)` token instead of two byte-tokens that
+        // can't match a single `á` codepoint.
+        let lead = *self.pattern.get(self.pos)?;
+        // ASCII metachar fast-path.
+        if lead < 0x80 {
+            let b = self.advance()?;
+            return match b {
+                b'^' => Some(RegexToken::Anchor(Anchor::Start)),
+                b'$' => Some(RegexToken::Anchor(Anchor::End)),
+                b'.' => Some(RegexToken::Any),
+                b'[' => self.parse_class(),
+                b'(' => {
+                    // `(?!...)` — negative lookahead.
+                    if self.pattern.get(self.pos) == Some(&b'?')
+                        && self.pattern.get(self.pos + 1) == Some(&b'!')
+                    {
+                        self.pos += 2;
+                        let body = self.parse_alternation()?;
+                        if self.advance()? != b')' {
+                            return None;
+                        }
+                        return Some(RegexToken::NegativeLookahead(body));
+                    }
+                    // `(?:...)` — non-capturing group.
+                    if self.pattern.get(self.pos) == Some(&b'?')
+                        && self.pattern.get(self.pos + 1) == Some(&b':')
+                    {
+                        self.pos += 2;
+                    }
                     let body = self.parse_alternation()?;
                     if self.advance()? != b')' {
                         return None;
                     }
-                    return Some(RegexToken::NegativeLookahead(body));
+                    Some(RegexToken::Group(body))
                 }
-                // `(?:...)` — non-capturing group.
-                if self.pattern.get(self.pos) == Some(&b'?')
-                    && self.pattern.get(self.pos + 1) == Some(&b':')
-                {
-                    self.pos += 2;
-                }
-                let body = self.parse_alternation()?;
-                if self.advance()? != b')' {
-                    return None;
-                }
-                Some(RegexToken::Group(body))
-            }
-            b'\\' => self.parse_escape(),
-            // Quantifiers can't start an atom.
-            b'*' | b'+' | b'?' | b'{' => None,
-            _ => Some(RegexToken::Char(b as char)),
+                b'\\' => self.parse_escape(),
+                // Quantifiers can't start an atom.
+                b'*' | b'+' | b'?' | b'{' => None,
+                _ => Some(RegexToken::Char(b as char)),
+            };
         }
+        // Multi-byte UTF-8 lead — read the full codepoint.
+        let cp_len = match lead {
+            0xC0..=0xDF => 2,
+            0xE0..=0xEF => 3,
+            0xF0..=0xF7 => 4,
+            _ => 1, // continuation/illegal — treat as single byte
+        };
+        let end = (self.pos + cp_len).min(self.pattern.len());
+        let slice = &self.pattern[self.pos..end];
+        self.pos = end;
+        let s = core::str::from_utf8(slice).ok()?;
+        let ch = s.chars().next()?;
+        Some(RegexToken::Char(ch))
     }
 
     fn parse_escape(&mut self) -> Option<RegexToken> {

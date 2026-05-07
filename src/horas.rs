@@ -960,7 +960,12 @@ fn splice_proper_into_slot(
         if let Some(body) = find_section_in_chain(chain, &cand) {
             let resolved = expand_at_redirect(body, &cand);
             let evaluated = eval_section_conditionals(&resolved, rubric, hour);
-            let with_name = substitute_saint_name(&evaluated, saint_name);
+            let trimmed = if cand == "Oratio" || cand.starts_with("Oratio ") {
+                take_first_oratio_chunk(&evaluated)
+            } else {
+                evaluated
+            };
+            let with_name = substitute_saint_name(&trimmed, saint_name);
             out.push(RenderedLine::Plain { body: with_name });
             return;
         }
@@ -1034,18 +1039,23 @@ fn substitute_saint_name(body: &str, name: Option<&str>) -> String {
     out
 }
 
-/// Expand a whole-body `@Path` or `@Path:Section` redirect against
+/// Expand a whole-body `@Path` / `@Path:Section` /
+/// `@Path::s/PAT/REPL/` / `@Path:Section:s/PAT/REPL/` redirect against
 /// the corpus. Mirrors the upstream Perl `setupstring` behaviour for
-/// per-section redirects:
+/// per-section redirects + `do_inclusion_substitutions`.
 ///
 /// - `@Tempora/Nat1-0` (no `:`)  → look up the **same-named section**
 ///   in `Tempora/Nat1-0` and return that body. The section name to
 ///   look up comes from `default_section`.
 /// - `@Tempora/Nat1-0:Oratio` → look up the explicitly-named section.
+/// - `@Commune/C2::s/PAT/REPL/[FLAGS]` → look up `default_section`
+///   in `Commune/C2`, then apply the inclusion substitution. Used by
+///   Sancti/01-20 (Fabiani+Sebastiani) and other Commune-of-Martyrs
+///   variants that swap singular `N. Martyris` → plural form.
+/// - `@Path:Section:s/PAT/REPL/` → the combined form.
 ///
 /// When the body is anything *other than* a pure single-line redirect,
-/// returns it untouched. Multi-`@`-line bodies (used by the upstream
-/// Perl `@:Section` self-reference form) are out of scope here.
+/// returns it untouched.
 fn expand_at_redirect(body: &str, default_section: &str) -> String {
     let trimmed = body.trim();
     if !trimmed.starts_with('@') {
@@ -1057,10 +1067,22 @@ fn expand_at_redirect(body: &str, default_section: &str) -> String {
         return body.to_string();
     }
     let after_at = &trimmed[1..];
-    let (path, section) = if let Some((p, s)) = after_at.split_once(':') {
-        (p.trim(), s.trim().to_string())
+    // Parse `path[:section][:spec]`. Order:
+    //   1. Path = everything up to first `:` (or whole string).
+    //   2. Rest is empty / `:spec` / `section` / `section:spec`.
+    let (path, rest) = match after_at.split_once(':') {
+        Some((p, r)) => (p.trim(), r),
+        None => (after_at.trim(), ""),
+    };
+    let (section, spec) = if rest.is_empty() {
+        (default_section.to_string(), "")
+    } else if let Some(after_colon) = rest.strip_prefix(':') {
+        // `::spec` form: empty section, default_section used; spec follows.
+        (default_section.to_string(), after_colon)
+    } else if let Some((sec, sp)) = rest.split_once(':') {
+        (sec.trim().to_string(), sp)
     } else {
-        (after_at.trim(), default_section.to_string())
+        (rest.trim().to_string(), "")
     };
     if !looks_like_corpus_path(path) {
         return body.to_string();
@@ -1070,22 +1092,51 @@ fn expand_at_redirect(body: &str, default_section: &str) -> String {
     };
     if let Some(resolved) = target.sections.get(&section) {
         if !resolved.trim().is_empty() {
+            let mut body_str = resolved.clone();
             // Recurse one hop in case the target's body is itself a
-            // redirect (`@Path:X` → `@OtherPath:Y`). Cap recursion
-            // implicitly: if the second hop hits a non-redirect we
-            // return it; if it hits another redirect we return the
-            // first hop verbatim to avoid infinite loops.
-            let resolved = resolved.clone();
-            let trimmed_inner = resolved.trim();
-            if trimmed_inner.starts_with('@') {
-                return expand_at_redirect(&resolved, &section);
+            // redirect (`@Path:X` → `@OtherPath:Y`). Skip recursion
+            // when there's an inclusion-substitution spec, because
+            // the spec applies to the resolved body (not the
+            // intermediate redirect).
+            if spec.is_empty() {
+                let trimmed_inner = body_str.trim();
+                if trimmed_inner.starts_with('@') {
+                    return expand_at_redirect(&body_str, &section);
+                }
+            } else {
+                use crate::setupstring::do_inclusion_substitutions;
+                do_inclusion_substitutions(&mut body_str, spec);
             }
-            return resolved;
+            return body_str;
         }
     }
     // Not found — fall back to the literal `@…` so the divergence
     // is visible rather than silently dropped.
     body.to_string()
+}
+
+/// Drop everything from the first standalone `_` chunk separator
+/// onward. Many Sancti `[Oratio]` / `[Secreta]` / `[Postcommunio]`
+/// bodies end with a `_` separator + `@Path:CommemoratioN` redirect
+/// — the upstream Perl renderer only emits the trailing chunks when
+/// there's actually a commemoration-of-the-day to render. For the
+/// primary winner-Oratio splice we want only the first chunk.
+///
+/// Mirror of the chunk-aware emission in upstream
+/// `specials/orationes.pl::oratio` — the Mass side handles the same
+/// pattern via `apply_body_conditionals_1570`'s SCOPE_NEST fence.
+fn take_first_oratio_chunk(body: &str) -> String {
+    let mut out = String::with_capacity(body.len());
+    for line in body.split('\n') {
+        if line.trim() == "_" {
+            break;
+        }
+        if !out.is_empty() {
+            out.push('\n');
+        }
+        out.push_str(line);
+    }
+    out
 }
 
 fn looks_like_corpus_path(s: &str) -> bool {

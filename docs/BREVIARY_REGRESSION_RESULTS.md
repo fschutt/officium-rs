@@ -271,6 +271,73 @@ Remaining residual on Matutinum/Laudes/Tertia/Sexta/Nona
 (3 days each): **01-18, 01-20, 01-25**. Three different
 patterns to dig into next slice.
 
+## Slice 13: `@Path:Section:s/PAT/REPL/` substitution + first-chunk Oratio splice + UTF-8 regex
+
+Three failing-day clusters surfaced after slice 12 closed the
+`[Rule]`/`[Name]`/body conditionals:
+
+1. **`@Path::s/PAT/REPL/` redirect with substitution** — Sancti/01-20
+   (Fabiani+Sebastiani) `[Oratio]` body is
+   `@Commune/C2::s/beáti N\. Mártyris tui atque Pontíficis/beatórum
+   Mártyrum tuórum Fabiáni et Sebastiáni/`. The redirect should
+   resolve `Commune/C2` `[Oratio]` and apply the inclusion
+   substitution to swap singular `N. Martyris` → plural form. Old
+   `expand_at_redirect` only handled `@Path` and `@Path:Section` —
+   the trailing `:s/.../.../[FLAGS]` was silently kept on the
+   section name, leaving the literal `@Commune/C2::s/...` in the
+   spliced body.
+
+2. **First-chunk Oratio splice** — Sancti/02-22 + Sancti/01-25
+   `[Oratio]` bodies have the multi-chunk shape `prayer\n$Per
+   Dominum\n_\n@Path:CommemoratioN`. Upstream Perl emits only the
+   first chunk for the primary winner-Oratio; subsequent chunks
+   are commemoration alternatives reserved for days that
+   actually run a commemoration block. Without trimming, the
+   trailing `@Path:CommemoratioN` literal leaks into the rendered
+   body and breaks the substring-match comparator.
+
+3. **UTF-8 regex parser** — `setupstring::compile_regex`'s atom
+   parser was byte-based: a multi-byte Latin char like `á` (`0xC3
+   0xA1`) became two `Char(0xC3) Char(0xA1)` tokens, but the
+   matcher iterates UTF-8 chars (`Char(U+00E1)`). Patterns with
+   accented Latin characters never matched. Fix: detect UTF-8 lead
+   bytes in `parse_atom` and read the full codepoint into a single
+   `Char(c)` token. Same patch unblocks every
+   `@Path::s/PAT/REPL/` substitution that mentions accented Latin.
+
+`expand_at_redirect` (`src/horas.rs`) now parses
+`@PATH[:SECTION][:SPEC]` properly: when SECTION is empty (`::SPEC`
+form) the default section is used; SPEC is delegated to
+`setupstring::do_inclusion_substitutions`. Recursion through nested
+redirects is gated to the no-spec case so substitutions apply to
+the resolved body (not the intermediate redirect).
+
+`take_first_oratio_chunk` (`src/horas.rs`) trims everything from
+the first standalone `_` line onward, applied only when splicing
+`Oratio` / `Oratio <Hour>` sections.
+
+**30-day Jan 2026 × T1570 × Oratio sweep — `--hour all`:**
+
+| Hour          | Pre slice 13 | Post slice 13 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 27/30 (90%) | **30/30 (100%)** | +3 |
+| Laudes        | 27/30 (90%) | **30/30 (100%)** | +3 |
+| Prima         | 19/30 (63%) | 19/30 (63%) | — |
+| Tertia        | 27/30 (90%) | **30/30 (100%)** | +3 |
+| Sexta         | 27/30 (90%) | **30/30 (100%)** | +3 |
+| Nona          | 27/30 (90%) | **30/30 (100%)** | +3 |
+| Vespera       | 19/30 (63%) | 24/30 (80%) | +5 |
+| Completorium  | 23/30 (77%) | 23/30 (77%) | — |
+| **Aggregate** | **196/240 (81.67%)** | **216/240 (90.00%)** | **+20** |
+
+R60 30-day aggregate: 35/240 (14.58%) → **40/240 (16.67%)** (+5).
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). All 431 lib
+tests pass.
+
+5 hours at 100% on this slice. Remaining residuals concentrate on
+Prima (preces predicate B12), Vespera (concurrence B11), and
+Completorium (some mix of both).
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

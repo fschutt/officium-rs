@@ -170,7 +170,10 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
         None => return Vec::new(),
     };
     let prayers_file = lookup("Psalterium/Common/Prayers");
-    let chain = args.day_key.map(commune_chain).unwrap_or_default();
+    let chain = args
+        .day_key
+        .map(|k| commune_chain_for_rubric(k, args.rubric, args.hour))
+        .unwrap_or_default();
 
     // Filter the template through the runtime rubric-conditional
     // evaluator. The Ordinarium templates carry many `(sed rubrica X
@@ -189,7 +192,7 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
             "section" => {
                 if let Some(label) = &line.label {
                     out.push(RenderedLine::Section { label: label.clone() });
-                    splice_proper_into_slot(&mut out, label, args.hour, &chain);
+                    splice_proper_into_slot(&mut out, label, args.hour, args.rubric, &chain);
                 }
             }
             "rubric" => {
@@ -409,9 +412,21 @@ fn dominus_vobiscum_lay_default(prayers: &HorasFile) -> Option<&'static str> {
 /// The chain is bounded — we cap recursion at 5 hops to defend
 /// against pathological cycles in upstream data.
 fn commune_chain(day_key: &str) -> Vec<&'static HorasFile> {
+    // Default-rubric overload preserved for tests + B5 callers that
+    // don't yet thread an active rubric. Production renders should
+    // call `commune_chain_for_rubric` so `(sed rubrica X) vide CYY`
+    // overrides in the `[Rule]` body fire.
+    commune_chain_for_rubric(day_key, crate::core::Rubric::Tridentine1570, "Vespera")
+}
+
+fn commune_chain_for_rubric(
+    day_key: &str,
+    rubric: crate::core::Rubric,
+    hora: &str,
+) -> Vec<&'static HorasFile> {
     let mut visited = std::collections::HashSet::new();
     let mut out = Vec::new();
-    visit_chain(day_key, &mut visited, &mut out, 0);
+    visit_chain(day_key, rubric, hora, &mut visited, &mut out, 0);
     // Tempora ferial fall-through: when a `Tempora/FooN-D` (D > 0)
     // day's chain doesn't surface an `[Oratio]` section, fall back
     // to the week's parent Sunday `Tempora/FooN-0`. Mirrors the
@@ -419,7 +434,7 @@ fn commune_chain(day_key: &str) -> Vec<&'static HorasFile> {
     // carry no proper Oratio of their own and inherit the Sunday's.
     if let Some(parent) = tempora_sunday_fallback(day_key) {
         if !visited.contains(&parent) {
-            visit_chain(&parent, &mut visited, &mut out, 0);
+            visit_chain(&parent, rubric, hora, &mut visited, &mut out, 0);
         }
     }
     out
@@ -456,6 +471,8 @@ fn tempora_sunday_fallback(day_key: &str) -> Option<String> {
 
 fn visit_chain(
     key: &str,
+    rubric: crate::core::Rubric,
+    hora: &str,
     visited: &mut std::collections::HashSet<String>,
     out: &mut Vec<&'static HorasFile>,
     depth: usize,
@@ -466,8 +483,15 @@ fn visit_chain(
     let Some(file) = lookup(key) else { return };
     out.push(file);
     let Some(rule) = file.sections.get("Rule") else { return };
-    for target in parse_vide_targets(rule) {
-        visit_chain(&target, visited, out, depth + 1);
+    // Evaluate `(sed rubrica X) vide CYY` overrides before parsing
+    // commune targets — under T1570/1617, Sancti/01-14 [Rule] flips
+    // from `vide C4a` to `vide C4`, which picks the right Confessor-
+    // Bishop oratio ("Da, quaesumus..." instead of "Deus, qui populo
+    // tuo aeternae salutis..."). Mirror of upstream
+    // `setupstring_parse_file`'s conditional pass.
+    let evaluated_rule = eval_section_conditionals(rule, rubric, hora);
+    for target in parse_vide_targets(&evaluated_rule) {
+        visit_chain(&target, rubric, hora, visited, out, depth + 1);
     }
 }
 
@@ -570,6 +594,39 @@ fn directive_body_for_template(line: &OrdoLine) -> Option<&str> {
     } else {
         None
     }
+}
+
+/// Apply runtime rubric-conditional gating to a per-day section
+/// body. Mirror of `setupstring_parse_file`'s
+/// `process_conditional_lines` pass at `SetupString.pl:355`. The
+/// build script bakes 1570-only conditionals into the corpus body
+/// strings; this helper applies the missing 1910/DA/R55/R60 layer
+/// on the way out so the spliced body matches what Perl emits.
+///
+/// Used for the `[Rule]` body (so `vide CXX` chain selection picks
+/// the rubric-correct Commune target), the `[Name]` body (so
+/// `substitute_saint_name` sees only the active variant), and the
+/// spliced section body itself (so per-rubric prayer variants are
+/// dropped before emission).
+///
+/// Skip when the body has no `(` — the common case is unconditional
+/// text and the cost of building a `Subjects` + walking the lines
+/// dominates the work.
+fn eval_section_conditionals(
+    body: &str,
+    rubric: crate::core::Rubric,
+    hora: &str,
+) -> String {
+    if !body.contains('(') {
+        return body.to_string();
+    }
+    use crate::setupstring::{process_conditional_lines, Subjects};
+    let subjects = Subjects {
+        rubric: Some(rubric),
+        hora,
+        ..Default::default()
+    };
+    process_conditional_lines(body, &subjects)
 }
 
 // ─── Concurrence / first-vespers helpers (B6 slice 4) ───────────────
@@ -857,6 +914,7 @@ fn splice_proper_into_slot(
     out: &mut Vec<RenderedLine>,
     label: &str,
     hour: &str,
+    rubric: crate::core::Rubric,
     chain: &[&HorasFile],
 ) {
     if chain.is_empty() {
@@ -873,15 +931,36 @@ fn splice_proper_into_slot(
         return;
     }
 
-    let saint_name = chain
+    // Evaluate rubric-conditionals on the [Name] body before using it
+    // as the `N.` substitution source. Sancti/01-14 ships variants
+    // `Hilárium / (sed rubrica 1570 aut rubrica 1617) Hilárii / Ant=Hilári`
+    // — un-evaluated, the substitution emits all three lines into
+    // every Commune body's `N.` slot. The `Ant=...` line is an
+    // antiphon-form variant the upstream renderer parses separately;
+    // for the genitive `N.` substitution we want only the first
+    // non-`Ant=` line of the evaluated body.
+    let saint_name_raw = chain
         .first()
         .and_then(|f| f.sections.get("Name"))
         .map(String::as_str);
+    let saint_name_eval = saint_name_raw.map(|s| eval_section_conditionals(s, rubric, hour));
+    let saint_name = saint_name_eval
+        .as_deref()
+        .or(saint_name_raw)
+        .and_then(|s| {
+            s.lines()
+                .find(|l| {
+                    let t = l.trim();
+                    !t.is_empty() && !t.starts_with("Ant=") && !t.starts_with('(')
+                })
+                .map(str::trim)
+        });
 
     for cand in slot_candidates(label, hour) {
         if let Some(body) = find_section_in_chain(chain, &cand) {
             let resolved = expand_at_redirect(body, &cand);
-            let with_name = substitute_saint_name(&resolved, saint_name);
+            let evaluated = eval_section_conditionals(&resolved, rubric, hour);
+            let with_name = substitute_saint_name(&evaluated, saint_name);
             out.push(RenderedLine::Plain { body: with_name });
             return;
         }
@@ -892,7 +971,8 @@ fn splice_proper_into_slot(
         let hymnus_key = format!("Hymnus {hour}");
         if let Some(body) = find_section_in_chain(chain, &hymnus_key) {
             let resolved = expand_at_redirect(body, &hymnus_key);
-            let with_name = substitute_saint_name(&resolved, saint_name);
+            let evaluated = eval_section_conditionals(&resolved, rubric, hour);
+            let with_name = substitute_saint_name(&evaluated, saint_name);
             out.push(RenderedLine::Plain { body: with_name });
         }
     }

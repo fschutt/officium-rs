@@ -202,6 +202,75 @@ two separate gaps:
   of Marcellus's first vespers). Closes when concurrence
   (B11) lands.
 
+## Slice 12: rubric-conditional eval on `[Rule]` + `[Name]` + spliced bodies
+
+The build script (`data/build_horas_json.py`) bakes the
+1570-baseline conditionals into per-section bodies but leaves
+the 1910/DA/R55/R60 layer un-evaluated. Sancti/01-14 (St Hilary)
+ships:
+
+```
+[Rule]
+vide C4a;mtv
+(sed rubrica 1570 aut rubrica 1617)
+vide C4;mtv
+
+[Name]
+Hilárium
+(sed rubrica 1570 aut rubrica 1617)
+Hilárii
+Ant=Hilári
+```
+
+— under T1570/1617, `[Rule]` should flip from `vide C4a` to
+`vide C4` (the Confessor-Bishop common, oratio "Da, quaesumus,
+omnipotens Deus..."). Without runtime evaluation, the chain
+walked C4a (default Doctor) and emitted "Deus, qui populo tuo
+aeternae salutis..." plus both copies of the conditional
+variant. The `[Name]` body fed all three lines (`Hilárium /
+Hilárii / Ant=Hilári`) into every Commune body's `N.` slot.
+
+Slice 12 lands `eval_section_conditionals` (`src/horas.rs`) — a
+thin wrapper around `setupstring::process_conditional_lines`
+that's applied at three points:
+
+1. `[Rule]` body in `visit_chain` before `parse_vide_targets`.
+   Picks the rubric-correct `vide CXX` target.
+2. `[Name]` body in `splice_proper_into_slot` before
+   `substitute_saint_name`. Then takes the FIRST line that's
+   not blank, not a directive, and not an `Ant=...` antiphon
+   variant — Perl `$winner{Name}` is by convention the genitive
+   form on line 1.
+3. The spliced section body (after `expand_at_redirect`,
+   before `substitute_saint_name`). Drops per-rubric prayer
+   variants (`(sed communi Summorum Pontificum)` etc.).
+
+`commune_chain_for_rubric(day_key, rubric, hora)` is the new
+entry point; the legacy `commune_chain(day_key)` stays as a
+T1570 / Vespera shim for B5 callers and tests.
+
+**30-day Jan 2026 × T1570 × Oratio sweep — `--hour all`:**
+
+| Hour          | Pre slice 12 | Post slice 12 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 25/30 (83%) | 27/30 (90%) | +2 |
+| Laudes        | 25/30 (83%) | 27/30 (90%) | +2 |
+| Prima         | 19/30 (63%) | 19/30 (63%) | — |
+| Tertia        | 25/30 (83%) | 27/30 (90%) | +2 |
+| Sexta         | 25/30 (83%) | 27/30 (90%) | +2 |
+| Nona          | 25/30 (83%) | 27/30 (90%) | +2 |
+| Vespera       | 19/30 (63%) | 19/30 (63%) | — |
+| Completorium  | 23/30 (77%) | 23/30 (77%) | — |
+| **Aggregate** | **186/240 (77.50%)** | **196/240 (81.67%)** | **+10** |
+
+R60 30-day aggregate: 29/240 (12.08%) → **35/240 (14.58%)**
+(+6 across all hours except Prima / Compline). Mass T1570 + R60
+year-sweeps stay at 100%.
+
+Remaining residual on Matutinum/Laudes/Tertia/Sexta/Nona
+(3 days each): **01-18, 01-20, 01-25**. Three different
+patterns to dig into next slice.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

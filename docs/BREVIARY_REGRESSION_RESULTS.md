@@ -398,6 +398,58 @@ so this slice doesn't help). Compline at 83% — 5 remaining fails
 mix preces predicate edge cases (Saturday Vespera adjacency) with
 other patterns.
 
+## Slice 15: Tempora-ferial preces predicate extension
+
+Slice 14's `preces_dominicales_et_feriales_fires` was Sancti-only
+(plus Tempora gated on `[Rule]` mentioning "Preces"). The Jan
+T1570 sample has Tempora ferials Epi3-4 and Epi3-5 (01-29 Thu and
+01-30 Fri) where upstream Perl emits the omittitur form for
+Prima/Compline `Dominus_vobiscum1` — branch (b) of upstream
+`preces` fires for any low-rank, non-Octave winner regardless of
+its file category.
+
+Slice 15 widens the Tempora branch: under T1570/1910/DA, fire
+preces for any `Tempora/...` winner that has already passed the
+duplex/octave checks. The `[Rule]`-mentions-Preces gate from
+slice 14 was conservative — branch (a) in upstream uses
+`dayname[0] =~ /Adv|Quad/` or `emberday()`, but branch (b)'s
+"low-rank Tempora ferial" condition collapses to the same
+practical set without needing season detection.
+
+**30-day Jan 2026 × T1570 × Oratio sweep — `--hour all`:**
+
+| Hour          | Pre slice 15 | Post slice 15 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 30/30 (100%) | 30/30 (100%) | — |
+| Laudes        | 30/30 (100%) | 30/30 (100%) | — |
+| Prima         | 27/30 (90%)  | 29/30 (97%)  | +2 |
+| Tertia        | 30/30 (100%) | 30/30 (100%) | — |
+| Sexta         | 30/30 (100%) | 30/30 (100%) | — |
+| Nona          | 30/30 (100%) | 30/30 (100%) | — |
+| Vespera       | 24/30 (80%)  | 24/30 (80%)  | — |
+| Completorium  | 25/30 (83%)  | 27/30 (90%)  | +2 |
+| **Aggregate** | **226/240 (94.17%)** | **230/240 (95.83%)** | **+4** |
+
+R60 30-day stays at 40/240 (16.67%) — 1955/1960 Wed/Fri gate
+still suppresses preces on most R60 days. Mass T1570 + R60
+year-sweeps stay at 365/365 (100%). 431 lib tests pass.
+
+Residual fails on T1570 30-day:
+- Prima 1 fail (01-24): Sat BVM (Commune/C10b) — predicate
+  doesn't recognise the BVM-Saturday path because `[Rank]` lives
+  on the inherited `@Commune/C10` parent, which our chain walker
+  doesn't yet pull through for whole-file inheritance. Deferred.
+- Vespera 6 fails (01-14, 01-15, 01-23, 01-26, 01-28, 01-30):
+  first-vespers concurrence (B11). The `parse_horas_rank` MAX-
+  across-rubric-variants approach picks the wrong winner for
+  equal-rank tomorrow vs today comparisons.
+- Compline 3 fails (01-16, 01-19, 01-26): Sancti days where
+  upstream Perl's `preces` returns 0 but our predicate fires.
+  Likely `$commemoratio` set by precedence engine to a
+  Sunday-of-Octave or week-commemoration that triggers
+  `dominicales=0`. Deferred — needs `$commemoratio` propagation
+  from the precedence layer.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

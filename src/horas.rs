@@ -542,17 +542,16 @@ fn preces_dominicales_et_feriales_fires(
     if day_key.starts_with("Sancti/") {
         return true;
     }
-    // Tempora winner: branch (a) requires Adv/Quad/emberday OR
-    // [Rule] contains "Preces". Conservative — only fire when
-    // [Rule] has an explicit `Preces` directive for now.
+    // Tempora winner: upstream `preces` branch (a) fires when
+    // `[Rule]` says "Preces", or dayname0 is Adv/Quad, or emberday.
+    // Branch (b) fires for low-rank Tempora ferials too. Both paths
+    // collapse to "fire when winner.Rank is Feria/low" — under
+    // T1570 every Tempora ferial after the Octave-of-Christmas /
+    // Epiphany window has rank 1 and qualifies. Be permissive:
+    // fire for Tempora unless [Rank] explicitly carries an Octave
+    // marker (which the duplex/octave check above already filters).
     if day_key.starts_with("Tempora/") {
-        if let Some(rule) = file.sections.get("Rule") {
-            let evaluated = eval_section_conditionals(rule, rubric, hour);
-            if evaluated.to_lowercase().contains("preces") {
-                return true;
-            }
-        }
-        return false;
+        return true;
     }
     false
 }

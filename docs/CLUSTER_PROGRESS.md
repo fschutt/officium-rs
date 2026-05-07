@@ -24,12 +24,21 @@ returns 100% on every rubric.**
 
 **Closed: 12 / 12 clusters, 463 / 463 fail-days (100%).** 🎯
 
-🎯 **Milestone: 100% across 6-year × 5-rubric sample (13146 days)** —
-T1570, T1910, DA, R55, R60 all clean on 1979, 1985, 2000, 2025,
-2050, 2074. Broader 15-year sweep (27410 days, includes leap years
-1976/1996/2020/2032 + Easter-extreme 2032) shows 99.97% pass with
-9 residuals isolated to: T1910 leap Feb-24/26/29 + 2032-04-06,
-DA 1996-02-26, R60 10-18 Class-II-saint Sundays.
+🎯 **15-year × 5-rubric sample (27,410 days): 100% pass** —
+T1570, T1910, DA, R55, R60 all clean on 1976, 1979, 1981, 1985,
+1990, 1996, 2000, 2008, 2012, 2020, 2025, 2032, 2050, 2065, 2074.
+
+🎯 **30-year × 5-rubric sample (54,790 days): 99.998% pass** —
+single residual at T1910 2002-01-31. Petri Nolasci (file stem
+01-28, kalendar 01-31 under 1906 layer) should be feria-suppressed
+under f.txt + 331.txt rule `01-28=01-27~01-28t;;1570 M1617 1888 1906`,
+but our `stem_transferred_away_with_stems` doesn't trigger. The
+distinction between kalendar key and file stem (kalendar 01-28 has
+Agnes stem 01-28t; kalendar 01-31 has Petri stem 01-28) requires
+careful handling — naive source-stem match also breaks 1976 letter-c
+year (where d.txt's `01-28=01-18` rule applies under filter-2 but
+shouldn't suppress Petri at kalendar 01-31). Deferred — needs
+deeper Perl `transfered()` trace.
 
 ## Final exit gate
 

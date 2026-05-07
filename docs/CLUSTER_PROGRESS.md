@@ -40,6 +40,14 @@ year (where d.txt's `01-28=01-18` rule applies under filter-2 but
 shouldn't suppress Petri at kalendar 01-31). Deferred — needs
 deeper Perl `transfered()` trace.
 
+🎯 **R60_03_06_Perpetua_Felicitas Communio closed** — chase to
+`@Commune/C6-1` was looking up `Communio (rubrica 1960)` in the
+chased file (which only has the bare `Communio` key). Fixed in
+`chase_at_reference` by stripping a trailing `(annotation)` from
+the `default_section` arg before lookup. The rubric-conditional
+pickup at the winner level is unaffected — only the chase target
+sees the bare name.
+
 ## Final exit gate
 
 * All 12 ORIGINAL clusters closed (verified via `scripts/cluster_verify.sh`).
@@ -57,7 +65,7 @@ deeper Perl `transfered()` trace.
 | 14 | T1910_Joseph_0319_0320 | 2× | ✅ | closed by same |
 | 15 | DA_WMSunday_NonHilarion | 6× | ⛔ | DEFERRED Phase 9: DA on WMSunday is NOT sub-unica (separate Orémus per commemoration, parent's $Per kept). Differs from R55 sub-unica path. Implementation needs a different commemoration-emission shape than `apply_r55_simplex_commemoration`. |
 | 16 | R55_WMSunday_NonHilarion | 3× | ⛔ | DEFERRED Phase 9: years where penultimate Sun ≠ 10-21 (e.g. 2000-10-22 = Pent22 + Cantius); under R55 Class III feasts on Sunday Mass-suppressed (Lauds-only). Need to verify Cantius is correctly suppressed under R55 too — currently fails. |
-| 17 | R60_03_06_Perpetua_Felicitas | 3× | ✅ | closed by rubric-conditional `[Section] (rubrica 1960)` lookup |
+| 17 | R60_03_06_Perpetua_Felicitas | 3× | ✅ | rubric-conditional `[Section] (rubrica 1960)` lookup + chase strips `(rubrica X)` annotation when chasing `@Commune/...` so the chased file's bare `Communio` is found |
 | 18 | R60_WMSunday | 4× | ⏳ | R60 10-19/21/23 — WMSunday + Sancti commemoration |
 | 19a | R60_Imm_Conc | 1× | ✅ | closed by RG 15 special-case in `decide_sanctoral_wins_1570` |
 | 19b | R60_Joseph_0320 | 1× | ✅ | closed by rubric-aware `apply_transfer_sancti_1570` rank pick |

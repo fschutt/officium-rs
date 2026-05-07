@@ -3760,6 +3760,15 @@ fn chase_at_reference(
     if hops > MAX_AT_HOPS {
         return None;
     }
+    // Strip a trailing `(annotation)` from the default section
+    // name (see the matching strip in `read_section` above): a
+    // chase that started from `Communio (rubrica 1960)` should
+    // look up `Communio` in the chased file.
+    let default_section = if let (Some(open_idx), true) = (default_section.rfind(" ("), default_section.ends_with(')')) {
+        &default_section[..open_idx]
+    } else {
+        default_section
+    };
     // Take only the first line (some files put a comment on the line
     // following the @-ref).
     let first_line = body.lines().next()?.trim();

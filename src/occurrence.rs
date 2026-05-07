@@ -1614,10 +1614,22 @@ fn resolve_sancti_for_tridentine_1570(
     let native_is_displaced_vigil = native_entry
         .map(|e| e.main.stem == "02-23o" && month == 2 && day == 24)
         .unwrap_or(false);
+    // T1910 over-fire guard: enable heuristic only when no native
+    // entry AND we're on the leap-year bissextile shift (real Feb 24
+    // = kalendar 02-29) — NOT for plain non-leap dates with empty
+    // kalendar entries (e.g. 02-12 in non-1939 layers, where Septem
+    // Fundatorum's stem 02-12 lives at kalendar 02-11 under the
+    // 1888/1906 layer; transfer-on-preempted-Sunday is NOT what Perl
+    // does for those — Perl just renders the feria).
+    let t1910_heuristic_eligible = matches!(rubric, Rubric::Tridentine1910)
+        && (native_is_displaced_vigil
+            || (native_entry.is_none()
+                && date::leap_year(year)
+                && month == 2
+                && day == 24));
     let heuristic_transfer_active =
         matches!(rubric, Rubric::Tridentine1570 | Rubric::Monastic)
-        || (matches!(rubric, Rubric::Tridentine1910)
-            && (native_entry.is_none() || native_is_displaced_vigil));
+        || t1910_heuristic_eligible;
     if heuristic_transfer_active {
     if let Some((stem, name, rank_num)) =
         transferred_sancti_for_1570(year, month, day, layer, corpus)

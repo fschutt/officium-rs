@@ -3265,6 +3265,41 @@ fn read_section(
         }
         return None;
     }
+    // Rubric-conditional section variant: when the bare section
+    // name has no body, look for `Section (annotation)` keys whose
+    // annotation matches the active rubric. The build script stores
+    // `[Graduale] (rubrica 1960)` as the literal section name
+    // `"Graduale (rubrica 1960)"` rather than collapsing it to
+    // `"Graduale"`. Drives R60 Sancti/03-06 (Perpetua + Felicitas)
+    // [Graduale] (rubrica 1960) → @Commune/C6-1, and similar
+    // rubric-conditional sections on other Sancti files. Closes
+    // the R60_03_06_Perpetua_Felicitas residual cluster.
+    let bare_body_present = file
+        .sections
+        .get(section)
+        .map(|s| !s.trim().is_empty())
+        .unwrap_or(false);
+    let effective_section: String = if bare_body_present {
+        section.to_string()
+    } else {
+        let active = ACTIVE_RUBRIC.with(|r| r.get());
+        let prefix = format!("{} (", section);
+        let mut picked = None;
+        for key in file.sections.keys() {
+            if !key.starts_with(&prefix) || !key.ends_with(')') {
+                continue;
+            }
+            let inner = &key[prefix.len()..key.len() - 1];
+            if !annotation_applies_to_rubric(inner, active) {
+                continue;
+            }
+            if file.sections.get(key).map(|s| !s.trim().is_empty()).unwrap_or(false) {
+                picked = Some(key.clone());
+                break;
+            }
+        }
+        picked.unwrap_or_else(|| section.to_string())
+    };
     // Resolve any inline `(sed PREDICATE)` SCOPE_LINE conditionals
     // BEFORE chasing `@`-references. Sancti/10-09t [Evangelium]
     // contains:
@@ -3276,7 +3311,7 @@ fn read_section(
     // follow the (post-1570) C3a-1 reference.
     let raw_owned = file
         .sections
-        .get(section)
+        .get(&effective_section)
         .map(|s| apply_body_conditionals_1570(s.trim()));
     let raw_opt = raw_owned.as_deref().map(|s| s.trim());
     if let Some(raw) = raw_opt.filter(|s| !s.is_empty()) {

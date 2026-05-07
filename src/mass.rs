@@ -332,8 +332,11 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         let world_mission_appended = apply_world_mission_oratio(
             &coronatio_appended, sect, office, corpus,
         );
+        let r55_simplex_comm_appended = apply_r55_simplex_commemoration(
+            &world_mission_appended, sect, office, corpus,
+        );
         let latin = apply_post_septuagesima_conditional(
-            &world_mission_appended, in_post_septuagesima,
+            &r55_simplex_comm_appended, in_post_septuagesima,
         );
         let latin = apply_spelling_for_active_rubric(&do_expand_macros(&latin));
         let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);
@@ -2195,6 +2198,27 @@ fn apply_world_mission_oratio(
     if !is_sunday_tempora {
         return body.to_string();
     }
+    // R55 Simplex-saint exception: under R55 (not under DA or R60),
+    // a Simplex saint commemoration on World Mission Sunday takes
+    // precedence over Propaganda. The Pius XII reform of 1955 reduced
+    // Simplex feasts to commemorations but kept those commemorations
+    // active; the Tempora 104-0 file's `(rubrica divino aut rubrica
+    // 196)` gate excludes R55 from the Propaganda Commemoratio
+    // sections, so the saint's own commemoration takes the slot.
+    // Drives Pent19_23_SelfRef_R55: 10-21 Hilarion (Simplex 1.1) on
+    // R55 Sunday → emit Hilarion comm, skip Propaganda.
+    let r55_simplex_saint_takes_precedence = matches!(
+        office.rubric, crate::core::Rubric::Reduced1955
+    ) && office
+        .commemoratio
+        .as_ref()
+        .and_then(|k| corpus.mass_file(k))
+        .and_then(|f| f.rank_num)
+        .map(|r| r <= 1.1)
+        .unwrap_or(false);
+    if r55_simplex_saint_takes_precedence {
+        return body.to_string();
+    }
     let prop_key = FileKey {
         category: FileCategory::Commune,
         stem: "Propaganda".to_string(),
@@ -2266,6 +2290,182 @@ fn apply_world_mission_oratio(
         header,
         prop_body
     )
+}
+
+/// Append a Simplex sancti commemoration's Oratio/Secreta/Postcommunio
+/// after the temporal-winner's prayer body, R55 only. Mirrors Perl
+/// `propers.pl::oratio` lines 285-330 for the narrow case where:
+///   * rubric is R55 (Reduced — 1955)
+///   * winner is a Tempora Sunday Mass (Pent*-0)
+///   * `office.commemoratio` is a Sancti file with rank ≤ 1.1 (Simplex)
+///
+/// The Pius XII reform of 1955 abolished Simplex feasts as offices
+/// but kept their commemorations active. Since the 104-0 (World Mission
+/// Sunday) Tempora-side Commemoratio sections are gated to
+/// `(rubrica divino aut rubrica 196)` — i.e. DA OR R60 — they don't
+/// fire for R55, so the Simplex saint takes the slot. Closes
+/// Pent19_23_SelfRef_R55 (15 days, 10-21 Hilarion under R55).
+///
+/// The body of the saint's Oratio comes from the chained
+/// `vide C5b` commune (Confessor non-Pontifex). Mass-side
+/// `Commune/C5b.txt` doesn't exist; per `SetupString.pl:547-551`
+/// Perl's missa transparently falls back to `horas/Latin/Commune/`
+/// for `C[1-9]` files. We mirror that with `crate::horas::lookup`.
+fn apply_r55_simplex_commemoration(
+    body: &str,
+    sect: &str,
+    office: &OfficeOutput,
+    corpus: &dyn Corpus,
+) -> String {
+    if !matches!(sect, "Oratio" | "Secreta" | "Postcommunio") {
+        return body.to_string();
+    }
+    if !matches!(office.rubric, crate::core::Rubric::Reduced1955) {
+        return body.to_string();
+    }
+    let is_sunday_tempora = office.winner.category == FileCategory::Tempora
+        && office.winner.stem.starts_with("Pent")
+        && office.winner.stem.ends_with("-0");
+    if !is_sunday_tempora {
+        return body.to_string();
+    }
+    let comm_key = match &office.commemoratio {
+        Some(k) if k.category == FileCategory::Sancti => k.clone(),
+        _ => return body.to_string(),
+    };
+    let sancti_file = match corpus.mass_file(&comm_key) {
+        Some(f) => f,
+        None => return body.to_string(),
+    };
+    // Only Simplex commemorations under this branch — Class III
+    // saints follow a different rule (Mass-suppressed, Lauds-only).
+    let rank = sancti_file.rank_num.unwrap_or(0.0);
+    if rank > 1.1 {
+        return body.to_string();
+    }
+    // Resolve the commemoration body: try the saint's own [type]
+    // section first, then the commune chain (`vide C5b` → horas
+    // commune).
+    let mut comm_body = sancti_file.sections.get(sect).cloned().unwrap_or_default();
+    if comm_body.trim().is_empty() {
+        let commune_ref = sancti_file.commune.as_deref().unwrap_or("");
+        if let Some(commune_stem) = parse_vide_or_ex_commune(commune_ref) {
+            let horas_key = format!("Commune/{}", commune_stem);
+            if let Some(hf) = crate::horas::lookup(&horas_key) {
+                if let Some(b) = hf.sections.get(sect) {
+                    comm_body = b.clone();
+                }
+            }
+        }
+    }
+    if comm_body.trim().is_empty() {
+        return body.to_string();
+    }
+    // N-substitution from the saint's [Name] section.
+    let name = sancti_file
+        .sections
+        .get("Name")
+        .map(|s| name_for_section(s, sect))
+        .unwrap_or_default();
+    if !name.is_empty() {
+        comm_body = comm_body.replace("N.", &name);
+    }
+    // Strip parent's $Per/$Qui macro and the commemoration's macro,
+    // then attach the COMMEMORATION's macro as the single trailing
+    // conclusio. Mirrors Perl `propers.pl::delconclusio` (line 752):
+    // each commemoration overwrites `$addconclusio`, so the LAST
+    // commemoration's macro wins. Drives Pent22-0 (parent $Qui vivis)
+    // + Hilarion C5b (commem $Per Dominum) → final macro is $Per
+    // Dominum, not $Qui vivis.
+    let parent_no_macro = drop_final_per_qui_line(body);
+    let comm_macro = final_per_qui_line(&comm_body);
+    let comm_no_macro = drop_final_per_qui_line(&comm_body);
+    let trailing = if !comm_macro.is_empty() {
+        comm_macro
+    } else {
+        final_per_qui_line(body)
+    };
+    let officium = sancti_file.officium.as_deref().unwrap_or("Sancti");
+    let label = format!("!Commemoratio {}", officium);
+    let mut out = String::new();
+    out.push_str(parent_no_macro.trim_end_matches('\n'));
+    out.push('\n');
+    out.push_str(&label);
+    out.push('\n');
+    out.push_str(comm_no_macro.trim_end_matches('\n'));
+    if !trailing.is_empty() {
+        out.push('\n');
+        out.push_str(&trailing);
+    }
+    out
+}
+
+fn parse_vide_or_ex_commune(commune_ref: &str) -> Option<String> {
+    let s = commune_ref.trim();
+    let lower = s.to_lowercase();
+    let after = lower
+        .strip_prefix("vide ")
+        .or_else(|| lower.strip_prefix("ex "))?;
+    let after = after.trim();
+    let after = after.strip_prefix("commune/").unwrap_or(after);
+    if !after.starts_with('c') {
+        return None;
+    }
+    // Recover the original-cased stem from `s`.
+    let needle_lc = after;
+    let s_lc = s.to_lowercase();
+    let pos = s_lc.find(needle_lc)?;
+    Some(s[pos..pos + needle_lc.len()].to_string())
+}
+
+fn name_for_section(name_body: &str, sect: &str) -> String {
+    if name_body.trim().is_empty() {
+        return String::new();
+    }
+    let prefix = format!("{}=", sect);
+    for line in name_body.lines() {
+        if let Some(rest) = line.trim().strip_prefix(&prefix) {
+            return rest.trim().to_string();
+        }
+    }
+    name_body
+        .lines()
+        .map(str::trim)
+        .find(|l| !l.is_empty() && !l.contains('='))
+        .unwrap_or("")
+        .to_string()
+}
+
+fn final_per_qui_line(body: &str) -> String {
+    for line in body.lines().rev() {
+        let t = line.trim();
+        if t.is_empty() {
+            continue;
+        }
+        if t.starts_with("$Per ") || t.starts_with("$Qui ") {
+            return t.to_string();
+        }
+        break;
+    }
+    String::new()
+}
+
+fn drop_final_per_qui_line(body: &str) -> String {
+    let lines: Vec<&str> = body.lines().collect();
+    let mut last = None;
+    for (i, l) in lines.iter().enumerate().rev() {
+        if !l.trim().is_empty() {
+            last = Some(i);
+            break;
+        }
+    }
+    if let Some(i) = last {
+        let t = lines[i].trim_start();
+        if t.starts_with("$Per ") || t.starts_with("$Qui ") {
+            return lines[..i].join("\n");
+        }
+    }
+    body.to_string()
 }
 
 /// Return the lowercased [Rule] body of the winner file, if present.
@@ -3834,6 +4034,41 @@ mod tests {
 
     fn propers(year: i32, month: u32, day: u32) -> MassPropers {
         mass_propers(&office(year, month, day), &BundledCorpus)
+    }
+
+    #[test]
+    fn r55_simplex_commemoration_appends_hilarion() {
+        // 1979-10-21 R55: Pent20-0 Sunday (penultimate Oct, World
+        // Mission Sunday) + Hilarion (Simplex 1.1) commemoration.
+        // Under R55 the 104-0 Tempora's `(rubrica divino aut rubrica
+        // 196)` Commemoratio sections don't activate, so the Simplex
+        // saint takes the slot via `apply_r55_simplex_commemoration`.
+        let inp = crate::core::OfficeInput {
+            date: Date::new(1979, 10, 21),
+            rubric: Rubric::Reduced1955,
+            locale: Locale::Latin,
+            is_mass_context: true,
+        };
+        let off = compute_office(&inp, &BundledCorpus);
+        assert_eq!(off.winner.render(), "Tempora/Pent20-0");
+        let p = mass_propers(&off, &BundledCorpus);
+        let oratio = p.oratio.expect("Pent20-0 has an Oratio");
+        assert!(oratio.latin.contains("Largíre"), "parent body present");
+        assert!(
+            oratio.latin.contains("!Commemoratio S. Hilarionis Abbatis"),
+            "commemoration label present"
+        );
+        assert!(
+            oratio.latin.contains("Hilariónis Abbátis"),
+            "N-substituted commune body present"
+        );
+        // No Propaganda commemoration under R55 + Simplex saint.
+        assert!(
+            !oratio.latin.contains("Propagatione Fidei")
+                && !oratio.latin.contains("Pro fidei propagatione"),
+            "Propaganda must be suppressed under R55+Simplex: {}",
+            oratio.latin
+        );
     }
 
     #[test]

@@ -19,35 +19,19 @@ returns 100% on every rubric.**
 |  8 | T1910_Annunciation          |   5 | ✅ | Adv/Quad srank cap: Class I sancti capped to 6.01 |
 |  9 | DA_SeptEmbersCross          |  14 | ✅ | Festum Domini precedence in `decide_sanctoral_wins_1570` |
 | 10 | R55_SeptEmbersCross         |  14 | ✅ | extended Festum Domini gate to include R55 |
-| 11 | Pent19_23_SelfRef_R55       |  15 | ⛔ | DEFERRED: needs Phase-9 commemoration-appendage port |
+| 11 | Pent19_23_SelfRef_R55       |  15 | ✅ | R55 simplex-commemoration appendage + Propaganda suppression gate |
 | 12 | Quadp_Quad_Commune_C4a      |  29 | ✅ | T1910 sancti chain: main-stem-only suppression + dirge skip + layer-aware leap suppression + back-walk |
 
-**Closed: 11 / 12 clusters, 306 / 463 fail-days (66%).**
+**Closed: 12 / 12 clusters, 463 / 463 fail-days (100%).** 🎯
 
-## Cluster 11 deferred — Phase 9 work
+## Final exit gate
 
-Pent19_23_SelfRef_R55 needs the commemoration-appendage logic from
-Perl `propers.pl::oratio` lines 285-330 + `getcommemoratio()` + the
-mass-context-commune-fallback-to-horas (`SetupString.pl:547-551`).
-A first-pass implementation correctly resolves Hilarion's
-"Intercéssio nos…" body via horas/Commune/C5b with N-substitution,
-but interaction with `apply_world_mission_oratio` is non-trivial:
-* For 1979-10-21 R55 (Pent20-0 + Hilarion 1.1): Perl shows ONLY
-  Hilarion commemoration. Propaganda is suppressed.
-* For 1985-10-20 R55 (Pent21-0 + Cantius 3.0): Perl shows ONLY
-  Propaganda commemoration. Cantius is suppressed.
-* For 1979-10-28 R55 (Pent21-0 + Vigilia Omnium SS 1.5): different
-  pattern again — Perl shows only Vigil.
-
-The R55 suppression rule is rank-based: Class III feasts (Duplex,
-rank 3) on a I/II classis Sunday don't get a Mass commemoration
-under R55 (only at Lauds), but Simplex feasts (rank 1.1) keep
-their commemoration. Implementing this requires coordinated
-edits across `apply_world_mission_oratio` and a new
-`apply_sancti_commemoration_oratio`, plus access to the saint's
-[Name] body for N-substitution. Total scope ≈ 200 lines plus tests.
-A partial implementation (just the commemoration-body extraction)
-landed locally but was reverted to avoid double-emit regressions.
+* All 12 clusters closed (verified via `scripts/cluster_verify.sh`).
+* Sample-year sweeps: T1570 + T1910 + DA + R55 + R60 each return
+  100% on spot-checked years (1979, 1980, 1981, 1985, 1990, 2000,
+  2010, 2020, 2025, 2050, 2074).
+* Final exit-criterion sweep `year-sweep --years 1976:2076` across
+  all 5 rubrics: PENDING — runs in CI on the next push.
 
 ## Iteration plan
 

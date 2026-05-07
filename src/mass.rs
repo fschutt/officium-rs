@@ -2344,6 +2344,96 @@ fn apply_world_mission_oratio(
     } else {
         "!Pro fidei propagatione"
     };
+    // DA branch: NON-sub-unica. Each commemoration keeps its own
+    // `$Per/$Qui` macro; parent body keeps its macro too. Multi-
+    // `Orémus` structure: parent + Orémus + saint commemoration +
+    // Orémus + Propaganda. Mirrors Perl `propers.pl::oratio` line
+    // 222 — `world_mission_sunday() && $version !~ /Divino/` →
+    // sub_unica is FALSE for DA, so each prayer keeps its conclusio.
+    if matches!(office.rubric, crate::core::Rubric::DivinoAfflatu1911) {
+        let oremus_inner = if matches!(sect, "Oratio" | "Postcommunio") {
+            "_\n$Oremus\n"
+        } else {
+            "_\n"
+        };
+        // Under DA the Propaganda label is the lone form ("Pro fidei
+        // propagatione") because the saint commemoration already
+        // carries the "Commemoratio" label — Perl doesn't repeat it.
+        let header = "!Pro fidei propagatione";
+        // Resolve the saint commemoration body (parallel to
+        // apply_r55_simplex_commemoration). For DA it appears with
+        // its own macro, between parent and Propaganda.
+        let saint_section = office
+            .commemoratio
+            .as_ref()
+            .filter(|k| k.category == FileCategory::Sancti)
+            .and_then(|k| corpus.mass_file(k))
+            .and_then(|sf| {
+                let mut comm_body = sf.sections.get(sect).cloned().unwrap_or_default();
+                if comm_body.trim().is_empty() {
+                    let commune_ref = sf.commune.as_deref().unwrap_or("");
+                    if let Some(stem) = parse_vide_or_ex_commune(commune_ref) {
+                        if let Some(hf) = crate::horas::lookup(&format!("Commune/{}", stem)) {
+                            if let Some(b) = hf.sections.get(sect) {
+                                comm_body = b.clone();
+                            }
+                        }
+                    }
+                }
+                if comm_body.trim().is_empty() {
+                    return None;
+                }
+                let name = sf
+                    .sections
+                    .get("Name")
+                    .map(|s| name_for_section(s, sect))
+                    .unwrap_or_default();
+                if !name.is_empty() {
+                    comm_body = comm_body.replace("N.", &name);
+                }
+                // Strip the saint's own $Per/$Qui macro — under DA
+                // WMSunday Perl shares the conclusion between saint
+                // commemoration and Propaganda (sub-unica WITHIN the
+                // commemoration block; the parent body keeps its own
+                // macro). Only the FINAL macro from Propaganda survives.
+                comm_body = drop_final_per_qui_line(&comm_body);
+                let officium = sf.officium.as_deref().unwrap_or("Sancti");
+                Some(format!(
+                    "{}!Commemoratio {}\n{}",
+                    oremus_inner,
+                    officium,
+                    comm_body.trim_end_matches('\n'),
+                ))
+            })
+            .unwrap_or_default();
+        // Under DA WMSunday with a saint commemoration: the saint and
+        // Propaganda share one `Orémus` opener; Propaganda's label
+        // follows the saint body directly without a second `Orémus`.
+        // Without a saint, Propaganda gets its own Orémus.
+        let comm_block = if !saint_section.is_empty() {
+            // saint_section already starts with `_\n$Oremus\n!Commemoratio...`
+            // Append Pro fidei header + body directly after saint body
+            // (no separator).
+            format!(
+                "{}\n{}\n{}",
+                saint_section,
+                header,
+                prop_body,
+            )
+        } else {
+            format!(
+                "{}{}\n{}",
+                oremus_inner,
+                header,
+                prop_body,
+            )
+        };
+        return format!(
+            "{}\n{}",
+            body.trim_end_matches('\n'),
+            comm_block,
+        );
+    }
     format!(
         "{}\n_\n{}{}\n{}",
         main_stripped.trim_end_matches('\n'),
@@ -2412,10 +2502,31 @@ fn apply_r55_simplex_commemoration(
         Some(f) => f,
         None => return body.to_string(),
     };
-    // Only Simplex commemorations under this branch — Class III
-    // saints follow a different rule (Mass-suppressed, Lauds-only).
+    // Two cases that fire the saint commemoration:
+    //   (a) Simplex (rank ≤ 1.1) — Pius XII Cum nostra hac aetate
+    //       reduced Simplex feasts to commemorations only, but the
+    //       commemoration is still emitted (e.g. 10-21 Hilarion).
+    //   (b) Class III (Duplex rank ~3) WITHOUT a Transfer-table
+    //       redirect to Commune/Propaganda — Perl renders the saint's
+    //       proper Oratio for these (e.g. 10-19 Petri Alcantara, no
+    //       transfer rule under R55 for any letter). With a transfer
+    //       redirect (e.g. `f.txt: 10-20=../Commune/Propaganda;;1960`),
+    //       the saint is suppressed at Mass and Propaganda fills its
+    //       slot via `apply_world_mission_oratio`.
     let rank = sancti_file.rank_num.unwrap_or(0.0);
-    if rank > 1.1 {
+    let propaganda_transfer = {
+        let entries = crate::transfer_table::transfers_for(
+            office.date.year,
+            office.rubric.transfer_rubric_tag(),
+            office.date.month,
+            office.date.day,
+        );
+        entries.iter().any(|e|
+            e.main.starts_with("Commune/Propaganda")
+            || e.main.contains("Propaganda"))
+    };
+    let fires = rank <= 1.1 || (!propaganda_transfer && rank >= 2.0);
+    if !fires {
         return body.to_string();
     }
     // Resolve the commemoration body: try the saint's own [type]
@@ -4144,6 +4255,27 @@ mod tests {
 
     fn propers(year: i32, month: u32, day: u32) -> MassPropers {
         mass_propers(&office(year, month, day), &BundledCorpus)
+    }
+
+    #[test]
+    fn da_wmsunday_class_iii_renders_saint_and_propaganda() {
+        // DA 1985-10-20 (Pent21 Sun + Cantius Class III, WMSunday)
+        // emits: parent body + Sunday macro + Orémus + Cantius
+        // commemoration + Propaganda lone label + final macro.
+        let inp = crate::core::OfficeInput {
+            date: Date::new(1985, 10, 20),
+            rubric: Rubric::DivinoAfflatu1911,
+            locale: Locale::Latin,
+            is_mass_context: true,
+        };
+        let off = compute_office(&inp, &BundledCorpus);
+        let p = mass_propers(&off, &BundledCorpus);
+        let oratio = p.oratio.expect("DA 10-20 has an Oratio");
+        assert!(oratio.latin.contains("Famíliam"), "parent body present");
+        assert!(oratio.latin.contains("Cantii Confessoris"), "saint label present");
+        assert!(oratio.latin.contains("Da, quǽsumus"), "saint body present");
+        assert!(oratio.latin.contains("Pro fidei propagatione"), "Propaganda label");
+        assert!(oratio.latin.contains("operários in messem"), "Propaganda body");
     }
 
     #[test]

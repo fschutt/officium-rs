@@ -26,12 +26,33 @@ returns 100% on every rubric.**
 
 ## Final exit gate
 
-* All 12 clusters closed (verified via `scripts/cluster_verify.sh`).
-* Sample-year sweeps: T1570 + T1910 + DA + R55 + R60 each return
-  100% on spot-checked years (1979, 1980, 1981, 1985, 1990, 2000,
-  2010, 2020, 2025, 2050, 2074).
-* Final exit-criterion sweep `year-sweep --years 1976:2076` across
-  all 5 rubrics: PENDING — runs in CI on the next push.
+* All 12 ORIGINAL clusters closed (verified via `scripts/cluster_verify.sh`).
+* T1570 returns 100% across all spot-checked years (1979, 1985,
+  2000, 2025, 2050, 2074).
+* T1910/DA/R55/R60 sample-year sweep surfaced **27 residual fails**
+  not tracked by any of the 12 original clusters — listed below as
+  follow-on clusters.
+
+## New clusters (discovered post-12-cluster closure)
+
+| # | Cluster | Days/yr | Pattern |
+|---|---------|---------|---------|
+| 13 | T1910_Septem_Fundatorum_0212 | 4× | T1910 02-12 Septem Fundatorum (kalendar-stem `02-12` Duplex 3) — diff in all 9 propers |
+| 14 | T1910_Joseph_0319_0320 | 2× | T1910 03-20 (post-Joseph) — likely related to Joseph transfer |
+| 15 | DA_WMSunday_NonHilarion | 6× | DA 10-19/20/21/22/23 — WMSunday + saint commemoration both need to render simultaneously (currently only Propaganda renders) |
+| 16 | R55_WMSunday_NonHilarion | 3× | R55 10-19/22/23 (years where penultimate Sun ≠ 10-21) — same pattern as DA 15 |
+| 17 | R60_03_06_Perpetua_Felicitas | 3× | R60 03-06 Perpetua/Felicitas Graduale only |
+| 18 | R60_WMSunday | 4× | R60 10-19/21/23 — WMSunday + Sancti commemoration interaction |
+| 19 | R60_misc | 3× | R60 03-20, 12-08 (Imm Conc), 12-24 (Christmas Eve) |
+
+These need investigation in subsequent loop iterations.
+
+## Closed-cluster regression note
+
+Pent19_23_SelfRef_R55 (cluster 11) closure narrowed to World Mission
+Sunday gate (`monthday key "104-0"`) after broader gate caused
+duplicate-emission regressions on non-WMSunday R55 Sundays. See
+`mass.rs::apply_r55_simplex_commemoration`.
 
 ## Iteration plan
 

@@ -39,11 +39,13 @@ returns 100% on every rubric.**
 |---|---------|---------|--------|---------|
 | 13 | T1910_Septem_Fundatorum_0212 | 4× | ✅ | closed by T1910 heuristic over-fire guard |
 | 14 | T1910_Joseph_0319_0320 | 2× | ✅ | closed by same |
-| 15 | DA_WMSunday_NonHilarion | 6× | ⏳ | needs DA-side commemoration appendage co-existing with Propaganda |
-| 16 | R55_WMSunday_NonHilarion | 3× | ⏳ | same as DA-15 (years where penultimate Sun ≠ 10-21) |
+| 15 | DA_WMSunday_NonHilarion | 6× | ⛔ | DEFERRED Phase 9: DA on WMSunday is NOT sub-unica (separate Orémus per commemoration, parent's $Per kept). Differs from R55 sub-unica path. Implementation needs a different commemoration-emission shape than `apply_r55_simplex_commemoration`. |
+| 16 | R55_WMSunday_NonHilarion | 3× | ⛔ | DEFERRED Phase 9: years where penultimate Sun ≠ 10-21 (e.g. 2000-10-22 = Pent22 + Cantius); under R55 Class III feasts on Sunday Mass-suppressed (Lauds-only). Need to verify Cantius is correctly suppressed under R55 too — currently fails. |
 | 17 | R60_03_06_Perpetua_Felicitas | 3× | ✅ | closed by rubric-conditional `[Section] (rubrica 1960)` lookup |
 | 18 | R60_WMSunday | 4× | ⏳ | R60 10-19/21/23 — WMSunday + Sancti commemoration |
-| 19 | R60_misc | 3× | ⏳ | R60 03-20, 12-08 (Imm Conc), 12-24 (Christmas Eve) |
+| 19a | R60_Imm_Conc | 1× | ✅ | closed by RG 15 special-case in `decide_sanctoral_wins_1570` |
+| 19b | R60_Joseph_0320 | 1× | ✅ | closed by rubric-aware `apply_transfer_sancti_1570` rank pick |
+| 19c | R60_Christmas_Eve | 1× | ⏳ | 2000-12-24 Christmas Eve (Vigilia Nativitatis) — separate investigation |
 
 Sample-year sweep (1979, 1985, 2000, 2025, 2050, 2074):
 * **T1570 100%** — 0 fails ✓

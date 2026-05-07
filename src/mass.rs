@@ -329,14 +329,20 @@ pub fn mass_propers(office: &OfficeOutput, corpus: &dyn Corpus) -> MassPropers {
         let coronatio_appended = apply_coronatio_oratio(
             &block.latin, sect, office.date, corpus,
         );
-        let world_mission_appended = apply_world_mission_oratio(
+        // Saint commemoration must run BEFORE Propaganda so that
+        // under DA on World Mission Sunday the chain is
+        // parent → saint → Propaganda → trailing-macro. Under R55 the
+        // saint commemoration takes Propaganda's slot (Propaganda is
+        // suppressed in `apply_world_mission_oratio` when the saint
+        // is Simplex).
+        let sancti_comm_appended = apply_r55_simplex_commemoration(
             &coronatio_appended, sect, office, corpus,
         );
-        let r55_simplex_comm_appended = apply_r55_simplex_commemoration(
-            &world_mission_appended, sect, office, corpus,
+        let world_mission_appended = apply_world_mission_oratio(
+            &sancti_comm_appended, sect, office, corpus,
         );
         let latin = apply_post_septuagesima_conditional(
-            &r55_simplex_comm_appended, in_post_septuagesima,
+            &world_mission_appended, in_post_septuagesima,
         );
         let latin = apply_spelling_for_active_rubric(&do_expand_macros(&latin));
         let latin = strip_parenthetical_alleluja(&latin, in_paschal_season_for_alleluja);

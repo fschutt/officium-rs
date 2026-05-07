@@ -741,6 +741,52 @@ touch them.
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 21: `commune_chain` follows `__preamble__` `@Path` inheritance — full year T1570 79.04% → 84.69%
+
+Slice 17 added `__preamble__` capture in the build script and used
+it for `[Rank]` lookups via `first_at_path_inheritance`. But
+`visit_chain` (the per-day commune chain walker) only followed
+`[Rule]` `vide CXX` directives — it didn't chase the whole-file
+`@Commune/CYY` directive at the head of files like `Commune/C10c`.
+
+Failing example: **02-07-2026 Sat Matutinum**, day_key
+`Commune/C10c` (post-Purification BVM Saturday variant). The file
+starts with `@Commune/C10` (whole-file inheritance) and has no own
+`[Rule]` or `[Oratio]`. The chain walker stopped at C10c → per-day
+Oratio splice fell through to nothing (`RustBlank`, while Perl
+emits "Concede nos famulos tuos..." from C10b → @Sancti/01-01).
+
+Slice 21 inserts a `first_at_path_inheritance` chase in
+`visit_chain` after pushing the current file but before parsing
+its `[Rule]`. The parent file's sections become visible to
+subsequent `find_section_in_chain` lookups via standard chain
+order.
+
+**30-day Jan 2026 × T1570:** stays at 240/240 (100.00%).
+
+**Full year 2026 × T1570 × Oratio:**
+2310/2920 (79.04%) → **2472/2920 (84.69%)** (+162 cells).
+
+| Hour          | Pre slice 21 | Post slice 21 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 291/365 (80%) | 321/365 (88%) | +30 |
+| Laudes        | 291/365 (80%) | 321/365 (88%) | +30 |
+| Prima         | 289/365 (79%) | 289/365 (79%) | — |
+| Tertia        | 291/365 (80%) | 321/365 (88%) | +30 |
+| Sexta         | 291/365 (80%) | 321/365 (88%) | +30 |
+| Nona          | 291/365 (80%) | 321/365 (88%) | +30 |
+| Vespera       | 275/365 (75%) | 290/365 (79%) | +15 |
+| Completorium  | 289/365 (79%) | 289/365 (79%) | — |
+
+Closes `RustBlank` cells across Saturday-BVM-variant days
+(Commune/C10c, C10n, C10t, etc. — multiple seasonal BVM Saturday
+files all follow the same `@Commune/C10` whole-file inheritance
+convention). 5-hour band band gains 30 cells; Vespera gains 15
+(some BVM Saturday Vespera fixes).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

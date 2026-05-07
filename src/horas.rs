@@ -609,6 +609,18 @@ fn visit_chain(
     }
     let Some(file) = lookup(key) else { return };
     out.push(file);
+    // Whole-file `@Commune/CXX` inheritance via `__preamble__` —
+    // upstream `setupstring_parse_file` merges the parent file's
+    // sections in. Saturday BVM `Commune/C10c` (post-Purification
+    // variant) starts with `@Commune/C10` and has no own [Rule] /
+    // [Oratio]; without chasing through the preamble, the chain
+    // walker stops at C10c and the per-day Oratio splice falls
+    // through to nothing (RustBlank).
+    if let Some(parent) = first_at_path_inheritance(file) {
+        if !visited.contains(&parent) {
+            visit_chain(&parent, rubric, hora, visited, out, depth + 1);
+        }
+    }
     let Some(rule) = file.sections.get("Rule") else { return };
     // Evaluate `(sed rubrica X) vide CYY` overrides before parsing
     // commune targets — under T1570/1617, Sancti/01-14 [Rule] flips

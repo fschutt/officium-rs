@@ -2225,28 +2225,28 @@ fn apply_world_mission_oratio(
     if r55_simplex_saint_takes_precedence {
         return body.to_string();
     }
-    // R55 no-saint exception: under R55, the Tempora/104-0
+    // R55 transfer-table gate: under R55, the Tempora/104-0
     // Commemoratio sections are gated `(rubrica divino aut rubrica
     // 196)` and don't activate (R55 doesn't match `divino|196`).
-    // Perl renders Propaganda only when another saint (Class III+)
-    // is present on the date — observed `R55 10-20 = Cantius
-    // (Duplex 3) → Propaganda fires; R55 10-22 = no saint → no
-    // Propaganda` in cached HTML. On dates with NO Class III+
-    // kalendar entry, R55 emits just the Sunday Oratio. Closes
-    // R55 cluster 16: 2000-10-22, 2025-10-19, 2050-10-23 — all
-    // dates where the kalendar 1955 layer has no main saint.
+    // Perl renders Propaganda on R55 WMSunday only when the year's
+    // Transfer table redirects the date to Commune/Propaganda
+    // (e.g. `10-20=../Commune/Propaganda;;1960` — actually 1960 only,
+    // but Perl's R55 path also reads this rule and treats it as a
+    // hint that Propaganda should be emitted in the Sunday's slot).
+    // Without a matching transfer entry, R55 emits just the Sunday
+    // Oratio. Closes R55 cluster 16 (2000-10-22, 2025-10-19,
+    // 2050-10-23).
     if matches!(office.rubric, crate::core::Rubric::Reduced1955) {
-        let layer = office.rubric.kalendar_layer();
-        let cells = crate::kalendaria_layers::lookup(
-            layer, office.date.month, office.date.day,
+        let entries = crate::transfer_table::transfers_for(
+            office.date.year,
+            office.rubric.transfer_rubric_tag(),
+            office.date.month,
+            office.date.day,
         );
-        let has_class_3_plus_saint = match cells {
-            None => false,
-            Some(c) if c.is_empty() => false,
-            Some(c) => c.iter().any(|cell| cell.is_main()
-                && cell.rank_num().map(|r| r >= 2.0).unwrap_or(false)),
-        };
-        if !has_class_3_plus_saint {
+        let propaganda_transfer = entries.iter().any(|e|
+            e.main.starts_with("Commune/Propaganda")
+            || e.main.contains("Propaganda"));
+        if !propaganda_transfer {
             return body.to_string();
         }
     }
@@ -2304,33 +2304,39 @@ fn apply_world_mission_oratio(
     // "Pro fidei propagatione". The kalendar lookup mirrors what
     // Perl's `$commemoratio` would be set to before the world-
     // mission injection runs.
-    // Under R60, a Simplex (rank ≤ 1.1) main kalendar entry is
-    // abolished entirely (Pius XII's Cum nostra hac aetate +
-    // John XXIII's 1960 rubrics). On a WMSunday with a Simplex-only
-    // saint (e.g. 10-21 Hilarion 1.1), the Propaganda is the LONE
-    // commemoration → simpler header. Class III feasts (Duplex 3)
-    // remain registered for the header form even though their
-    // commemoration body is suppressed at Mass. Drives R60
-    // 10-21 Hilarion → lone header.
-    let has_other_sancti_on_date = {
+    // Under R60, the "Commemoratio Pro Propagatione Fidei" header
+    // form fires only when the year's Transfer table redirects the
+    // date to Commune/Propaganda explicitly (e.g.
+    // `10-20=../Commune/Propaganda;;1960` in `f.txt`). Without a
+    // matching transfer entry, the kalendar saint may be present on
+    // the date but is Mass-suppressed under R60, and Propaganda
+    // takes the slot with the simpler "Pro fidei propagatione"
+    // header. Drives R60 cluster 18: 10-19 Petri Alcantara,
+    // 10-21 Hilarion (Simplex demotion), 10-23 Antonii Maria Claret
+    // — all use lone form.
+    //
+    // Pre-1960 rubrics keep the kalendar-presence check.
+    let has_other_sancti_on_date = if matches!(
+        office.rubric, crate::core::Rubric::Rubrics1960
+    ) {
+        let entries = crate::transfer_table::transfers_for(
+            office.date.year,
+            office.rubric.transfer_rubric_tag(),
+            office.date.month,
+            office.date.day,
+        );
+        entries.iter().any(|e|
+            e.main.starts_with("Commune/Propaganda")
+            || e.main.contains("Propaganda"))
+    } else {
         let layer = office.rubric.kalendar_layer();
         let cells = crate::kalendaria_layers::lookup(
             layer, office.date.month, office.date.day,
         );
-        let is_r60_simplex_demoted = matches!(
-            office.rubric, crate::core::Rubric::Rubrics1960
-        );
         match cells {
             None => false,
             Some(c) if c.is_empty() => false,
-            Some(c) => {
-                if is_r60_simplex_demoted {
-                    c.iter().any(|cell| cell.is_main()
-                        && cell.rank_num().map(|r| r > 1.1).unwrap_or(true))
-                } else {
-                    true
-                }
-            }
+            Some(_) => true,
         }
     };
     let header = if has_other_sancti_on_date {

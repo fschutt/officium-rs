@@ -1787,6 +1787,19 @@ fn tomorrow_has_no_prima_vespera(
 /// like "Secunda die infra Octavam Epiphaniæ" that the Perl
 /// `winner.Rank =~ /octav/i` check needs to see — splitting just
 /// the class field would miss them.
+///
+/// **Bare-section variant.** Reads only `[Rank]` (with line-level
+/// conditional eval), then chases `@Path` inheritance. Does NOT
+/// scan annotated `[Rank] (rubrica X)` second-blocks. Use
+/// [`active_rank_line_with_annotations`] when you need the
+/// annotated-block scan (e.g. for concurrence comparisons that
+/// must see R60's `(rubrica 196)` rank elevation).
+///
+/// Why two: slice 31a tried unifying via the annotated scan and
+/// regressed the preces predicate cluster — the bare-section
+/// behaviour matters for callers that must NOT pick up an
+/// annotated variant when the bare block is present. Keep the
+/// split, document the trade-off.
 fn active_rank_line_for_rubric(
     day_key: &str,
     rubric: crate::core::Rubric,

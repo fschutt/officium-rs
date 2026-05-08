@@ -1873,29 +1873,38 @@ fn parse_vide_targets(rule: &str) -> Vec<String> {
     // (3) `vide Sancti/MM-DD` / `vide Tempora/Foo` (saint octave-day
     //     pattern: `Sancti/01-03` carries `vide Sancti/12-27`).
     // (4) `@Sancti/MM-DD` / `@Tempora/Foo` parent-inherit.
+    // (5) Same `vide PATH` / `ex PATH` patterns as a `;;`-suffix on
+    //     the [Rank] line — e.g. Sancti/07-01t [Rank] =
+    //     ";;Duplex;;3.1;;vide Sancti/06-24" carries the inheritance
+    //     in the 4th field. The line-start-only check at (3) misses
+    //     this; tokenise by `;;` and recurse the line-detector on
+    //     each segment.
     for raw_line in rule.lines() {
         let line = raw_line.trim();
         if line.starts_with('(') {
             continue;
         }
-        if let Some(rest) = line.strip_prefix("ex ") {
-            if let Some(path) = first_path_token(rest) {
-                push(path, &mut out, &mut seen);
+        // Split by `;;` so [Rank]-line 4th-field directives are seen
+        // as their own segment ("vide Sancti/06-24"), not as the
+        // tail of a longer line that doesn't start with the keyword.
+        for segment in line.split(";;").chain(std::iter::once(line)) {
+            let seg = segment.trim();
+            if let Some(rest) = seg.strip_prefix("ex ") {
+                if let Some(path) = first_path_token(rest) {
+                    push(path, &mut out, &mut seen);
+                }
+                continue;
             }
-            continue;
-        }
-        if let Some(rest) = line.strip_prefix("vide ") {
-            // `vide CXX` already captured by the Commune pass above;
-            // here we only catch the `vide Sancti/...`/`vide Tempora/...`
-            // shape.
-            if let Some(path) = first_path_token(rest) {
-                push(path, &mut out, &mut seen);
+            if let Some(rest) = seg.strip_prefix("vide ") {
+                if let Some(path) = first_path_token(rest) {
+                    push(path, &mut out, &mut seen);
+                }
+                continue;
             }
-            continue;
-        }
-        if let Some(rest) = line.strip_prefix('@') {
-            if let Some(path) = first_path_token(rest) {
-                push(path, &mut out, &mut seen);
+            if let Some(rest) = seg.strip_prefix('@') {
+                if let Some(path) = first_path_token(rest) {
+                    push(path, &mut out, &mut seen);
+                }
             }
         }
     }

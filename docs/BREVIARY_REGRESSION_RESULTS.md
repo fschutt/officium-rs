@@ -2222,6 +2222,46 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 51: parse_vide_targets sees `;;`-suffixed `vide`/`ex` directives — T1570 +5, R60 +7, R55 +6
+
+Symptom: T1570 07-01 Wed (Octave Day of John Bapt) Matutinum
+emits the literal `!Oratio propria.` rubric directive instead
+of the Octave's Oratio "Deus, qui præsentem diem honorabilem
+nobis in beati Joannis nativitate...". Same pattern: 08-18,
+08-19, 08-21, 12-29 — Octave-day stems whose [Rank] inherits
+via the 4th-field directive.
+
+Trace: Sancti/07-01t (Octave Day of John Baptist) carries
+[Rank] = ";;Duplex;;3.1;;vide Sancti/06-24" — the inheritance
+target is in the 4th `;;`-separated field. The chain walker
+calls `parse_vide_targets` on the full rank line, but the line
+loop only matched directives starting at LINE-START
+("vide ...", "ex ...", "@..."). The whole rank line
+";;Duplex;;3.1;;vide Sancti/06-24" doesn't start with "vide ",
+so the inheritance was missed. Sancti/06-24 (St. John Bapt
+Nativity) was never added to the chain → no [Oratio] found
+in chain → the rubric-directive `!Oratio propria.` from
+Sancti/07-01t leaked as the body.
+
+Fix: in `parse_vide_targets`, split each line by `;;` and
+re-run the line-prefix detector on each segment. The 4th
+`;;`-segment "vide Sancti/06-24" now matches and adds the
+inheritance target.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Mat/Laudes/Ter/Sex/Non  97.26% → 97.53% (+1 each)
+      Overall                 97.43% → 97.60% (+5 cells)
+    R60: 97.16% → 97.36% (+7 cells)
+    R55: 94.25% → 94.45% (+6 cells)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Hour-aware annotation filter** (slice 50 attempt): tried

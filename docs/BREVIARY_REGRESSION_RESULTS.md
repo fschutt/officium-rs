@@ -3077,6 +3077,44 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 71 (refactor): Merge `expand_at_redirect` + `_rubric` — 0 cells, ~85 LoC removed
+
+A refactor-only slice. After slice 70 introduced
+`expand_at_redirect_rubric` as a near-clone of `expand_at_redirect`
+(~95% identical), folded the rubric-aware annotation fallback into
+the canonical function and deleted the `_rubric` variant.
+
+The merged signature is `expand_at_redirect(body, default_section,
+rubric, hour) -> String`. All 8 production call sites + 2 internal
+recursive calls + 4 test sites updated to thread `rubric` and
+`hour` through. Bare-section lookup runs first (preserves the
+pre-slice-70 fast path), with annotated-section fallback only on
+miss.
+
+Behaviour identical for callers that don't have annotated bodies
+in their target file. Under T1570/T1910/DA, the annotation fallback
+is a no-op for the common case because `(communi Summorum
+Pontificum)` and similar SP/innovata annotations don't apply for
+those rubrics — bare-key match dominates.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged, 4 differs).
+    T1910: 99.18% (unchanged, 23 differs).
+    DA:    98.77% (unchanged, 35 differs).
+    R55:   98.94% (unchanged, 30 differs).
+    R60:   98.90% (unchanged, 31 differs).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
+This is a no-op for parity but removes a maintenance hazard —
+slice 70's `_rubric` clone would have drifted from the bare
+expander on any future bug fix to the redirect grammar.
+
 ## Slice 70: Rubric-aware `@Path` section redirect — R55 +15, R60 +6 cells
 
 Symptom: 07-13 R55 (Anacletus Pope-Martyr) Tertia emits the literal

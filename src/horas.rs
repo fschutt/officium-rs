@@ -2472,7 +2472,7 @@ fn splice_proper_into_slot(
             if rule_match && no_own_oratio_or_vespera {
                 if let Some(file) = lookup("Tempora/Epi1-0a") {
                     if let Some(body) = section_via_inheritance(file, "Oratio") {
-                        let resolved = expand_at_redirect(&body, "Oratio");
+                        let resolved = expand_at_redirect(&body, "Oratio", rubric, hour);
                         let evaluated = eval_section_conditionals(&resolved, rubric, hour);
                         let trimmed = take_first_oratio_chunk(&evaluated);
                         let with_name = substitute_saint_name(&trimmed, saint_name);
@@ -2552,7 +2552,7 @@ fn splice_proper_into_slot(
         if let Some(parent) = day_key.and_then(tempora_sunday_fallback) {
             if let Some(file) = lookup(&parent) {
                 if let Some(body) = section_via_inheritance(file, "Oratio") {
-                    let resolved = expand_at_redirect(&body, "Oratio");
+                    let resolved = expand_at_redirect(&body, "Oratio", rubric, hour);
                     let evaluated = eval_section_conditionals(&resolved, rubric, hour);
                     let trimmed = take_first_oratio_chunk(&evaluated);
                     let with_name = substitute_saint_name(&trimmed, saint_name);
@@ -2599,7 +2599,7 @@ fn splice_proper_into_slot(
         if let Some(sunday_key) = sunday_key {
             if let Some(file) = lookup(&sunday_key) {
                 if let Some(body) = section_via_inheritance(file, "Oratio") {
-                    let resolved = expand_at_redirect(&body, "Oratio");
+                    let resolved = expand_at_redirect(&body, "Oratio", rubric, hour);
                     let evaluated = eval_section_conditionals(&resolved, rubric, hour);
                     let trimmed = take_first_oratio_chunk(&evaluated);
                     let with_name = substitute_saint_name(&trimmed, saint_name);
@@ -2632,7 +2632,7 @@ fn splice_proper_into_slot(
         if let Some(winner) = chain.first() {
             for cand in &candidates {
                 if let Some(body) = winner.sections.get(cand) {
-                    let resolved = expand_at_redirect(body, cand);
+                    let resolved = expand_at_redirect(body, cand, rubric, hour);
                     let evaluated = eval_section_conditionals(&resolved, rubric, hour);
                     let evaluated = if let Some(rest) = evaluated.trim().strip_prefix("@:") {
                         let section_name = rest
@@ -2645,7 +2645,7 @@ fn splice_proper_into_slot(
                             if let Some(self_body) =
                                 find_section_in_chain(chain, &section_name, rubric)
                             {
-                                let r = expand_at_redirect(self_body, &section_name);
+                                let r = expand_at_redirect(self_body, &section_name, rubric, hour);
                                 eval_section_conditionals(&r, rubric, hour)
                             } else {
                                 evaluated
@@ -2670,12 +2670,12 @@ fn splice_proper_into_slot(
 
     for cand in candidates {
         if let Some(body) = find_section_in_chain(chain, &cand, rubric) {
-            // Use the rubric-aware expander so a section-level redirect
-            // like `@Commune/C2b` resolves to C2b's annotated `[Oratio]
-            // (communi Summorum Pontificum)` under R55/R60 — the bare
-            // `[Oratio]` doesn't exist on those commune files. Closes
-            // 07-13 (Anacletus) / 09-23 (Linus) Pope-Martyr R55.
-            let resolved = expand_at_redirect_rubric(body, &cand, rubric, hour);
+            // `expand_at_redirect` is rubric-aware so a section-level
+            // redirect like `@Commune/C2b` resolves to C2b's annotated
+            // `[Oratio] (communi Summorum Pontificum)` under R55/R60 —
+            // the bare `[Oratio]` doesn't exist on those commune files.
+            // Closes 07-13 (Anacletus) / 09-23 (Linus) Pope-Martyr R55.
+            let resolved = expand_at_redirect(body, &cand, rubric, hour);
             let evaluated = eval_section_conditionals(&resolved, rubric, hour);
             // `@:Section` is a SELF-redirect — Commune/C1v's [Oratio]
             // body is `@:Oratio 1 loco\n(sed commune C4)\n@:Oratio 2 loco`,
@@ -2692,7 +2692,7 @@ fn splice_proper_into_slot(
                     .to_string();
                 if !section_name.is_empty() {
                     if let Some(self_body) = find_section_in_chain(chain, &section_name, rubric) {
-                        let r = expand_at_redirect(self_body, &section_name);
+                        let r = expand_at_redirect(self_body, &section_name, rubric, hour);
                         eval_section_conditionals(&r, rubric, hour)
                     } else {
                         evaluated
@@ -2720,7 +2720,7 @@ fn splice_proper_into_slot(
     if label == "Capitulum Hymnus Versus" || label == "Capitulum Responsorium Hymnus Versus" {
         let hymnus_key = format!("Hymnus {hour}");
         if let Some(body) = find_section_in_chain(chain, &hymnus_key, rubric) {
-            let resolved = expand_at_redirect(body, &hymnus_key);
+            let resolved = expand_at_redirect(body, &hymnus_key, rubric, hour);
             let evaluated = eval_section_conditionals(&resolved, rubric, hour);
             let with_name = substitute_saint_name(&evaluated, saint_name);
             let macros_expanded = expand_dollar_macros_in_body(&with_name, prayers_file);
@@ -2961,7 +2961,20 @@ fn replace_remaining_n_dot(body: &str, name: &str) -> String {
 ///
 /// When the body is anything *other than* a pure single-line redirect,
 /// returns it untouched.
-fn expand_at_redirect(body: &str, default_section: &str) -> String {
+///
+/// Section lookup is rubric-aware: bare `target.sections.get(section)`
+/// is tried first, and if missing, annotated variants
+/// `<Section> (<annotation>)` are scanned and the first annotation
+/// matching the active rubric/hour wins. Mirrors Perl `setupstring`'s
+/// conditional-pass flow — required for SP-only commune files like
+/// `Commune/C2b` whose `[Oratio]` exists only as `(communi Summorum
+/// Pontificum)`.
+fn expand_at_redirect(
+    body: &str,
+    default_section: &str,
+    rubric: crate::core::Rubric,
+    hour: &str,
+) -> String {
     let trimmed = body.trim();
     if !trimmed.starts_with('@') {
         return body.to_string();
@@ -2995,101 +3008,31 @@ fn expand_at_redirect(body: &str, default_section: &str) -> String {
     let Some(target) = lookup(path) else {
         return body.to_string();
     };
-    if let Some(resolved) = target.sections.get(&section) {
-        if !resolved.trim().is_empty() {
-            let mut body_str = resolved.clone();
-            // Recurse one hop in case the target's body is itself a
-            // redirect (`@Path:X` → `@OtherPath:Y`). Skip recursion
-            // when there's an inclusion-substitution spec, because
-            // the spec applies to the resolved body (not the
-            // intermediate redirect).
-            if spec.is_empty() {
-                let trimmed_inner = body_str.trim();
-                if trimmed_inner.starts_with('@') {
-                    return expand_at_redirect(&body_str, &section);
-                }
-            } else {
-                use crate::setupstring::do_inclusion_substitutions;
-                do_inclusion_substitutions(&mut body_str, spec);
+    // Helper: handle a candidate body — recurse on nested `@Path` or
+    // apply the inclusion-substitution spec, then return.
+    let finalize = |mut body_str: String, section: &str, spec: &str| -> String {
+        if spec.is_empty() {
+            let trimmed_inner = body_str.trim();
+            if trimmed_inner.starts_with('@') {
+                return expand_at_redirect(&body_str, section, rubric, hour);
             }
-            return body_str;
+        } else {
+            use crate::setupstring::do_inclusion_substitutions;
+            do_inclusion_substitutions(&mut body_str, spec);
         }
-    }
-    // Not found — fall back to the literal `@…` so the divergence
-    // is visible rather than silently dropped.
-    body.to_string()
-}
-
-/// Rubric-aware variant of [`expand_at_redirect`]. When the target
-/// file's bare section misses, scan annotated variants
-/// (`<Section> (<annotation>)`) and pick the first whose annotation
-/// applies under the active rubric/hour.
-///
-/// Mirrors the upstream Perl `setupstring` flow: SP-annotated commune
-/// sections like `[Oratio] (communi Summorum Pontificum)` on
-/// `Commune/C2b` carry the post-1942 reform body; the bare `[Oratio]`
-/// is absent on those files. Without this fallback, a section-level
-/// redirect `@Commune/C2b` from `Commune/C2b-1` under R55/R60 returns
-/// the literal `@Commune/C2b` text instead of the resolved Pope-Martyr
-/// oration.
-///
-/// Closes the 07-13 (Anacletus) and 09-23 (Linus) Pope-Martyr cluster
-/// under R55: their Sancti files have no `[Oratio]`, the chain walker
-/// reaches `Commune/C2b-1`'s `[Oratio] (communi Summorum Pontificum)`
-/// → `@Commune/C2b` body, and the bare `expand_at_redirect` couldn't
-/// resolve C2b's annotated body.
-fn expand_at_redirect_rubric(
-    body: &str,
-    default_section: &str,
-    rubric: crate::core::Rubric,
-    hour: &str,
-) -> String {
-    let trimmed = body.trim();
-    if !trimmed.starts_with('@') {
-        return body.to_string();
-    }
-    if trimmed.lines().filter(|l| !l.trim().is_empty()).count() > 1 {
-        return body.to_string();
-    }
-    let after_at = &trimmed[1..];
-    let (path, rest) = match after_at.split_once(':') {
-        Some((p, r)) => (p.trim(), r),
-        None => (after_at.trim(), ""),
+        body_str
     };
-    let (section, spec) = if rest.is_empty() {
-        (default_section.to_string(), "")
-    } else if let Some(after_colon) = rest.strip_prefix(':') {
-        (default_section.to_string(), after_colon)
-    } else if let Some((sec, sp)) = rest.split_once(':') {
-        (sec.trim().to_string(), sp)
-    } else {
-        (rest.trim().to_string(), "")
-    };
-    if !looks_like_corpus_path(path) {
-        return body.to_string();
-    }
-    let Some(target) = lookup(path) else {
-        return body.to_string();
-    };
-    // 1. Bare match (same as expand_at_redirect).
+    // 1. Bare section match.
     if let Some(resolved) = target.sections.get(&section) {
         if !resolved.trim().is_empty() {
-            let mut body_str = resolved.clone();
-            if spec.is_empty() {
-                let trimmed_inner = body_str.trim();
-                if trimmed_inner.starts_with('@') {
-                    return expand_at_redirect_rubric(&body_str, &section, rubric, hour);
-                }
-            } else {
-                use crate::setupstring::do_inclusion_substitutions;
-                do_inclusion_substitutions(&mut body_str, spec);
-            }
-            return body_str;
+            return finalize(resolved.clone(), &section, spec);
         }
     }
     // 2. Annotated variant — `<section> (<annotation>)` whose
     //    annotation applies under the active rubric. Mirrors the
     //    inner loop of `find_section_in_chain` for a single file.
+    //    Required for SP-only commune files like `Commune/C2b`'s
+    //    `[Oratio] (communi Summorum Pontificum)` under R55/R60.
     let prefix = format!("{section} (");
     for (k, body_section) in &target.sections {
         let Some(rest) = k.strip_prefix(&prefix) else {
@@ -3105,19 +3048,11 @@ fn expand_at_redirect_rubric(
             annotation_applies_in_context(annotation, rubric, hour)
         };
         if applies {
-            let mut body_str = body_section.clone();
-            if spec.is_empty() {
-                let trimmed_inner = body_str.trim();
-                if trimmed_inner.starts_with('@') {
-                    return expand_at_redirect_rubric(&body_str, &section, rubric, hour);
-                }
-            } else {
-                use crate::setupstring::do_inclusion_substitutions;
-                do_inclusion_substitutions(&mut body_str, spec);
-            }
-            return body_str;
+            return finalize(body_section.clone(), &section, spec);
         }
     }
+    // Not found — fall back to the literal `@…` so the divergence
+    // is visible rather than silently dropped.
     body.to_string()
 }
 
@@ -3655,7 +3590,9 @@ mod tests {
     fn expand_at_redirect_implicit_section() {
         // Sancti/01-05 [Oratio] body is `@Tempora/Nat1-0` — implicit
         // same-section redirect to Nat1-0's [Oratio].
-        let resolved = expand_at_redirect("@Tempora/Nat1-0", "Oratio");
+        let resolved = expand_at_redirect(
+            "@Tempora/Nat1-0", "Oratio", crate::core::Rubric::Tridentine1570, "",
+        );
         assert!(
             !resolved.starts_with('@'),
             "redirect should expand, not leak literal `@…`: {resolved:?}"
@@ -3670,20 +3607,29 @@ mod tests {
     #[test]
     fn expand_at_redirect_explicit_section() {
         // Cross-section: `@Path:OtherSection` form.
-        let resolved = expand_at_redirect("@Sancti/01-06:Oratio", "Hymnus Vespera");
+        let resolved = expand_at_redirect(
+            "@Sancti/01-06:Oratio", "Hymnus Vespera",
+            crate::core::Rubric::Tridentine1570, "",
+        );
         assert!(resolved.contains("Unigénitum tuum géntibus stella duce"));
     }
 
     #[test]
     fn expand_at_redirect_passthrough_on_non_redirect() {
         let body = "Plain prayer text with no redirect.";
-        assert_eq!(expand_at_redirect(body, "Oratio"), body);
+        assert_eq!(
+            expand_at_redirect(body, "Oratio", crate::core::Rubric::Tridentine1570, ""),
+            body,
+        );
     }
 
     #[test]
     fn expand_at_redirect_unknown_path_keeps_literal() {
         let body = "@Sancti/99-99";
-        assert_eq!(expand_at_redirect(body, "Oratio"), body);
+        assert_eq!(
+            expand_at_redirect(body, "Oratio", crate::core::Rubric::Tridentine1570, ""),
+            body,
+        );
     }
 
     #[test]

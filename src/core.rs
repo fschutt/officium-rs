@@ -52,7 +52,18 @@ impl Rubric {
     pub const fn as_perl_version(self) -> &'static str {
         match self {
             Rubric::Tridentine1570    => "Tridentine - 1570",
-            Rubric::Tridentine1910    => "Tridentine - 1910",
+            // Carry BOTH 1906 and 1910 substrings so the setupstring
+            // conditional evaluator's regex-style predicate match
+            // accepts BOTH `(rubrica 1906)` (used in Sancti/11-09 to
+            // pick "Archibasilicæ;;Duplex majus;;4" under post-1888
+            // rubrics) AND `(rubrica 1910)` (used in Holy Week Mass
+            // missa/Tempora/Quad6-2 to select the longer Marcus
+            // Evangelium reading). Perl's actual version string is
+            // "Tridentine - 1906" but its directive set covers
+            // 1910 via separate inheritance / token-mapping logic
+            // (data.txt's `transferbase` chain) which we approximate
+            // by including both substrings in the friendly label.
+            Rubric::Tridentine1910    => "Tridentine - 1906/1910",
             Rubric::DivinoAfflatu1911 => "Divino Afflatu",
             Rubric::Reduced1955       => "Reduced - 1955",
             Rubric::Rubrics1960       => "Rubrics 1960 - 1960",
@@ -452,7 +463,7 @@ mod tests {
         // The exact strings the upstream Perl accepts. Pinned tests —
         // changing these breaks the regression harness wiring.
         assert_eq!(Rubric::Tridentine1570.as_perl_version(),    "Tridentine - 1570");
-        assert_eq!(Rubric::Tridentine1910.as_perl_version(),    "Tridentine - 1910");
+        assert_eq!(Rubric::Tridentine1910.as_perl_version(),    "Tridentine - 1906/1910");
         assert_eq!(Rubric::DivinoAfflatu1911.as_perl_version(), "Divino Afflatu");
         assert_eq!(Rubric::Reduced1955.as_perl_version(),       "Reduced - 1955");
         assert_eq!(Rubric::Rubrics1960.as_perl_version(),       "Rubrics 1960 - 1960");

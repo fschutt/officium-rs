@@ -5007,12 +5007,17 @@ mod tests {
     #[test]
     fn rubrica_predicate_matches_1910() {
         use crate::core::Rubric;
-        // T1910 ("Tridentine - 1910") matches `tridentina`
-        // (Perl /Trident/) and `1910`. Year-literal tokens that
-        // don't substring its version-string fail.
+        // T1910's version label carries BOTH 1906 and 1910 substrings
+        // ("Tridentine - 1906/1910") so directive annotations
+        // referencing either token resolve correctly:
+        // - `(rubrica 1906)` fires (Sancti/11-09 picks the Pius X
+        //   Archibasilica + Duplex majus form).
+        // - `(rubrica 1910)` fires (Holy Week Mass missa/Tempora/
+        //   Quad6-2 selects the longer Marcus 14:1-72 Evangelium).
         assert!(rubrica_predicate_matches(Rubric::Tridentine1910, "tridentina"));
+        assert!(rubrica_predicate_matches(Rubric::Tridentine1910, "1906"));
         assert!(rubrica_predicate_matches(Rubric::Tridentine1910, "1910"));
-        for tok in ["1570", "1888", "1906", "divino", "da", "1955", "1960", "monastica"] {
+        for tok in ["1570", "1888", "divino", "da", "1955", "1960", "monastica"] {
             assert!(
                 !rubrica_predicate_matches(Rubric::Tridentine1910, tok),
                 "T1910 should reject token {tok:?}"

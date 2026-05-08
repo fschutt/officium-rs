@@ -3077,6 +3077,63 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 87: T1910 perl_version label carries both 1906 and 1910 — T1910 +1 cell
+
+Symptom: 11-09 T1910 Mon Vespera renders Andrew Avellino's Oratio
+(via 1V swap to Sancti/11-10). Perl renders the Lateran Dedication
+office ("In Dedicatione Archibasilicæ Ss. Salvatoris ~ Duplex
+majus") with Andrew commemorated.
+
+Trace: Sancti/11-09 has
+
+```
+[Rank]
+;;Duplex II. classis;;5;;ex C8
+
+[Rank] (rubrica tridentina)
+In Dedicatione Basilicæ ...;;Duplex;;3;;ex C8
+(sed rubrica 1906)
+In Dedicatione Archibasilicæ ...;;Duplex majus;;4;;ex C8
+```
+
+Under T1910 the (rubrica tridentina) outer match fires; inside the
+body, `(sed rubrica 1906)` should override line 1 with line 2
+(rank 4). Perl's data.txt names this rubric `"Tridentine - 1906"`
+(the form-label "Tridentine - 1910" maps to this canonical
+version) so `vero("rubrica 1906")` → TRUE for that subject value.
+
+Our `Rubric::Tridentine1910::as_perl_version` returned the
+form-label "Tridentine - 1910" — that doesn't contain "1906" so
+`vero("rubrica 1906")` returned FALSE, and we picked rank 3
+instead of 4. With rank 3, our pre-DA Sancti-Sancti a-capitulo
+rule (slice 68) saw flrank=flcrank=3 and incorrectly swapped to
+Andrew's 1V.
+
+Fix: change `Tridentine1910` perl_version label to carry BOTH
+substrings — `"Tridentine - 1906/1910"`. The composite label
+makes `(rubrica 1906)` AND `(rubrica 1910)` both match T1910:
+- 1906 hits Sancti/11-09 [Rank] override and similar.
+- 1910 hits the Holy Week Mass annotation `(rubrica 1570 aut
+  rubrica 1910 aut rubrica divino afflatu dicitur)` in
+  missa/Tempora/Quad6-2 selecting the longer Marcus 14:1-72
+  Evangelium reading. (Reverting to a single substring would
+  regress Mass T1910 03-31 + 04-01 Evangelium.)
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged).
+    T1910: 99.79% → 99.83% (+1 cell: 11-09 Lateran Dedication
+                            Mon Vespera correctly stays).
+    DA:    99.73% (unchanged).
+    R55:   99.04% (unchanged).
+    R60:   99.04% (unchanged).
+
+Mass T1570 + T1910 + R60 year-sweeps stay at 365/365 (100%).
+431 lib tests pass.
+
 ## Slice 86: Preces predicate's [Commemoratio]-octav reject — DA +2 cells
 
 Symptom: 04-26 DA Sun III post Pasch Prima + Compline emit

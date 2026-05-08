@@ -192,7 +192,7 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
             "section" => {
                 if let Some(label) = &line.label {
                     out.push(RenderedLine::Section { label: label.clone() });
-                    splice_proper_into_slot(&mut out, label, args.hour, args.rubric, &chain);
+                    splice_proper_into_slot(&mut out, label, args.hour, args.rubric, &chain, prayers_file);
                 }
             }
             "rubric" => {
@@ -351,6 +351,27 @@ fn expand_dollar_macro(body: &str, prayers: Option<&HorasFile>) -> Option<String
         return Some(resolve_self_redirect(body_text, prayers));
     }
     None
+}
+
+/// Expand every `$<name>` macro reference embedded as its own line
+/// inside a multi-line body. Used when a per-day Oratio body ends
+/// with a conclusion macro like `$Per eumdem` or `$Per Dominum`
+/// that upstream Perl resolves at render time. Lines that aren't
+/// `$`-prefixed (or whose `expand_dollar_macro` lookup fails) pass
+/// through verbatim.
+fn expand_dollar_macros_in_body(body: &str, prayers: Option<&HorasFile>) -> String {
+    if !body.contains('$') {
+        return body.to_string();
+    }
+    let mut out = String::with_capacity(body.len());
+    for (i, line) in body.split('\n').enumerate() {
+        if i > 0 {
+            out.push('\n');
+        }
+        let expanded = expand_dollar_macro(line, prayers).unwrap_or_else(|| line.to_string());
+        out.push_str(&expanded);
+    }
+    out
 }
 
 /// Follow a single `@:Section` self-redirect inside Prayers.txt.
@@ -1329,6 +1350,7 @@ fn splice_proper_into_slot(
     hour: &str,
     rubric: crate::core::Rubric,
     chain: &[&HorasFile],
+    prayers_file: Option<&HorasFile>,
 ) {
     if chain.is_empty() {
         return;
@@ -1405,7 +1427,8 @@ fn splice_proper_into_slot(
                 evaluated
             };
             let with_name = substitute_saint_name(&trimmed, saint_name);
-            let respelled = apply_office_spelling(&with_name, rubric);
+            let macros_expanded = expand_dollar_macros_in_body(&with_name, prayers_file);
+            let respelled = apply_office_spelling(&macros_expanded, rubric);
             out.push(RenderedLine::Plain { body: respelled });
             return;
         }
@@ -1418,7 +1441,8 @@ fn splice_proper_into_slot(
             let resolved = expand_at_redirect(body, &hymnus_key);
             let evaluated = eval_section_conditionals(&resolved, rubric, hour);
             let with_name = substitute_saint_name(&evaluated, saint_name);
-            let respelled = apply_office_spelling(&with_name, rubric);
+            let macros_expanded = expand_dollar_macros_in_body(&with_name, prayers_file);
+            let respelled = apply_office_spelling(&macros_expanded, rubric);
             out.push(RenderedLine::Plain { body: respelled });
         }
     }

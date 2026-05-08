@@ -1186,6 +1186,45 @@ rubric, no spelling swap fires. **T1570 full year**: stays at
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 30: `$macro` expansion in spliced bodies — T1570 full 89.97%→91.47%, R60 full 82.67%→91.64%
+
+Per-day Oratio bodies frequently end with conclusion macros like
+`$Per Dominum`, `$Per eumdem`, `$Qui vivis`, `$Qui tecum`. The
+walker's `kind: "plain"` template branch already calls
+`expand_dollar_macro` on these — but per-day SPLICED bodies
+(coming from `find_section_in_chain`) never went through macro
+expansion. Examples:
+
+```
+Sancti/01-06 [Oratio]:
+  Deus, qui hodiérna die Unigénitum tuum géntibus stella duce
+  revelásti: ... usque ad contemplándam spéciem tuæ celsitúdinis
+  perducámur.
+  $Per eumdem
+```
+
+Rust emitted the literal `$Per eumdem` line; Perl renders it as
+`Per eúndem Dóminum nostrum Iesum Christum Filium tuum, qui
+tecum vivit et regnat in unitáte Spíritus Sancti, Deus, per
+ómnia sǽcula sæculórum.` (full conclusion).
+
+`expand_dollar_macros_in_body` walks each line of the spliced
+body, calling `expand_dollar_macro` on `$`-prefixed lines and
+passing others through. Applied in `splice_proper_into_slot`
+after `substitute_saint_name`, before `apply_office_spelling`.
+
+**Big cross-rubric gain — both T1570 and R60 benefit:**
+
+| Rubric × Window         | Pre slice 30 | Post slice 30 | Δ |
+|-------------------------|-------------:|--------------:|--:|
+| T1570 30-day Jan        | 100.00% | 100.00% | — |
+| T1570 full year (2920c) | 89.97%  | 91.47%  | +44 |
+| R60   30-day Jan        | 79.58%  | 92.92%  | +32 |
+| R60   full year (2920c) | 82.67%  | 91.64%  | +260+ |
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

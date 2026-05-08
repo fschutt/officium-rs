@@ -3077,6 +3077,60 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 75: Preces predicate uses file's rubric-active rank — DA +5 cells
+
+Symptom: 11-22 DA Prima emits the preces "secunda Domine exaudi
+omittitur" form. Perl emits the normal Prima Oratio with a full
+opening V/R couplet.
+
+11-22-2026 is Sunday Pent24, with Cecilia (rank Duplex 3) as the
+Sancti commemoration. Under DA, preces should be REJECTED on
+Sunday Prima when the commemorated saint has rank ≥ 3 (DA's
+ranklimit). Cecilia is rank 3 → preces rejected.
+
+Trace: `specials/preces.pl:41-58`:
+
+```
+my $ranklimit = $version =~ /^Trident/ ? 7 : 3;
+if ($r[2] >= $ranklimit || $commemoratio{Rank} =~ /Octav/i || ...) {
+    $dominicales = 0;
+}
+```
+
+Perl reads `$commemoratio{Rank}` via `setupstring()` against the
+Sancti file with the active rubric — it sees `[Rank] ;;Duplex;;3`
+(the default block). Our preces predicate's commemoratio loop
+read `cell.rank_num()` from `kalendaria_by_rubric.json`, which
+records Cecilia as Semiduplex 2 (the 1570 baseline kalendar table
+entry, propagated up the layers because the build script doesn't
+re-evaluate the Sancti file's `(sed rubrica X)` overrides).
+
+For Cecilia under DA the file says Duplex 3 but the kalendar
+table cell says Semiduplex 2. ranklimit=3 under DA → 2 < 3 → our
+predicate doesn't reject, fires preces, wrong form rendered.
+
+Fix in `preces_dominicales_et_feriales_fires` (`src/horas.rs`):
+after pulling `cell.rank_num()`, also call
+`active_rank_line_with_annotations(&format!("Sancti/{stem}"),
+rubric, hour)` to get the file's rubric-active rank, and use the
+max. Mirrors `was_sancti_preempted_1570` which already does this.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged).
+    T1910: 99.18% (unchanged).
+    DA:    98.77% → 98.94% (+5 cells: 11-22 Cecilia, plus 4
+                            other Pope/Confessor commemorations
+                            with the same kalendar-vs-file gap).
+    R55:   98.94% (unchanged).
+    R60:   98.90% (unchanged).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Slice 74 (refactor): Move Christmas-Octave override into occurrence — 0 cells
 
 The Christmas-Octave (Dec 26..31) office-context override that

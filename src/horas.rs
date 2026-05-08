@@ -607,10 +607,24 @@ fn preces_dominicales_et_feriales_fires(
             if lc.contains("octav") && !lc.contains("post octav") {
                 return false;
             }
-            if let Some(rank) = cell.rank_num() {
-                if rank >= ranklimit {
-                    return false;
-                }
+            // Cell's kalendar rank can lag the Sancti file's actual
+            // rubric-active rank — e.g. 11-22 Cecilia is recorded as
+            // Semiduplex 2 in `Tabulae/Kalendaria/1570.txt`, but the
+            // Sancti file has `[Rank] ;;Duplex;;3` for the default
+            // (DA/R55/R60) variant and only flips to Semiduplex 2
+            // under `(sed rubrica 1570 aut rubrica 1617 aut rubrica
+            // cisterciensis)`. Perl's `preces.pl:41-58` reads the
+            // commemoratio's Rank via setupstring(), which honours
+            // the rubric override. Use max(kalendar_rank, file_rank)
+            // so the file's higher rank wins under post-1570 rubrics.
+            let kalendar_rank = cell.rank_num().unwrap_or(0.0);
+            let sancti_path = format!("Sancti/{}", cell.stem);
+            let file_rank = active_rank_line_with_annotations(&sancti_path, rubric, hour)
+                .map(|(_, _, n)| n)
+                .unwrap_or(0.0);
+            let effective_rank = kalendar_rank.max(file_rank);
+            if effective_rank >= ranklimit {
+                return false;
             }
         }
     }

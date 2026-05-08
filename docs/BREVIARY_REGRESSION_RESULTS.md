@@ -3077,6 +3077,68 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 82: Preces predicate uses tomorrow's calendar at 1V-swap-in-Octave — DA +1 cell
+
+Symptom: 11-07 DA Sat Compline emits the normal V/R Domine exaudi
++ Visita prayer. Perl emits the "secunda Domine, exaudi omittitur"
+rubric (preces firing).
+
+11-07-2026 is Saturday during Octave of All Saints. At Compline,
+1V swap fires (Sat 1V of Sun 11-08). Today's Sancti winner
+(Sept die infra Octavam OS, Sancti/11-07oct) is wiped by
+`concurrence:911-922`'s "if tomorrow is a Sunday, get rid of
+today's tempora" clause. Perl's preces predicate then runs
+against Sunday's commemoration list (without the swept-away
+Octave commemoration) and fires preces.
+
+Our preces predicate's octave-day rejection path used today's
+date (`Sancti/11-07oct` exists → reject). For 1V-swap-at-Compline
+cases the rejection should consult TOMORROW's office.
+
+Trace: `specials/preces.pl:41-58`:
+```
+if ($commemoratio) {
+    my $ranklimit = $version =~ /^Trident/ ? 7 : 3;
+    if ($r[2] >= $ranklimit || $commemoratio{Rank} =~ /Octav/i || ...) {
+        $dominicales = 0;
+    }
+}
+```
+
+`$commemoratio` is set by occurrence/concurrence after the swap.
+For 11-07 → 11-08 swap, `concurrence:1166-1175`'s "nihil de
+praecedenti" branch clears `$commemoratio = ''; @commemoentries =
+()`. Perl's preces.pl then sees empty commemorations and proceeds
+to fire.
+
+Fix in `preces_dominicales_et_feriales_fires`:
+- Detect 1V-swap-at-Compline: dow=6 + hour=Compline + day_key is
+  a Tempora-Sunday key (`-0` after stripping suffix) + today's
+  `Sancti/MM-DDoct` file exists (Octave-day Sancti).
+- When the gate fires, use TOMORROW's MM-DD for both the
+  oct_key check and the kalendaria_layers cell lookup.
+- In the cell loop, skip `kind == "main"` cells (tomorrow's
+  main is the WINNER post-swap, not a commemoration).
+
+The `today_in_octave` narrowing avoids regressing other Sat-1V
+cases (01-17, 01-24, etc.) where today is just a Tempora ferial
+— those go through the pre-existing rank/Octav rejection on
+today's date, which is correct because no Octave is involved.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged).
+    T1910: 99.62% (unchanged).
+    DA:    99.28% → 99.32% (+1 cell: 11-07 Sat Compl).
+    R55:   99.04% (unchanged).
+    R60:   99.04% (unchanged).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Slice 81: Festum-Domini swap rank-gate + Quadp prefix fix — T1910 +2, R55 +1 cells
 
 Symptom: 02-01 R55 Sun Vespera renders the Purification Oratio

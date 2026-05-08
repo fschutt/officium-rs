@@ -559,16 +559,59 @@ fn preces_dominicales_et_feriales_fires(
     month: u32,
     day: u32,
 ) -> bool {
+    // 1V-swap detection: when today is Saturday at Compline AND the
+    // day_key is a Tempora-Sunday key AND today's office is a
+    // Sancti-Octave-day (Sancti/MM-DDoct file exists), the 1V swap
+    // has carried tomorrow's Sunday office over. Today's calendar
+    // entries are about Saturday's Octave commemoration, but the
+    // POST-swap WINNER belongs to Sunday and its commemorations
+    // (per `concurrence:911-922`) drop the Tempora and may keep the
+    // Sancti-Octave as a commemoratio.
+    //
+    // Narrow gate to "Sat eve of Sun under active Octave" only —
+    // generic Sat ferial → Sun-1V swaps don't need the lookup
+    // redirect and broadening to those breaks the cell-rank
+    // commemoratio rejection (Sat ferial-tempora has no Octave to
+    // exclude, so today's date is correct).
+    let day_key_is_tempora_sunday = day_key
+        .strip_prefix("Tempora/")
+        .and_then(|stem| stem.rfind('-').map(|i| &stem[i + 1..]))
+        .map(|dow_part| {
+            let mut chars = dow_part.chars();
+            chars.next() == Some('0') && chars.all(|c| c.is_ascii_alphabetic())
+        })
+        .unwrap_or(false);
+    let today_oct_key = format!("Sancti/{month:02}-{day:02}oct");
+    let today_in_octave = lookup(&today_oct_key).is_some();
+    let is_1v_swap_at_compline_in_octave = dayofweek == 6
+        && hour == "Completorium"
+        && day_key_is_tempora_sunday
+        && today_in_octave;
+    let (lookup_m, lookup_d) = if is_1v_swap_at_compline_in_octave {
+        // Tomorrow's MM-DD. Year doesn't matter for the kalendar
+        // index (keyed on MM-DD); use simple month-rollover.
+        let dim = match month {
+            1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+            4 | 6 | 9 | 11 => 30,
+            2 => 28,
+            _ => 31,
+        };
+        if day < dim {
+            (month, day + 1)
+        } else if month < 12 {
+            (month + 1, 1)
+        } else {
+            (1, 1)
+        }
+    } else {
+        (month, day)
+    };
     // If there's a Sancti/{MM-DD}oct file in the corpus, an Octave
     // commemoration runs through this date — Perl's
     // `preces.pl:45` rejects via `$commemoratio{Rank} =~ /Octav/i`
     // (the [Officium] body is prepended to [Rank] by SetupString.pl
     // line 705-708, so the Octave-day title field carries "Octavam").
-    // Direct file existence check matches the empirical Perl
-    // behaviour without needing to reproduce the calendar's
-    // commemoration computation. Only rejects when not already
-    // flagged off by a previous gate.
-    let oct_key = format!("Sancti/{month:02}-{day:02}oct");
+    let oct_key = format!("Sancti/{lookup_m:02}-{lookup_d:02}oct");
     if lookup(&oct_key).is_some() {
         return false;
     }
@@ -582,7 +625,7 @@ fn preces_dominicales_et_feriales_fires(
     // Nativitatis BMV" cell; 12-09 under T1570 sees no cells
     // (Imm. Conc. octave is post-1854).
     let layer = rubric.kalendar_layer();
-    if let Some(cells) = crate::kalendaria_layers::lookup(layer, month, day) {
+    if let Some(cells) = crate::kalendaria_layers::lookup(layer, lookup_m, lookup_d) {
         // Branch (b) `Dominicales` commemoratio rank check.
         // Mirror of `specials/preces.pl:41-58`:
         //
@@ -603,6 +646,11 @@ fn preces_dominicales_et_feriales_fires(
             _ => 3.0_f32,
         };
         for cell in cells {
+            // 1V-swap: tomorrow's main cell is the WINNER (now today's
+            // office, post-swap), not a commemoration. Skip it.
+            if is_1v_swap_at_compline_in_octave && cell.kind == "main" {
+                continue;
+            }
             let lc = cell.officium.to_lowercase();
             if lc.contains("octav") && !lc.contains("post octav") {
                 return false;

@@ -880,7 +880,7 @@ fn visit_chain(
     // Use the conditional-aware variant so `@Path\n(sed rubrica X
     // omittitur)` directives suppress the inherit for the active
     // rubric (R60 Pasc6-5's @Tempora/Pasc6-0 is omitted under R60).
-    if let Some(parent) = first_at_path_inheritance_rubric(file, rubric, hora) {
+    if let Some(parent) = first_at_path_inheritance(file, Some(rubric), hora) {
         if !visited.contains(&parent) {
             visit_chain(&parent, rubric, hora, visited, out, depth + 1);
         }
@@ -1676,7 +1676,7 @@ fn tomorrow_rule_marks_festum_domini(
             return true;
         }
     }
-    if let Some(parent) = first_at_path_inheritance(file) {
+    if let Some(parent) = first_at_path_inheritance(file, Some(rubric), hora) {
         if parent != day_key {
             return tomorrow_rule_marks_festum_domini(&parent, rubric, hora);
         }
@@ -1731,7 +1731,7 @@ pub fn active_rank_line_with_annotations(
             return Some(out);
         }
     }
-    if let Some(parent_path) = first_at_path_inheritance(file) {
+    if let Some(parent_path) = first_at_path_inheritance(file, Some(rubric), hora) {
         if parent_path != day_key {
             return active_rank_line_with_annotations(&parent_path, rubric, hora);
         }
@@ -1781,7 +1781,7 @@ fn tomorrow_has_no_prima_vespera(
             return true;
         }
     }
-    if let Some(parent) = first_at_path_inheritance(file) {
+    if let Some(parent) = first_at_path_inheritance(file, Some(rubric), hora) {
         if parent != day_key {
             return tomorrow_has_no_prima_vespera(&parent, rubric, hora);
         }
@@ -1837,7 +1837,7 @@ fn active_rank_line_for_rubric(
         }
     }
     // Whole-file `@Commune/CXX` inheritance: chase to the parent.
-    if let Some(parent_path) = first_at_path_inheritance(file) {
+    if let Some(parent_path) = first_at_path_inheritance(file, Some(rubric), hora) {
         if parent_path != day_key {
             return active_rank_line_for_rubric(&parent_path, rubric, hora);
         }
@@ -1888,7 +1888,11 @@ fn section_via_inheritance_rubric(
             return Some(body);
         }
     }
-    let Some(parent_path) = first_at_path_inheritance(file) else {
+    // No `hora` available in this context — pass empty string. The
+    // `Option<Rubric>` mirrors the function's existing signature so
+    // None-rubric callers (which currently exist) get raw preamble
+    // walks; Some-rubric callers get conditional-aware @inherit.
+    let Some(parent_path) = first_at_path_inheritance(file, rubric, "") else {
         return None;
     };
     let mut current: &'static HorasFile = lookup(&parent_path)?;
@@ -1898,7 +1902,7 @@ fn section_via_inheritance_rubric(
                 return Some(body);
             }
         }
-        let Some(next_path) = first_at_path_inheritance(current) else {
+        let Some(next_path) = first_at_path_inheritance(current, rubric, "") else {
             return None;
         };
         current = lookup(&next_path)?;
@@ -1981,9 +1985,33 @@ fn annotation_applies_in_context(
     crate::mass::annotation_applies_to_rubric(annotation, rubric)
 }
 
-fn first_at_path_inheritance(file: &HorasFile) -> Option<String> {
+/// Resolve a file's `__preamble__` `@Path` inheritance directive.
+///
+/// When `rubric` is `Some`, applies `eval_section_conditionals` to the
+/// preamble first — `(sed rubrica X omittitur)` directives suppress
+/// the @inherit for specific rubrics (mirror of
+/// `setupstring_parse_file`'s process_conditional_lines).
+///
+/// When `rubric` is `None`, the preamble is read raw — used by call
+/// sites that don't have a rubric in scope (some
+/// `section_via_inheritance_rubric` recursions).
+///
+/// Drives R60 Tempora/Pasc6-5 and similar: preamble
+/// `@Tempora/Pasc6-0` is followed by `(sed rubrica 1960 aut rubrica
+/// cisterciensis omittitur)` — under R60 the @inherit is REMOVED,
+/// preventing Pasc6-0's own [Oratio] from leaking into the chain
+/// ahead of the legitimate `vide Tempora/Pasc5-4` Asc-Oratio source.
+fn first_at_path_inheritance(
+    file: &HorasFile,
+    rubric: Option<crate::core::Rubric>,
+    hora: &str,
+) -> Option<String> {
     let preamble = file.sections.get("__preamble__")?;
-    for line in preamble.lines() {
+    let evaluated = match rubric {
+        Some(r) => eval_section_conditionals(preamble, r, hora),
+        None => preamble.clone(),
+    };
+    for line in evaluated.lines() {
         let trimmed = line.trim();
         if trimmed.is_empty() {
             continue;
@@ -1996,41 +2024,6 @@ fn first_at_path_inheritance(file: &HorasFile) -> Option<String> {
         }
         // Stop at the first non-blank non-`@` line — the preamble
         // is a single inheritance directive, not arbitrary prose.
-        break;
-    }
-    None
-}
-
-/// Conditional-aware `@Path` preamble inheritance. Honours
-/// `(sed rubrica X omittitur)` directives that suppress the @inherit
-/// for specific rubrics. Mirror of `setupstring_parse_file`'s
-/// process_conditional_lines applied to the preamble.
-///
-/// Drives R60 Tempora/Pasc6-5 (Pasc6-X ferials post-Asc): the
-/// preamble `@Tempora/Pasc6-0` is followed by `(sed rubrica 1960 aut
-/// rubrica cisterciensis omittitur)` — under R60, the @inherit is
-/// REMOVED. Without honoring this, our chain walker pulls Pasc6-0's
-/// own [Oratio] ("Omnipotens sempiterne...") into the chain ahead of
-/// the legitimate `vide Tempora/Pasc5-4` commune source (which has
-/// the Asc Oratio "Concede quaesumus...").
-fn first_at_path_inheritance_rubric(
-    file: &HorasFile,
-    rubric: crate::core::Rubric,
-    hora: &str,
-) -> Option<String> {
-    let preamble = file.sections.get("__preamble__")?;
-    let evaluated = eval_section_conditionals(preamble, rubric, hora);
-    for line in evaluated.lines() {
-        let trimmed = line.trim();
-        if trimmed.is_empty() {
-            continue;
-        }
-        if let Some(rest) = trimmed.strip_prefix('@') {
-            let path = rest.split(|c: char| c.is_whitespace() || c == ':').next()?;
-            if looks_like_corpus_path(path) {
-                return Some(path.to_string());
-            }
-        }
         break;
     }
     None

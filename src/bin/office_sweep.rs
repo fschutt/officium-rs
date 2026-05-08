@@ -463,7 +463,18 @@ fn run_one_cell(
                 });
         if r55_semiduplex_22_28.is_some() {
             let weekname = officium_rs::date::getweek(dd, mm, yyyy, false, true);
-            let tempora_key = format!("Tempora/{weekname}-{today_dow_pre}");
+            let bare_stem = format!("{weekname}-{today_dow_pre}");
+            // Apply the rubric-aware Tempora variant redirect — for
+            // R55 (token "1960") `Pasc2-3` redirects to `Pasc2-3Feria`
+            // per `Tabulae/Tempora/Generale.txt`. Without this swap
+            // slice 61 lands on the bare Pasc2-3 (Patrocinii Joseph
+            // file) which still carries the abolished feast's
+            // structure under R55. The Feria variant is the
+            // post-1955 ferial form Perl uses.
+            let resolved_stem = officium_rs::tempora_table::redirect(&bare_stem, rubric)
+                .map(String::from)
+                .unwrap_or(bare_stem);
+            let tempora_key = format!("Tempora/{resolved_stem}");
             if horas::lookup(&tempora_key).is_some() {
                 tempora_key
             } else {

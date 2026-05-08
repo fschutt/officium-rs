@@ -2978,6 +2978,48 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 66: R55 Tempora-Sancti-wipe variant redirect — R55 +2 cells
+
+Symptom: 04-22 R55 Vespera emits "Deus, qui ineffábili
+providéntia beátum Joseph..." (Patrocinii St. Joseph oratio,
+the abolished feast). Perl emits "Deus, qui in Fílii tui
+humilitáte..." (3rd Sun after Easter from Pasc3-0).
+
+Trace: Sancti/04-22 R55 = Ss. Soteris et Caii Semiduplex 2.2.
+Slice 61 (R55 Semiduplex 2.2..2.8 wipe at Vespera) fires →
+swaps to `Tempora/<weekname>-<dow>` = `Tempora/Pasc2-3`. But
+Pasc2-3 carries the (abolished-under-R55) Patrocinii Joseph
+file structure with [Rank] `;;Duplex I classis;;6.5`.
+
+Under R55 the rubric-aware Tempora variant redirect
+(`Tabulae/Tempora/Generale.txt`) maps:
+
+  Tempora/Pasc2-3=Tempora/Pasc2-3Feria;;1888 1906 1960 Newcal
+
+R55's transfer-token is "1960" → match → Pasc2-3 should
+redirect to Pasc2-3Feria (the post-1955 ferial form). Slice 61
+built the bare Tempora key without applying this redirect.
+
+Fix: in slice 61 (office_sweep), apply
+`tempora_table::redirect(&bare_stem, rubric)` before building
+the Tempora key. Falls through to the bare stem when no rule
+matches.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged — slice 61 R55-only).
+    T1910: 99.08% (unchanged — same).
+    DA:    98.77% (unchanged — same).
+    R55:   98.36% → 98.42% (+2 cells — 04-22 Vespera + 04-23
+                   Vespera; the Patrocinii ferials).
+    R60:   98.42% (unchanged — R60 not in slice 61 gate).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Triduum Prima Oratio suppression**: tried suppressing the

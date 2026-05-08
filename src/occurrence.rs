@@ -170,7 +170,44 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
     let (sancti_key, sancti_entry_holder) =
         resolve_sancti_for_tridentine_1570(y, m, d, layer, input.rubric, corpus);
     let sancti_entry: Option<&SanctiEntry> = sancti_entry_holder.as_ref();
-    let sanctoral_rank = sancti_entry.and_then(|e| e.rank_num).unwrap_or(0.0);
+    let mut sanctoral_rank = sancti_entry.and_then(|e| e.rank_num).unwrap_or(0.0);
+
+    // Office-context Sancti rank override under R60 — use the horas-side
+    // `(rubrica 196)` rank from `sancti.json` instead of the missa-side
+    // rank. The two file trees diverge for `Cum nostra hac aetate` (1955)
+    // / `Codex rubricarum` (1960) reductions: missa keeps the saint's
+    // pre-reform Duplex majus rank (so the Mass continues to celebrate
+    // the saint as III. classis), but horas demotes to Simplex 1.1
+    // (Office becomes the ferial Tempora with the saint commemorated).
+    //
+    // Mirror of `horascommon.pl:455-457`:
+    //   if ( !$srank[2]
+    //        || ($version =~ /19(?:55|6)|Monastic.*Divino/i && $srank[2] <= 1.1)
+    //        || $trank[0] =~ /Sanctæ Mariaæ Sabbato/i)
+    //   { $sanctoraloffice = 0 }
+    //
+    // The Perl `srank` here comes from `setupstring($sname)` against the
+    // horas-side file; in Rust we read missa-side via `mass_file()`, so
+    // the Sancti file's `(rubrica 196)` second-`[Rank]` block (only
+    // present in `web/www/horas/Latin/Sancti/`) is invisible. Closes
+    // 07-16 (BVM Carmeli) and 09-24 (BVM de Mercede) under R60 — both
+    // declare `Simplex 1.1` under `(rubrica 196)`, both should yield
+    // ferial Office with saint as commemoration.
+    if !input.is_mass_context && matches!(input.rubric, Rubric::Rubrics1960) {
+        let (look_m, look_d) = date::sday_pair(m, d, y);
+        let entries = corpus.sancti_entries(look_m, look_d);
+        // Match `196` first; under R60 Perl's tag-match is `/196/` which
+        // hits both bare `196` and the `1960` aut-form. Demotion fires
+        // when the rubric-specific rank is ≤ 1.1.
+        let r60_override = entries
+            .iter()
+            .find(|e| e.rubric == "196" || e.rubric == "1960")
+            .and_then(|e| e.rank_num)
+            .filter(|r| *r <= 1.1);
+        if let Some(r) = r60_override {
+            sanctoral_rank = r;
+        }
+    }
 
     // ── Precedence ───────────────────────────────────────────────────
     let sancti_mass_file = corpus.mass_file(&sancti_key);

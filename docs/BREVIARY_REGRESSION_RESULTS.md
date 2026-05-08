@@ -3077,6 +3077,87 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 69: R60 office-context Sancti rank from horas-side `(rubrica 196)` override — R60 +8 cells
+
+Symptom: 07-16 R60 (BVM Carmeli) and 09-24 R60 (BVM de Mercede)
+fail across Mat / Tertia / Sexta / Nona — Rust emits the Sancti
+oration ("Deus, qui beatíssimæ semper Vírginis…"); Perl emits
+the preceding-Sunday Tempora oration with `{ex Proprio de
+Tempore}` header.
+
+Trace: `horascommon.pl:455-457`:
+
+```
+if ( !$srank[2]
+     || ($version =~ /19(?:55|6)|Monastic.*Divino/i && $srank[2] <= 1.1)
+     || $trank[0] =~ /Sanctæ Mariaæ Sabbato/i)
+{ $sanctoraloffice = 0 }
+```
+
+Under R60, when the Sancti rank is ≤ 1.1, the Office is the
+ferial Tempora and the saint is commemorated only. Both 07-16
+and 09-24 are *Duplex majus 4.0* in the missa-side files but
+*Simplex 1.1* under `[Rank] (rubrica 196)` in the horas-side
+files. Perl's `setupstring($sname)` reads from `web/www/horas/
+Latin/Sancti/MM-DD.txt` for the Office, so its `$srank` carries
+the post-1960 reduction.
+
+Our `compute_occurrence` reads sancti rank from the missa-side
+`MassFile.rank_num_*` slots (built from `vendor/.../missa/Latin/
+Sancti/`), so the `(rubrica 196)` override was invisible — Rust
+saw rank 4.0, the demotion check failed, sanctoral_office stayed
+true, and the BVM oration won.
+
+The Mass code path is unaffected: missa-side files have only the
+default `[Rank]` (Duplex majus 4.0), so Perl Mass also picks the
+saint and renders it as "III. classis" under R60. That's how the
+Mass and Office can legitimately diverge for the same date.
+
+Fix in `compute_occurrence` (`src/occurrence.rs`): after computing
+`sanctoral_rank` from the missa-side resolution path, when
+`!input.is_mass_context && rubric == Rubrics1960`, look up the
+date's `sancti.json` entries and find one with `rubric == "196"
+|| rubric == "1960"` whose `rank_num <= 1.1`. If found, override
+`sanctoral_rank` to that value before passing to
+`decide_sanctoral_wins_1570` (which already mirrors the simplex-
+demotion gate at line 433).
+
+Why this is narrow:
+* Office-context only — Mass keeps reading missa-side. Mass
+  R60 stays at 365/365.
+* R60 only — R55's regex `/19(?:55|6)/` matches `1955` too, but
+  the `(rubrica 196)` tag in the Sancti files only fires under
+  `/196/i` (R60 string contains `196`, R55 string `Reduced -
+  1955` does not), so R55 keeps the missa-side rank 4.0 and
+  picks the saint. Confirmed: R55 stays at 98.42%.
+* Demotion threshold ≤ 1.1 — exact match with Perl. Sancti
+  files with `(rubrica 196)` rank > 1.1 (e.g. 02-13 Catharinæ
+  rank 1.4) are unaffected.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged).
+    T1910: 99.18% (unchanged — gate matches Rubrics1960 only).
+    DA:    98.77% (unchanged).
+    R55:   98.42% (unchanged).
+    R60:   98.42% → 98.70% (+8 cells).
+
+  R60 differs by hour (before → after):
+    Matutinum 6 → 4   (07-16, 09-24 cleared)
+    Tertia    7 → 5   (07-16, 09-24 cleared)
+    Sexta     7 → 5   (07-16, 09-24 cleared)
+    Nona      7 → 5   (07-16, 09-24 cleared)
+    Laudes/Vespera/Prima/Compl unchanged (these dates were
+                                already passing those hours
+                                because the Tempora-and-Sancti
+                                bodies happened to coincide).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Slice 68: T1570/T1910 Sancti-Sancti "a capitulo" concurrence — T1910 +2 cells
 
 Symptom: 02-05 T1910 Vespera emits Agatha Oratio. Perl swaps to

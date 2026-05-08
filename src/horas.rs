@@ -1041,18 +1041,29 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     // Sunday Oratio via "Oratio Dominica"). The Vigilia subclause is
     // narrower and only fires for actual Vigil days.
     if let Some(file) = lookup(tomorrow_key) {
-        if let Some(rank_body) = section_via_inheritance(file, "Rank") {
-            let evaluated = eval_section_conditionals(&rank_body, rubric, hora);
-            let lc = evaluated.to_lowercase();
-            if lc.contains("vigilia")
-                && !lc.contains("in vigilia epi")
-                && !lc.contains("in octava")
-                && !lc.contains("infra octavam")
-                && !lc.contains("dominica")
-                && !lc.contains("c10")
-            {
-                return today_key;
-            }
+        // Check tomorrow's [Rank] field AND [Officium] body for the
+        // Vigilia trigger. SetupString.pl:705-708 prepends [Officium]
+        // into [Rank]'s title field at parse time, so Perl's
+        // `$cwinner{Rank} =~ /Vigilia/i` matches the title-only Vigil
+        // case (e.g. Sancti/06-23 [Rank] = ";;Simplex;;1.5", but
+        // [Officium] = "In Vigilia S. Joannis Baptistæ" — Vigil is in
+        // the title only).
+        let rank_body = section_via_inheritance(file, "Rank").unwrap_or_default();
+        let officium_body = section_via_inheritance(file, "Officium").unwrap_or_default();
+        let combined = format!(
+            "{}\n{}",
+            eval_section_conditionals(&rank_body, rubric, hora),
+            eval_section_conditionals(&officium_body, rubric, hora)
+        );
+        let lc = combined.to_lowercase();
+        if lc.contains("vigilia")
+            && !lc.contains("in vigilia epi")
+            && !lc.contains("in octava")
+            && !lc.contains("infra octavam")
+            && !lc.contains("dominica")
+            && !lc.contains("c10")
+        {
+            return today_key;
         }
     }
     // R55/R60 rank-based 1V suppression. Mirror of upstream

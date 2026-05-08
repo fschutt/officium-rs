@@ -2140,6 +2140,39 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 49: Vigilia gate also checks tomorrow's [Officium] body — T1570 +1
+
+Symptom: T1570 06-22 Mon Vespera resolved to Sancti/06-23
+(Vigilia James) — slice 42's Vigilia gate didn't fire because
+Sancti/06-23 [Rank] = ";;Simplex;;1.5" doesn't have "Vigilia"
+in the rank field. But [Officium] = "In Vigilia S. Joannis
+Baptistæ" — has "Vigilia" only in the title.
+
+Trace: SetupString.pl:705-708 prepends [Officium] into [Rank]'s
+title field at parse time, so Perl's `$cwinner{Rank} =~
+/Vigilia/i` matches the title-only Vigil case. Our gate only
+checked the [Rank] section body and missed it.
+
+Fix: extend the slice 42 Vigilia gate to combine [Rank] +
+[Officium] (each conditional-evaluated) before the substring
+check. Slice 48's Sancti-Simplex-no-2V Tempora-of-week
+fallback then fires for 06-22 (resolved=today=Sancti Simplex,
+kept_today, override to Tempora/Pent03-1).
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Vespera   96.71% → 96.99% (+1 cell — 06-22)
+      Overall   97.36% → 97.40%
+    R60: 97.16% (unchanged)
+    R55: 94.21% (unchanged)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **`section_via_inheritance` walked + Officium-prepended Vigilia

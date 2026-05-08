@@ -798,6 +798,30 @@ fn commune_chain_for_rubric(
     // upstream `Oratio Dominica` rule directive — many ferials
     // carry no proper Oratio of their own and inherit the Sunday's.
     if let Some(parent) = tempora_sunday_fallback(day_key) {
+        // Epi1 / Nat ferial-Sunday inheritance redirect. Mirror of
+        // `specials/orationes.pl:59`:
+        //
+        //   if ($name =~ /(?:Epi1|Nat)/i && $version ne 'Monastic - 1930') {
+        //       $name = 'Epi1-0a';
+        //   }
+        //
+        // Tempora/Epi1-0's [Officium] is "Sanctæ Familiæ" (Holy
+        // Family) — that's the festive Sunday celebration. The
+        // underlying ferial cycle's "Oratio Dominica" inheritance
+        // uses Epi1-0a (Sun within Octave of Epi, "Vota quaesumus")
+        // regardless. T1570/T1910 already handle this via
+        // `pick_tempora_variant` at the occurrence layer, but
+        // post-DA rubrics (DA / R55 / R60) need this redirect at
+        // the chain-walker for ferial Sunday-fallback.
+        //
+        // Closes 01-16 R55 Fri Vespera (Tempora/Epi1-5 →
+        // Tempora/Epi1-0 was leaking Holy Family Oratio "Domine
+        // Jesu Christe"; should pull Epi1-0a's "Vota quaesumus").
+        let parent = if parent == "Tempora/Epi1-0" {
+            "Tempora/Epi1-0a".to_string()
+        } else {
+            parent
+        };
         if !visited.contains(&parent) {
             visit_chain(&parent, rubric, hora, &mut visited, &mut out, 0);
         }
@@ -2624,6 +2648,15 @@ fn splice_proper_into_slot(
         });
     if tempora_feria_oratio_dominica {
         if let Some(parent) = day_key.and_then(tempora_sunday_fallback) {
+            // Same Epi1-0 → Epi1-0a redirect as `commune_chain_for_rubric`.
+            // Mirror of `specials/orationes.pl:59` — ferial-cycle Sunday
+            // for Epi1 week is Epi1-0a (Sun within Octave), not Epi1-0
+            // (Holy Family feast).
+            let parent = if parent == "Tempora/Epi1-0" {
+                "Tempora/Epi1-0a".to_string()
+            } else {
+                parent
+            };
             if let Some(file) = lookup(&parent) {
                 if let Some(body) = section_via_inheritance(file, "Oratio") {
                     let resolved = expand_at_redirect(&body, "Oratio", rubric, hour);

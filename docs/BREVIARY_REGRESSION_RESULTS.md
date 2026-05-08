@@ -3077,6 +3077,67 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 80: Epi1-0 → Epi1-0a redirect for ferial Sun-fallback — R55 +1 cell
+
+Symptom: 01-16 R55 Friday Vespera renders the Holy Family Oratio
+"Dómine Jesu Christe, qui, Maríæ et Joseph súbditus..." Perl
+renders the Sun-within-Octave-of-Epi Oratio "Vota, quǽsumus,
+Dómine, supplicántis pópuli..." with `{ex Proprio de Tempore}`.
+
+Trace: `specials/orationes.pl:55-61`:
+
+```
+if ( ($rule =~ /Oratio Dominica/i && (!exists($winner{Oratio}) || $hora eq 'Vespera'))
+    || ($winner{Rank} =~ /Quattuor/i && ...))
+{
+    my $name = "$dayname[0]-0";
+    if ($name =~ /(?:Epi1|Nat)/i && $version ne 'Monastic - 1930') {
+        $name = 'Epi1-0a';
+    }
+    %w = %{setupstring($lang, ... . "$name.txt")};
+}
+```
+
+Tempora/Epi1-0's [Officium] is "Sanctæ Familiæ Jesu Mariæ Joseph"
+(Holy Family). For ferial-cycle "Oratio Dominica" inheritance,
+the underlying liturgical Sunday is Epi1-0a (Sun within Octave of
+Epi). Perl explicitly redirects under all rubrics except
+`Monastic - 1930`. T1570/T1910 already get this via
+`pick_tempora_variant` at the occurrence layer; post-DA rubrics
+(DA / R55 / R60) need it at the chain-walker level for the
+ferial Sunday-fallback.
+
+Two call sites in `src/horas.rs` reach into the Sunday-fallback
+target:
+1. `commune_chain_for_rubric` — builds the chain by visiting
+   `tempora_sunday_fallback(day_key)` after the day file.
+2. `splice_proper_into_slot`'s slice-62 Tempora-Feria
+   `Oratio Dominica` path — opens the fallback file directly
+   to read its [Oratio].
+
+Both now apply the same `Tempora/Epi1-0` → `Tempora/Epi1-0a`
+redirect when the fallback resolves to Epi1-0.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged — already redirected via
+                   `pick_tempora_variant`).
+    T1910: 99.55% (unchanged — same).
+    DA:    99.28% (unchanged — happens to land on Sancti
+                   precedence on the affected dates).
+    R55:   98.97% → 99.01% (+1 cell: 01-16 Fri).
+    R60:   99.04% (unchanged — Marcellus not active in 01-16
+                   neighbourhood, no day_key=Epi1-X observed).
+
+  Other R55 Vespera fail (02-01 Septuagesima Sun) has a different
+  mechanism (1V of 02-02 Purification) — deferred.
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Slice 79: Tomorrow-is-Sunday wipe + Tempora-vs-Tempora 1V swap — DA +1, R60 +3 cells
 
 Symptom: 04-11 / 05-30 / 06-13 R60 Sat Vespera all keep today's

@@ -57,7 +57,24 @@ fn psalm_corpus() -> &'static HashMap<String, PsalmFile> {
 ///   * `Psalterium/Invitatorium`
 ///   * `Psalterium/Common/Prayers`
 pub fn lookup(key: &str) -> Option<&'static HorasFile> {
-    horas_corpus().get(key)
+    if let Some(f) = horas_corpus().get(key) {
+        return Some(f);
+    }
+    // Synthetic post-Pentecost Epi-cycle resumption keys
+    // (`Tempora/PentEpi5-5`, `PentEpi6-0`, ...) don't have a literal
+    // file in the corpus — upstream resolves them by reading the
+    // original Epi-cycle file (`Tempora/Epi5-5`, `Epi6-0`, ...). The
+    // chain walker handles this internally via key-strip-and-retry,
+    // but other callers (`active_rank_line_for_rubric`,
+    // `preces_dominicales_et_feriales_fires`, the
+    // `tomorrow_has_no_prima_vespera` / `tomorrow_rule_marks_festum_
+    // domini` lookups in concurrence) hit the dictionary directly
+    // and would silently bail out. Normalising at `lookup` makes the
+    // mapping a single source of truth.
+    if let Some(epi) = key.strip_prefix("Tempora/PentEpi") {
+        return horas_corpus().get(&format!("Tempora/Epi{epi}"));
+    }
+    None
 }
 
 /// Look up a section body inside a horas file. Tries the bare section

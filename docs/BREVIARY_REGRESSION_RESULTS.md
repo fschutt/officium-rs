@@ -1592,6 +1592,49 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 38: `lookup` resolves PentEpi → Epi keys for all callers — T1570 94.32% → 94.55%, R60 96.16% → 96.23%, R55 93.25% → 93.29%
+
+Symptom: T1570 11-15 Sun Prima emits the lay V/R Domine
+exaudi (text[2-3]) but Perl emits the precesferiales
+omittitur directive (text[4]) — preces predicate disagrees.
+
+Trace: 11-15 Sun resolves to `Tempora/PentEpi6-0` — synthetic
+key for Sun-VI-after-Epiphany resumed after Pentecost (Pent
+year hits the 24th-Sun limit, leftover Epi-cycle Sundays
+resume). The corpus only carries `Tempora/Epi6-0` literally.
+The chain walker `visit_chain` already strips `PentEpi` →
+`Epi` and retries (line 694), but other callers
+(`active_rank_line_for_rubric`, `preces_dominicales_et_
+feriales_fires`, `tomorrow_has_no_prima_vespera`,
+`tomorrow_rule_marks_festum_domini`) call `lookup` directly
+and silently bail when the key misses.
+
+For 11-15 Prima, `preces_fires` returns `false` immediately
+on the missed lookup → lay default emits text[2-3]. Perl
+runs the full preces logic on Epi6-0 (Semiduplex 5, Sun, Adv-
+or-Quad-or-emberday gate fails, then Dominicales branch fires
+since winner Rank doesn't have Octav) → returns 1 → text[4].
+
+Fix: `lookup` itself now strips `PentEpi` and retries on
+miss. Single source of truth — every caller benefits without
+threading retry logic into each call site.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Prima        93.15% → 94.25% (+4)
+      Vespera      91.78% → 92.05% (+1)
+      Completorium 91.51% → 92.05% (+2)
+      Overall      94.32% → 94.55% (+7 cells)
+    R60: 96.16% → 96.23% (+2 cells, mostly Vespera)
+    R55: 93.25% → 93.29% (+1 cell)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Section-level `[Rank] (rubrica 196)` annotated lookup

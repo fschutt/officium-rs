@@ -1008,6 +1008,38 @@ pub fn first_vespers_day_key_for_rubric<'a>(
             }
         }
     }
+    // No 1V for Vigilia days (other than Vigilia Epi). Mirror of the
+    // Vigilia branch of `horascommon.pl::concurrence:950-951`:
+    //
+    //   || ( $cwinner{Rank} =~ /Vigilia/i
+    //     && $cwinner{Rank} !~ /in Vigilia Epi|in octava|infra octavam|Dominica|C10/i)
+    //
+    // Drives 12-23 Adv4 Wed Vespera T1570 — tomorrow=Sancti/12-24
+    // (Vigilia Nativitatis Duplex I cl. 6.9) outranks today by rank
+    // but 1V is suppressed.
+    //
+    // Narrowed to Vigilia only: the Feria/Sabbato/Quattuor branches
+    // would fire on every Tempora-ferial tomorrow_key (including
+    // Tempora/Epi3-4 [Rank] = ";;Feria;;1") and break legitimate
+    // ferial-to-ferial swaps where Perl does keep the swap (the body
+    // happens to match because both ferial days inherit the same
+    // Sunday Oratio via "Oratio Dominica"). The Vigilia subclause is
+    // narrower and only fires for actual Vigil days.
+    if let Some(file) = lookup(tomorrow_key) {
+        if let Some(rank_body) = section_via_inheritance(file, "Rank") {
+            let evaluated = eval_section_conditionals(&rank_body, rubric, hora);
+            let lc = evaluated.to_lowercase();
+            if lc.contains("vigilia")
+                && !lc.contains("in vigilia epi")
+                && !lc.contains("in octava")
+                && !lc.contains("infra octavam")
+                && !lc.contains("dominica")
+                && !lc.contains("c10")
+            {
+                return today_key;
+            }
+        }
+    }
     // R55/R60 rank-based 1V suppression. Mirror of upstream
     // `horascommon.pl::concurrence` lines 938-945 (within the
     // suppress-1V OR chain). Most R60 days have NO 1st Vespers —

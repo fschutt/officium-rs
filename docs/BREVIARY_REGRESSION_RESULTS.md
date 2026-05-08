@@ -1780,7 +1780,60 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 42: tomorrow Vigilia → no 1V swap — T1570 96.10% → 96.23% (+5), R55 +1, R60 +1
+
+Symptom: T1570 12-23 Adv4 Wed Vespera resolved to Sancti/
+12-24o (Christmas Vigil) and emitted "Deus, qui nos
+redemptiónis nostræ ánnua exspectatióne lætíficas...".
+Perl stays on today and emits the Adv4-Sun "Excita,
+quǽsumus, Dómine, poténtiam tuam..." Oratio.
+
+Trace: `horascommon.pl::concurrence:950-951` — within the
+suppress-1V OR chain:
+
+  || ( $cwinner{Rank} =~ /Feria|Sabbato|Vigilia|Quat[t]*uor/i
+    && $cwinner{Rank} !~ /in Vigilia Epi|in octava|infra octavam|Dominica|C10/i)
+
+Vigil days don't claim 1st Vespers. Christmas Eve [Rank] =
+"In Vigilia Nativitatis Domini;;Duplex I classis;;6.9" —
+matches /Vigilia/i, not in any exception list → suppress 1V →
+today wins.
+
+Fix: new gate in `first_vespers_day_key_for_rubric`. Only
+matches the **Vigilia** sub-clause — the Feria/Sabbato/
+Quattuor branches would over-fire on every Tempora-ferial
+tomorrow_key (Tempora/Epi3-4 [Rank] = ";;Feria;;1") and
+break legitimate ferial-to-ferial swaps where Perl keeps the
+swap (both days inherit the same Sun Oratio via "Oratio
+Dominica" so the body happens to match). Narrowed to /
+Vigilia/ which only matches actual Vigil days (Vigilia
+Nativitatis, Vigilia Apostolorum, etc.).
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Vespera      93.97% → 94.79% (+3)
+      Completorium 93.97% → 94.25% (+1)
+      Overall      96.10% → 96.23% (+5 cells)
+    R60: 96.82% → 96.85% (+1 cell)
+    R55: 93.90% → 93.94% (+1 cell)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
+
+- **Feria/Sabbato/Quattuor branches of the Vigil gate**: tried the
+  full Perl OR chain (Feria | Sabbato | Vigilia | Quat[t]*uor) on
+  tomorrow's [Rank]. Net Vespera: 93.97% → 90.68% (-12 cells).
+  Tempora ferials all match /Feria/i but Perl keeps the swap
+  because consecutive Tempora ferials inherit the same Sunday
+  Oratio (`[Rule] Oratio Dominica`) — bodies match regardless of
+  which ferial day_key the swap lands on. Reverted to Vigilia-only.
+
 
 - **Section-level `[Rank] (rubrica 196)` annotated lookup
   attempt** (slice 31a): tried evaluating section-header

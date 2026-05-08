@@ -3077,6 +3077,61 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 68: T1570/T1910 Sancti-Sancti "a capitulo" concurrence — T1910 +2 cells
+
+Symptom: 02-05 T1910 Vespera emits Agatha Oratio. Perl swaps to
+1V of Titus (02-06) — Agatha is commemorated.
+
+Trace: `horascommon.pl:1216-1261`. When today's flrank ==
+tomorrow's flcrank (both flattened), Perl fires "a capitulo de
+sequenti" — winner becomes tomorrow, today commemorated.
+
+Flatten tables (trident only):
+
+  flrank  = rank < 2.9 ? 2 : (rank in [3,3.9) or [4.1,4.9)) ? 3 : rank
+  flcrank = crank < 2.91 ? (crank > 2 ? 2 : crank)
+          : (cwinner.Officium contains "Dominica" ? 2.99
+             : (crank < 3.9 || crank in [4.1,4.9)) ? 3
+             : crank)
+
+For 02-05 T1910:
+  Vincent (today) rank 3.01 → flrank = 3.
+  Titus (tomorrow) rank 3.0 → flcrank = 3.
+  Equal → swap to Titus.
+
+For 01-22 T1570 (which my earlier broader rule wrongly broke):
+  Vincent (today) rank 2.2 → flrank = 2.
+  Emerentiana (tomorrow Sancti/01-23o) rank 1.1 → flcrank = 1.1
+  (since `< 2.91` AND `> 2` is FALSE → unchanged).
+  NOT equal → keep today.
+
+Iteration cost: initial fix used a unified `flatten_rank_trident`
+which mapped 1.1 → 2 (treating both sides like flrank). That
+misfired on 01-22 (Vincent 2.2 → 2, Emerentiana 1.1 → 2 →
+spurious tie, swap), regressing T1570 by 4 cells. Split into
+asymmetric `flrank_trident` / `flcrank_trident` to mirror Perl
+exactly.
+
+Fix in `first_vespers_day_key_for_rubric`: after the existing
+oct-suffix branch, add a Sancti/Sancti branch that computes
+flrank vs flcrank under the trident gate and swaps on tie. DA
+excluded (Perl's flrank/flcrank gates `$version =~ /trident/i`).
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged — flcrank correctness avoids the
+                   01-22 / 04-27 / 07-29 over-fire).
+    T1910: 99.11% → 99.18% (+2 cells: 02-05 + 06-12).
+    DA:    98.77% (unchanged — gate excludes DA).
+    R55:   98.42% (unchanged).
+    R60:   98.42% (unchanged).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Triduum Prima Oratio suppression**: tried suppressing the

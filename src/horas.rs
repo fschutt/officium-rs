@@ -1361,6 +1361,39 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     {
         return tomorrow_key;
     }
+    // Pre-DA Sancti-vs-Sancti "a capitulo" — when BOTH keys are
+    // Sancti/MM-DD (no Tempora-ferial body-match shortcut) AND the
+    // flattened ranks tie under the trident flatten table, swap to
+    // tomorrow. Mirror of `horascommon.pl:1216-1261`. Narrowed to
+    // Sancti/Sancti to avoid the slice 55 over-fire on Tempora
+    // ferial pairs that share inherited Sun-of-week Oratios.
+    //
+    // Drives T1910 02-05 Vespera (1V swap to Titus 02-06): today=
+    // Agatha 3.01, tomorrow=Titus 3.0; trident flrank/flcrank both
+    // flatten to 3 → equal → a-capitulo → tomorrow wins.
+    // Pre-DA Sancti-vs-Sancti "a capitulo" — T1570/T1910 ONLY (NOT
+    // DA). The flrank/flcrank flatten tables in Perl
+    // `horascommon.pl:1071-1093` are gated `$version =~ /trident/i`.
+    // Under DA the else branch leaves ranks unchanged so equal-flat
+    // never fires.
+    let is_trident = matches!(
+        rubric,
+        crate::core::Rubric::Tridentine1570 | crate::core::Rubric::Tridentine1910
+    );
+    if is_trident
+        && today_key.starts_with("Sancti/")
+        && tomorrow_key.starts_with("Sancti/")
+    {
+        let cwinner_is_dominica = lookup(tomorrow_key)
+            .and_then(|f| section_via_inheritance(f, "Officium"))
+            .map(|o| o.to_lowercase().contains("dominica"))
+            .unwrap_or(false);
+        let flrank = flrank_trident(today_rank);
+        let flcrank = flcrank_trident(tomorrow_rank, cwinner_is_dominica);
+        if (flrank - flcrank).abs() < 0.001 {
+            return tomorrow_key;
+        }
+    }
     if today_rank > tomorrow_rank {
         today_key
     } else {
@@ -1376,6 +1409,50 @@ pub fn first_vespers_day_key_for_rubric<'a>(
 /// inheritance because tomorrow's "structure inheritance" doesn't
 /// imply tomorrow has 1st Vespers privilege (a Mon ferial that
 /// inherits Epi structure still has no proper 1st Vespers).
+/// Today-side flatten table (`flrank`). Mirror of
+/// `horascommon.pl:1071-1079` for trident:
+///
+///   $flrank = ($rank < 2.9 && !($rank == 2.1 && ...)) ? 2
+///           : ((($rank >= 3 && $rank < 3.9) || ($rank >= 4.1 && $rank < 4.9))
+///              && $rank != 3.9 && $rank != 3.2) ? 3
+///           : $rank
+fn flrank_trident(rank: f32) -> f32 {
+    if rank < 2.9 {
+        return 2.0;
+    }
+    if (rank >= 3.0 && rank < 3.9) || (rank >= 4.1 && rank < 4.9) {
+        return 3.0;
+    }
+    rank
+}
+
+/// Tomorrow-side flatten table (`flcrank`). Mirror of
+/// `horascommon.pl:1080-1093` for trident:
+///
+///   $flcrank = $crank < 2.91 ? ($crank > 2 ? 2 : $crank)
+///            : ($cwinner{Rank} =~ /Dominica/i ? 2.99
+///               : ($crank < 3.9 || ($crank >= 4.1 && $crank < 4.9)) ? 3
+///               : $crank)
+///
+/// Asymmetric with `flrank_trident`: tomorrow's rank in (2.0, 2.9]
+/// flattens to 2, but rank ≤ 2.0 stays as-is (Simplex/Memoria
+/// don't flatten up).
+fn flcrank_trident(rank: f32, cwinner_is_dominica: bool) -> f32 {
+    if rank < 2.91 {
+        if rank > 2.0 {
+            return 2.0;
+        }
+        return rank;
+    }
+    if cwinner_is_dominica {
+        return 2.99;
+    }
+    if rank < 3.9 || (rank >= 4.1 && rank < 4.9) {
+        return 3.0;
+    }
+    rank
+}
+
 fn effective_today_rank_for_concurrence(
     day_key: &str,
     rubric: crate::core::Rubric,

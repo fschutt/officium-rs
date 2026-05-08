@@ -311,7 +311,7 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
                         let day_key = args.day_key.unwrap();
                         let dow = crate::date::day_of_week(args.day, args.month, args.year);
                         if preces_dominicales_et_feriales_fires(
-                            day_key, args.rubric, args.hour, dow, args.month, args.day,
+                            day_key, args.rubric, args.hour, dow, args.year, args.month, args.day,
                         ) {
                             prayers_file
                                 .and_then(dominus_vobiscum_preces_form)
@@ -556,6 +556,7 @@ fn preces_dominicales_et_feriales_fires(
     rubric: crate::core::Rubric,
     hour: &str,
     dayofweek: u32,
+    year: i32,
     month: u32,
     day: u32,
 ) -> bool {
@@ -740,6 +741,52 @@ fn preces_dominicales_et_feriales_fires(
             if let Some(off) = section_via_inheritance(file, "Officium") {
                 let lc = off.to_lowercase();
                 if lc.contains("octav") && !lc.contains("post octav") {
+                    return false;
+                }
+            }
+        }
+    }
+    // Sancti-winner with Tempora commemoratio: Perl's preces.pl
+    // line 45 checks `$commemoratio{Rank} =~ /Octav/i` on the
+    // Tempora-of-today's Rank field (which has [Officium]
+    // prepended by SetupString.pl). Tempora ferials in
+    // movable-feast Octaves (Joseph Patrocinium under T1570/DA)
+    // have "De N die infra Octavam S. Joseph" in their [Officium]
+    // — Perl rejects preces.
+    //
+    // Restrict to:
+    // - day_key starts with "Sancti/" (winner is Sancti, so
+    //   Tempora is the commemoratio).
+    // - Tempora's [Officium] contains "infra octavam" or "in
+    //   octava" but NOT "post octavam paschae" / "post octavam
+    //   pentecostes" — those phrases are post-octave designators
+    //   on bare ferials and Perl's `/Octav/i` would match too,
+    //   but our test sweep showed those cases need preces TO fire
+    //   under Perl. So narrow the gate to "actively in an octave"
+    //   wording.
+    if day_key.starts_with("Sancti/") {
+        let weekname = crate::date::getweek(day, month, year, false, true);
+        let tempora_stem_default = if weekname.starts_with("Nat") {
+            weekname.clone()
+        } else {
+            format!("{weekname}-{dayofweek}")
+        };
+        // Apply rubric-aware Tempora redirect — Joseph Patrocinium
+        // octave (Pasc2-4 = "De II die infra Octavam S. Joseph") only
+        // applies under DA. T1570/T1910/R55/R60 redirect Pasc2-4 to
+        // Pasc2-4Feria (bare ferial, no Joseph). Without this redirect
+        // the rejection fires too broadly across pre-DA rubrics.
+        let tempora_stem = crate::tempora_table::redirect(&tempora_stem_default, rubric)
+            .map(String::from)
+            .unwrap_or(tempora_stem_default);
+        let tempora_path = format!("Tempora/{tempora_stem}");
+        if let Some(file) = lookup(&tempora_path) {
+            if let Some(off) = section_via_inheritance(file, "Officium") {
+                let lc = off.to_lowercase();
+                let in_movable_octave = (lc.contains("infra octavam")
+                    || lc.contains("in octava"))
+                    && !lc.contains("post octavam");
+                if in_movable_octave {
                     return false;
                 }
             }

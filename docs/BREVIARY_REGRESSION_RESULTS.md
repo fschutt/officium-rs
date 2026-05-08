@@ -3077,6 +3077,68 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 84: Preces predicate rejects on Tempora-Joseph-Octave commemoratio — T1910 +3, DA +3 cells
+
+Symptom: 04-23 / 04-26 / 05-16 / 05-20 DA Prima emit "secunda
+Domine, exaudi omittitur" (preces firing). Perl emits the FULL
+form (V/R Domine exaudi twice + Visita) with preces NOT firing.
+
+These dates fall in the Joseph-Patrocinium Octave under DA (the
+Octave runs from Wed Pasc2-3 — the 3rd Wed after Easter — for
+8 days). Tempora ferials in the octave have:
+- `Tempora/Pasc2-4` [Officium] = "De II die infra Octavam S.
+  Joseph" (Day 2)
+- `Tempora/Pasc2-5` [Officium] = "De III die infra Octavam S.
+  Joseph"
+- ...etc.
+
+Trace: `specials/preces.pl:41-58` checks `$commemoratio{Rank}
+=~ /Octav/i`. When Sancti wins occurrence (e.g. St. George rank
+2.2 wins over Joseph-Octave-Day-2 rank 2 because Sancti tie
+rules favor the saint here), the loser Tempora becomes
+`$commemoratio`. Its [Rank] field has [Officium] prepended →
+"De II die infra Octavam S. Joseph;;Semiduplex;;2;;..." →
+matches /Octav/i → reject.
+
+Under T1570/T1910/R55/R60, the Joseph-Patrocinium Octave was
+not in the calendar — `tempora_redirects.txt` redirects
+`Tempora/Pasc2-4` → `Tempora/Pasc2-4Feria` (bare ferial without
+Joseph). Under DA there's no redirect token (DA has no entry
+in the token list `1570 1888 1906 1960 Newcal`), so DA gets
+the bare Pasc2-4 with Joseph commemoration.
+
+Fix in `preces_dominicales_et_feriales_fires`: when winner is
+Sancti, compute the parallel Tempora day_key (using
+`getweek(d, m, y)` + `dayofweek`), apply the rubric-aware
+`tempora_table::redirect`, look up the file's [Officium], and
+reject preces if it contains "infra octavam" or "in octava"
+(but NOT "post octavam" — those are post-octave designators
+and Perl fires preces on those).
+
+The rubric-aware redirect is critical: without it, T1570/T1910
+04-23 etc. (where Joseph-Octave isn't in the calendar but the
+Pasc2-4 file still has the Joseph officium) wrongly reject
+preces.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged — redirect to Pasc2-4Feria
+                   skips the Joseph rejection).
+    T1910: 99.62% → 99.73% (+3 cells: Joseph-Octave-week
+                            Sancti-Prima cases that match
+                            DA's pattern but were already
+                            partially handled).
+    DA:    99.42% → 99.52% (+3 cells: 04-23 / 05-16 / 05-20
+                            Sancti-Prima during Joseph-Octave).
+    R55:   99.04% (unchanged — redirect skips the rejection).
+    R60:   99.04% (unchanged — same).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Slice 83: Preces predicate's oct_key check requires rubric-active octave — DA +4 cells
 
 Symptom: 08-11 DA Prima emits the FULL form (V. Dómine exáudi

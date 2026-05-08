@@ -762,20 +762,11 @@ fn preces_dominicales_et_feriales_fires(
 
 // ─── Per-day proper splicing (B3) ────────────────────────────────────
 
-/// Build the resolution chain for a per-day office key. Starts with
-/// the day file itself, then walks `[Rule]` for `vide CXX` and
-/// `vide CXX;` directives (case-insensitive). Each commune target
-/// is itself walked for further `vide` chaining (so `Sancti/05-04`
-/// → `C7a` → `C7` falls out automatically when C7a's `[Rule]`
-/// references C7).
-///
-/// The chain is bounded — we cap recursion at 5 hops to defend
-/// against pathological cycles in upstream data.
+/// Test-only default-rubric wrapper around
+/// [`commune_chain_for_rubric`]. Production code threads the active
+/// rubric so `(sed rubrica X) vide CYY` directives in `[Rule]` fire.
+#[cfg(test)]
 fn commune_chain(day_key: &str) -> Vec<&'static HorasFile> {
-    // Default-rubric overload preserved for tests + B5 callers that
-    // don't yet thread an active rubric. Production renders should
-    // call `commune_chain_for_rubric` so `(sed rubrica X) vide CYY`
-    // overrides in the `[Rule]` body fire.
     commune_chain_for_rubric(day_key, crate::core::Rubric::Tridentine1570, "Vespera")
 }
 
@@ -1789,23 +1780,6 @@ fn tomorrow_has_no_prima_vespera(
     false
 }
 
-/// Parse the active rubric's rank from a horas file's `[Rank]`
-/// section. Mirrors the build-time `parse_horas_rank` MAX behaviour
-/// for backward compat with B5 callers, but evaluates conditional
-/// `(sed rubrica X)` gates first via `eval_section_conditionals` so
-/// the active rubric's variant wins. Falls back to whole-file
-/// `@Commune/CXX` inheritance when the day file's `[Rank]` body
-/// is missing — Sancti/01-XX whole-file redirects (Sancti/01-18
-/// Cathedra Petri = `@Sancti/02-22`) and Saturday BVM
-/// `Commune/C10b` (= `@Commune/C10`) need this path.
-fn parse_horas_rank_for_rubric(
-    day_key: &str,
-    rubric: crate::core::Rubric,
-    hora: &str,
-) -> Option<f32> {
-    active_rank_line_for_rubric(day_key, rubric, hora).map(|(_, _, num)| num)
-}
-
 /// Parse the active rubric's `[Rank]` line and return its full
 /// line text + the class field ("Semiduplex", "Duplex", "Simplex",
 /// "Feria", …) + its numeric rank. The full line is the upstream
@@ -2080,7 +2054,7 @@ fn rule_lectio_count(rule: &str) -> u8 {
 fn parse_vide_targets(rule: &str) -> Vec<String> {
     let mut out = Vec::new();
     let mut seen = std::collections::HashSet::new();
-    let mut push = |s: String, out: &mut Vec<String>, seen: &mut std::collections::HashSet<String>| {
+    let push = |s: String, out: &mut Vec<String>, seen: &mut std::collections::HashSet<String>| {
         if seen.insert(s.clone()) {
             out.push(s);
         }

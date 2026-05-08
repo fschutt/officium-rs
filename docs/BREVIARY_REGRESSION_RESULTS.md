@@ -3077,6 +3077,53 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 86: Preces predicate's [Commemoratio]-octav reject — DA +2 cells
+
+Symptom: 04-26 DA Sun III post Pasch Prima + Compline emit
+"secunda Domine, exaudi omittitur" (preces firing). Perl emits
+the FULL form (preces NOT firing).
+
+04-26 is in the Joseph-Patrocinium Octave window (Pasc2-3 Wed
+through Pasc3-3 Wed). Tempora/Pasc3-0 (Sun III post Pasch) has
+a `[Commemoratio] (nisi rubrica cisterciensis)` section:
+
+```
+!Commemoratio pro Octava S. Joseph
+@Tempora/Pasc2-3:Oratio
+```
+
+Trace: `specials/preces.pl:60-65` final-fire gate:
+```
+if ($dominicales
+    && ($winner{Rank} !~ /octav/i || $winner{Rank} =~ /post octav/i)
+    && checkcommemoratio(\%winner) !~ /Octav/i)
+{ ... return 1; }
+```
+
+`checkcommemoratio(\%winner)` returns the winner's
+[Commemoratio] body. For 04-26 DA Sun, the body contains
+"Octava" (in "Commemoratio pro Octava S. Joseph") → reject.
+
+Our predicate had no [Commemoratio]-section check. Add one
+mirroring Perl's `checkcommemoratio !~ /Octav/i` test.
+
+The match is broad — `lc.contains("octav")` (no `!post octav`
+exclusion). Mirrors Perl's `/Octav/i` behaviour.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged).
+    T1910: 99.79% (unchanged).
+    DA:    99.66% → 99.73% (+2 cells: 04-26 Prima + Compl).
+    R55:   99.04% (unchanged).
+    R60:   99.04% (unchanged).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Slice 85: Preces Feriales-fires-on-Adv/Quad-weekname path — T1910 +1, DA +3 cells
 
 Symptom: 03-07 / 03-21 DA Sat Compline emit V/R Domine exaudi

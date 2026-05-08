@@ -965,6 +965,23 @@ fn preces_dominicales_et_feriales_fires(
             return false;
         }
     }
+    // Mirror Perl preces.pl line 60-65: `checkcommemoratio(\%winner)
+    // !~ /Octav/i` — reject preces when the winner's [Commemoratio]
+    // section body mentions an Octave (movable octaves like Joseph,
+    // Sacred Heart). The Perl regex matches "Octav" anywhere
+    // (including "Octava" in "Commemoratio pro Octava S. Joseph"
+    // on Pasc3-0 during Joseph-Patrocinium Octave week under DA).
+    //
+    // Closes 04-26 DA Sun III post Pasch Prima/Compl: Pasc3-0 has
+    // [Commemoratio] (nisi rubrica cisterciensis) `!Commemoratio
+    // pro Octava S. Joseph` → contains "Octava" → reject preces.
+    if let Some(comm_body) = section_via_inheritance_rubric(file, "Commemoratio", Some(rubric)) {
+        let evaluated = eval_section_conditionals(&comm_body, rubric, hour);
+        let lc_comm = evaluated.to_lowercase();
+        if lc_comm.contains("octav") {
+            return false;
+        }
+    }
     // 1955/1960 only on Wednesdays/Fridays/Ember days. Pre-1955 has
     // no day-of-week restriction.
     let pre_1955 = matches!(

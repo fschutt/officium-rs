@@ -674,6 +674,75 @@ fn preces_dominicales_et_feriales_fires(
     // under T1570 sees the active "Sexta die infra Octavam
     // Nativitatis BMV" cell; 12-09 under T1570 sees no cells
     // (Imm. Conc. octave is post-1854).
+    // Feriales path — Perl `preces.pl:22-37` fires preces
+    // unconditionally when day_key is in Adv/Quad weekname AND
+    // winner is not Sancti. Mirror of:
+    //
+    //   if ( $dayofweek
+    //        && !($dayofweek == 6 && $hora =~ /vespera/i)
+    //        && ( $winner !~ /sancti/i
+    //             && ($rule =~ /Preces/i || $dayname[0] =~ /Adv|Quad(?!p)/i || emberday())
+    //             || ($version !~ /1955|1960|Newcal/ && $winner{Rank} =~ /vigil/i ...))
+    //        && ($version !~ /1955|1960|Newcal/ || $dayofweek =~ /[35]/ || emberday()))
+    //   { return 1; }
+    //
+    // Closes 03-07 / 03-21 DA Sat Compl (1V swap to Sun in Lent —
+    // dayname[0]=Quad3 → Feriales fires). Without this, our cells
+    // loop saw the Saturday's Sancti commemoratio and wrongly
+    // rejected.
+    //
+    // Restrict to (a) Tempora-winner (winner !~ /sancti/), (b)
+    // Adv/Quad[0-5] weekname (Quadp/Septuagesima cycle excluded),
+    // (c) pre-1955 rubrics (post-1955 keeps the Wed/Fri restriction
+    // applied later).
+    let pre_1955_for_feriales = matches!(
+        rubric,
+        crate::core::Rubric::Tridentine1570
+            | crate::core::Rubric::Tridentine1910
+            | crate::core::Rubric::DivinoAfflatu1911
+    );
+    if pre_1955_for_feriales && day_key.starts_with("Tempora/") {
+        let stem = day_key.strip_prefix("Tempora/").unwrap_or("");
+        let weekname = stem.split('-').next().unwrap_or("");
+        let is_adv_or_quad = weekname.starts_with("Adv")
+            || (weekname.starts_with("Quad") && !weekname.starts_with("Quadp"));
+        if is_adv_or_quad && dayofweek != 0 {
+            // Mirror Perl's early-rejection gate before firing
+            // Feriales: `$duplex > 2` rejects when winner is
+            // Duplex+ rank. Septem Dolorum BMV (Tempora/Quad5-5
+            // Duplex majus rank 4 under T1910) hits this — Perl
+            // rejects, our Feriales path would otherwise fire.
+            // `$rule =~ /Omit Preces/` is checked symmetrically.
+            let active_rank_line = active_rank_line_for_rubric(day_key, rubric, hour);
+            let duplex_class_for_feriales: u8 = active_rank_line
+                .as_ref()
+                .map(|(_, cls, _)| {
+                    let lc = cls.to_lowercase();
+                    if lc.is_empty() {
+                        3
+                    } else if lc.contains("semiduplex") {
+                        2
+                    } else if lc.contains("duplex") {
+                        3
+                    } else {
+                        1
+                    }
+                })
+                .unwrap_or(1);
+            let omit_preces = lookup(day_key)
+                .and_then(|f| section_via_inheritance_rubric(f, "Rule", Some(rubric)))
+                .map(|r| {
+                    let evaluated = eval_section_conditionals(&r, rubric, hour);
+                    let lc = evaluated.to_lowercase();
+                    lc.contains("omit") && lc.contains("preces")
+                })
+                .unwrap_or(false);
+            if !omit_preces && duplex_class_for_feriales <= 2 {
+                return true;
+            }
+        }
+    }
+
     let layer = rubric.kalendar_layer();
     if let Some(cells) = crate::kalendaria_layers::lookup(layer, lookup_m, lookup_d) {
         // Branch (b) `Dominicales` commemoratio rank check.

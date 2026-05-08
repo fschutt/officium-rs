@@ -3077,6 +3077,49 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 85: Preces Feriales-fires-on-Adv/Quad-weekname path — T1910 +1, DA +3 cells
+
+Symptom: 03-07 / 03-21 DA Sat Compline emit V/R Domine exaudi
+twice (preces NOT firing). Perl emits "secunda Domine, exaudi
+omittitur" (preces firing). 12-12 Sat (Advent) DA Compline same
+pattern.
+
+Trace: `specials/preces.pl:22-37` Feriales-firing path fires
+when `$dayname[0] =~ /Adv|Quad(?!p)/i` and winner is Tempora.
+After 1V swap from Sat to Sun in Lent / Advent, `$dayname[0] =
+$tomorrowname[0]` becomes the Sunday's weekname. Perl's regex
+matches and preces fire.
+
+Our predicate had no Feriales path — relied on Dominicales
+cells loop, which rejected on the Saturday's Sancti
+commemoration rank (Aquinas Duplex 3 ≥ 3 → reject).
+
+Fix in `preces_dominicales_et_feriales_fires`: add a Feriales
+path before the cells loop. Gates:
+1. Pre-1955 rubric (T1570/T1910/DA).
+2. day_key starts with `Tempora/Adv*` or `Tempora/Quad[0-5]*`
+   (Quadp / Septuagesima excluded).
+3. dayofweek != 0.
+4. Active winner [Rank] class is not Duplex+ (Septem Dolorum
+   BMV on Quad5-5 is Duplex majus 4 → mirror Perl's $duplex > 2
+   early reject).
+5. winner [Rule] doesn't contain "Omit Preces".
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged).
+    T1910: 99.73% → 99.79% (+1 cell).
+    DA:    99.52% → 99.66% (+3 cells: 03-07 / 03-21 / 12-12
+                            Sat Compl).
+    R55:   99.04% (unchanged — gate excludes post-1955).
+    R60:   99.04% (unchanged).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Slice 84: Preces predicate rejects on Tempora-Joseph-Octave commemoratio — T1910 +3, DA +3 cells
 
 Symptom: 04-23 / 04-26 / 05-16 / 05-20 DA Prima emit "secunda

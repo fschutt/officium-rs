@@ -991,6 +991,42 @@ eves where the day-after carries "Feria privilegiata".
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 26: "Feria major" tomorrow-no-1V — full year T1570 88.15% → 88.66%
+
+Slice 25 caught "Feria privilegiata" (Ash Wed and similar rank
+6.9 days). Lent ferials Quadp3-4/5/6 and the Quad week ferials
+carry a related class **"Feria major"** (rank 2.1 default, 4.9
+under 1930) — same Lent semantics, no proper 1st Vespers.
+
+Wed 02-19 Vespera, today=Quadp3-4 (Thu after Ash Wed) tomorrow=
+Quadp3-5 (Fri). Both "Feria major" rank 2.1, equal. Default tie
+goes to tomorrow → wrong. Adding "feria major" to the no-1V
+class match keeps today (= Quadp3-4 [Oratio 3] = "Parce, Domine,
+parce populo tuo...").
+
+**30-day Jan 2026 × T1570:** stays at 240/240 (100.00%).
+
+**Full year 2026 × T1570 × Oratio:**
+2574/2920 (88.15%) → **2589/2920 (88.66%)** (+15 cells).
+
+| Hour          | Pre slice 26 | Post slice 26 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 329/365 (90%) | 329/365 (90%) | — |
+| Laudes        | 329/365 (90%) | 329/365 (90%) | — |
+| Prima         | 315/365 (86%) | 315/365 (86%) | — |
+| Tertia        | 329/365 (90%) | 329/365 (90%) | — |
+| Sexta         | 329/365 (90%) | 329/365 (90%) | — |
+| Nona          | 329/365 (90%) | 329/365 (90%) | — |
+| Vespera       | 298/365 (82%) | 313/365 (86%) | +15 |
+| Completorium  | 316/365 (87%) | 316/365 (87%) | — |
+
+Closes Lent ferial Vesperas (Thu/Fri/Sat after Ash Wed, Lent
+weekday eves) where today's "Feria major" Tempora-ferial Oratio
+should continue.
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

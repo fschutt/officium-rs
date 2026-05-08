@@ -925,7 +925,7 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     // detection lives in the simplex/feria splice logic instead.
     if let Some((_full, cls, _num)) = active_rank_line_for_rubric(tomorrow_key, rubric, hora) {
         let lc = cls.to_lowercase();
-        if lc.contains("feria privilegiata") {
+        if lc.contains("feria privilegiata") || lc.contains("feria major") {
             return today_key;
         }
     }

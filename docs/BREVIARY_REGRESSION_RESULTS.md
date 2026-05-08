@@ -2173,7 +2173,65 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 50: Sept Embertide week-Sunday-Oratio splice — date-based fallback — T1570 +1, R55 +1
+
+Symptom: T1570 09-18 Fri Vespera (Sept Ember Fri) emits the
+day's own [Oratio] (Tempora/093-5 = "Praesta, quaesumus,
+omnipotens Deus: ut observationes sacras..."). Perl emits
+Pent16-0's Sun Oratio "Tua nos, quaesumus, Domine, gratia
+semper et praeveniat...".
+
+Trace: Slice 44's Quattuor Temporum Vespera trigger fires
+(Tempora/093-5 [Officium] = "Feria Sexta Quattuor Temporum
+Septembris" → contains "quattuor temporum"). The week-Sunday
+key was derived by `week_sunday_key_for_tempora(day_key)` →
+"Tempora/093-0". Tempora/093-0 EXISTS (it's the September
+scripture overlay "Dominica III. Septembris") but has only
+[Scriptura], [Ant 1], [Lectio*] sections and NO [Oratio]. So
+the Sunday-splice failed and the day's body was emitted.
+
+The September Embertide overlay files (`Tempora/093-X`) are
+month-day overlays that don't naturally encode the liturgical
+week. The actual liturgical week is `Pent16` (16th Sun after
+Pentecost). For 09-18 in 2026, `date::getweek` returns
+"Pent16".
+
+Fix: in `splice_proper_into_slot`, derive the week-Sunday
+candidate via TWO paths:
+  1. Day-key-based (handles Adv3-3o → Adv3-0).
+  2. Date-based (handles Tempora/093-5 → Tempora/Pent16-0).
+
+Pick the first candidate whose file has an [Oratio] (chased
+through `__preamble__` inheritance) — Tempora/093-0 fails this
+filter (no Oratio), Tempora/Pent16-0 succeeds. Threading:
+splice_proper_into_slot now takes year/month/day to call
+`date::getweek`.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Vespera   96.99% → 97.26% (+1 cell — 09-18)
+      Overall   97.40% → 97.43%
+    R55: 94.21% → 94.25% (+1 cell)
+    R60: 97.16% (unchanged — slice 44 excludes R60 from the
+         Quattuor trigger)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
+
+- **Hour-aware annotation filter** (slice 50 attempt): tried
+  treating `(nisi ad vesperam aut rubrica X)` as hour-context
+  annotation that filters at Vespera. Got R60 -15 cells because
+  Perl's `vero` regex `/vesperam/i` doesn't actually match the
+  hora value "Vespera" (no trailing `m`), so the annotation
+  ALWAYS applies in Perl regardless of hour. Reverted; the
+  Quattuor force_sunday_oratio path (slice 44) handles the
+  T1570 swap correctly.
 
 - **`section_via_inheritance` walked + Officium-prepended Vigilia
   gate** (slice 46 attempt): tried extending slice 42's Vigilia

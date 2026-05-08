@@ -209,7 +209,18 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
             "section" => {
                 if let Some(label) = &line.label {
                     out.push(RenderedLine::Section { label: label.clone() });
-                    splice_proper_into_slot(&mut out, label, args.hour, args.rubric, &chain, prayers_file, args.day_key);
+                    splice_proper_into_slot(
+                        &mut out,
+                        label,
+                        args.hour,
+                        args.rubric,
+                        &chain,
+                        prayers_file,
+                        args.day_key,
+                        args.year,
+                        args.month,
+                        args.day,
+                    );
                 }
             }
             "rubric" => {
@@ -1692,6 +1703,54 @@ fn best_matching_section(
     file.sections.get(name).cloned()
 }
 
+/// Hour-aware annotation evaluation. Mirror of upstream's `vero`
+/// predicate that treats `ad vesperam` / `ad laudes` / `ad missam`
+/// as context tags. Used by `find_section_in_chain` so a section
+/// like `[Oratio] (nisi ad vesperam aut rubrica 196)` correctly
+/// SKIPS at Vespera under T1570 (the inner predicate matches via
+/// "ad vesperam" → `nisi` inverts → annotation doesn't apply).
+///
+/// Falls back to plain `annotation_applies_to_rubric` when the
+/// annotation has no hour-context predicate.
+fn annotation_applies_in_context(
+    annotation: &str,
+    rubric: crate::core::Rubric,
+    hour: &str,
+) -> bool {
+    let lc = annotation.trim().to_ascii_lowercase();
+    if let Some(rest) = lc.strip_prefix("nisi ") {
+        return !annotation_applies_in_context(rest, rubric, hour);
+    }
+    // Normalise "aut" alternatives — recurse on each branch and OR.
+    if lc.contains(" aut ") {
+        return lc
+            .split(" aut ")
+            .any(|alt| annotation_applies_in_context(alt.trim(), rubric, hour));
+    }
+    // Hour-context predicates. Perl's `vero` table maps:
+    //   "ad vesperam" / "ad vesperas" → $hora =~ /vespera/i
+    //   "ad laudes"                   → $hora =~ /laudes/i
+    //   "ad matutinum"                → $hora =~ /matutinum/i
+    //   "ad missam"                   → Mass context (Office: false)
+    let lc_hour = hour.to_ascii_lowercase();
+    if lc.starts_with("ad vespera") {
+        return lc_hour.contains("vespera");
+    }
+    if lc.starts_with("ad laudes") {
+        return lc_hour.contains("laudes");
+    }
+    if lc.starts_with("ad matutinum") {
+        return lc_hour.contains("matutinum");
+    }
+    if lc.starts_with("ad completorium") {
+        return lc_hour.contains("completorium");
+    }
+    if lc.starts_with("ad missam") {
+        return false; // Office context — never Mass
+    }
+    crate::mass::annotation_applies_to_rubric(annotation, rubric)
+}
+
 fn first_at_path_inheritance(file: &HorasFile) -> Option<String> {
     let preamble = file.sections.get("__preamble__")?;
     for line in preamble.lines() {
@@ -1968,6 +2027,9 @@ fn splice_proper_into_slot(
     chain: &[&HorasFile],
     prayers_file: Option<&HorasFile>,
     day_key: Option<&str>,
+    year: i32,
+    month: u32,
+    day: u32,
 ) {
     if chain.is_empty() {
         return;
@@ -2060,7 +2122,36 @@ fn splice_proper_into_slot(
     // [Rule] = "Preces Feriales", no `vide` link), so we have to fetch
     // explicitly.
     if force_sunday_oratio {
-        if let Some(sunday_key) = day_key.and_then(week_sunday_key_for_tempora) {
+        // Two derivation paths for the week-Sunday key:
+        //   1. Day-key-based (handles Adv3-3o → Adv3-0).
+        //   2. Date-based (handles Sept Embertide Tempora/093-5 →
+        //      Tempora/Pent16-0 for the Sun-of-week, since the
+        //      September Embertide overlay file `093-X` doesn't
+        //      naturally encode the liturgical week).
+        let from_key = day_key.and_then(week_sunday_key_for_tempora);
+        let from_date = {
+            let weekname = crate::date::getweek(day, month, year, false, true);
+            if weekname.is_empty() {
+                None
+            } else {
+                Some(format!("Tempora/{weekname}-0"))
+            }
+        };
+        let candidates = [from_key, from_date];
+        // Prefer a key whose file actually carries an [Oratio]
+        // (or inherits one) — Tempora/093-0 (Dominica III Septembris)
+        // exists but only as a scripture overlay; it has no [Oratio]
+        // and would leave rust-blank. The date-based Pent16-0 has the
+        // real Sunday Oratio.
+        let sunday_key = candidates
+            .into_iter()
+            .flatten()
+            .find(|k| {
+                lookup(k)
+                    .and_then(|f| section_via_inheritance(f, "Oratio"))
+                    .is_some()
+            });
+        if let Some(sunday_key) = sunday_key {
             if let Some(file) = lookup(&sunday_key) {
                 if let Some(body) = section_via_inheritance(file, "Oratio") {
                     let resolved = expand_at_redirect(&body, "Oratio");
@@ -2572,6 +2663,21 @@ fn find_section_in_chain<'a>(
     name: &str,
     rubric: crate::core::Rubric,
 ) -> Option<&'a str> {
+    find_section_in_chain_hour(chain, name, rubric, "")
+}
+
+/// Hour-aware variant of [`find_section_in_chain`]. Used by the
+/// Vespera Oratio splice so a section like `[Oratio] (nisi ad
+/// vesperam ...)` correctly skips at Vespera. Other call sites
+/// (Matutinum lectios, antiphons, capitulum) don't carry hour-
+/// context annotations, so the bare wrapper passes "" and falls
+/// through to the rubric-only filter.
+fn find_section_in_chain_hour<'a>(
+    chain: &[&'a HorasFile],
+    name: &str,
+    rubric: crate::core::Rubric,
+    hour: &str,
+) -> Option<&'a str> {
     let prefix = format!("{name} (");
     // Per-file priority: try exact then prefix match on each file in
     // chain order. The day file (chain[0]) wins over commune
@@ -2609,7 +2715,12 @@ fn find_section_in_chain<'a>(
                 continue;
             }
             let annotation = rest.trim_end_matches(')').trim();
-            if crate::mass::annotation_applies_to_rubric(annotation, rubric) {
+            let applies = if hour.is_empty() {
+                crate::mass::annotation_applies_to_rubric(annotation, rubric)
+            } else {
+                annotation_applies_in_context(annotation, rubric, hour)
+            };
+            if applies {
                 return Some(body.as_str());
             }
             // Stash the first annotated-but-non-matching body as a

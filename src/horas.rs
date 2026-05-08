@@ -221,7 +221,8 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
                     // `$oratio_Visita` as plain lines (not `&macro`).
                     let expanded = expand_dollar_macro(body, prayers_file)
                         .unwrap_or_else(|| body.clone());
-                    out.push(RenderedLine::Plain { body: expanded });
+                    let respelled = apply_office_spelling(&expanded, args.rubric);
+                    out.push(RenderedLine::Plain { body: respelled });
                 }
             }
             "macro" => {
@@ -255,9 +256,10 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
                             .unwrap_or("")
                             .to_string()
                     };
+                    let respelled = apply_office_spelling(&body, args.rubric);
                     out.push(RenderedLine::Macro {
                         name: name.clone(),
-                        body,
+                        body: respelled,
                     });
                 }
             }
@@ -1403,7 +1405,8 @@ fn splice_proper_into_slot(
                 evaluated
             };
             let with_name = substitute_saint_name(&trimmed, saint_name);
-            out.push(RenderedLine::Plain { body: with_name });
+            let respelled = apply_office_spelling(&with_name, rubric);
+            out.push(RenderedLine::Plain { body: respelled });
             return;
         }
     }
@@ -1415,9 +1418,37 @@ fn splice_proper_into_slot(
             let resolved = expand_at_redirect(body, &hymnus_key);
             let evaluated = eval_section_conditionals(&resolved, rubric, hour);
             let with_name = substitute_saint_name(&evaluated, saint_name);
-            out.push(RenderedLine::Plain { body: with_name });
+            let respelled = apply_office_spelling(&with_name, rubric);
+            out.push(RenderedLine::Plain { body: respelled });
         }
     }
+}
+
+/// Apply Pius X 1910 classical spelling reform (`tr/Jj/Ii/`) under
+/// R60. Mirror of `crate::mass::apply_spelling_for_active_rubric`'s
+/// `Rubric::Rubrics1960` branch. The corpus stores the older
+/// `j`-form (`Jesum`, `cujus`, `justítiam`); R60 renders use the
+/// classical `i`-form (`Iesum`, `cuius`, `iustítiam`). Pre-1960
+/// rubrics keep the `j`-form verbatim.
+///
+/// One known opt-out: the chant marker `H-Iesu` is restored to
+/// `H-Jesu` after the swap (per upstream's `s/H\-Iesu/H-Jesu/g`).
+/// And `er eúmdem` becomes `er eúndem`.
+fn apply_office_spelling(text: &str, rubric: crate::core::Rubric) -> String {
+    if !matches!(rubric, crate::core::Rubric::Rubrics1960) {
+        return text.to_string();
+    }
+    let swapped: String = text
+        .chars()
+        .map(|c| match c {
+            'J' => 'I',
+            'j' => 'i',
+            other => other,
+        })
+        .collect();
+    swapped
+        .replace("H-Iesu", "H-Jesu")
+        .replace("er eúmdem", "er eúndem")
 }
 
 /// Substitute the `N.` placeholder in a Commune-of-Saints body with

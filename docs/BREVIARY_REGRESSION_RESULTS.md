@@ -1134,6 +1134,58 @@ ferials.
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 29: R60 j→i classical spelling — full year R60 16.67% → 82.67% (+200+ cells)
+
+Pius X's 1910 reform replaced medieval `Jesum` / `cujus` /
+`justítiam` orthography with classical `Iesum` / `cuius` /
+`iustítiam`. The corpus stores the older `j`-form; under R60,
+upstream Perl `horascommon.pl::spell_var` applies `tr/Jj/Ii/`
+at render time. Mass-side already had this via
+`crate::mass::apply_spelling_for_active_rubric` driven by
+thread-local `ACTIVE_RUBRIC`; Office didn't apply any Latin
+respelling.
+
+`apply_office_spelling(text, rubric)` is the Office mirror —
+under `Rubric::Rubrics1960` it does the same `tr/Jj/Ii/` swap
+plus the H-Iesu→H-Jesu opt-out and the `er eúmdem` →
+`er eúndem` typo fix that Mass uses. Pre-1960 rubrics
+(Tridentine 1570/1910, Divino Afflatu, Reduced 1955) keep the
+`j`-form verbatim — the corpus matches them already.
+
+Applied at three points:
+
+- `splice_proper_into_slot` after `substitute_saint_name` for
+  the proper-section splice.
+- `splice_proper_into_slot` Capitulum/Hymnus fallback branch.
+- `compute_office_hour` walker — `kind: "plain"` (closes
+  `$oratio_Domine`, `$oratio_Visita`, `$Per Dominum` — Prima
+  and Compline fixed prayers) and `kind: "macro"` (closes
+  `&Dominus_vobiscum*`, `&Benedicamus_Domino`,
+  `&Deus_in_adjutorium`).
+
+**T1570 30-day Jan**: stays at 240/240 (100.00%) — pre-1960
+rubric, no spelling swap fires. **T1570 full year**: stays at
+2627/2920 (89.97%).
+
+**R60 30-day Jan**:
+
+| Hour          | Pre slice 29 | Post slice 29 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 7/30  (23%) | 24/30 (80%) | +17 |
+| Laudes        | 7/30  (23%) | 24/30 (80%) | +17 |
+| Prima         | 0/30  (0%)  | 30/30 (100%)| +30 |
+| Tertia        | 7/30  (23%) | 24/30 (80%) | +17 |
+| Sexta         | 7/30  (23%) | 24/30 (80%) | +17 |
+| Nona          | 7/30  (23%) | 24/30 (80%) | +17 |
+| Vespera       | 2/30  (7%)  | 11/30 (37%) | +9 |
+| Completorium  | 0/30  (0%)  | 30/30 (100%)| +30 |
+| **Aggregate** | **37/240 (15.42%)** | **191/240 (79.58%)** | **+154** |
+
+**R60 full year**: 16.67% → **82.67%** (+200+ cells).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

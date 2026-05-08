@@ -1848,6 +1848,39 @@ fn effective_today_rank_for_concurrence(
     let direct = active_rank_line_with_annotations(day_key, rubric, hora)
         .map(|(_, _, n)| n)
         .unwrap_or(0.0);
+    // Pre-Divino "Dominica minor" reduction. Mirror of
+    // `horascommon.pl::set_dayname:422-426`:
+    //
+    //   if ($version =~ /Trid/i
+    //       && $trank[2] < 5.1 && $trank[2] > 4.2
+    //       && $trank[0] =~ /Dominica/i
+    //       && $version !~ /altovadensis/i)
+    //   { $trank[2] = 2.9; }
+    //
+    // Pre-Divino: any "Dominica minor" (Semiduplex Sunday rank 5.0,
+    // e.g. Sun XII Post Pent) is outranked by any concurrent Duplex.
+    // Closes 08-16 T1570 Sat Vespera: today=Pent12-0 (Sun XII) rank
+    // 5.0 vs tomorrow=Sancti/08-17t (Lawrence Octave Day Duplex 3.1).
+    // Without reduction: today 5.0 > tomorrow 3.1 → keep 2V. With
+    // reduction: today 2.9 < tomorrow 3.1 → swap to Mon's 1V.
+    let is_tridentine_only = matches!(
+        rubric,
+        crate::core::Rubric::Tridentine1570 | crate::core::Rubric::Tridentine1910
+    );
+    let direct = if is_tridentine_only && direct > 4.2 && direct < 5.1 {
+        if let Some(file) = lookup(day_key) {
+            let officium = section_via_inheritance(file, "Officium").unwrap_or_default();
+            if officium.to_lowercase().contains("dominica") {
+                2.9
+            } else {
+                direct
+            }
+        } else {
+            direct
+        }
+    } else {
+        direct
+    };
     // Pre-DA Quad/Adv Sundays cede their 2nd Vespers to a concurrent
     // Duplex feast — mirror of `horascommon.pl::concurrence:862-869`:
     //

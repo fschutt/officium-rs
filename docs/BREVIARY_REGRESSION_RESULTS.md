@@ -3,6 +3,56 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 90: Pre-Divino "Dominica minor" rank reduction (T1570/T1910) — T1570 +1 cell
+
+`effective_today_rank_for_concurrence` now mirrors `setrank` at
+`horascommon.pl:422-426`:
+
+```perl
+if ( $version =~ /Trid/i
+    && ( ($trank[2] < 5.1 && $trank[2] > 4.2 && $trank[0] =~ /Dominica/i
+          && $version !~ /altovadensis/i)
+      || ($trank[0] =~ /infra octavam Corp/i && $version !~ /Cist/i)) )
+{
+    # before Divino: Dominica minor and infra 8vam CC is outranked by any Duplex
+    $trank[2] = 2.9;
+}
+```
+
+Pre-Divino convention: any "Dominica minor" (Semiduplex Sunday
+direct rank ~5.0, e.g. *Dominica XII Post Pentecosten*) is
+outranked by any concurrent Duplex feast — including a Duplex
+Octave Day on Monday. Previously we left today's rank at 5.0 so
+the Sat→Sun comparison kept 2V; now the Tridentine rubrics
+reduce today's effective rank to 2.9 when the rank-band gate
+(4.2 < rank < 5.1) and "Dominica" title both match.
+
+The mirror block for `infra octavam Corp` was already in
+`effective_tomorrow_rank_for_concurrence` (slice 89). This slice
+adds the parallel "Dominica minor" branch, completing the pre-
+Divino setrank reduction on the today side.
+
+**Cell impact:** Closes 08-16-2026 T1570 Sat Vespera (the only
+non-Triduum, non-All-Souls T1570 failure). Today=Pent12-0
+(Sun XII Post Pentecosten Semiduplex 5.0) vs tomorrow=
+Sancti/08-17t (*In Octava S. Laurentii Martyris* Duplex 3.1).
+
+  | Rubric              | Before | After |
+  |---------------------|-------:|------:|
+  | T1570 Vespera       | 363/365 | 364/365 |
+  | T1570 all-hours     | 99.83% | 99.86% |
+  | T1910 Vespera       | 363/365 | 364/365 |
+  | T1910 all-hours     | 99.86% | 99.86% |
+  | DA / R55 / R60      | unchanged | unchanged |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+
+After this slice, both T1570 and T1910 office sweeps differ only
+on the structural Triduum Prima cluster (`&psalm(50)` macro
+expander) — a clean separation between fix-now (post-Triduum
+office cells) and known-structural (Triduum / Office of the Dead).
+
+
+
 ## Sweep cadence
 
 ```

@@ -944,6 +944,13 @@ pub fn first_vespers_day_key<'a>(
 /// `Tempora/Epi4-0tt` (Sat-eve-of-Sun-IV variant Simplex 1.5),
 /// where rank 1.5 > today's Tempora-ferial 1.0 would otherwise
 /// pick the wrong office.
+///
+/// Concurrence rank lookups use [`active_rank_line_with_annotations`]
+/// — section-level annotated `[Rank] (rubrica X)` variants override
+/// the bare `[Rank]` for the active rubric. Drives Sancti/01-12 R60
+/// (Mon eve of 01-13 Baptism) where the bare `[Rank]` says Semiduplex
+/// 5.6 but R60's `[Rank] (rubrica 196 aut rubrica 1955)` says
+/// Feria 1.8 — the latter is what upstream `concurrence` compares.
 pub fn first_vespers_day_key_for_rubric<'a>(
     today_key: &'a str,
     tomorrow_key: &'a str,
@@ -962,7 +969,7 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     // 1V (Saturday BVM at Commune/C10b is Simplex 1.3 with full
     // 1V) so we don't block them generically — class-specific
     // detection lives in the simplex/feria splice logic instead.
-    if let Some((_full, cls, _num)) = active_rank_line_for_rubric(tomorrow_key, rubric, hora) {
+    if let Some((_full, cls, _num)) = active_rank_line_with_annotations(tomorrow_key, rubric, hora) {
         let lc = cls.to_lowercase();
         if lc.contains("feria privilegiata") || lc.contains("feria major") {
             return today_key;
@@ -976,7 +983,7 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     // Simplex-skip path: when today.class is Simplex and today is
     // Sancti, tomorrow always wins regardless of rank ordering.
     if today_key.starts_with("Sancti/") {
-        if let Some((_full, cls, num)) = active_rank_line_for_rubric(today_key, rubric, hora) {
+        if let Some((_full, cls, num)) = active_rank_line_with_annotations(today_key, rubric, hora) {
             let lc = cls.to_lowercase();
             let no_2v = num < 2.0
                 || lc.contains("simplex")
@@ -987,13 +994,131 @@ pub fn first_vespers_day_key_for_rubric<'a>(
             }
         }
     }
-    let today_rank = parse_horas_rank_for_rubric(today_key, rubric, hora).unwrap_or(0.0);
-    let tomorrow_rank = parse_horas_rank_for_rubric(tomorrow_key, rubric, hora).unwrap_or(0.0);
+    // "Festum Domini" priority: when tomorrow's [Rule] flags the
+    // day as a feast of the Lord, the Festum Domini wins first
+    // Vespers concurrence over Sunday-of-Octave / lower-rank Sancti
+    // even when the rank-num comparison goes the other way. Mirror
+    // of upstream `concurrence`'s Festum-Domini precedence path.
+    // Drives Sat 11-07 Vespera (= first vespers of Sun 11-08 Sun
+    // within Octave of All Saints) → swap to Mon 11-09 Dedication
+    // of Lateran Basilica because today's Sun-Octave is rank 3.1
+    // but tomorrow's "In Dedicatione Basilicæ Ss. Salvatoris;;Duplex"
+    // carries `Festum Domini` in its [Rule].
+    if tomorrow_rule_marks_festum_domini(tomorrow_key, rubric, hora) {
+        return tomorrow_key;
+    }
+    let today_rank = active_rank_line_with_annotations(today_key, rubric, hora)
+        .map(|(_, _, n)| n)
+        .unwrap_or(0.0);
+    let tomorrow_rank = active_rank_line_with_annotations(tomorrow_key, rubric, hora)
+        .map(|(_, _, n)| n)
+        .unwrap_or(0.0);
     if today_rank > tomorrow_rank {
         today_key
     } else {
         tomorrow_key
     }
+}
+
+/// `[Rule]` body contains the `Festum Domini` directive — a priority
+/// marker upstream uses for feasts of the Lord (Dedication of
+/// Basilicas, Transfiguration, Holy Name of Jesus, etc.). These
+/// outrank Sunday Octave commemorations in concurrence.
+fn tomorrow_rule_marks_festum_domini(
+    day_key: &str,
+    rubric: crate::core::Rubric,
+    hora: &str,
+) -> bool {
+    let Some(file) = lookup(day_key) else {
+        return false;
+    };
+    if let Some(rule) = file.sections.get("Rule") {
+        let evaluated = eval_section_conditionals(rule, rubric, hora);
+        if evaluated.to_lowercase().contains("festum domini") {
+            return true;
+        }
+    }
+    if let Some(parent) = first_at_path_inheritance(file) {
+        if parent != day_key {
+            return tomorrow_rule_marks_festum_domini(&parent, rubric, hora);
+        }
+    }
+    false
+}
+
+/// Variant of [`active_rank_line_for_rubric`] that ALSO checks
+/// rubric-conditional annotated section variants — `[Rank]
+/// (rubrica X aut rubrica Y)`. The build script stores annotated
+/// sections under keys like "Rank (rubrica 196 aut rubrica 1955)";
+/// for the active rubric, the matching annotated variant should
+/// override the bare `[Rank]`.
+///
+/// Used only by `first_vespers_day_key_for_rubric` for concurrence
+/// comparisons. Not used by the preces predicate, which proved
+/// regression-prone in slice 31a — see `BREVIARY_REGRESSION_RESULTS.md`.
+fn active_rank_line_with_annotations(
+    day_key: &str,
+    rubric: crate::core::Rubric,
+    hora: &str,
+) -> Option<(String, String, f32)> {
+    let file = lookup(day_key)?;
+    use crate::setupstring::{find_conditional, vero, Subjects};
+    let subjects = Subjects {
+        rubric: Some(rubric),
+        hora,
+        ..Default::default()
+    };
+    // Scan annotated `[Rank] (cond)` variants first. Build script
+    // keys: "Rank (cond)". `find_conditional` strips leading
+    // stopwords ("sed") off `(...)` form so `vero` evaluates the
+    // bare predicate.
+    for (key, body) in file.sections.iter() {
+        if let Some(annot) = key.strip_prefix("Rank ") {
+            let m = match find_conditional(annot) {
+                Some(m) => m,
+                None => continue,
+            };
+            if vero(m.condition, &subjects) {
+                let evaluated = eval_section_conditionals(body, rubric, hora);
+                if let Some(out) = parse_first_rank_line(&evaluated) {
+                    return Some(out);
+                }
+            }
+        }
+    }
+    // Fall back to bare `[Rank]` with line-level conditional eval.
+    if let Some(body) = file.sections.get("Rank") {
+        let evaluated = eval_section_conditionals(body, rubric, hora);
+        if let Some(out) = parse_first_rank_line(&evaluated) {
+            return Some(out);
+        }
+    }
+    if let Some(parent_path) = first_at_path_inheritance(file) {
+        if parent_path != day_key {
+            return active_rank_line_with_annotations(&parent_path, rubric, hora);
+        }
+    }
+    None
+}
+
+/// Parse the first non-blank, non-`(`-prefixed line of a `[Rank]`
+/// body into `(full_line, class, rank_num)`.
+fn parse_first_rank_line(body: &str) -> Option<(String, String, f32)> {
+    for line in body.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('(') {
+            continue;
+        }
+        let parts: Vec<&str> = line.split(";;").collect();
+        if parts.len() < 3 {
+            continue;
+        }
+        let class = parts.get(1).unwrap_or(&"").trim().to_string();
+        if let Ok(rank) = parts[2].trim().parse::<f32>() {
+            return Some((line.to_string(), class, rank));
+        }
+    }
+    None
 }
 
 /// Mirror of upstream's `[Rule]`-level `No prima vespera` /

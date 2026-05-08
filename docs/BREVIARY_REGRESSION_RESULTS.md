@@ -1252,6 +1252,52 @@ rubrics.
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 32: annotated `[Rank]` lookup (concurrence-only) + Festum Domini priority — T1570 91.88% → 91.99%
+
+Two interlocking changes that fix R60 Sun 01-11 Vespera (Holy
+Family Sun → first vespers of Mon 01-12 ferial) and avoid the
+T1570 11-08 regression that blocked slice 31a:
+
+1. **`active_rank_line_with_annotations`** — new helper that
+   ALSO checks rubric-conditional annotated section variants
+   (`[Rank] (rubrica X aut rubrica Y)`). Used **only** by
+   `first_vespers_day_key_for_rubric` for concurrence rank
+   comparisons; the preces predicate continues to use the
+   line-level-eval-only `active_rank_line_for_rubric` (which
+   was regression-prone in slice 31a when both code paths
+   shared the annotation lookup).
+
+   The annotation lookup uses `find_conditional` to strip
+   leading stopwords ("sed") off `(rubrica X)` predicates so
+   `vero` evaluates the bare condition correctly.
+
+2. **`tomorrow_rule_marks_festum_domini`** — when tomorrow's
+   `[Rule]` body carries the `Festum Domini` directive (feasts
+   of the Lord like Dedication of the Lateran, Transfiguration,
+   Holy Name of Jesus), tomorrow always wins first-Vespers
+   concurrence regardless of rank-num comparison. Without this,
+   the new annotation lookup correctly picks T1570's
+   `[Rank] (rubrica tridentina) Duplex 3` for Sancti/11-09 (was
+   picking the bare default Duplex II classis 5 before slice 32),
+   but rank 3 < today's Sancti/11-08 Sun-Octave-of-All-Saints
+   3.1 → wrong winner. Festum Domini priority bypasses the
+   rank-num race.
+
+**T1570 30-day Jan**: stays at 240/240 (100.00%).
+
+| Rubric × Window         | Pre slice 32 | Post slice 32 | Δ |
+|-------------------------|-------------:|--------------:|--:|
+| T1570 full year (2920c) | 91.88% | **91.99%** | +3 |
+| R60   full year (2920c) | 91.99% | 91.99%      | — |
+
+R60 didn't gain net cells — the annotation lookup fixed Sun
+01-11 R60 Vespera, but other R60 Vespera fails dominate (133
+differs total, mostly Holy-Family-Sun and Lent ferials needing
+their own clusters).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Section-level `[Rank] (rubrica 196)` annotated lookup

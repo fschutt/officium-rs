@@ -60,6 +60,30 @@ pub struct OccurrenceResult {
     pub reform_trace: Vec<ReformAction>,
 }
 
+/// Pick the rubric-active `rank_num_*` field from a `MassFile`.
+///
+/// Used by the temporal and transferred-sancti paths, which want a
+/// "canonical" cascade — try the rubric's natural variant, fall
+/// through to the bare `rank_num`. No `rank_num_1570` tail-fallback
+/// (that's intentional — pre-1570 fallback shouldn't fire under
+/// post-1570 rubrics here).
+///
+/// The kalendar-resolved sancti path (`resolve_sancti_for_tridentine_1570`)
+/// uses a richer cascade with an extra `rank_num_1570` tail-fallback
+/// and a `prefer_1570_overrides` switch — that path keeps its own
+/// inline match because the asymmetry is intentional (legacy `(rubrica
+/// 1570)`-only files like Bibiana 12-02 need to fall back to the 1570
+/// rank under any rubric, but only at the kalendar-resolved stage).
+fn rank_num_for_rubric(file: &MassFile, rubric: Rubric) -> Option<f32> {
+    match rubric {
+        Rubric::Tridentine1570 | Rubric::Monastic => file.rank_num_1570.or(file.rank_num),
+        Rubric::Tridentine1910 => file.rank_num_1906.or(file.rank_num),
+        Rubric::DivinoAfflatu1911 => file.rank_num,
+        Rubric::Reduced1955 => file.rank_num_1955.or(file.rank_num),
+        Rubric::Rubrics1960 => file.rank_num_1960.or(file.rank_num_1955).or(file.rank_num),
+    }
+}
+
 /// Entry point. The 1570 baseline is the load-bearing rubric (99.7%
 /// cross-validated against Perl). Other rubrics dispatch through the
 /// same code path but consult their own `Layer` for kalendar
@@ -154,14 +178,7 @@ pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> Occurrenc
         0.0
     } else {
         tempora_file
-            .and_then(|f| match input.rubric {
-                Rubric::Tridentine1570 => f.rank_num_1570.or(f.rank_num),
-                Rubric::Tridentine1910 => f.rank_num_1906.or(f.rank_num),
-                Rubric::DivinoAfflatu1911 => f.rank_num,
-                Rubric::Reduced1955 => f.rank_num_1955.or(f.rank_num),
-                Rubric::Rubrics1960 => f.rank_num_1960.or(f.rank_num_1955).or(f.rank_num),
-                Rubric::Monastic => f.rank_num_1570.or(f.rank_num),
-            })
+            .and_then(|f| rank_num_for_rubric(f, input.rubric))
             .map(|r| downgrade_post_1570_octave(r, tempora_file.unwrap(), input.rubric))
             .unwrap_or(0.0)
     };
@@ -989,18 +1006,7 @@ fn apply_transfer_sancti_1570(
         // win at rank 6.0 (vs feria 3.9), not 3.0. Closes R60_misc
         // 03-20 day.
         let rank = mass
-            .and_then(|m| match rubric {
-                Rubric::Tridentine1570 | Rubric::Monastic => {
-                    m.rank_num_1570.or(m.rank_num)
-                }
-                Rubric::Tridentine1910 => m.rank_num_1906.or(m.rank_num),
-                Rubric::DivinoAfflatu1911 => m.rank_num,
-                Rubric::Reduced1955 => m.rank_num_1955.or(m.rank_num),
-                Rubric::Rubrics1960 => m
-                    .rank_num_1960
-                    .or(m.rank_num_1955)
-                    .or(m.rank_num),
-            })
+            .and_then(|m| rank_num_for_rubric(m, rubric))
             .unwrap_or(0.0);
         return Some((entry.main, rank));
     }

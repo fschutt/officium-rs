@@ -3077,6 +3077,80 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 70: Rubric-aware `@Path` section redirect — R55 +15, R60 +6 cells
+
+Symptom: 07-13 R55 (Anacletus Pope-Martyr) Tertia emits the literal
+text `@Commune/C2b` (12 bytes) instead of resolving to the
+"Gregem tuum, Pastor ætérne…" oration. Same for 09-23 R55
+(Linus). Spans Mat / Laudes / Tertia / Sexta / Nona / Vespera —
+five hours × multiple Pope-Martyr Sancti dates.
+
+Trace: chain walker for `Sancti/07-13` under R55 reaches
+`Commune/C2b-1`'s `[Oratio] (communi Summorum Pontificum)`. The
+SP annotation matches under R55/R60 (Perl predicate
+`/194[2-9]|195[45]|196/i`), so `find_section_in_chain` returns
+its body — which is just `@Commune/C2b`, a section-level
+redirect.
+
+`expand_at_redirect` then looks up `Commune/C2b`'s `[Oratio]`
+section, but the file has only `[Oratio] (communi Summorum
+Pontificum)` (no bare variant). The bare-key miss falls
+through to the literal-`@…` fallback, leaving the redirect
+unresolved.
+
+Under T1570/T1910/DA the SP annotation doesn't apply; the chain
+reaches `Commune/C2-1`'s bare `[Oratio] Deus qui nos beáti N…`
+oration through the `__preamble__` chain (C2b-1 → C2-1) and
+emits correctly. Only R55/R60 traversals end up in C2b.
+
+Fix in `src/horas.rs`: add `expand_at_redirect_rubric(body,
+default_section, rubric, hour)` which mirrors `expand_at_redirect`
+for the bare lookup, then falls through to scan annotated
+section variants (`<Section> (<annotation>)`) and pick the first
+whose annotation applies under the active rubric/hour. Reuses
+the same `annotation_applies_in_context` predicate as
+`find_section_in_chain`.
+
+Switch the main Oratio splice call site
+(`splice_proper_into_slot`) from `expand_at_redirect` to the
+rubric-aware variant. Other call sites (Mat lectio walker, hymn
+splice, self-`@:` redirect handler) keep the bare expander
+because their bodies are not section-level annotation-gated.
+
+Why this is narrow:
+* Only one call site changed — the candidate-loop in the
+  main Oratio splice path.
+* Pre-1955 rubrics behave identically: SP annotations don't
+  fire, the bare-section path runs first, fallback never
+  triggers. T1570 / T1910 / DA pass-rates unchanged.
+* `expand_at_redirect_rubric` is otherwise byte-for-byte
+  identical to the bare `expand_at_redirect` for the bare-
+  match case.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged).
+    T1910: 99.18% (unchanged).
+    DA:    98.77% (unchanged).
+    R55:   98.42% → 98.94% (+15 cells).
+    R60:   98.70% → 98.90% (+6 cells).
+
+  R55 differs by hour (before → after):
+    Matutinum 6 → 4
+    Laudes    7 → 4
+    Prima     4 → 4 (no change — Prima emits a different slot)
+    Tertia    7 → 4
+    Sexta     7 → 4
+    Nona      7 → 4
+    Vespera   7 → 7 (Sat-1V cluster, separate cause)
+    Compl     0 differ + 1 perl-blank + 2 empty (unchanged)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Slice 69: R60 office-context Sancti rank from horas-side `(rubrica 196)` override — R60 +8 cells
 
 Symptom: 07-16 R60 (BVM Carmeli) and 09-24 R60 (BVM de Mercede)

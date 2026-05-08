@@ -2674,6 +2674,73 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 61: R55 Semiduplex 2.2..2.8 ends after None — Vespera +23 cells
+
+Symptom: 35 R55 Vespera fails across the year — Sancti days
+where the Sancti is Semiduplex 2.2..2.8 (Vincent & Anastasius
+01-22, Polycarp 01-26, Joachim 03-19, Mark 04-25, Cyril 06-09,
+Anthony 06-13, Henry 07-15, Lawrence Justinian 09-05, etc.).
+Rust uses the Sancti's Oratio at Vespera; Perl uses the
+Tempora ferial's week-Sun Oratio (after wiping the saint).
+
+Trace: `horascommon.pl:382-389` first reduces the saint's rank:
+
+  } elsif ($version =~ /1955|Monastic.*Divino|1963/
+      && $srank[2] >= 2.2
+      && $srank[2] < 2.9
+      && $srank[1] =~ /Semiduplex/i)
+  {
+    $srank[2] = 1.2;    # 1955: Semiduplex reduced to Simplex
+  }
+
+Then at line 297-323 (Vespera/Compline branch), the saint is
+wiped:
+
+  } elsif ($hora =~ /(Vespera|Completorium)/i) {
+    $svesp = 3;
+    if (
+      ...
+      || ( $version =~ /1955|Monastic.*Divino|1963/
+        && $srank[2] >= 2.2 && $srank[2] < 2.9
+        && $srank[1] =~ /Semiduplex/i)    # Reduced to Simplex/Comm
+                                           # ad Laudes tantum ends
+                                           # after None.
+    ) {
+      $srank = '';
+      %saint = {};
+      ...
+    }
+  }
+
+So at Vespera/Compline, today's office becomes the Tempora
+ferial — which inherits its Oratio from the week-Sun via
+"Oratio Dominica".
+
+Fix: in `office_sweep::run_one_cell`, after the Christmas-Octave
+override and BEFORE the 1V swap, post-process derived_key:
+  1. hour ∈ {Vespera, Completorium}.
+  2. rubric == Reduced1955.
+  3. derived_key starts with "Sancti/" AND active rank class is
+     Semiduplex AND num ∈ [2.2, 2.9).
+  4. Tempora/<weekname>-<dow> exists.
+
+When all conditions hold, swap derived_key to the Tempora
+ferial. The 1V swap then runs on the new key, the splice picks
+up the week-Sun's Oratio via the "Oratio Dominica" fallback.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged — gate excludes T1570).
+    R55:   97.19% → 97.98%
+            Vespera 90.41% → 96.71% (+23 cells).
+    R60:   97.74% (unchanged — gate excludes R60).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Triduum Prima Oratio suppression**: tried suppressing the

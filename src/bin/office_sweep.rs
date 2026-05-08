@@ -399,6 +399,48 @@ fn run_one_cell(
         derived_key
     };
 
+    // R55 Semiduplex 2.2..2.8 → Tempora at Vespera/Completorium.
+    // Mirror of horascommon.pl:315-323 — under R55, Semiduplex
+    // saints with rank num ∈ [2.2, 2.9) are reduced to Simplex 1.2
+    // by lines 382-389, then wiped at Vespera/Compline by lines
+    // 315-318 ("Reduced to Simplex/Comm ad Laudes tantum ends
+    // after None"), leaving the Tempora ferial as the day's office.
+    //
+    // Drives 01-22 Thu R55 Vespera: today=Sancti/01-22 Vincent &
+    // Anastasius (Semiduplex 2.2). Without this rule, Rust uses
+    // Vincent Oratio "Adesto, Domine..."; Perl wipes the saint and
+    // uses Tempora/Epi2-0 [Oratio] "Omnipotens sempiterne Deus..."
+    // (the Sun-after-Epi2 Oratio).
+    //
+    // Narrow: only fires under R55. The Perl gate is
+    // `1955|Monastic.*Divino|1963` — R60 ('196') uses a different
+    // path and is excluded.
+    let today_dow_pre = officium_rs::date::day_of_week(dd, mm, yyyy);
+    let derived_key = if (hour == "Vespera" || hour == "Completorium")
+        && matches!(rubric, officium_rs::core::Rubric::Reduced1955)
+        && derived_key.starts_with("Sancti/")
+    {
+        let r55_semiduplex_22_28 =
+            horas::active_rank_line_with_annotations(&derived_key, rubric, hour)
+                .map(|(_, cls, n)| (cls, n))
+                .filter(|(cls, n)| {
+                    cls.to_lowercase().contains("semiduplex") && *n >= 2.2 && *n < 2.9
+                });
+        if r55_semiduplex_22_28.is_some() {
+            let weekname = officium_rs::date::getweek(dd, mm, yyyy, false, true);
+            let tempora_key = format!("Tempora/{weekname}-{today_dow_pre}");
+            if horas::lookup(&tempora_key).is_some() {
+                tempora_key
+            } else {
+                derived_key
+            }
+        } else {
+            derived_key
+        }
+    } else {
+        derived_key
+    };
+
     // For Vespera AND Completorium: auto-derive the next day's
     // office key and let `first_vespers_day_key` swap if tomorrow
     // outranks today. The Roman liturgical day starts at Vespers

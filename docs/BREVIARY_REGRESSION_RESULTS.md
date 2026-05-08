@@ -2873,6 +2873,58 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 64: Christmas Octave Sancti-vs-Tempora rank — R60 +4 cells
+
+Symptom: 12-28 R60 across 6 hours (Mat/Laudes/Tertia/Sexta/Nona/
+Vespera) emit "Concéde, quǽsumus, omnípotens Deus..." (Christmas
+Octave generic from Tempora/Nat28). Perl emits "Deus, cuius
+hodiérna die præcónium Innocéntes Mártyres non loquéndo, sed
+moriéndo conféssi sunt..." (Holy Innocents from Sancti/12-28).
+
+Trace: kalendarium 1960:
+
+  12-28=12-28r=Die quarta infra octavam Nativitatis=5=...
+
+The "5" is the kalendar's annotated rank. But Perl reads
+`$saint{Rank}` from setupstring — which loads Sancti/12-28r,
+which is `@Sancti/12-28` (whole-file inherit). Sancti/12-28's
+[Rank] (rubrica 196) = ";;Duplex II class;;5.4;;ex C3" →
+file-side srank=5.4. Tempora/Nat28's [Rank] (rubrica 196) =
+";;Duplex II classis;;5;;ex Sancti/12-25" → file-side trank=5.
+5.4 > 5 → sanctoral wins.
+
+Our compute_occurrence uses kalendaria_layers (kalendar
+annotation 5), not the file's actual rank — so srank=trank=5,
+default `srank > trank` fails → temporal wins.
+
+Fix: in `office_sweep::run_one_cell`'s Christmas-Octave override,
+use `horas::active_rank_line_with_annotations(&sancti_key, ...)`
+to get the file's actual rank (chases @inherit). Compare against
+Tempora's same-source rank. When sancti_rank > tempora_rank,
+swap winner to the Sancti.
+
+Extends slice 56 (which was T1570/T1910-only with a hard-coded
+threshold of 2.0 for the missa-vs-horas divergence) to cover
+DA/R55/R60 with file-rank comparison. T1570/T1910 retain the
+≥ 2.0 threshold as a fallback (because slice 56's missa-side
+Tempora/Nat29 rank 2.92 is invisible from the horas side, so
+file-rank comparison alone wouldn't reproduce slice 56's fix).
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged — slice 56 fallback preserves).
+    T1910: 99.08% (unchanged).
+    DA:    98.77% (unchanged — kalendar/file ranks agree on 12-28
+                   under DA).
+    R55:   98.12% (unchanged — same).
+    R60:   97.88% → 98.01% (+4 cells).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Triduum Prima Oratio suppression**: tried suppressing the

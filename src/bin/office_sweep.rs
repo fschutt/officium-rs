@@ -390,7 +390,9 @@ fn run_one_cell(
     };
 
     let resolved_key = if let Some(next) = next_derived_key.as_deref() {
-        horas::first_vespers_day_key_for_rubric(&derived_key, next, rubric, hour).to_string()
+        let today_dow = officium_rs::date::day_of_week(dd, mm, yyyy);
+        horas::first_vespers_day_key_for_rubric(&derived_key, next, rubric, hour, today_dow)
+            .to_string()
     } else {
         derived_key.clone()
     };

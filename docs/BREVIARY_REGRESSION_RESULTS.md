@@ -1409,6 +1409,68 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 35: R55/R60 1st-Vespers rank suppression — R60 92.40% → 95.92% (+103 cells)
+
+Symptom: R60 Vespera 64.11% (131 differs). Most R60 weekday
+Vesperas swap to tomorrow's office on every Duplex (rank 3)
+feast — 01-12 Mon Vespera renders Baptism's "Deus, cuius
+Unigénitus..." but Perl renders "Vota, quaesumus, Domine..."
+(today's Sunday-after-Epi inherited Oratio).
+
+Trace: `horascommon.pl::concurrence` lines 938-945 — R60 / R55
+suppress 1V via the `cwrank[2] < threshold` check inside the
+suppress-1V OR chain.
+
+R55 ("Reduced - 1955"): threshold = 5 unconditionally. Only
+Duplex II classis or higher get 1V.
+
+R60 ("Rubrics 1960"): threshold depends on tomorrow's title +
+[Rule]:
+  * 5 — when tomorrow's [Officium] contains "Dominica" OR
+    (tomorrow's [Rule] flags `Festum Domini` AND today is
+    Saturday). Sat-eve of Sun-Holy-Family (Festum Domini Sun)
+    fits the second branch.
+  * 6 — otherwise. Only Duplex I classis (rank 6+) get 1V on
+    weekday-eve.
+
+01-13 Baptism (Duplex II classis, Festum Domini, Tuesday) sits
+right at this gate: cwrank=5, today=Mon=1 (not 6) → threshold=
+6 → cwrank<threshold → 1V suppressed. So Mon 01-12 Vespera
+stays today, NOT tomorrow.
+
+Fix: add the rank-threshold suppression as a new gate in
+`first_vespers_day_key_for_rubric` between the
+`tomorrow_has_no_prima_vespera` check and the existing
+feria-privilegiata reject. Threshold logic is rubric-matched —
+T1570/T1910/DA fall through unchanged.
+
+Threading: `office_sweep` now passes `today_dow` (chrono-style
+0..=6, Sun=0..Sat=6) so R60 can detect the Sat-eve Festum
+Domini case.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:   91.99% → 91.99% — unchanged (gate is R55/R60
+             only, T1570 falls through)
+    R60:
+      Matutinum 95.34% → 95.34% (unchanged)
+      Laudes    95.89% → 95.89% (unchanged)
+      Tertia    95.34% → 95.34% (unchanged)
+      Sexta     95.34% → 95.34% (unchanged)
+      Nona      95.34% → 95.34% (unchanged)
+      Vespera   64.11% → 92.33% (+103 cells)
+      Compline  98.90% → 98.90% (unchanged)
+      Overall   92.40% → 95.92% (+103 cells)
+
+R55 also benefited (its threshold-5 path); R55 not previously
+broken-out — now Vespera 81.92%, overall 93.05%.
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Section-level `[Rank] (rubrica 196)` annotated lookup

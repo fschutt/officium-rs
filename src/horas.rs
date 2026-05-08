@@ -916,8 +916,9 @@ pub fn parse_horas_rank(body: &str) -> Option<f32> {
 /// equal-rank-Sancti vs equal-rank-Sancti case (e.g. Hilary 2.2
 /// vs Paul Eremite 2.2 under T1570 — Perl picks Paul).
 ///
-/// Compatibility shim — defaults to T1570/Vespera. Production code
-/// should call [`first_vespers_day_key_for_rubric`].
+/// Compatibility shim — defaults to T1570/Vespera/Mon (no R55/R60
+/// rank-suppression effect under T1570). Production code should call
+/// [`first_vespers_day_key_for_rubric`].
 pub fn first_vespers_day_key<'a>(
     today_key: &'a str,
     tomorrow_key: &'a str,
@@ -927,6 +928,7 @@ pub fn first_vespers_day_key<'a>(
         tomorrow_key,
         crate::core::Rubric::Tridentine1570,
         "Vespera",
+        1,
     )
 }
 
@@ -956,8 +958,55 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     tomorrow_key: &'a str,
     rubric: crate::core::Rubric,
     hora: &str,
+    today_dow: u32,
 ) -> &'a str {
     if tomorrow_has_no_prima_vespera(tomorrow_key, rubric, hora) {
+        return today_key;
+    }
+    // R55/R60 rank-based 1V suppression. Mirror of upstream
+    // `horascommon.pl::concurrence` lines 938-945 (within the
+    // suppress-1V OR chain). Most R60 days have NO 1st Vespers —
+    // tomorrow's office must clear a high rank threshold:
+    //   * R55 ("Reduced - 1955"): cwrank ≥ 5 (Duplex II classis +).
+    //   * R60 ("Rubrics 1960"): cwrank ≥ 5 ONLY when tomorrow's
+    //     [Officium] contains "Dominica" OR (tomorrow's [Rule] flags
+    //     `Festum Domini` AND today is Saturday); otherwise ≥ 6
+    //     (Duplex I classis only). 01-13 Baptism (Duplex II classis,
+    //     Festum Domini, but Tuesday) thus has NO 1V — Mon 01-12
+    //     Vespera continues today's office, NOT swapping to Baptism.
+    // Without this gate, R60 swaps to tomorrow on every Duplex
+    // (rank 3) feast → 130+ wrong R60 Vespera renders.
+    let suppress_1v = match rubric {
+        crate::core::Rubric::Reduced1955 => {
+            let tomorrow_rank = active_rank_line_with_annotations(tomorrow_key, rubric, hora)
+                .map(|(_, _, n)| n)
+                .unwrap_or(0.0);
+            tomorrow_rank < 5.0
+        }
+        crate::core::Rubric::Rubrics1960 => {
+            let tomorrow_rank = active_rank_line_with_annotations(tomorrow_key, rubric, hora)
+                .map(|(_, _, n)| n)
+                .unwrap_or(0.0);
+            let officium_is_dominica = lookup(tomorrow_key)
+                .and_then(|f| f.sections.get("Officium"))
+                .map(|body| {
+                    let evaluated = eval_section_conditionals(body, rubric, hora);
+                    let lc = evaluated.to_lowercase();
+                    lc.contains("dominica")
+                })
+                .unwrap_or(false);
+            let festum_domini_sat =
+                tomorrow_rule_marks_festum_domini(tomorrow_key, rubric, hora) && today_dow == 6;
+            let threshold = if officium_is_dominica || festum_domini_sat {
+                5.0
+            } else {
+                6.0
+            };
+            tomorrow_rank < threshold
+        }
+        _ => false,
+    };
+    if suppress_1v {
         return today_key;
     }
     // Tomorrow-side "Feria privilegiata" no-1V check: Lent ferials

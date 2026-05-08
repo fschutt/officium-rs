@@ -949,6 +949,48 @@ cases that the old `rank_num >= 3.0` rejection missed.
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 25: "Feria privilegiata" tomorrow-no-1V — full year T1570 87.98% → 88.15%
+
+Lent ferials carry rank class **"Feria privilegiata"** (with high
+rank num like 6.9 for Ash Wed), but they don't claim 1st Vespers
+in the Roman office — Tuesday Vespera before Ash Wednesday should
+NOT swap to Ash Wed; it continues with Tuesday's Tempora ferial
+(which inherits Sunday Quinquagesima's "Preces nostras..." Oratio
+via `Oratio Dominica`).
+
+Slice 25 adds a class-string check in
+`first_vespers_day_key_for_rubric`: when tomorrow's rank class
+contains "feria privilegiata", today wins regardless of rank.
+
+The check is **narrow** — only "Feria privilegiata", not generic
+"Feria" or "Simplex" / "Memoria". Generic Feria-class Tempora
+ferials (`Tempora/Epi3-4`) DO claim 1st Vespers (via the week
+Sunday's 1V). Sancti Simplex like Saturday BVM at Commune/C10b
+also has 1V despite Simplex 1.3 rank — generalising the check
+breaks 01-23 Fri Vespera (which correctly swaps to BVM Saturday).
+
+**30-day Jan 2026 × T1570:** stays at 240/240 (100.00%).
+
+**Full year 2026 × T1570 × Oratio:**
+2569/2920 (87.98%) → **2574/2920 (88.15%)** (+5 cells).
+
+| Hour          | Pre slice 25 | Post slice 25 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 329/365 (90%) | 329/365 (90%) | — |
+| Laudes        | 329/365 (90%) | 329/365 (90%) | — |
+| Prima         | 315/365 (86%) | 315/365 (86%) | — |
+| Tertia        | 329/365 (90%) | 329/365 (90%) | — |
+| Sexta         | 329/365 (90%) | 329/365 (90%) | — |
+| Nona          | 329/365 (90%) | 329/365 (90%) | — |
+| Vespera       | 294/365 (81%) | 298/365 (82%) | +4 |
+| Completorium  | 315/365 (86%) | 316/365 (87%) | +1 |
+
+Closes Vespera before Ash Wed (02-17) and similar Lent-ferial
+eves where the day-after carries "Feria privilegiata".
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

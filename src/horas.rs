@@ -914,6 +914,21 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     if tomorrow_has_no_prima_vespera(tomorrow_key, rubric, hora) {
         return today_key;
     }
+    // Tomorrow-side "Feria privilegiata" no-1V check: Lent ferials
+    // (Ash Wed `Quadp3-3` rank "Feria privilegiata 6.9") never
+    // claim 1st Vespers — Tue Vespera before Ash Wed should NOT
+    // swap; it continues with Tue's Tempora ferial (which inherits
+    // Sun Quinquagesima's Oratio via "Oratio Dominica"). Lower
+    // ranks (Simplex / Memoria / Commemoratio) sometimes DO have
+    // 1V (Saturday BVM at Commune/C10b is Simplex 1.3 with full
+    // 1V) so we don't block them generically — class-specific
+    // detection lives in the simplex/feria splice logic instead.
+    if let Some((_full, cls, _num)) = active_rank_line_for_rubric(tomorrow_key, rubric, hora) {
+        let lc = cls.to_lowercase();
+        if lc.contains("feria privilegiata") {
+            return today_key;
+        }
+    }
     // Sancti Simplex / Memoria / Commemoratio (rank < 2.0) has no
     // proper 2nd Vespers — the day's Vespers continues into the
     // next day's office. Tempora ferials don't have this problem

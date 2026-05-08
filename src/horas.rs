@@ -2099,6 +2099,19 @@ fn slot_candidates(label: &str, hour: &str) -> Vec<String> {
         "Oratio" => match hour {
             "Prima" | "Completorium" => Vec::new(),
             "Vespera" => vec!["Oratio 3".to_string(), "Oratio".to_string()],
+            // Mirror of `specials/orationes.pl:70-71`:
+            //   if ($hora eq 'Matutinum' && exists($winner{'Oratio Matutinum'})) {
+            //     $w = $w{'Oratio Matutinum'};
+            //   }
+            // Quad6-4..6 (Triduum) carry [Oratio Matutinum] =
+            // "Respice, quaesumus, Domine, super hanc familiam..."
+            // alongside the bare [Oratio] = "Christus factus est...
+            // Pater noster". At Mat, the proper Oratio is the former.
+            "Matutinum" => vec![
+                "Oratio Matutinum".to_string(),
+                "Oratio 2".to_string(),
+                "Oratio".to_string(),
+            ],
             _ => vec!["Oratio 2".to_string(), "Oratio".to_string()],
         },
 

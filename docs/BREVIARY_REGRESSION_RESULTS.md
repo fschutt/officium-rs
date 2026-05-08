@@ -2568,6 +2568,54 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 59: Mat hour-specific [Oratio Matutinum] preference — T1570 +3, R55 +3, R60 +3
+
+Symptom: 04-02 Holy Thu, 04-03 Good Fri, 04-04 Holy Sat
+Matutinum emit "Christus factus est... Pater noster..." (the
+bare [Oratio] body). Perl emits "Respice, quaesumus, Domine,
+super hanc familiam tuam..." — the Triduum-specific Mat Oratio.
+
+Trace: Quad6-4..6 (Holy Thu/Fri/Sat) carry TWO `[Oratio]`-family
+sections:
+  [Oratio]
+  v. Christus factus est pro nobis obédiens usque ad mortem.
+  $Pater noster
+  ...
+  @:Oratio Matutinum
+
+  [Oratio Matutinum]
+  v. Réspice, quǽsumus, Dómine, super hanc famíliam tuam...
+
+Mirror of `specials/orationes.pl:70-71`:
+
+  if ($hora eq 'Matutinum' && exists($winner{'Oratio Matutinum'})) {
+    $w = $w{'Oratio Matutinum'};
+  }
+
+At Matutinum, the hour-specific `[Oratio Matutinum]` overrides
+the bare `[Oratio]`. Our `slot_candidates` for Mat used
+`["Oratio 2", "Oratio"]` — missing the Mat-specific variant.
+
+Fix: extend Mat's slot_candidates to
+`["Oratio Matutinum", "Oratio 2", "Oratio"]`. Affects 3 Triduum
+days × all rubrics (the Triduum [Oratio Matutinum] section
+exists in pre-DA + R55/R60 alike, so the fix lands on all five
+rubrics).
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Matutinum 99.18% → 100.00% (+3 cells — Triduum)
+      Overall   99.73% → 99.83%
+    R60: 97.43% → 97.53% (+3 cells)
+    R55: 96.92% → 97.02% (+3 cells)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Triduum Prima Oratio suppression**: tried suppressing the

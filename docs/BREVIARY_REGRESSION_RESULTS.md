@@ -1336,6 +1336,79 @@ Simplex 1.3 fall in scope.
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 34: `find_section_in_chain` filters annotated section variants by rubric — T1570 91.99% → 93.32% (+39), R60 92.02% → 92.40% (+10)
+
+Symptom: 11-12 St. Martin Pope Matutinum/Laudes/Tertia/Sexta/
+Nona under T1570 emit raw `@Commune/C2b` text in the Oratio
+slot. Perl emits the proper "Deus, qui nos beáti Martíni
+Mártyris..." body from Commune/C2-1.
+
+Resolution chain for Sancti/11-12 [Oratio] T1570:
+
+  Sancti/11-12 — no [Oratio] of its own
+  Commune/C2b-1 — has `[Oratio] (communi Summorum Pontificum)`
+                  body `@Commune/C2b` (a redirect)
+  Commune/C2-1 — has bare `[Oratio]` body "Deus, qui nos beáti
+                 N. Mártyris..." (the Confessor-Pope/Martyr
+                 form pre-1942)
+  Commune/C2 — fallback
+
+Bug: `find_section_in_chain` matched any `Oratio (...)` prefix
+indiscriminately. C2b-1's `(communi Summorum Pontificum)` is a
+post-1942 form (`/194[2-9]|195[45]|196/i` upstream); under
+T1570 it should NOT fire. Without the filter, C2b-1's redirect
+body wins over C2-1's bare body.
+
+Fix: filter annotated keys through `crate::mass::
+annotation_applies_to_rubric` (the same function the Mass-side
+walker uses for [Oratio] (...) variants). Two-pass:
+
+  1. Bare `[Oratio]` or annotation matching the active rubric.
+     Drives Pope/Pontifex feasts under T1570 to skip the
+     `(communi Summorum Pontificum)` C2b body and continue to
+     C2-1's bare body.
+
+  2. Fallback: any annotated body with a "context-only"
+     annotation (`(ad missam)`, `(ad laudes)` style). Some
+     commune files only carry `(ad missam)` variants — Commune
+     /C9 [Oratio] (ad missam) is the All Souls Oratio, used
+     for both Mass and Office. Without the fallback, R60
+     11-02 All Souls Vespera renders blank.
+
+`annotation_is_office_context_only` excludes the rubric-gating
+annotations (`nisi …`, `rubrica X`, `communi summorum
+pontificum`) so they stay filtered.
+
+Threading: `splice_proper_into_slot`, `splice_matins_lectios`,
+`collect_nocturn_antiphons` now thread `rubric` through to
+`find_section_in_chain`.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Matutinum 92.88% → 94.79% (+7)
+      Laudes    92.88% → 94.79% (+7)
+      Tertia    92.88% → 94.79% (+7)
+      Sexta     92.88% → 94.79% (+7)
+      Nona      92.88% → 94.79% (+7)
+      Vespera   88.22% → 89.32% (+4)
+      Overall   91.99% → 93.32% (+39)
+
+    R60:
+      Matutinum 94.79% → 95.34% (+2)
+      Laudes    95.34% → 95.89% (+2)
+      Tertia    94.79% → 95.34% (+2)
+      Sexta     94.79% → 95.34% (+2)
+      Nona      94.79% → 95.34% (+2)
+      Vespera   63.84% → 64.11% (+1, rust-blank cleared)
+      Overall   92.02% → 92.40% (+10)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Section-level `[Rank] (rubrica 196)` annotated lookup

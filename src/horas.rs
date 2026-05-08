@@ -1587,7 +1587,7 @@ fn splice_proper_into_slot(
     // antiphon/psalmody/Te-Deum mechanic lands in B6+; for B5 we
     // splice the Lectio + Responsory pairs.
     if label == "Psalmi cum lectionibus" {
-        splice_matins_lectios(out, chain);
+        splice_matins_lectios(out, chain, rubric);
         return;
     }
 
@@ -1643,7 +1643,7 @@ fn splice_proper_into_slot(
         slot_candidates(label, hour)
     };
     for cand in candidates {
-        if let Some(body) = find_section_in_chain(chain, &cand) {
+        if let Some(body) = find_section_in_chain(chain, &cand, rubric) {
             let resolved = expand_at_redirect(body, &cand);
             let evaluated = eval_section_conditionals(&resolved, rubric, hour);
             let trimmed = if cand == "Oratio" || cand.starts_with("Oratio ") {
@@ -1662,7 +1662,7 @@ fn splice_proper_into_slot(
     // section even if Capitulum missed.
     if label == "Capitulum Hymnus Versus" || label == "Capitulum Responsorium Hymnus Versus" {
         let hymnus_key = format!("Hymnus {hour}");
-        if let Some(body) = find_section_in_chain(chain, &hymnus_key) {
+        if let Some(body) = find_section_in_chain(chain, &hymnus_key, rubric) {
             let resolved = expand_at_redirect(body, &hymnus_key);
             let evaluated = eval_section_conditionals(&resolved, rubric, hour);
             let with_name = substitute_saint_name(&evaluated, saint_name);
@@ -1872,7 +1872,11 @@ fn looks_like_corpus_path(s: &str) -> bool {
 /// (3 nocturns × 3 lectios with antiphons + Te Deum) lands in B6;
 /// this is the B5 baseline that satisfies "at least Lectio4 emits
 /// for Sancti/05-04".
-fn splice_matins_lectios(out: &mut Vec<RenderedLine>, chain: &[&HorasFile]) {
+fn splice_matins_lectios(
+    out: &mut Vec<RenderedLine>,
+    chain: &[&HorasFile],
+    rubric: crate::core::Rubric,
+) {
     let prayers_file = lookup("Psalterium/Common/Prayers");
     let mut emit_te_deum_after_last_lectio = false;
     // Pick lectio count from the day file's [Rule]: `9 lectiones`
@@ -1892,7 +1896,7 @@ fn splice_matins_lectios(out: &mut Vec<RenderedLine>, chain: &[&HorasFile]) {
     //       `[Ant Matutinum 3]` keys. Newer corpus.
     //   (3) Some Communes have only `[Ant Matutinum]` with fewer
     //       than 9 lines (Vidua C7 has 1).
-    let nocturn_antiphons = collect_nocturn_antiphons(chain);
+    let nocturn_antiphons = collect_nocturn_antiphons(chain, rubric);
     for n in 1..=lectio_count {
         // At each nocturn boundary, emit the nocturn-N antiphon block
         // before the lectio trio (Lectio1 → nocturn 1; Lectio4 →
@@ -1908,7 +1912,7 @@ fn splice_matins_lectios(out: &mut Vec<RenderedLine>, chain: &[&HorasFile]) {
             emit_nocturn_antiphon_block(out, &nocturn_antiphons, nocturn_idx);
         }
         let key = format!("Lectio{n}");
-        if let Some(body) = find_section_in_chain(chain, &key) {
+        if let Some(body) = find_section_in_chain(chain, &key, rubric) {
             // The trailing `&teDeum` directive in the per-day Lectio
             // body (typically Lectio9 or Lectio94) is the upstream
             // signal to emit the Te Deum hymn after the lectio. We
@@ -1923,7 +1927,7 @@ fn splice_matins_lectios(out: &mut Vec<RenderedLine>, chain: &[&HorasFile]) {
             }
         }
         let resp_key = format!("Responsory{n}");
-        if let Some(body) = find_section_in_chain(chain, &resp_key) {
+        if let Some(body) = find_section_in_chain(chain, &resp_key, rubric) {
             // Skip placeholder responsories (some C7a entries are
             // 1-line "vide" stubs <30 chars); the structural slot
             // marker is enough in those cases.
@@ -1949,12 +1953,15 @@ fn splice_matins_lectios(out: &mut Vec<RenderedLine>, chain: &[&HorasFile]) {
 ///      `Ant Matutinum 3` (newer corpus shape).
 ///   2. Single `Ant Matutinum` body — split it into lines, take
 ///      groups of 3.
-fn collect_nocturn_antiphons(chain: &[&HorasFile]) -> [Vec<String>; 3] {
+fn collect_nocturn_antiphons(
+    chain: &[&HorasFile],
+    rubric: crate::core::Rubric,
+) -> [Vec<String>; 3] {
     let mut out: [Vec<String>; 3] = Default::default();
     let mut any_per_nocturn = false;
     for n in 1..=3 {
         let key = format!("Ant Matutinum {n}");
-        if let Some(body) = find_section_in_chain(chain, &key) {
+        if let Some(body) = find_section_in_chain(chain, &key, rubric) {
             out[n - 1] = parse_antiphon_lines(body);
             any_per_nocturn = true;
         }
@@ -1963,7 +1970,7 @@ fn collect_nocturn_antiphons(chain: &[&HorasFile]) -> [Vec<String>; 3] {
         return out;
     }
     // Fallback: single multi-line `Ant Matutinum` body.
-    if let Some(body) = find_section_in_chain(chain, "Ant Matutinum") {
+    if let Some(body) = find_section_in_chain(chain, "Ant Matutinum", rubric) {
         let all = parse_antiphon_lines(body);
         // Distribute: first 3 → nocturn 1, next 3 → nocturn 2,
         // remainder → nocturn 3. When we have fewer than 9 lines,
@@ -2041,13 +2048,34 @@ fn lookup_te_deum_body(prayers: Option<&'static HorasFile>) -> Option<&'static s
 /// For B3 we accept the first prefix-match — proper rubric-aware
 /// disambiguation lands in B4 alongside the `(sed rubrica X
 /// omittitur)` directive evaluator.
-fn find_section_in_chain<'a>(chain: &[&'a HorasFile], name: &str) -> Option<&'a str> {
+fn find_section_in_chain<'a>(
+    chain: &[&'a HorasFile],
+    name: &str,
+    rubric: crate::core::Rubric,
+) -> Option<&'a str> {
     let prefix = format!("{name} (");
     // Per-file priority: try exact then prefix match on each file in
     // chain order. The day file (chain[0]) wins over commune
     // fallbacks; an annotated key on the day file (e.g. `Oratio
     // (nisi rubrica cisterciensis)`) wins over a bare `Oratio` on
     // a commune fallback.
+    //
+    // Annotated keys `Oratio (...)` are filtered through Mass-side
+    // `annotation_applies_to_rubric`. Two-pass:
+    //   1. Bare `[Oratio]` or annotations that explicitly apply to
+    //      the active rubric. Mirrors `setupstring_parse_file`'s
+    //      conditional pass — `(communi Summorum Pontificum)` on
+    //      Commune/C2b-1 is skipped under T1570/T1910/DA so the
+    //      `__preamble__` chain (`@Commune/C2-1`) can supply the
+    //      bare `[Oratio]`. Without this, the redirect-only body
+    //      `@Commune/C2b` leaks into T1570 Pope-saint Oratios as
+    //      raw text.
+    //   2. Fallback — any annotated body in the chain. Some commune
+    //      files (Commune/C9 All Souls) only carry `[Oratio]
+    //      (ad missam)` with no bare variant, and Perl's renderer
+    //      uses the Mass body as the Office body too. Restrictive
+    //      first-pass would leave All Souls Vespera blank.
+    let mut fallback: Option<&'a str> = None;
     for file in chain {
         if let Some(body) = file.sections.get(name) {
             if !body.trim().is_empty() {
@@ -2055,12 +2083,49 @@ fn find_section_in_chain<'a>(chain: &[&'a HorasFile], name: &str) -> Option<&'a 
             }
         }
         for (k, body) in &file.sections {
-            if k.starts_with(&prefix) && !body.trim().is_empty() {
+            let Some(rest) = k.strip_prefix(&prefix) else {
+                continue;
+            };
+            if body.trim().is_empty() {
+                continue;
+            }
+            let annotation = rest.trim_end_matches(')').trim();
+            if crate::mass::annotation_applies_to_rubric(annotation, rubric) {
                 return Some(body.as_str());
+            }
+            // Stash the first annotated-but-non-matching body as a
+            // safety net. Skip annotations that name competing rubrics
+            // (`communi Summorum Pontificum`, `rubrica monastica`,
+            // `rubrica cisterciensis`, `rubrica Ordo Praedicatorum`,
+            // `nisi …`) — those genuinely don't apply and stashing
+            // them would re-leak the bug.
+            if fallback.is_none() && annotation_is_office_context_only(annotation) {
+                fallback = Some(body.as_str());
             }
         }
     }
-    None
+    fallback
+}
+
+/// True when an annotation is a context tag (Mass form, hour form)
+/// rather than a rubric-version gate. Context-tag bodies are safe
+/// fallbacks when no bare/matching body exists in the chain — Perl's
+/// renderer reuses them in non-tagged hours. Examples: `(ad missam)`
+/// on Commune/C9 [Oratio]. Does NOT match `communi Summorum
+/// Pontificum`, `rubrica X`, or `nisi …` — those name a rubric
+/// version that genuinely doesn't apply and must stay filtered.
+fn annotation_is_office_context_only(annotation: &str) -> bool {
+    let lc = annotation.trim().to_ascii_lowercase();
+    if lc.is_empty() {
+        return false;
+    }
+    if lc.starts_with("nisi ")
+        || lc.starts_with("rubrica ")
+        || lc.starts_with("communi summorum pontificum")
+    {
+        return false;
+    }
+    true
 }
 
 #[cfg(test)]
@@ -2218,7 +2283,7 @@ mod tests {
         );
         // The day file's [Oratio] body resolves via prefix-match
         // (key is `Oratio (nisi rubrica cisterciensis)`).
-        let body = find_section_in_chain(&chain, "Oratio")
+        let body = find_section_in_chain(&chain, "Oratio", crate::core::Rubric::Tridentine1570)
             .expect("chain should resolve Oratio for Sancti/05-04");
         assert!(
             body.contains("Mónicæ"),
@@ -2355,7 +2420,7 @@ mod tests {
         // "Oratio Dominica") — chain must fall back to Tempora/Epi3-0
         // for the Sunday Oratio.
         let chain = commune_chain("Tempora/Epi3-4");
-        let oratio = find_section_in_chain(&chain, "Oratio");
+        let oratio = find_section_in_chain(&chain, "Oratio", crate::core::Rubric::Tridentine1570);
         assert!(
             oratio.is_some(),
             "Tempora/Epi3-4 chain should reach Tempora/Epi3-0 Oratio"
@@ -2390,7 +2455,7 @@ mod tests {
         // Sancti/01-03 [Rule] = `vide Sancti/12-27;` — the chain
         // must reach St. John's principal feast for the Oratio.
         let chain = commune_chain("Sancti/01-03");
-        let oratio = find_section_in_chain(&chain, "Oratio");
+        let oratio = find_section_in_chain(&chain, "Oratio", crate::core::Rubric::Tridentine1570);
         assert!(
             oratio.as_deref().map(|s| s.contains("Ecclésiam tuam")).unwrap_or(false),
             "Sancti/01-03 chain should reach Sancti/12-27 Oratio. Got: {:?}",
@@ -2416,7 +2481,7 @@ mod tests {
             "commune_chain on Sancti/01-08 should reach Sancti/01-06 (Epiphany)"
         );
         // Direct: find the Oratio via the chain.
-        let oratio = find_section_in_chain(&chain, "Oratio")
+        let oratio = find_section_in_chain(&chain, "Oratio", crate::core::Rubric::Tridentine1570)
             .expect("Sancti/01-08 chain should resolve Oratio via Sancti/01-06");
         assert!(
             oratio.contains("Unigénitum tuum géntibus stella duce"),

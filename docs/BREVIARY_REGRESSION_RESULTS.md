@@ -3077,6 +3077,53 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 88: T1910 a-capitulo flatten — "infra Octavam" 2.2 override — T1910 +1 cell
+
+Symptom: 12-11 T1910 Fri Vespera renders the Conception-Octave
+Day-V Oratio (1V swap to Sancti/12-12bmv). Perl renders
+S. Damasi Papæ et Confessoris ~ Semiduplex (today's office).
+
+Trace: Sancti/12-11 (Damasus) under T1910 = Semiduplex 2.2.
+Sancti/12-12bmv (BVM in Sabbato during Conception Octave) =
+"De V die infra Octavam Concept. Immac. BMV;;Semiduplex;;2.19".
+
+Slice 68's a-capitulo branch flattens both ranks under
+Tridentine: 2.2 → flrank=2, 2.19 → flcrank=2 → tie → swap.
+But Perl's `horascommon.pl:1095-1099` has a 1906-only override:
+
+```
+if ($version =~ /1906/ && $winner{Rank} =~ /infra Octavam/i
+    && $crank == 2.2) { $flcrank = 2.2; }
+elsif ($version =~ /1906/ && $cwinner{Rank} =~ /infra Octavam/i
+    && $rank == 2.2) { $flrank = 2.2; }
+```
+
+When tomorrow has "infra Octavam" AND today.rank == 2.2, bump
+flrank to 2.2 (no longer collapses to flat 2). Result:
+flrank=2.2, flcrank=2.0 → no tie → today wins.
+
+Fix: in our slice-68 a-capitulo branch, before computing
+ties, apply the same 1906-only override — check both files'
+[Rank] for "infra octavam" and bump the corresponding flatten
+when the OTHER rank == 2.2.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged).
+    T1910: 99.83% → 99.86% (+1 cell — 12-11 Damasus Vespera).
+    DA:    99.73% (unchanged — gate is T1910-only).
+    R55:   99.04% (unchanged).
+    R60:   99.04% (unchanged).
+
+  Slice 68 (02-05 T1910 Sancti-Sancti a-capitulo) + slice 76
+  (06-13 T1910 Anthony of Padua) verified unchanged.
+
+Mass T1570 + T1910 + R60 stay 365/365. T1570 30-day stays
+100%. 431 lib tests pass.
+
 ## Slice 87: T1910 perl_version label carries both 1906 and 1910 — T1910 +1 cell
 
 Symptom: 11-09 T1910 Mon Vespera renders Andrew Avellino's Oratio

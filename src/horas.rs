@@ -1745,8 +1745,38 @@ pub fn first_vespers_day_key_for_rubric<'a>(
             .and_then(|f| section_via_inheritance(f, "Officium"))
             .map(|o| o.to_lowercase().contains("dominica"))
             .unwrap_or(false);
-        let flrank = flrank_trident(today_rank);
-        let flcrank = flcrank_trident(tomorrow_rank, cwinner_is_dominica);
+        let mut flrank = flrank_trident(today_rank);
+        let mut flcrank = flcrank_trident(tomorrow_rank, cwinner_is_dominica);
+        // T1910-only "infra Octavam" flatten override. Mirror of
+        // `horascommon.pl:1095-1099`:
+        //
+        //   if ($version =~ /1906/ && $winner{Rank} =~ /infra Octavam/i
+        //       && $crank == 2.2) { $flcrank = 2.2; }
+        //   elsif ($version =~ /1906/ && $cwinner{Rank} =~ /infra Octavam/i
+        //       && $rank == 2.2) { $flrank = 2.2; }
+        //
+        // Under Pius X (1906) the "infra Octavam" Sundays/days no
+        // longer collapse to flat-rank 2 in concurrence — they keep
+        // 2.2 to outrank a concurrent Semiduplex 2.2 (preventing the
+        // a-capitulo tie). Closes 12-11 T1910 Fri Vespera (Damasus
+        // 2.2 vs 12-12bmv "De V die infra Octavam Concept" 2.19 —
+        // tomorrow has "infra Octavam", today.rank=2.2 → flrank=2.2,
+        // flcrank stays 2.0 → no tie → today wins).
+        if matches!(rubric, crate::core::Rubric::Tridentine1910) {
+            let today_has_infra_octavam = lookup(today_key)
+                .and_then(|f| section_via_inheritance(f, "Rank"))
+                .map(|r| r.to_lowercase().contains("infra octavam"))
+                .unwrap_or(false);
+            let tomorrow_has_infra_octavam = lookup(tomorrow_key)
+                .and_then(|f| section_via_inheritance(f, "Rank"))
+                .map(|r| r.to_lowercase().contains("infra octavam"))
+                .unwrap_or(false);
+            if today_has_infra_octavam && (tomorrow_rank - 2.2).abs() < 0.001 {
+                flcrank = 2.2;
+            } else if tomorrow_has_infra_octavam && (today_rank - 2.2).abs() < 0.001 {
+                flrank = 2.2;
+            }
+        }
         if (flrank - flcrank).abs() < 0.001 {
             return tomorrow_key;
         }

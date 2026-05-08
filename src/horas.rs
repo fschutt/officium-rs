@@ -1118,6 +1118,32 @@ fn effective_today_rank_for_concurrence(
     let direct = active_rank_line_with_annotations(day_key, rubric, hora)
         .map(|(_, _, n)| n)
         .unwrap_or(0.0);
+    // Pre-DA Quad/Adv Sundays cede their 2nd Vespers to a concurrent
+    // Duplex feast — mirror of `horascommon.pl::concurrence:862-869`:
+    //
+    //   Trident: $rank = $wrank[2] = 2.99    (gives way to Semiduplex+)
+    //   Divino:  $rank = $wrank[2] = 4.9     (gives way to Duplex II cl. +)
+    //
+    // Drives 11-29 Sun-eve T1570: today=Adv1 Sun (Semiduplex I cl. 6.0
+    // direct), tomorrow=Sancti/11-30 St. Andrew (Duplex II cl. 5.1).
+    // Without the reduction Sun keeps 2V (rank 6.0 > 5.1) — but Perl
+    // gives way to Andrew (today reduced to 2.99 < 5.1). Same pattern
+    // for Quad Sundays (02-22 Quad1 vs 02-22 Cathedra Petri).
+    //
+    // Applies to Quad[0-5]/Quadp/Adv/Pasc1 (week prefix) on dow=0
+    // (Sunday). Day-key suffixes (`Adv1-0o`, `Pasc1-0t`, `Epi1-0a`)
+    // accepted — they're variants of the same Sunday office.
+    if is_pre_da_sunday_with_2v_concession(day_key) {
+        let concession = match rubric {
+            crate::core::Rubric::Tridentine1570 | crate::core::Rubric::Tridentine1910 => 2.99,
+            crate::core::Rubric::DivinoAfflatu1911 => 4.9,
+            _ => return direct,
+        };
+        // Use min so the concession can't accidentally boost a day
+        // whose direct rank already sits below 2.99 (shouldn't happen
+        // for these Sundays, but defensive).
+        return direct.min(concession);
+    }
     // Only apply the inheritance boost when the direct rank is
     // low (< 2.0 — Feria/Memoria/Commemoratio). Days with their
     // own real rank (Semiduplex 5.6 sub-Octave-of-Epi under T1570)
@@ -1133,6 +1159,42 @@ fn effective_today_rank_for_concurrence(
         }
     }
     direct
+}
+
+/// True when `day_key` is one of the pre-DA Quad / Advent / Septuag
+/// (Quadp) / Pasc1 (Sun in Albis) Sundays whose 2nd Vespers cedes
+/// to a concurrent Duplex feast under Tridentine/DA rubrics.
+/// Handles the variant suffixes (`Adv1-0o`, `Pasc1-0t`, `Epi1-0a`).
+fn is_pre_da_sunday_with_2v_concession(day_key: &str) -> bool {
+    let Some(rest) = day_key.strip_prefix("Tempora/") else {
+        return false;
+    };
+    let Some(dash_pos) = rest.find('-') else {
+        return false;
+    };
+    let week = &rest[..dash_pos];
+    let dow_part = &rest[dash_pos + 1..];
+    // Sunday: starts with "0", remainder is empty or letter-suffix.
+    let mut chars = dow_part.chars();
+    if chars.next() != Some('0') {
+        return false;
+    }
+    if !chars.all(|c| c.is_ascii_alphabetic()) {
+        return false;
+    }
+    if week == "Quadp" || week == "Pasc1" {
+        return true;
+    }
+    if let Some(suffix) = week.strip_prefix("Quad") {
+        // Quad0..Quad5 only — Quad6 is Holy Week's "Hebdomada major"
+        // and stays at full rank in concurrence.
+        return matches!(suffix, "0" | "1" | "2" | "3" | "4" | "5");
+    }
+    if week.starts_with("Adv") {
+        // Adv0..Adv4 — all Sundays of Advent.
+        return week[3..].chars().all(|c| c.is_ascii_digit());
+    }
+    false
 }
 
 /// Return the inherited-source `Sancti/MM-DD` key from a day's
@@ -1676,9 +1738,14 @@ fn splice_proper_into_slot(
     // antiphon-form variant the upstream renderer parses separately;
     // for the genitive `N.` substitution we want only the first
     // non-`Ant=` line of the evaluated body.
+    // Walk the chain to find [Name] — Sancti/12-13t (Lucy transferred
+    // variant) has no own [Name], inherits via `@Sancti/12-13`'s
+    // `__preamble__`. The chain walker follows the preamble, so the
+    // [Name] lives in chain[1+]. Without walking, the `N.` literal in
+    // the Commune oratio body never gets substituted.
     let saint_name_raw = chain
-        .first()
-        .and_then(|f| f.sections.get("Name"))
+        .iter()
+        .find_map(|f| f.sections.get("Name"))
         .map(String::as_str);
     let saint_name_eval = saint_name_raw.map(|s| eval_section_conditionals(s, rubric, hour));
     let saint_name = saint_name_eval

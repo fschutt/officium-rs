@@ -1521,6 +1521,77 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 37: Pre-DA Quad/Adv Sun 2V rank concession + chain-walk for [Name] — T1570 93.56% → 94.32% (+22 cells)
+
+Symptom: T1570 Compline/Vespera/Mat/Lauds/etc on dates where a
+Quad/Adv Sun concurs with a Duplex Sancti — 11-29 Adv1 Sun
+Compline emits Sun's office, Perl emits St. Andrew's; 12-13
+Adv3 Sun emits Sun's, Perl emits Lucy's; 02-22 Quad1 Sun emits
+Sun's, Perl emits Cathedra Petri's.
+
+Trace: `horascommon.pl::concurrence:862-869` — pre-DA Quad/
+Adv/Pasc1 Sundays cede their 2nd Vespers to a concurrent
+Duplex feast:
+
+  Trident: $rank = $wrank[2] = 2.99    # → Semiduplex+ wins
+  Divino:  $rank = $wrank[2] = 4.9     # → Duplex II cl.+ wins
+
+Adv1 Sun is rank 6.0 — without the concession it always beats
+the next-day's Duplex II cl. (rank 5.1). With the concession,
+2.99 < 5.1 → Sancti wins 2V → office-wide swap.
+
+Cascading symptom: even when Vespera output happened to match
+Perl (Rust emitted Sun's body, Perl emitted Sancti's body with
+Sun as commemoration — substring overlap), Compline didn't
+match because Compline body is fixed (Visita) and only the
+preces predicate `Dominus_vobiscum1` differed. The day_key
+fix flips the preces winner from Tempora-Semiduplex (preces
+fires → text[4] omittitur) to Sancti-Duplex (preces rejects →
+V/R Domine exaudi).
+
+Fix:
+1. New `is_pre_da_sunday_with_2v_concession` detector — matches
+   `Tempora/Quad[0-5]-0`, `Tempora/Quadp-0`, `Tempora/Adv\d?-0`,
+   `Tempora/Pasc1-0` plus suffix variants (`Adv1-0o`,
+   `Pasc1-0t`, `Epi1-0a`).
+2. `effective_today_rank_for_concurrence` returns `direct.min(
+   2.99)` for Tridentine variants and `direct.min(4.9)` for
+   DA when the detector matches. Other rubrics fall through
+   unchanged (R55/R60 had broader rank-suppression in slice
+   35).
+3. `splice_proper_into_slot` saint-name lookup now walks the
+   full chain via `chain.iter().find_map` instead of just
+   `chain.first()`. Sancti/12-13t (Lucy transferred-variant
+   redirected from Sun to Mon) has no own [Name] — inherits
+   `[Name]` via `@Sancti/12-13` `__preamble__`. Without
+   walking, the `N.` literal in the Commune oratio body
+   never gets substituted (Rust emitted "...beátæ N.
+   festivitáte..." but Perl emitted "...beátæ Lúciæ Vírginis
+   et Mártyris tuæ festivitáte..."), so the cell still
+   diverges after the swap.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Matutinum    94.79% → 95.62% (+3)
+      Laudes       94.79% → 95.62% (+3)
+      Tertia       94.79% → 95.62% (+3)
+      Sexta        94.79% → 95.62% (+3)
+      Nona         94.79% → 95.62% (+3)
+      Vespera      91.23% → 91.78% (+2)
+      Completorium 90.14% → 91.51% (+5)
+      Overall      93.56% → 94.32% (+22 cells)
+    R60: 96.16% (unchanged — concession doesn't fire under
+         R60; R55/R60 have their own broader suppression in
+         slice 35)
+    R55: 93.25% (unchanged)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Section-level `[Rank] (rubrica 196)` annotated lookup

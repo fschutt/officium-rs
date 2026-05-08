@@ -1885,6 +1885,68 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 44: Quattuor Temporum Vespera Sunday-Oratio splice + Pasc7 / R60 exclusions — T1570 +2, R55 +2, R60 +2
+
+Symptom: T1570 12-16 Wed (Adv3 Ember Wed) Vespera emits the
+day's own [Oratio] "Praesta, quaesumus, omnipotens Deus..."
+but Perl emits the Sunday's "Aurem tuam, quaesumus...".
+Pattern hits all Adv Ember Vesperas (12-16 Wed, 12-18 Fri)
+plus Lent Ember Vesperas (no Pent Octave because Perl excludes
+Pasc7).
+
+Trace: `specials/orationes.pl::oratio:55-61`:
+
+  if ( ($rule =~ /Oratio Dominica/i && (...)) 
+    || ($winner{Rank} =~ /Quattuor/i && $dayname[0] !~ /Pasc7/i
+       && $version !~ /196|cist/i && $hora eq 'Vespera') )
+  {
+    my $name = "$dayname[0]-0";
+    %w = %{setupstring(..., "$name.txt")};
+  }
+
+The Quattuor branch fires for Ember-day Vespera, swapping the
+winner to the week-Sunday's office. Excludes Pasc7 (Pent Octave
+Ember days keep their own) and R60/Cist (those rubrics keep the
+day's own).
+
+Two-part fix:
+1. `force_sunday_oratio` predicate now chases `__preamble__`
+   inheritance for [Officium] — Tempora/Adv3-3o is `@Tempora/
+   Adv3-3` with no own [Officium], so a direct `sections.get`
+   would miss the parent's "Feria IV Quattuor Temporum in
+   Adventu". The Quattuor trigger now fires correctly on
+   redirect-only variants.
+2. When the trigger fires AND day_key is known, the splice
+   reaches the week-Sunday's [Oratio] directly via a new
+   `week_sunday_key_for_tempora` helper that derives `Tempora/
+   {week}-0` from the day_key. The chain doesn't naturally
+   include Sun (Adv3-3 [Rule] = "Preces Feriales" — no `vide`
+   link), so we fetch explicitly.
+
+Exclusions:
+- Pasc7 (Pent Octave): Perl's `$dayname[0] !~ /Pasc7/i`. Day_key
+  prefix `Tempora/Pasc7-` skips the trigger.
+- R60: Perl's `$version !~ /196|cist/i`. R60 explicitly excluded;
+  R55 falls through (matches /1955/ not /196/).
+
+Threading: `splice_proper_into_slot` now takes `day_key` so it
+can derive the week-Sunday key.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Vespera   95.62% → 96.16% (+2)
+      Overall   96.54% → 96.61% (+2 cells)
+    R55:        93.94% → 94.01% (+2 cells)
+    R60:        96.85% → 96.92% (+2 cells, knock-on from chain
+                walk fix in Officium lookup)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Feria/Sabbato/Quattuor branches of the Vigil gate**: tried the

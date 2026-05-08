@@ -209,7 +209,7 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
             "section" => {
                 if let Some(label) = &line.label {
                     out.push(RenderedLine::Section { label: label.clone() });
-                    splice_proper_into_slot(&mut out, label, args.hour, args.rubric, &chain, prayers_file);
+                    splice_proper_into_slot(&mut out, label, args.hour, args.rubric, &chain, prayers_file, args.day_key);
                 }
             }
             "rubric" => {
@@ -1591,24 +1591,38 @@ fn active_rank_line_for_rubric(
 /// merge semantics for callers that don't already chase the chain
 /// (e.g. `preces_dominicales_et_feriales_fires` checking [Rule] /
 /// [Officium] for short-circuit gates).
-fn section_via_inheritance(file: &'static HorasFile, name: &str) -> Option<String> {
+/// For a `Tempora/{week}-{dow}[suffix]` day_key, return the Sunday-
+/// of-week key `Tempora/{week}-0`. For Sancti/* or non-Tempora keys,
+/// returns None. Used by the Ember Vespera Sunday-Oratio splice.
+fn week_sunday_key_for_tempora(day_key: &str) -> Option<String> {
+    let rest = day_key.strip_prefix("Tempora/")?;
+    let dash = rest.find('-')?;
+    let week = &rest[..dash];
+    Some(format!("Tempora/{week}-0"))
+}
+
+fn section_via_inheritance(file: &HorasFile, name: &str) -> Option<String> {
     if let Some(body) = file.sections.get(name) {
         if !body.trim().is_empty() {
             return Some(body.clone());
         }
     }
-    let mut current = file;
+    // Re-anchor on the static corpus once we step into the preamble
+    // chain. Avoids a lifetime constraint on the entry `file`.
+    let Some(parent_path) = first_at_path_inheritance(file) else {
+        return None;
+    };
+    let mut current: &'static HorasFile = lookup(&parent_path)?;
     for _ in 0..4 {
-        let Some(parent_path) = first_at_path_inheritance(current) else {
-            return None;
-        };
-        let parent = lookup(&parent_path)?;
-        if let Some(body) = parent.sections.get(name) {
+        if let Some(body) = current.sections.get(name) {
             if !body.trim().is_empty() {
                 return Some(body.clone());
             }
         }
-        current = parent;
+        let Some(next_path) = first_at_path_inheritance(current) else {
+            return None;
+        };
+        current = lookup(&next_path)?;
     }
     None
 }
@@ -1888,6 +1902,7 @@ fn splice_proper_into_slot(
     rubric: crate::core::Rubric,
     chain: &[&HorasFile],
     prayers_file: Option<&HorasFile>,
+    day_key: Option<&str>,
 ) {
     if chain.is_empty() {
         return;
@@ -1943,15 +1958,58 @@ fn splice_proper_into_slot(
     // Quattuor Temporum Quadragesimæ", Quad1-6 Saturday similar).
     // For non-Ember Lent ferials (Quad2-3 etc.) the day's
     // [Oratio 3] is correct.
+    //
+    // Walks the `__preamble__` chain so redirect-only variants
+    // (Tempora/Adv3-3o = `@Tempora/Adv3-3` with only [Lectio*]
+    // overrides) pick up the parent's [Officium] for the trigger.
+    // Pasc7 (Pentecost Octave) Ember days are EXCLUDED — Perl
+    // `$dayname[0] !~ /Pasc7/i` keeps the Pent-Octave Wed/Fri/Sat
+    // Ember days on their own [Oratio] (not the Pent Sunday's).
+    //
+    // R60 / Cisterciensis EXCLUDED — Perl's `$version !~ /196|cist/i`
+    // gate. R60 keeps the day's own Ember [Oratio]; only pre-R60
+    // Tridentine + DA + R55 (which doesn't match /196/) fire the
+    // rule.
+    let in_pasc7 = day_key
+        .map(|k| k.starts_with("Tempora/Pasc7-"))
+        .unwrap_or(false);
+    let r60_excluded = matches!(rubric, crate::core::Rubric::Rubrics1960);
     let force_sunday_oratio = label == "Oratio"
         && hour == "Vespera"
+        && !in_pasc7
+        && !r60_excluded
         && chain.first().is_some_and(|f| {
-            f.sections.get("Officium").is_some_and(|o| {
-                let evaluated = eval_section_conditionals(o, rubric, hour);
+            section_via_inheritance(f, "Officium").is_some_and(|o| {
+                let evaluated = eval_section_conditionals(&o, rubric, hour);
                 let lc = evaluated.to_lowercase();
                 lc.contains("quattuor temporum")
             })
         });
+    // When the Quattuor Temporum trigger fires AND we know the
+    // day_key, splice the Sunday-of-week's [Oratio] directly.
+    // Mirror of upstream `specials/orationes.pl:58`:
+    //   my $name = "$dayname[0]-0";
+    //   %w = %{setupstring(..., "$name.txt")};
+    // For 12-16 Wed Adv3 = Tempora/Adv3-3o, the week-Sun is
+    // Tempora/Adv3-0. The chain doesn't naturally include it (Adv3-3
+    // [Rule] = "Preces Feriales", no `vide` link), so we have to fetch
+    // explicitly.
+    if force_sunday_oratio {
+        if let Some(sunday_key) = day_key.and_then(week_sunday_key_for_tempora) {
+            if let Some(file) = lookup(&sunday_key) {
+                if let Some(body) = section_via_inheritance(file, "Oratio") {
+                    let resolved = expand_at_redirect(&body, "Oratio");
+                    let evaluated = eval_section_conditionals(&resolved, rubric, hour);
+                    let trimmed = take_first_oratio_chunk(&evaluated);
+                    let with_name = substitute_saint_name(&trimmed, saint_name);
+                    let macros_expanded = expand_dollar_macros_in_body(&with_name, prayers_file);
+                    let respelled = apply_office_spelling(&macros_expanded, rubric);
+                    out.push(RenderedLine::Plain { body: respelled });
+                    return;
+                }
+            }
+        }
+    }
     let candidates: Vec<String> = if force_sunday_oratio {
         // Skip [Oratio 3] / [Oratio 2] — go straight to [Oratio]
         // which the chain's Sunday-fallback file provides.

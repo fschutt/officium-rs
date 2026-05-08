@@ -985,6 +985,29 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     if tomorrow_has_no_prima_vespera(tomorrow_key, rubric, hora) {
         return today_key;
     }
+    // "No secunda Vespera" on today → today is wiped at 2V, tomorrow
+    // wins regardless of rank. Mirror of `horascommon.pl::
+    // concurrence:853-857`:
+    //
+    //   if ($winner{Rule} =~ /No secunda Vespera/i && $version !~ /196[03]/i) {
+    //     %winner = {}; $rank = 0; ...
+    //   }
+    //
+    // Drives Sat in Albis (Pasc0-6) — its [Rule] carries `No secunda
+    // Vespera` so 2V cedes to tomorrow's Sun-in-Albis 1V. Suppressed
+    // under R60/R63 only — pre-1960 rubrics enforce it.
+    let suppresses_no_2v_rule = !matches!(rubric, crate::core::Rubric::Rubrics1960);
+    if suppresses_no_2v_rule {
+        if let Some(file) = lookup(today_key) {
+            if let Some(rule) = section_via_inheritance(file, "Rule") {
+                let evaluated = eval_section_conditionals(&rule, rubric, hora);
+                let lc = evaluated.to_lowercase();
+                if lc.contains("no secunda vespera") {
+                    return tomorrow_key;
+                }
+            }
+        }
+    }
     // R55/R60 rank-based 1V suppression. Mirror of upstream
     // `horascommon.pl::concurrence` lines 938-945 (within the
     // suppress-1V OR chain). Most R60 days have NO 1st Vespers —

@@ -1684,6 +1684,55 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 40: today `[Rule] No secunda Vespera` swap to tomorrow — T1570 94.97% → 95.07% (+3), R55 93.29% → 93.36% (+2)
+
+Symptom: T1570 04-11 Sat in Albis (Easter Octave end) Vespera
+emits Sat-of-Albis Oratio. Perl emits Sun-in-Albis Oratio
+("Præsta, quǽsumus, omnípotens Deus..."). Same pattern at
+05-30 (Sat in Pent Octave end), 04-04 Holy Sat, etc.
+
+Trace: `horascommon.pl::concurrence:853-857`:
+
+  if ($winner{Rule} =~ /No secunda Vespera/i && $version !~ /196[03]/i) {
+    @wrank = ();  %winner = {};  $winner = '';  $rank = 0;
+  }
+
+Today's office is wiped at 2V → tomorrow's 1V wins
+unconditionally. Pasc0-6 [Rule] carries `No secunda Vespera`
+explicitly.
+
+Slice 36 (Easter/Pent Octave gate) was keeping today on these
+Sat-eve days — the gate's "tomorrow not Dominica" check in
+[Rank] missed Sun-in-Albis (Pasc1-0 [Rank] = ";;Duplex majus
+I. classis;;6.91;;" — no "Dominica" string). The new "No 2V"
+gate fires earlier and short-circuits past the Octave gate.
+
+Fix: new gate in `first_vespers_day_key_for_rubric`, after
+`tomorrow_has_no_prima_vespera` and before R55/R60 1V
+suppression. Reads today's [Rule] via
+`section_via_inheritance` (slice 39 helper) — Pasc0-6 carries
+the directive directly, but variant files
+(`Tempora/Pasc0-6t`-style if any) would inherit it via
+preamble.
+
+Suppressed under R60 only (Perl gates on `$version !~ /196[03]/i`).
+R55 keeps the rule.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Vespera      92.05% → 92.60% (+2)
+      Completorium 93.70% → 93.97% (+1)
+      Overall      94.97% → 95.07% (+3 cells)
+    R55: 93.29% → 93.36% (+2 cells)
+    R60: 96.23% (unchanged — Perl gates this rule off)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Section-level `[Rank] (rubrica 196)` annotated lookup

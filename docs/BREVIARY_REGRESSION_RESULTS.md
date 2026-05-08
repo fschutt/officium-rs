@@ -2800,6 +2800,79 @@ Verification:
 T1910 99.08% and DA 97.36% unchanged. Mass T1570 + R60 year-
 sweeps stay at 365/365 (100%). 431 lib tests pass.
 
+## Slice 63: Preces branch (b) commemoratio rank reject — DA +41
+
+Symptom: 31 DA Prima fails + 33 DA Compline fails — ALL Sundays
+where a Sancti commemoration carries rank ≥ 3 (Cathedra S. Petri
+01-18 Duplex 4, Cathedra Antioch 02-22 Duplex 4, etc.). Rust
+emits `secunda «Domine, exaudi» omittitur` directive (preces-
+fired form). Perl emits the V/R Domine exaudi couplet (lay-
+default form, preces-not-fired).
+
+Trace: `specials/preces.pl:38-68` branch (b) "Dominicales":
+
+  if ($item =~ /Dominicales/i) {
+    my $dominicales = 1;
+    if ($commemoratio) {
+      my @r = split(';;', $commemoratio{Rank});
+      my $ranklimit = $version =~ /^Trident/ ? 7 : 3;
+      if ($r[2] >= $ranklimit
+          || $commemoratio{Rank} =~ /Octav/i
+          || ...) {
+        $dominicales = 0;
+      }
+    }
+    if ($dominicales && ...) {
+      $precesferiales = preces('Feriales');
+      return 1;
+    }
+  }
+
+When `Dominus_vobiscum1` (Prima/Compline) calls
+`preces('Dominicales et Feriales')`, branch (a) skips Sun
+(dayofweek=0 is falsy), branch (b) runs and CHECKS THE
+COMMEMORATIO RANK. For DA: ranklimit=3, so any commemoration
+rank ≥ 3 (Duplex+) wipes dominicales → preces returns 0 →
+$precesferiales=0 → V/R lay-default emitted.
+
+For T1570/T1910: ranklimit=7 (only Duplex I cl. would wipe).
+Cathedra rank 4 < 7 → dominicales stays 1 → preces fires.
+
+Our `preces_dominicales_et_feriales_fires` checked kalendaria
+cells for "octav" but missed the rank threshold check. Adding
+it inside the same loop:
+
+  let ranklimit = match rubric {
+      Tridentine1570 | Tridentine1910 => 7.0,
+      _ => 3.0,
+  };
+  for cell in cells {
+      if cell.officium contains "octav" → reject.
+      if cell.rank_num() ≥ ranklimit → reject.
+  }
+
+Fix integrates with the existing kalendaria loop; redundant
+when day_key is itself the high-rank Sancti (already early-
+rejected via duplex_class > 2), but adds the missing branch
+(b) commemoratio reject for Sundays.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged — ranklimit=7 too high for typical
+                   Sun commemorations).
+    T1910: 99.08% (unchanged — same).
+    DA:    97.36% → 98.77%
+            Prima 91.51% → 96.44% (+18 cells).
+            Comp  90.96% → 97.26% (+23 cells).
+    R55:   98.12% (unchanged — different preces gate hit first).
+    R60:   97.88% (unchanged — different preces gate hit first).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Triduum Prima Oratio suppression**: tried suppressing the

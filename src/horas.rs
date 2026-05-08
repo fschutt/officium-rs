@@ -583,10 +583,34 @@ fn preces_dominicales_et_feriales_fires(
     // (Imm. Conc. octave is post-1854).
     let layer = rubric.kalendar_layer();
     if let Some(cells) = crate::kalendaria_layers::lookup(layer, month, day) {
+        // Branch (b) `Dominicales` commemoratio rank check.
+        // Mirror of `specials/preces.pl:41-58`:
+        //
+        //   my $ranklimit = $version =~ /^Trident/ ? 7 : 3;
+        //   if ($r[2] >= $ranklimit || $commemoratio{Rank} =~ /Octav/i
+        //       || ...) {
+        //     $dominicales = 0;
+        //   }
+        //
+        // For Sun Prima/Compline, when a Sancti commemoration on
+        // the date has rank ≥ ranklimit, dominicales is wiped and
+        // preces don't fire. Drives 01-18 DA Sun (Cathedra S. Petri
+        // rank 4, ranklimit=3 under DA → dominicales=0). The
+        // commemoratio rank pulled from kalendaria cells matches
+        // Perl's iteration over @commemoentries.
+        let ranklimit = match rubric {
+            crate::core::Rubric::Tridentine1570 | crate::core::Rubric::Tridentine1910 => 7.0_f32,
+            _ => 3.0_f32,
+        };
         for cell in cells {
             let lc = cell.officium.to_lowercase();
             if lc.contains("octav") && !lc.contains("post octav") {
                 return false;
+            }
+            if let Some(rank) = cell.rank_num() {
+                if rank >= ranklimit {
+                    return false;
+                }
             }
         }
     }

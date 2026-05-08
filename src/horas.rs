@@ -876,7 +876,11 @@ fn visit_chain(
     // [Oratio]; without chasing through the preamble, the chain
     // walker stops at C10c and the per-day Oratio splice falls
     // through to nothing (RustBlank).
-    if let Some(parent) = first_at_path_inheritance(file) {
+    //
+    // Use the conditional-aware variant so `@Path\n(sed rubrica X
+    // omittitur)` directives suppress the inherit for the active
+    // rubric (R60 Pasc6-5's @Tempora/Pasc6-0 is omitted under R60).
+    if let Some(parent) = first_at_path_inheritance_rubric(file, rubric, hora) {
         if !visited.contains(&parent) {
             visit_chain(&parent, rubric, hora, visited, out, depth + 1);
         }
@@ -1920,6 +1924,41 @@ fn first_at_path_inheritance(file: &HorasFile) -> Option<String> {
     None
 }
 
+/// Conditional-aware `@Path` preamble inheritance. Honours
+/// `(sed rubrica X omittitur)` directives that suppress the @inherit
+/// for specific rubrics. Mirror of `setupstring_parse_file`'s
+/// process_conditional_lines applied to the preamble.
+///
+/// Drives R60 Tempora/Pasc6-5 (Pasc6-X ferials post-Asc): the
+/// preamble `@Tempora/Pasc6-0` is followed by `(sed rubrica 1960 aut
+/// rubrica cisterciensis omittitur)` — under R60, the @inherit is
+/// REMOVED. Without honoring this, our chain walker pulls Pasc6-0's
+/// own [Oratio] ("Omnipotens sempiterne...") into the chain ahead of
+/// the legitimate `vide Tempora/Pasc5-4` commune source (which has
+/// the Asc Oratio "Concede quaesumus...").
+fn first_at_path_inheritance_rubric(
+    file: &HorasFile,
+    rubric: crate::core::Rubric,
+    hora: &str,
+) -> Option<String> {
+    let preamble = file.sections.get("__preamble__")?;
+    let evaluated = eval_section_conditionals(preamble, rubric, hora);
+    for line in evaluated.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if let Some(rest) = trimmed.strip_prefix('@') {
+            let path = rest.split(|c: char| c.is_whitespace() || c == ':').next()?;
+            if looks_like_corpus_path(path) {
+                return Some(path.to_string());
+            }
+        }
+        break;
+    }
+    None
+}
+
 /// Read a `[Rule]` body and decide whether the office is the
 /// 9-lectiones (three-nocturn) or 3-lectiones (one-nocturn) form.
 ///
@@ -2388,6 +2427,13 @@ fn splice_proper_into_slot(
     // only fire on plain weekday ferials whose Oratio Perl
     // explicitly fetches from the week-Sun via the
     // `if ($winner =~ /Tempora/ && !$w)` fallback.
+    // Additional gate: the rank line's 4th field (commune source)
+    // must be empty. When present (e.g. R60 Pasc6-5 ";;Feria;;1;;
+    // vide Tempora/Pasc5-4"), Perl's `$commune` is set and
+    // `orationes.pl:103-113` fires the commune-Oratio path BEFORE the
+    // line-115 Sun-fallback — pulling Asc Oratio from Pasc5-4. For
+    // R60 Pent02-1 the 4th field is empty (";;Feria;;1") so the
+    // commune path doesn't fire and Sun-fallback wins.
     let tempora_feria_oratio_dominica = label == "Oratio"
         && day_key.is_some_and(|k| k.starts_with("Tempora/"))
         && chain.first().is_some_and(|f| {
@@ -2396,12 +2442,20 @@ fn splice_proper_into_slot(
                 && !f.sections.contains_key("Oratio 3")
         })
         && day_key.is_some_and(|k| {
-            active_rank_line_with_annotations(k, rubric, hour)
-                .map(|(_, cls, _)| {
-                    let lc = cls.to_lowercase();
-                    lc.contains("feria") && !lc.contains("feria major")
-                })
-                .unwrap_or(false)
+            let line = match active_rank_line_with_annotations(k, rubric, hour) {
+                Some((full, _, _)) => full,
+                None => return false,
+            };
+            // class field
+            let segments: Vec<&str> = line.split(";;").collect();
+            let class = segments.get(1).map(|s| s.to_lowercase()).unwrap_or_default();
+            if !class.contains("feria") || class.contains("feria major") {
+                return false;
+            }
+            // 4th field (commune source) — empty triggers Sun-fallback,
+            // populated triggers commune-Oratio path (don't fire here).
+            let fourth = segments.get(3).map(|s| s.trim()).unwrap_or("");
+            fourth.is_empty()
         });
     if tempora_feria_oratio_dominica {
         if let Some(parent) = day_key.and_then(tempora_sunday_fallback) {

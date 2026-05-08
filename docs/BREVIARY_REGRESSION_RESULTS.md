@@ -2925,6 +2925,59 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 65: Conditional-aware @Path preamble + Feria 4th-field gate
+
+Two related fixes to the Tempora-ferial Oratio path:
+
+(1) `first_at_path_inheritance` ignored conditional gates on
+    `@Path` preamble lines. Tempora/Pasc6-5 starts:
+
+      @Tempora/Pasc6-0
+      (sed rubrica 1960 aut rubrica cisterciensis omittitur)
+
+    Under R60, the @inherit is REMOVED. Without honoring this,
+    our chain walker pulled Pasc6-0's own [Oratio] ("Omnipotens
+    sempiterne Deus...") into the chain ahead of the legitimate
+    `vide Tempora/Pasc5-4` commune source (Asc Oratio "Concede
+    quaesumus...").
+
+    Fix: add `first_at_path_inheritance_rubric` that runs
+    `eval_section_conditionals` on the preamble before scanning
+    for `@Path`. Used by `visit_chain` only — other callers
+    (rank-line walker, no-1V-vespera detector, etc.) keep the
+    original unconditional version since they don't drive this
+    Pasc-week issue.
+
+(2) Slice 62's Tempora-Feria → week-Sun fallback fired too
+    eagerly. Mirror of `specials/orationes.pl:103-113`: when
+    `$commune` is set (rank line's 4th field is `vide
+    Tempora/X`), the COMMUNE Oratio path runs first (uses
+    Pasc5-4 Asc Oratio for Pasc6-5). Only when the 4th field is
+    empty (Pent02-1 R60 ";;Feria;;1") does the
+    Tempora-Sun-fallback fire (uses Pent02-0 Sun-of-week Oratio).
+
+    Fix: extend slice 62's gate to require the rank line's 4th
+    `;;`-separated field to be empty.
+
+Drives R60 Pasc6-1..6 (post-Asc ferials, May 18-22) — they all
+carry `;;Feria;;1;;vide Tempora/Pasc5-4` in [Rank] (rubrica 196).
+With both fixes the chain finds Pasc5-4 [Oratio] = "Concede
+quaesumus..." instead of falling back to Pasc6-0's own.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged).
+    T1910: 99.08% (unchanged).
+    DA:    98.77% (unchanged).
+    R55:   98.12% → 98.36% (+7 cells).
+    R60:   98.01% → 98.42% (+12 cells).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Triduum Prima Oratio suppression**: tried suppressing the

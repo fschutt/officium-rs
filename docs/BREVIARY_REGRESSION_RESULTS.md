@@ -787,6 +787,53 @@ convention). 5-hour band band gains 30 cells; Vespera gains 15
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 22: tempora_sunday_fallback strips alphabetic suffix case-insensitively — full year T1570 84.69% → 85.27%
+
+`tempora_sunday_fallback` mapped `Tempora/Epi3-4` → `Tempora/Epi3-0`
+by trimming trailing **lowercase** letters off the day-form
+suffix. But several Pascha / Pentecost ferials use Mixed-case
+suffixes:
+
+```
+Tempora/Pasc2-5Feria.txt    [Rule] = "Oratio Dominica" (etc.)
+Tempora/Pasc2-3Feriat.txt
+Tempora/Pent03-2Feriao.txt
+Tempora/Pent03-5Feriao.txt
+```
+
+The lowercase-only trim left "5Feria" → "5Fer" → still not
+all-digits → returns None → no Sunday fallback → chain stops at
+the Feria file → no `[Oratio]` → RustBlank.
+
+Slice 22 widens the trim to `is_ascii_alphabetic` (case-insensitive)
+so `5Feria` → `5`, `2Feriao` → `2`, `3Feriat` → `3`. The Sunday
+fallback fires; `Tempora/Pasc2-0` enters the chain;
+`find_section_in_chain` finds the Sunday's `[Oratio]`.
+
+**30-day Jan 2026 × T1570:** stays at 240/240 (100.00%).
+
+**Full year 2026 × T1570 × Oratio:**
+2472/2920 (84.69%) → **2489/2920 (85.27%)** (+17 cells).
+
+| Hour          | Pre slice 22 | Post slice 22 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 321/365 (88%) | 324/365 (89%) | +3 |
+| Laudes        | 321/365 (88%) | 324/365 (89%) | +3 |
+| Prima         | 289/365 (79%) | 289/365 (79%) | — |
+| Tertia        | 321/365 (88%) | 324/365 (89%) | +3 |
+| Sexta         | 321/365 (88%) | 324/365 (89%) | +3 |
+| Nona          | 321/365 (88%) | 324/365 (89%) | +3 |
+| Vespera       | 290/365 (79%) | 292/365 (80%) | +2 |
+| Completorium  | 289/365 (79%) | 289/365 (79%) | — |
+
+Closes Pasc2-5Feria, Pasc2-3Feriat, Pent03-2Feriao type cases.
+Remaining 6 RustBlanks per ferial-band hour are non-Tempora-feria
+(synthetic keys `SanctiM/06-27oct`, `Sancti/08-19bmv`,
+`Tempora/PentEpi5-5` etc.) that need a different resolution path.
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

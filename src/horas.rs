@@ -572,17 +572,23 @@ fn commune_chain_for_rubric(
 /// - `Tempora/Epi3-4` → `Tempora/Epi3-0` (ferial → Sunday)
 /// - `Tempora/Epi4-0tt` → `Tempora/Epi4-0` (octave-tail → bare Sunday)
 /// - `Tempora/Quad5-5r` → `Tempora/Quad5-0` (rubric-variant → Sunday)
+/// - `Tempora/Pasc2-5Feria` → `Tempora/Pasc2-0` (Feria-form → Sunday)
+/// - `Tempora/Pent03-2Feriao` → `Tempora/Pent03-0` (mixed-case suffix)
 ///
 /// Returns `None` for already-bare Sundays (`Tempora/Pasc1-0`) or
-/// non-Tempora categories.
+/// non-Tempora categories. Strips ASCII-alphabetic suffix
+/// case-insensitively so day-form variants like `5Feria`, `2Feriao`
+/// fall back to the week-Sunday — these files carry `[Rule] Oratio
+/// Dominica` so the Oratio splice needs the Sunday in the chain.
 fn tempora_sunday_fallback(day_key: &str) -> Option<String> {
     let stem = day_key.strip_prefix("Tempora/")?;
     // Find the `-` between season-week and day-of-week.
     let dash = stem.rfind('-')?;
     let after_dash = &stem[dash + 1..];
-    // The day-of-week is digit(s) optionally followed by lowercase
-    // letters (e.g. `0tt`, `4r`).
-    let stripped = after_dash.trim_end_matches(|c: char| c.is_ascii_lowercase());
+    // The day-of-week is digit(s) optionally followed by alphabetic
+    // suffix — strip case-insensitively to handle `0tt`, `4r`,
+    // `5Feria`, `2Feriao`, `0a`, etc.
+    let stripped = after_dash.trim_end_matches(|c: char| c.is_ascii_alphabetic());
     if stripped.is_empty() || !stripped.chars().all(|c| c.is_ascii_digit()) {
         return None;
     }

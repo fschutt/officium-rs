@@ -2616,6 +2616,64 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 60: R55/R60 Epi1 ferial Oratio Dominica override — R55 +5, R60 +6
+
+Symptom: 01-12-2026 (Mon) R60/R55 across all 8 hours emit
+"Deus, qui hodiérna die Unigénitum tuum géntibus stella duce..."
+(Epiphany Oratio from Sancti/01-06). Perl emits "Vota,
+quaesumus, Dómine, supplicántis pópuli cælésti pietáte
+proséquere..." (Sun-after-Epi from Tempora/Epi1-0a).
+
+Trace: `specials/orationes.pl:48-61`:
+
+  if ($dayname[0] =~ /Epi1/i
+      && $rule =~ /Infra octavam Epiphaniæ Domini/i
+      && $version =~ /1955|196/) {
+    $rule .= "Oratio Dominica\n";
+  }
+  ...
+  if ($rule =~ /Oratio Dominica/i
+      && (!exists($winner{Oratio}) || $hora eq 'Vespera')) {
+    my $name = "Epi1-0a";
+    %w = setupstring($lang, "Tempora/$name.txt");
+  }
+
+Sancti/01-12 [Rule] carries "Infra octavam Epiphaniæ Domini" and
+the file has NO own [Oratio] section. Under R55/R60, when the
+liturgical week is Epi1 (Mon-Sat after Sun-after-Epi), Perl
+swaps in Tempora/Epi1-0a's [Oratio] for the proper.
+
+Note: Perl's `setupstring` does NOT merge sections across the
+`[Rule] ex Sancti/01-06` directive (only `vide` redirects do
+that), so `exists($winner{Oratio})` for Sancti/01-12 is FALSE
+even though our chain walker later inherits it from 01-06 for
+the structural fields. The gate `(!exists || hora=Vespera)`
+fires for ALL hours when the file has no own [Oratio]. For
+files with own [Oratio] (e.g. Sancti/01-13 Octave Day), the
+override fires only at Vespera.
+
+Fix: in `splice_proper_into_slot`, before the chain-based
+candidate lookup, check:
+  1. label == "Oratio".
+  2. rubric ∈ {Reduced1955, Rubrics1960}.
+  3. `crate::date::getweek(day, month, year)` == "Epi1".
+  4. chain[0]'s [Rule] (eval'd) contains "Infra octavam Epiphani".
+  5. hour == "Vespera" OR chain[0] has no own [Oratio] section.
+
+When all conditions hold, splice from Tempora/Epi1-0a [Oratio].
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged — gate excludes T1570).
+    R55:   97.02% → 97.19% (+5 cells).
+    R60:   97.53% → 97.74% (+6 cells).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Triduum Prima Oratio suppression**: tried suppressing the

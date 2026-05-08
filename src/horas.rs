@@ -2268,6 +2268,71 @@ fn splice_proper_into_slot(
     // Tempora/Adv3-0. The chain doesn't naturally include it (Adv3-3
     // [Rule] = "Preces Feriales", no `vide` link), so we have to fetch
     // explicitly.
+    // R55/R60 "Suppressed Octave of Epiphany" Oratio override.
+    // Mirror of `specials/orationes.pl:48-61`:
+    //
+    //   if ($dayname[0] =~ /Epi1/i
+    //       && $rule =~ /Infra octavam Epiphaniæ Domini/i
+    //       && $version =~ /1955|196/) {
+    //     $rule .= "Oratio Dominica\n";
+    //   }
+    //   ...
+    //   if ($rule =~ /Oratio Dominica/i
+    //       && (!exists($winner{Oratio}) || $hora eq 'Vespera')) {
+    //     my $name = "Epi1-0a";
+    //     %w = setupstring($lang, "Tempora/$name.txt");
+    //   }
+    //
+    // Drives R55/R60 Mon Jan 12 (and similar Epi1-week ferials in
+    // other years): file Sancti/01-12 inherits from Sancti/01-06
+    // (Epiphany) but its proper Oratio under R55/R60 is
+    // Tempora/Epi1-0a's "Vota, quaesumus..." (Sunday-after-Epi),
+    // not Epiphany's "Deus, qui hodierna die...".
+    //
+    // Gate `!exists($winner{Oratio}) || hora eq Vespera`: Sancti/01-12
+    // has no own [Oratio] (inherits via `ex Sancti/01-06` for
+    // structural fields only — Perl's `setupstring` doesn't merge
+    // sections across `ex` directives, so `exists($winner{Oratio})`
+    // is FALSE). Override fires at all hours. For files that DO carry
+    // their own [Oratio] (Sancti/01-13 Baptism), override fires only
+    // at Vespera.
+    if label == "Oratio"
+        && matches!(
+            rubric,
+            crate::core::Rubric::Reduced1955 | crate::core::Rubric::Rubrics1960
+        )
+    {
+        let weekname = crate::date::getweek(day, month, year, false, true);
+        if weekname == "Epi1" {
+            let rule_match = chain.first().is_some_and(|f| {
+                section_via_inheritance(f, "Rule").is_some_and(|r| {
+                    let evaluated = eval_section_conditionals(&r, rubric, hour);
+                    let lc = evaluated.to_lowercase();
+                    lc.contains("infra octavam epiphani")
+                })
+            });
+            let no_own_oratio_or_vespera = hour == "Vespera"
+                || chain
+                    .first()
+                    .is_some_and(|f| !f.sections.contains_key("Oratio"));
+            if rule_match && no_own_oratio_or_vespera {
+                if let Some(file) = lookup("Tempora/Epi1-0a") {
+                    if let Some(body) = section_via_inheritance(file, "Oratio") {
+                        let resolved = expand_at_redirect(&body, "Oratio");
+                        let evaluated = eval_section_conditionals(&resolved, rubric, hour);
+                        let trimmed = take_first_oratio_chunk(&evaluated);
+                        let with_name = substitute_saint_name(&trimmed, saint_name);
+                        let macros_expanded =
+                            expand_dollar_macros_in_body(&with_name, prayers_file);
+                        let respelled = apply_office_spelling(&macros_expanded, rubric);
+                        out.push(RenderedLine::Plain { body: respelled });
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
     if force_sunday_oratio {
         // Two derivation paths for the week-Sunday key:
         //   1. Day-key-based (handles Adv3-3o → Adv3-0).

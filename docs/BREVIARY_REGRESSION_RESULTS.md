@@ -1298,6 +1298,44 @@ their own clusters).
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 33: today's `ex Sancti/...` rank inheritance (low-rank-only) — R60 91.99% → 92.02%
+
+R60 demotes Sancti/01-07..01-12 (sub-Octave-of-Epi days) from
+Semiduplex 5.6 to Feria 1.x but keeps `[Rule] ex Sancti/01-06`
+(inherits Epi office's structure). For first-Vespers concurrence
+on those Feria days, today's effective rank should follow the
+inheritance to the source feast — Friday 01-09 R60 Vespera should
+NOT swap to Saturday-BVM (Commune/C10b Simplex 1.3) just because
+1.3 > 1.2.
+
+`effective_today_rank_for_concurrence` returns `max(direct,
+inherited_source_rank)` — but ONLY when `direct < 2.0`. Days
+with real rank ≥ 2.0 (T1570 sub-Octave Semiduplex 5.6, regular
+Sancti days) keep their direct rank — boosting them
+over-fires and stops legitimate Sun-after-Epi swaps (01-10 Sat
+Vespera).
+
+The boost is also asymmetric — applied only to TODAY, not
+TOMORROW. A Mon ferial that inherits Epi's structure doesn't
+get 1st Vespers privilege from the inheritance; it's still a
+ferial without proper 1st Vespers. (01-12 Mon's first-Vespers
+case is closed by slice 32's annotated `[Rank]` lookup, not by
+inheritance.)
+
+**T1570 30-day Jan**: stays at 240/240 (100.00%).
+
+| Rubric × Window         | Pre slice 33 | Post slice 33 | Δ |
+|-------------------------|-------------:|--------------:|--:|
+| T1570 full year (2920c) | 91.99% | 91.99% | — |
+| R60   full year (2920c) | 91.99% | **92.02%** | +1 |
+
+Modest gain — only the few R60 sub-Octave-of-Epi Friday Vesperas
+where today's Feria 1.x had to beat tomorrow's Saturday-BVM
+Simplex 1.3 fall in scope.
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Section-level `[Rank] (rubrica 196)` annotated lookup

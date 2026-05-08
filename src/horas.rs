@@ -982,6 +982,13 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     // `Oratio Dominica` rule. Mirror of upstream `concurrence`'s
     // Simplex-skip path: when today.class is Simplex and today is
     // Sancti, tomorrow always wins regardless of rank ordering.
+    //
+    // EXCEPTION: Sancti Feria days that inherit from a major feast
+    // via `[Rule] ex Sancti/MM-DD` DO have 2nd Vespers (inherited
+    // from the source feast's). R60 demotes Sancti/01-07..01-12
+    // (days within abolished Epi Octave) to Feria 1.x but keeps
+    // `ex Sancti/01-06` — Vespera Friday 01-09 R60 should continue
+    // Epiphany's office, not swap to Saturday BVM.
     if today_key.starts_with("Sancti/") {
         if let Some((_full, cls, num)) = active_rank_line_with_annotations(today_key, rubric, hora) {
             let lc = cls.to_lowercase();
@@ -989,7 +996,7 @@ pub fn first_vespers_day_key_for_rubric<'a>(
                 || lc.contains("simplex")
                 || lc.contains("memoria")
                 || lc.contains("commemoratio");
-            if no_2v {
+            if no_2v && !today_inherits_via_ex_sancti(today_key, rubric, hora) {
                 return tomorrow_key;
             }
         }
@@ -1007,9 +1014,7 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     if tomorrow_rule_marks_festum_domini(tomorrow_key, rubric, hora) {
         return tomorrow_key;
     }
-    let today_rank = active_rank_line_with_annotations(today_key, rubric, hora)
-        .map(|(_, _, n)| n)
-        .unwrap_or(0.0);
+    let today_rank = effective_today_rank_for_concurrence(today_key, rubric, hora);
     let tomorrow_rank = active_rank_line_with_annotations(tomorrow_key, rubric, hora)
         .map(|(_, _, n)| n)
         .unwrap_or(0.0);
@@ -1018,6 +1023,88 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     } else {
         tomorrow_key
     }
+}
+
+/// Concurrence rank for TODAY's office. When the day inherits via
+/// `[Rule] ex Sancti/MM-DD` (sub-Octave-of-Epi R60 ferials carry
+/// `ex Sancti/01-06`), the source feast's rank is taken alongside
+/// the direct one — today's 2nd Vespers continues the source's
+/// office. Asymmetric: tomorrow's rank is NOT boosted via
+/// inheritance because tomorrow's "structure inheritance" doesn't
+/// imply tomorrow has 1st Vespers privilege (a Mon ferial that
+/// inherits Epi structure still has no proper 1st Vespers).
+fn effective_today_rank_for_concurrence(
+    day_key: &str,
+    rubric: crate::core::Rubric,
+    hora: &str,
+) -> f32 {
+    let direct = active_rank_line_with_annotations(day_key, rubric, hora)
+        .map(|(_, _, n)| n)
+        .unwrap_or(0.0);
+    // Only apply the inheritance boost when the direct rank is
+    // low (< 2.0 — Feria/Memoria/Commemoratio). Days with their
+    // own real rank (Semiduplex 5.6 sub-Octave-of-Epi under T1570)
+    // don't need it; boosting them over-fires and stops the
+    // first-Vespers swap to Sun-after-Epi.
+    if direct < 2.0 {
+        if let Some(source_key) = inherited_source_via_ex_sancti(day_key, rubric, hora) {
+            if let Some((_, _, source_num)) =
+                active_rank_line_with_annotations(&source_key, rubric, hora)
+            {
+                return direct.max(source_num);
+            }
+        }
+    }
+    direct
+}
+
+/// Return the inherited-source `Sancti/MM-DD` key from a day's
+/// `[Rule] ex Sancti/...` directive. None if the rule doesn't carry
+/// such inheritance.
+fn inherited_source_via_ex_sancti(
+    day_key: &str,
+    rubric: crate::core::Rubric,
+    hora: &str,
+) -> Option<String> {
+    let file = lookup(day_key)?;
+    let rule = file.sections.get("Rule")?;
+    let evaluated = eval_section_conditionals(rule, rubric, hora);
+    for line in evaluated.lines() {
+        let line = line.trim();
+        let rest = line
+            .strip_prefix("ex Sancti/")
+            .or_else(|| line.strip_prefix("ex sancti/"))?;
+        let stem = rest.split(|c: char| c.is_whitespace() || c == ';' || c == ',').next()?;
+        if !stem.is_empty() {
+            return Some(format!("Sancti/{stem}"));
+        }
+    }
+    None
+}
+
+/// `[Rule]` body has an `ex Sancti/MM-DD` inheritance directive.
+/// When the day's office inherits from another (like sub-Octave-of-
+/// Epi days inheriting from Sancti/01-06 Epiphany under R60), the
+/// inherited Vespera carries over — today's Vespera is the
+/// inherited feast's 2nd Vespers, not a "no Vespers" gap.
+fn today_inherits_via_ex_sancti(
+    day_key: &str,
+    rubric: crate::core::Rubric,
+    hora: &str,
+) -> bool {
+    let Some(file) = lookup(day_key) else {
+        return false;
+    };
+    if let Some(rule) = file.sections.get("Rule") {
+        let evaluated = eval_section_conditionals(rule, rubric, hora);
+        for line in evaluated.lines() {
+            let line = line.trim();
+            if line.starts_with("ex Sancti/") || line.starts_with("ex sancti/") {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 /// `[Rule]` body contains the `Festum Domini` directive — a priority

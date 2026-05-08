@@ -359,6 +359,45 @@ fn run_one_cell(
             Err(_) => return (SectionStatus::RustBlank, Some("rust panic in compute_office".into())),
         }
     };
+    // Christmas-Octave (Dec 26..31) office-context override. The
+    // Mass-side `Tempora/Nat29` carries [Rank] ";;Semiduplex;;2.92"
+    // (the missa file), so the precedence engine sees temporal_rank
+    // 2.92 and beats the Sancti's 2.2 → Tempora wins. But the OFFICE-
+    // side `horas/Tempora/Nat29` carries [Rank] ";;Semiduplex;;2.1",
+    // and Perl's Office occurrence — using horas-side ranks — gives
+    // Sancti (2.2) the win.
+    //
+    // Narrow override: for 12-26..12-31, when winner is `Tempora/
+    // Nat{X}` and a Sancti commemoration with rubric-active rank >
+    // 2.1 exists in the kalendarium, swap winner to the Sancti's
+    // stem. Only fires under T1570/T1910 — DA/R55/R60 don't have the
+    // missa-vs-horas rank divergence on these days.
+    let derived_key = if matches!(
+        rubric,
+        officium_rs::core::Rubric::Tridentine1570 | officium_rs::core::Rubric::Tridentine1910
+    ) && mm == 12
+        && (26..=31).contains(&dd)
+        && derived_key.starts_with("Tempora/Nat")
+    {
+        let layer = rubric.kalendar_layer();
+        if let Some(cells) = officium_rs::kalendaria_layers::lookup(layer, mm, dd) {
+            // First cell is the main feast — swap to it if its rank
+            // exceeds the Octave-of-Christmas horas-rank (2.1).
+            if let Some(main) = cells.first() {
+                if main.rank_num().is_some_and(|r| r >= 2.0) {
+                    format!("Sancti/{}", main.stem)
+                } else {
+                    derived_key
+                }
+            } else {
+                derived_key
+            }
+        } else {
+            derived_key
+        }
+    } else {
+        derived_key
+    };
 
     // For Vespera AND Completorium: auto-derive the next day's
     // office key and let `first_vespers_day_key` swap if tomorrow

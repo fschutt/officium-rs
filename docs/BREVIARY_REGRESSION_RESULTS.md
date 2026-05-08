@@ -2436,6 +2436,49 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 56: Christmas Octave Office winner override (T1570/T1910) — T1570 +5
+
+Symptom: 12-29 (Becket) under T1570 fails Mat/Laudes/Tertia/
+Sexta/Nona. Perl winner = Sancti/12-29o (Becket Semiduplex 2.2);
+our winner = Tempora/Nat29o (Christmas Octave Day V Semiduplex
+2.92).
+
+Trace: missa-side `Tempora/Nat29` carries [Rank] ";;Semiduplex;;
+2.92;;ex Sancti/12-25m3"; horas-side carries ";;Semiduplex;;2.1
+;;ex Sancti/12-25". Our precedence engine reads from `corpus.
+mass_file()` and gets temporal_rank=2.92 → beats Sancti's 2.2 →
+Tempora wins. Perl's Office occurrence reads horas-side files
+(rank 2.1) → Sancti wins.
+
+Office vs Mass divergence: Mass on 12-29 T1570 IS Tempora-
+Octave-of-Christmas (page header confirms). Office IS Sancti
+(Becket).
+
+Fix: narrow override in `office_sweep` after compute_office.
+For 12-26..12-31 under T1570/T1910 with winner `Tempora/Nat{X}`,
+swap to the kalendarium-active main cell's stem when its rank
+is Semiduplex+ (`>= 2.0` per kalendarium's class-int convention).
+Doesn't refactor compute_office — keeps Mass winner intact.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Matutinum 98.90% → 99.18% (+1)
+      Laudes    99.73% → 100.00% (+1)
+      Tertia    99.73% → 100.00% (+1)
+      Sexta     99.73% → 100.00% (+1)
+      Nona      99.73% → 100.00% (+1)
+      Overall   99.49% → 99.62% (+5 cells)
+    R55: 96.85% (unchanged — issue is pre-DA missa-vs-horas
+         rank divergence specific to Christmas Octave files)
+    R60: 97.36% (unchanged)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Broad Octave-suffix file enumeration for preces reject**

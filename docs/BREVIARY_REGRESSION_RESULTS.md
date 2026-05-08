@@ -1997,7 +1997,68 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 46: rubric-aware [Rule]/[Officium] inheritance lookup — T1570 97.02% → 97.12% (+3 cells)
+
+Symptom: T1570 12-10 Thu Adv2 Compline (resolved key Sancti/
+12-11 Damasus Pope) emits text[2-3] V/R Domine exaudi (preces
+NOT firing). Perl emits the omittitur directive (preces FIRES).
+Same pattern: 12-11 Adv2 Fri (1V eve of Damasus 1V swap), and
+the Compline counterparts.
+
+Trace: Sancti/12-11 has TWO [Rule] sections:
+
+  [Rule]
+  vide C4b;
+  9 lectiones;
+  Doxology=Nat
+  Omit Preces
+
+  [Rule] (rubrica 1570)
+  vide C4;
+  9 lectiones;
+
+For T1570 the second variant should win. The bare [Rule]
+carries "Omit Preces" (used under R55/R60 where Damasus was
+demoted to Common-of-Pope-Confessors with reduced rubric).
+`section_via_inheritance` was returning the bare [Rule] →
+preces predicate matched "omit preces" → returned false →
+text[2-3] emitted instead of text[4].
+
+Fix: new `section_via_inheritance_rubric(file, name, rubric)`
+overload + helper `best_matching_section`. When a rubric is
+supplied, prefer the `[{name}] (annotation)` variant when the
+annotation matches the active rubric; bare `[{name}]` is the
+fallback. Mirror of slice 34's [Oratio] pattern, applied to
+[Rule] and [Officium] in `preces_dominicales_et_feriales_fires`.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Prima        97.26% → 97.53% (+1)
+      Completorium 97.81% → 98.36% (+2)
+      Overall      97.02% → 97.12% (+3 cells)
+    R60: 96.92% (unchanged)
+    R55: 94.01% (unchanged)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
+
+- **`section_via_inheritance` walked + Officium-prepended Vigilia
+  gate** (slice 46 attempt): tried extending slice 42's Vigilia
+  gate to also check tomorrow's [Officium] body for "vigilia"
+  (mirroring SetupString.pl:705-708's title-prepend behaviour).
+  06-22 Mon Vespera correctly stopped swapping to Sancti/06-23
+  (Vigilia Joannis Bapt) — but today's resolved key Sancti/06-22t
+  (Paulinus Simplex 1.1) was still wrong; Perl uses today's
+  Tempora ferial because Simplex has no proper 2V. The deeper
+  fix needs a Tempora-of-week fallback in
+  `first_vespers_day_key_for_rubric`, requiring the function to
+  return owned String. Reverted; documented as a known TODO.
 
 - **Feria/Sabbato/Quattuor branches of the Vigil gate**: tried the
   full Perl OR chain (Feria | Sabbato | Vigilia | Quat[t]*uor) on

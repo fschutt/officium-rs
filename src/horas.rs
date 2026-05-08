@@ -543,7 +543,7 @@ fn preces_dominicales_et_feriales_fires(
     // misses Pent01-6's "ex Tempora/Pent01-4" inheritance and any
     // "Omit Preces" the parent would carry. Same logic for [Officium]
     // below — the Octave detection needs the parent's title.
-    if let Some(rule) = section_via_inheritance(file, "Rule") {
+    if let Some(rule) = section_via_inheritance_rubric(file, "Rule", Some(rubric)) {
         let evaluated = eval_section_conditionals(&rule, rubric, hour);
         let lc = evaluated.to_lowercase();
         if lc.contains("omit") && lc.contains("preces") {
@@ -602,7 +602,7 @@ fn preces_dominicales_et_feriales_fires(
     // something in the precedence state that makes preces reject —
     // the [Officium] body containing "Octav" is the closest
     // detectable proxy and matches the empirical Perl render.
-    if let Some(off_body) = section_via_inheritance(file, "Officium") {
+    if let Some(off_body) = section_via_inheritance_rubric(file, "Officium", Some(rubric)) {
         let evaluated = eval_section_conditionals(&off_body, rubric, hour);
         let lc_off = evaluated.to_lowercase();
         if lc_off.contains("octav") && !lc_off.contains("post octav") {
@@ -1617,21 +1617,33 @@ fn week_sunday_key_for_tempora(day_key: &str) -> Option<String> {
 }
 
 fn section_via_inheritance(file: &HorasFile, name: &str) -> Option<String> {
-    if let Some(body) = file.sections.get(name) {
+    section_via_inheritance_rubric(file, name, None)
+}
+
+/// Rubric-aware variant: when a rubric is supplied, an annotated
+/// variant `[{name}] (rubrica X)` wins over the bare `[{name}]`
+/// when the annotation matches the active rubric. Drives Sancti/
+/// 12-11 — its bare `[Rule]` carries "Omit Preces" but `[Rule]
+/// (rubrica 1570)` is just "vide C4; 9 lectiones" — under T1570
+/// the second form is what the preces predicate should evaluate.
+fn section_via_inheritance_rubric(
+    file: &HorasFile,
+    name: &str,
+    rubric: Option<crate::core::Rubric>,
+) -> Option<String> {
+    if let Some(body) = best_matching_section(file, name, rubric) {
         if !body.trim().is_empty() {
-            return Some(body.clone());
+            return Some(body);
         }
     }
-    // Re-anchor on the static corpus once we step into the preamble
-    // chain. Avoids a lifetime constraint on the entry `file`.
     let Some(parent_path) = first_at_path_inheritance(file) else {
         return None;
     };
     let mut current: &'static HorasFile = lookup(&parent_path)?;
     for _ in 0..4 {
-        if let Some(body) = current.sections.get(name) {
+        if let Some(body) = best_matching_section(current, name, rubric) {
             if !body.trim().is_empty() {
-                return Some(body.clone());
+                return Some(body);
             }
         }
         let Some(next_path) = first_at_path_inheritance(current) else {
@@ -1640,6 +1652,33 @@ fn section_via_inheritance(file: &HorasFile, name: &str) -> Option<String> {
         current = lookup(&next_path)?;
     }
     None
+}
+
+/// Find the best-matching section body in a single file, considering
+/// rubric-annotated variants. Order:
+///   1. `[{name}] (annotation)` where annotation matches the rubric
+///      (only when rubric is supplied).
+///   2. Bare `[{name}]`.
+fn best_matching_section(
+    file: &HorasFile,
+    name: &str,
+    rubric: Option<crate::core::Rubric>,
+) -> Option<String> {
+    if let Some(rubric) = rubric {
+        let prefix = format!("{name} (");
+        for (key, body) in &file.sections {
+            let Some(rest) = key.strip_prefix(&prefix) else {
+                continue;
+            };
+            let annotation = rest.trim_end_matches(')').trim();
+            if crate::mass::annotation_applies_to_rubric(annotation, rubric)
+                && !body.trim().is_empty()
+            {
+                return Some(body.clone());
+            }
+        }
+    }
+    file.sections.get(name).cloned()
 }
 
 fn first_at_path_inheritance(file: &HorasFile) -> Option<String> {

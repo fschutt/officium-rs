@@ -2741,6 +2741,65 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 62: Tempora Feria → week-Sun Oratio fallback — R55 +4, R60 +4
+
+Symptom: 06-08-2026 R60/R55 Mon Tertia (+all hours) emit
+"Deus, qui nobis sub Sacraménto mirábili passiónis tuæ
+memóriam reliquísti..." (Corpus Christi Oratio). Perl emits
+"Sancti nóminis tui, Dómine, timórem páriter et amórem fac nos
+habére perpétuum..." (Pent02-0 Sun-of-week Oratio).
+
+Trace: Tempora/Pent02-1 [Rule] = "ex Tempora/Pent01-4". Under
+T1570/T1910/DA, the day is "Feria Secunda infra Octavam Corporis
+Christi" (Semiduplex IIS 2.9) — uses Corpus Christi Oratio
+correctly. Under R55/R60 the day is "Feria II Hebdomadam II
+post Octavam Pentecostes" (Feria 1) — should use Pent02-0's
+Oratio.
+
+Our chain walker follows `ex Tempora/Pent01-4` and finds Corpus
+Christi's [Oratio] there. Perl's `setupstring` does NOT follow
+`ex` for sections — it loads only the named file's sections.
+So Pent02-1's $w{Oratio} is empty → Perl falls back to
+week-Sun via `specials/orationes.pl:115-121`:
+
+  if ($winner =~ /Tempora/ && !$w) {
+    my $name = "$dayname[0]-0";
+    %w = setupstring($lang, "Tempora/$name.txt");
+    $w = $w{Oratio};
+  }
+
+Fix: in `splice_proper_into_slot`, before the chain-based
+candidate lookup, check for the Tempora-Feria fallback case:
+  1. label == "Oratio".
+  2. day_key starts with "Tempora/".
+  3. chain[0] has NO [Oratio]/[Oratio 2]/[Oratio 3]
+     (matches Perl's full lookup-priority miss).
+  4. chain[0]'s active [Rank] class is "Feria" (NOT
+     "Feria major" — Lent ferials Quad1-2 etc. ARE
+     "Feria major" and carry [Oratio 2]/[Oratio 3]).
+
+When all conditions hold, splice from `tempora_sunday_fallback`
+target's [Oratio]. Falls through to chain logic if any condition
+fails.
+
+Iteration cost note: the initial wider gate ("class contains
+'feria'", any oratio missing) regressed T1570 by 188 cells
+across Lent (Quad1-2 et al). Tightened to strict "feria" + all
+three Oratio* sections missing.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged — no plain "Feria" Tempora ferials
+                   in T1570 Pent without Oratio*).
+    R55:   97.98% → 98.12% (+4 cells).
+    R60:   97.74% → 97.88% (+4 cells).
+
+T1910 99.08% and DA 97.36% unchanged. Mass T1570 + R60 year-
+sweeps stay at 365/365 (100%). 431 lib tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Triduum Prima Oratio suppression**: tried suppressing the

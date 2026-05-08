@@ -2333,6 +2333,70 @@ fn splice_proper_into_slot(
         }
     }
 
+    // Tempora ferial → week-Sun Oratio fallback. Mirror of
+    // `specials/orationes.pl:115-121`:
+    //
+    //   if ($winner =~ /Tempora/ && !$w) {
+    //     my $name = "$dayname[0]-0";
+    //     %w = setupstring($lang, "Tempora/$name.txt");
+    //     $w = $w{Oratio};
+    //   }
+    //
+    // Perl's setupstring loads ONLY the named file's sections — it
+    // does NOT follow `ex Tempora/...` directives across files for
+    // [Oratio]. When the day's file has no own [Oratio], Perl falls
+    // back to the week-Sunday's.
+    //
+    // Our chain walker follows `ex Tempora/...` from [Rule], which
+    // pulls the source file's [Oratio] in. For R60 Mon Pent02-1
+    // (Feria per [Rank] rubrica 196), the chain inherits from
+    // Pent01-4 (Corpus Christi) and emits "Deus, qui nobis sub
+    // Sacramento mirabili...". Perl emits Pent02-0's "Sancti
+    // nominis tui..." (the Sun-of-week Oratio) since Pent02-1 has
+    // no own [Oratio].
+    //
+    // Trigger: day_key starts with "Tempora/", chain[0] has no
+    // [Oratio]/[Oratio 2]/[Oratio 3] of its own (so the Perl
+    // priority order fully misses), AND chain[0]'s active [Rank]
+    // class is "Feria" (NOT "Feria major"). The strict Feria gate
+    // excludes Lent ferials (Quad1-2 etc., class "Feria major",
+    // which carry [Oratio 2]/[Oratio 3] anyway) and ensures we
+    // only fire on plain weekday ferials whose Oratio Perl
+    // explicitly fetches from the week-Sun via the
+    // `if ($winner =~ /Tempora/ && !$w)` fallback.
+    let tempora_feria_oratio_dominica = label == "Oratio"
+        && day_key.is_some_and(|k| k.starts_with("Tempora/"))
+        && chain.first().is_some_and(|f| {
+            !f.sections.contains_key("Oratio")
+                && !f.sections.contains_key("Oratio 2")
+                && !f.sections.contains_key("Oratio 3")
+        })
+        && day_key.is_some_and(|k| {
+            active_rank_line_with_annotations(k, rubric, hour)
+                .map(|(_, cls, _)| {
+                    let lc = cls.to_lowercase();
+                    lc.contains("feria") && !lc.contains("feria major")
+                })
+                .unwrap_or(false)
+        });
+    if tempora_feria_oratio_dominica {
+        if let Some(parent) = day_key.and_then(tempora_sunday_fallback) {
+            if let Some(file) = lookup(&parent) {
+                if let Some(body) = section_via_inheritance(file, "Oratio") {
+                    let resolved = expand_at_redirect(&body, "Oratio");
+                    let evaluated = eval_section_conditionals(&resolved, rubric, hour);
+                    let trimmed = take_first_oratio_chunk(&evaluated);
+                    let with_name = substitute_saint_name(&trimmed, saint_name);
+                    let macros_expanded =
+                        expand_dollar_macros_in_body(&with_name, prayers_file);
+                    let respelled = apply_office_spelling(&macros_expanded, rubric);
+                    out.push(RenderedLine::Plain { body: respelled });
+                    return;
+                }
+            }
+        }
+    }
+
     if force_sunday_oratio {
         // Two derivation paths for the week-Sunday key:
         //   1. Day-key-based (handles Adv3-3o → Adv3-0).

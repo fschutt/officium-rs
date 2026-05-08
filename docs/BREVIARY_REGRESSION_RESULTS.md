@@ -2479,6 +2479,43 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 57: preces predicate Christmas-Octave Tempora-counterpart reject — T1570 +1
+
+Symptom: After slice 56 fixed 12-29 Mat/Laudes/Tertia/Sexta/Nona
+by swapping winner to Sancti/12-29o (Becket), 12-29 Prima still
+failed. Becket is Semiduplex 2.2 → preces predicate fires →
+text[4] omittitur. Perl rejects preces (text[2-3] V/R Domine
+exaudi).
+
+Trace: Perl's `preces.pl:45` reads `$commemoratio.Rank` — for
+12-29 with Becket as winner, the COMMEMORATION is Tempora/Nat29
+("Diei V infra Octavam Nativitatis"). SetupString.pl:705-708
+prepends [Officium] into [Rank] title field, so the commemoratio's
+Rank matches /Octav/i → preces rejected.
+
+Slice 54's kalendarium-cell check sees only 12-29o (Becket) in
+T1570 — the kalendarium doesn't list the Tempora-Octave-of-
+Christmas as a separate cell, so the Octav check missed.
+
+Fix: extend preces_fires with a Christmas-Octave-window check.
+For month=12 day in 26..=31, also direct-check `Tempora/Nat{day}`
+for [Officium] containing "Octav". For 12-29 → Tempora/Nat29 →
+"Diei V infra Octavam Nativitatis" → match → reject.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Prima    98.90% → 99.18% (+1 — 12-29)
+      Overall  99.62% → 99.66%
+    R55: 96.85% (unchanged)
+    R60: 97.36% (unchanged)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Broad Octave-suffix file enumeration for preces reject**

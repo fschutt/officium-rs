@@ -547,6 +547,26 @@ fn preces_dominicales_et_feriales_fires(
             }
         }
     }
+    // Christmas Octave (12-26..12-31): when Sancti is the winner
+    // (e.g. Becket on 12-29 T1570), the kalendarium lists ONLY the
+    // saint, so the loop above doesn't see the Tempora-Octave
+    // commemoration ("Diei V infra Octavam Nativitatis"). Perl's
+    // `preces.pl:45` reads the actual commemoratio file (Tempora/
+    // Nat29) and the Officium-prepended [Rank] matches /Octav/i —
+    // rejecting preces. We approximate by direct-checking the
+    // Tempora/Nat{day} counterpart for "Octav" when the active day
+    // is in the Christmas Octave window.
+    if month == 12 && (26..=31).contains(&day) {
+        let tempora_nat = format!("Tempora/Nat{day:02}");
+        if let Some(file) = lookup(&tempora_nat) {
+            if let Some(off) = section_via_inheritance(file, "Officium") {
+                let lc = off.to_lowercase();
+                if lc.contains("octav") && !lc.contains("post octav") {
+                    return false;
+                }
+            }
+        }
+    }
     // Pasc6 (post Octavam Ascensionis) + Pasc7 (Pent Octave week)
     // — preces rejected unconditionally per Perl `preces.pl:18-19`:
     //

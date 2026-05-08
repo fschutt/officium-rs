@@ -522,9 +522,14 @@ fn preces_dominicales_et_feriales_fires(
     let Some(file) = lookup(day_key) else {
         return false;
     };
-    // [Rule] containing "Omit Preces" → no preces.
-    if let Some(rule) = file.sections.get("Rule") {
-        let evaluated = eval_section_conditionals(rule, rubric, hour);
+    // [Rule] containing "Omit Preces" → no preces. Chase
+    // `__preamble__` inheritance: Tempora/Pent01-6o is `@Tempora/
+    // Pent01-6` and has no own [Rule], so a direct `sections.get`
+    // misses Pent01-6's "ex Tempora/Pent01-4" inheritance and any
+    // "Omit Preces" the parent would carry. Same logic for [Officium]
+    // below — the Octave detection needs the parent's title.
+    if let Some(rule) = section_via_inheritance(file, "Rule") {
+        let evaluated = eval_section_conditionals(&rule, rubric, hour);
         let lc = evaluated.to_lowercase();
         if lc.contains("omit") && lc.contains("preces") {
             return false;
@@ -582,8 +587,8 @@ fn preces_dominicales_et_feriales_fires(
     // something in the precedence state that makes preces reject —
     // the [Officium] body containing "Octav" is the closest
     // detectable proxy and matches the empirical Perl render.
-    if let Some(off_body) = file.sections.get("Officium") {
-        let evaluated = eval_section_conditionals(off_body, rubric, hour);
+    if let Some(off_body) = section_via_inheritance(file, "Officium") {
+        let evaluated = eval_section_conditionals(&off_body, rubric, hour);
         let lc_off = evaluated.to_lowercase();
         if lc_off.contains("octav") && !lc_off.contains("post octav") {
             return false;
@@ -1457,6 +1462,34 @@ fn active_rank_line_for_rubric(
 /// file inheritance: `Commune/C10b` (Saturday BVM Office) starts
 /// with `@Commune/C10`, which merges C10's `[Rank]` etc. into C10b
 /// at parse time in Perl. Mirror that lazily at lookup time.
+/// Look up a section body, following `__preamble__` whole-file
+/// `@Path` inheritance up to a small depth limit. Returns the first
+/// non-empty body found. Mirror of upstream `setupstring_parse_file`'s
+/// merge semantics for callers that don't already chase the chain
+/// (e.g. `preces_dominicales_et_feriales_fires` checking [Rule] /
+/// [Officium] for short-circuit gates).
+fn section_via_inheritance(file: &'static HorasFile, name: &str) -> Option<String> {
+    if let Some(body) = file.sections.get(name) {
+        if !body.trim().is_empty() {
+            return Some(body.clone());
+        }
+    }
+    let mut current = file;
+    for _ in 0..4 {
+        let Some(parent_path) = first_at_path_inheritance(current) else {
+            return None;
+        };
+        let parent = lookup(&parent_path)?;
+        if let Some(body) = parent.sections.get(name) {
+            if !body.trim().is_empty() {
+                return Some(body.clone());
+            }
+        }
+        current = parent;
+    }
+    None
+}
+
 fn first_at_path_inheritance(file: &HorasFile) -> Option<String> {
     let preamble = file.sections.get("__preamble__")?;
     for line in preamble.lines() {

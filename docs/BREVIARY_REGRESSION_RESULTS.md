@@ -1635,6 +1635,55 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 39: preces predicate chases `__preamble__` for [Rule] / [Officium] — T1570 94.55% → 94.97% (+12 cells)
+
+Symptom: T1570 06-05 Fri (Sat-eve in Octave of Corpus Christi
+under Pent01 week) Compline emits text[4] omittitur but Perl
+emits the V/R Domine exaudi (preces NOT firing). Same pattern
+on the other days within Corpus Christi / Trinity / Sacred
+Heart Octaves where the day file is a `-o` redirect variant.
+
+Trace: 06-05 resolves to `Tempora/Pent01-6o` (Sat-of-CC-Octave
+"o" variant). Pent01-6o.txt is a 1-line `@Tempora/Pent01-6`
+preamble + a couple of section overrides (`[Lectio2]`, `[Lectio4]`).
+It carries no own [Rule] or [Officium]. Pent01-6 has those:
+
+  [Officium]: "Sabbato infra octavam Corporis Christi"
+  [Rule]: "ex Tempora/Pent01-4; 9 lectiones; Doxology=Corp"
+
+`preces_dominicales_et_feriales_fires` reads [Officium] to
+detect the "octav" Octave-day reject (mirroring upstream's
+empirical Perl behaviour where Octave-day winners short-
+circuit preces). Direct `file.sections.get("Officium")` on
+Pent01-6o returns None — the inheritance chain is never
+followed. So the Octave check skips, and preces fires
+incorrectly.
+
+Fix: new `section_via_inheritance(file, name)` helper —
+chases `__preamble__` `@Path` redirects up to depth 4 and
+returns the first non-empty body found. Used for [Rule]
+("Omit Preces" reject) and [Officium] (Octave reject) in
+preces_fires. Mirror of upstream `setupstring_parse_file`
+merge semantics that other callers
+(`active_rank_line_for_rubric` etc.) already implement
+inline.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Prima        94.25% → 95.89% (+6)
+      Completorium 92.05% → 93.70% (+6)
+      Overall      94.55% → 94.97% (+12 cells)
+    R60: 96.23% (unchanged — the Pent01 Octave files are
+         Tridentine-only; R60 abolished CC/SH/Trinity Octaves)
+    R55: 93.29% (unchanged for the same reason)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Section-level `[Rank] (rubrica 196)` annotated lookup

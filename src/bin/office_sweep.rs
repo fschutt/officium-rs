@@ -391,8 +391,45 @@ fn run_one_cell(
 
     let resolved_key = if let Some(next) = next_derived_key.as_deref() {
         let today_dow = officium_rs::date::day_of_week(dd, mm, yyyy);
-        horas::first_vespers_day_key_for_rubric(&derived_key, next, rubric, hour, today_dow)
-            .to_string()
+        let primary = horas::first_vespers_day_key_for_rubric(
+            &derived_key, next, rubric, hour, today_dow,
+        )
+        .to_string();
+        // Sancti-Simplex no-2V Tempora-of-week fallback. When TODAY is
+        // a Sancti Simplex (no proper 2nd Vespers) AND the swap to
+        // tomorrow's 1V was rejected (Vigilia gate / feria-privilegiata
+        // gate kept today), Perl uses today's TEMPORA ferial — Simplex
+        // feasts have no proper 2V, so the day's Vespers continues with
+        // the week-ferial Tempora (which inherits the week-Sun's Oratio
+        // via "Oratio Dominica"). Drives 06-22 Mon (Paulinus Simplex
+        // eve of James Vigilia), 05-12 Tue (Nereus & co. Simplex eve
+        // of Asc Vigilia), 10-26 Mon (Evaristus Simplex eve of
+        // 10-27 Vigil-stem-day), etc.
+        //
+        // Narrow: only fires when (a) we're at Vespera/Compline,
+        // (b) the resolved key equals today's derived key (no swap
+        // happened — first_vespers kept today), and (c) the resolved
+        // key is Sancti Simplex. When TOMORROW is a Sancti Simplex
+        // (e.g., Thu eve of Anicetus Fri 04-17), the swap is correct
+        // and Perl renders the Simplex as 1V winner — don't override.
+        let kept_today = primary == derived_key;
+        if (hour == "Vespera" || hour == "Completorium")
+            && kept_today
+            && primary.starts_with("Sancti/")
+            && horas::active_rank_line_with_annotations(&primary, rubric, hour)
+                .map(|(_, cls, _)| cls.to_lowercase().contains("simplex"))
+                .unwrap_or(false)
+        {
+            let weekname = officium_rs::date::getweek(dd, mm, yyyy, false, true);
+            let tempora_key = format!("Tempora/{weekname}-{today_dow}");
+            if horas::lookup(&tempora_key).is_some() {
+                tempora_key
+            } else {
+                primary
+            }
+        } else {
+            primary
+        }
     } else {
         derived_key.clone()
     };

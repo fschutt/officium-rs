@@ -1442,7 +1442,7 @@ fn tomorrow_rule_marks_festum_domini(
 /// Used only by `first_vespers_day_key_for_rubric` for concurrence
 /// comparisons. Not used by the preces predicate, which proved
 /// regression-prone in slice 31a — see `BREVIARY_REGRESSION_RESULTS.md`.
-fn active_rank_line_with_annotations(
+pub fn active_rank_line_with_annotations(
     day_key: &str,
     rubric: crate::core::Rubric,
     hora: &str,

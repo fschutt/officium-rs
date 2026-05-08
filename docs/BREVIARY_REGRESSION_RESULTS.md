@@ -2094,6 +2094,52 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 48: Sancti-Simplex no-2V → today's Tempora-of-week — T1570 +2, R60 +2, R55 +1
+
+Symptom: T1570 06-22 Mon Vespera, 05-12 Tue Vespera, 10-26 Mon
+Vespera all emit the resolved Sancti Simplex's body. Perl emits
+today's Tempora ferial (which inherits the week-Sun's Oratio
+via `[Rule] Oratio Dominica`).
+
+Trace: Simplex feasts have no proper 2nd Vespers. When today's
+office is a Sancti Simplex (Paulinus 06-22, Nereus & co. 05-12,
+Evaristus 10-26) AND the swap to tomorrow's 1V is rejected
+(slice 42 Vigilia gate fired because tomorrow=Vigil), Perl
+renders today's TEMPORA ferial Vespers — its Oratio chain
+inherits the week-Sun via "Oratio Dominica".
+
+Fix: post-process in `office_sweep` after
+`first_vespers_day_key_for_rubric`. When all of:
+  - hour is Vespera/Completorium,
+  - resolved key equals today's derived key (no swap happened),
+  - resolved key starts with `Sancti/`,
+  - active rank class contains "Simplex",
+override resolved_key to `Tempora/{today's weekname}-{today's
+dow}` (computed via `date::getweek` + `date::day_of_week`).
+
+`active_rank_line_with_annotations` made `pub` so office_sweep
+can call it.
+
+Narrow gating prevents regressions on the swap-correct case
+(e.g. 04-16 Thu eve of Anicetus Fri 04-17 — Anicetus is Simplex
+1.1, Tempora Thu is 1.0, Perl swaps to Anicetus 1V correctly;
+the resolved key is tomorrow=Anicetus and `kept_today` is
+false, so the override skips).
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Vespera   96.16% → 96.71% (+2 cells)
+      Overall   97.29% → 97.36% (+2 cells)
+    R60: 97.09% → 97.16% (+2 cells)
+    R55: 94.18% → 94.21% (+1 cell)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **`section_via_inheritance` walked + Officium-prepended Vigilia

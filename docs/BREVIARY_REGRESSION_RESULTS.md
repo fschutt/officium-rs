@@ -2311,7 +2311,53 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 53: preces predicate rejects in Pasc6 / Pasc7 weeks — T1570 +8 cells
+
+Symptom: T1570 Pent-Octave Ember Wed/Fri (05-27, 05-29) Prima
++ Compline, Sat-of-Octave-end (05-30) Prima, Pent Vigil Fri/Sat
+(05-22, 05-23) Prima emit text[4] omittitur. Perl emits V/R
+Domine exaudi (preces NOT firing).
+
+Trace: `preces.pl:18-19` is an early-reject:
+
+  return 0 if (... || $dayname[0] =~ /Pasc[67]/i);
+
+For ALL days in Pasc6 (post Octavam Ascensionis week — 05-21
+to 05-23 in 2026 between Asc Octave end + Pent Sat-Vigil) and
+Pasc7 (Pent Octave week — 05-25 to 05-30) the preces predicate
+rejects unconditionally. Our preces_fires didn't have this
+gate.
+
+Fix: add an early-return when day_key starts with `Tempora/
+Pasc6-` or `Tempora/Pasc7-`. Mirror of the Perl line.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Prima        97.53% → 98.90% (+5)
+      Completorium 98.36% → 99.18% (+3)
+      Overall      99.11% → 99.38% (+8 cells)
+    R60: 97.36% (unchanged — R60 abolished Pent Octave; the
+         Pasc7 prefix doesn't match R60's resolved keys)
+    R55: 96.85% (unchanged for similar reason)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
+
+- **Broad Octave-suffix file enumeration for preces reject**
+  (slice 53 attempt): tried checking `Sancti/{MM-DD}{suffix}`
+  for `oct`, `bmv`, `dom-oct`, `sab-oct`, `octt`. Net regression
+  -7 cells because the corpus carries `bmv` files for
+  post-1854 Octaves (Octave of Immaculate Conception 12-08) that
+  T1570's calendar doesn't include — file-existence is too
+  broad a proxy for "active commemoration on this date and
+  rubric". Reverted; Pasc6/7 day_key prefix is the narrower
+  correct lever for the Pent Octave / post-Asc-Octave reject.
 
 - **Hour-aware annotation filter** (slice 50 attempt): tried
   treating `(nisi ad vesperam aut rubrica X)` as hour-context

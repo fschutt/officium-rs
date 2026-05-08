@@ -529,6 +529,19 @@ fn preces_dominicales_et_feriales_fires(
     if lookup(&oct_key).is_some() {
         return false;
     }
+    // Pasc6 (post Octavam Ascensionis) + Pasc7 (Pent Octave week)
+    // — preces rejected unconditionally per Perl `preces.pl:18-19`:
+    //
+    //   return 0 if (... || $dayname[0] =~ /Pasc[67]/i);
+    //
+    // dayname[0] is the weekname; for `Tempora/Pasc6-5` etc. the
+    // prefix `Tempora/Pasc6-` / `Tempora/Pasc7-` matches. Drives
+    // 05-22 Fri (post Asc Octave) Prima — preces rejected.
+    if day_key.starts_with("Tempora/Pasc6-")
+        || day_key.starts_with("Tempora/Pasc7-")
+    {
+        return false;
+    }
     // Sunday: branch (b) of upstream `preces` fires on Sundays
     // too — Septuagesima/Sexagesima/Quinquagesima/Lent Sundays
     // emit the omittitur form on Prima/Compline. The Octave

@@ -3077,6 +3077,66 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 83: Preces predicate's oct_key check requires rubric-active octave — DA +4 cells
+
+Symptom: 08-11 DA Prima emits the FULL form (V. Dómine exáudi
+twice + Visita prayer); Perl emits the "secunda Domine, exaudi
+omittitur" rubric (preces firing). Same pattern at 08-13 (Tue)
+and 08-14 (Wed) Prima — Lawrence Octave dates under DA.
+
+The corpus carries `Sancti/08-11oct.txt` (Octave Day 2 of
+Lawrence) which our preces predicate's oct_key check used as a
+file-existence trigger to reject preces. But Pius X's Divino
+Afflatu (1911) reform suppressed Lawrence's octave; the
+kalendarium under DA lists only Tiburtius as the day's cell, no
+Octave commemoration. Perl's preces.pl reads the actual `$
+commemoratio{Rank}` set by occurrence — under DA the commemoratio
+is the Tempora ferial (Pent11-2 etc.) without "Octav" in its Rank
+— so Perl fires preces. Our file-existence check was rubric-
+blind and rejected anyway.
+
+Trace: `specials/preces.pl:41-58`'s `$commemoratio{Rank} =~
+/Octav/i` checks the active commemoratio's Rank field, not just
+file existence.
+
+Fix: require that EITHER the rubric-active kalendaria_by_rubric
+cells include an "octav" entry, OR one of the cells' stem-files
+has "octav" in its [Officium]. The dual check handles two corpus
+quirks:
+* Kalendar cell.officium can override the file's display
+  (`06-28oct` cell shows "Vigilia Ss. Petri et Pauli" but the
+  file [Officium] is "Die quinta infra Octavam Nativitatis JB"
+  — under T1570 the JB-Octave commemoration applies and we
+  must reject).
+* Suppressed octaves drop out of the kalendarium entirely
+  (DA's 08-11 cells = `[Tiburtius]` only, no `08-11oct` stem
+  — no file with octav-officium → don't reject, preces fires).
+
+The cell-stem inventory correctly reflects rubric-active
+octaves: kalendaria_by_rubric only emits an `MM-DDoct` stem when
+the octave is active in that rubric's calendar. Combined with
+the existing rank-check loop, this is enough to identify
+preces-rejection cases without consulting the post-swap
+$commemoratio directly.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged — file-officium fallback catches
+                   the cells whose officium differs from file).
+    T1910: 99.62% (unchanged — same).
+    DA:    99.32% → 99.42% (+4 cells: 08-11 / 08-13 / 08-14
+                            Prima + Compl plus a couple
+                            Lawrence-octave-related Compl
+                            cases).
+    R55:   99.04% (unchanged).
+    R60:   99.04% (unchanged).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Slice 82: Preces predicate uses tomorrow's calendar at 1V-swap-in-Octave — DA +1 cell
 
 Symptom: 11-07 DA Sat Compline emits the normal V/R Domine exaudi

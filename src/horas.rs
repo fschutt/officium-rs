@@ -611,9 +611,58 @@ fn preces_dominicales_et_feriales_fires(
     // `preces.pl:45` rejects via `$commemoratio{Rank} =~ /Octav/i`
     // (the [Officium] body is prepended to [Rank] by SetupString.pl
     // line 705-708, so the Octave-day title field carries "Octavam").
+    //
+    // ALSO require the rubric-active kalendarium cells to include an
+    // octave-day entry — the corpus carries `MM-DDoct` files for
+    // saints' octaves that were abolished under post-DA rubrics
+    // (e.g. 08-11oct = Octave Day 2 of Lawrence is a T1570/T1910 file
+    // but Pius X's Divino Afflatu suppressed Lawrence's octave so it
+    // doesn't apply under DA / R55 / R60). Without the rubric-active
+    // gate, those abolished-octave files reject preces under DA when
+    // Perl fires preces. Closes 08-11 DA Prima.
+    // If there's a Sancti/{MM-DD}oct file in the corpus, an Octave
+    // commemoration runs through this date — Perl's
+    // `preces.pl:45` rejects via `$commemoratio{Rank} =~ /Octav/i`.
+    //
+    // ALSO require that under the active rubric the octave is
+    // STILL active. Pius X's Divino Afflatu (1911) and later
+    // reforms suppressed several saints' octaves; the corpus
+    // carries the `MM-DDoct` files universally but the kalendarium
+    // only lists the Octave commemoration under rubrics where it
+    // applies. We approximate: in addition to file existence, the
+    // active rubric's kalendar_by_rubric cells OR the Sancti file's
+    // [Officium] must contain "octav" (excluding "post octav") for
+    // ANY of the cells. Closes 08-11 DA Prima where Lawrence's
+    // octave (06-28oct file exists) was rejected under DA.
     let oct_key = format!("Sancti/{lookup_m:02}-{lookup_d:02}oct");
     if lookup(&oct_key).is_some() {
-        return false;
+        let oct_check_layer = rubric.kalendar_layer();
+        let cells_for_oct_check =
+            crate::kalendaria_layers::lookup(oct_check_layer, lookup_m, lookup_d);
+        let octave_active_in_kalendar = cells_for_oct_check
+            .map(|cells| {
+                cells.iter().any(|c| {
+                    let lc = c.officium.to_lowercase();
+                    if lc.contains("octav") && !lc.contains("post octav") {
+                        return true;
+                    }
+                    // Kalendar's officium for the cell may differ from
+                    // the file's [Officium] (06-28oct kalendar says
+                    // "Vigilia P+P" but the file says "Die quinta
+                    // infra Octavam Nativitatis JB"). Fall back to the
+                    // file's [Officium] for the octave detection.
+                    let path = format!("Sancti/{}", c.stem);
+                    let officium = lookup(&path)
+                        .and_then(|f| section_via_inheritance(f, "Officium"))
+                        .unwrap_or_default()
+                        .to_lowercase();
+                    officium.contains("octav") && !officium.contains("post octav")
+                })
+            })
+            .unwrap_or(false);
+        if octave_active_in_kalendar {
+            return false;
+        }
     }
     // Octave-day commemoration via the rubric-active kalendarium.
     // Perl's `preces.pl:45` rejects preces when the commemoratio's

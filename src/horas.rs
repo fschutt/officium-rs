@@ -257,7 +257,7 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
                         let day_key = args.day_key.unwrap();
                         let dow = crate::date::day_of_week(args.day, args.month, args.year);
                         if preces_dominicales_et_feriales_fires(
-                            day_key, args.rubric, args.hour, dow,
+                            day_key, args.rubric, args.hour, dow, args.month, args.day,
                         ) {
                             prayers_file
                                 .and_then(dominus_vobiscum_preces_form)
@@ -502,7 +502,22 @@ fn preces_dominicales_et_feriales_fires(
     rubric: crate::core::Rubric,
     hour: &str,
     dayofweek: u32,
+    month: u32,
+    day: u32,
 ) -> bool {
+    // If there's a Sancti/{MM-DD}oct file in the corpus, an Octave
+    // commemoration runs through this date — Perl's
+    // `preces.pl:45` rejects via `$commemoratio{Rank} =~ /Octav/i`
+    // (the [Officium] body is prepended to [Rank] by SetupString.pl
+    // line 705-708, so the Octave-day title field carries "Octavam").
+    // Direct file existence check matches the empirical Perl
+    // behaviour without needing to reproduce the calendar's
+    // commemoration computation. Only rejects when not already
+    // flagged off by a previous gate.
+    let oct_key = format!("Sancti/{month:02}-{day:02}oct");
+    if lookup(&oct_key).is_some() {
+        return false;
+    }
     // Sunday: branch (b) of upstream `preces` fires on Sundays
     // too — Septuagesima/Sexagesima/Quinquagesima/Lent Sundays
     // emit the omittitur form on Prima/Compline. The Octave

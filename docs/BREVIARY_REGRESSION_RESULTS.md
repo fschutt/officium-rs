@@ -1947,6 +1947,56 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 45: preces predicate Octave-day commemoration reject — T1570 96.61% → 97.02% (+15 cells)
+
+Symptom: T1570 06-26 Fri Prima emits text[4] omittitur (preces
+fired). Perl emits V/R Domine exaudi (preces NOT firing).
+Pattern hits all dates within an unsuppressed Octave (06-25
+through 07-05 in 2026 — Octaves of John Bapt + Apostles Peter
+& Paul; 08-11..16 — Octave of Lawrence; 09-09..16 — Octave
+of Nativity BVM, etc.).
+
+Trace: `preces.pl:45` checks the COMMEMORATIO's [Rank] field:
+
+  if ($commemoratio{Rank} =~ /Octav/i ...) { $dominicales = 0 }
+
+— rejects preces when the commemoration carries "Octav" in the
+title field. The clue: `SetupString.pl:705-708` prepends the
+[Officium] body into the [Rank] title field at parse time:
+
+  $sections{'Rank'} =~ s/^.*?;;/$sections{'Officium'};;/;
+
+So Sancti/06-26oct.txt's [Rank] originally `;;Semiduplex;;2;;
+ex Sancti/06-24` becomes "Die tertia infra Octavam Nativitatis
+S. Joannis Baptistæ;;Semiduplex;;2;;ex Sancti/06-24" after
+the merge — now matches /Octav/i.
+
+Fix: in `preces_dominicales_et_feriales_fires`, check whether
+a `Sancti/{MM-DD}oct` file exists in the corpus. The presence
+of such a file indicates an Octave commemoration runs through
+this date — Perl would inject it into @commemoentries via the
+calendar lookup. Direct file-existence check matches the
+empirical Perl behaviour without reproducing the calendar
+computation.
+
+Threading: `preces_dominicales_et_feriales_fires` now takes
+`month` and `day` parameters.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Prima        95.89% → 97.26% (+5)
+      Completorium 95.89% → 97.81% (+7)
+      Overall      96.61% → 97.02% (+15 cells)
+    R60: 96.92% (unchanged — most Octaves abolished)
+    R55: 94.01% (unchanged — most Octaves abolished)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Feria/Sabbato/Quattuor branches of the Vigil gate**: tried the

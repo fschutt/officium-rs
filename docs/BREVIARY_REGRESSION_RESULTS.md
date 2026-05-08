@@ -3077,6 +3077,62 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 81: Festum-Domini swap rank-gate + Quadp prefix fix — T1910 +2, R55 +1 cells
+
+Symptom: 02-01 R55 Sun Vespera renders the Purification Oratio
+"Omnípotens sempitérne Deus..." Perl R55 renders the Septuagesima
+Sunday Oratio "Preces pópuli tui..." with `{ex Proprio de
+Tempore}`.
+
+02-01-2026 is Septuagesima Sunday (Tempora/Quadp1-0). Tomorrow
+02-02 is Purification (Sancti/02-02, II classis Festum Domini,
+rank 5.1). Today's R55 rank = 5.6 (Semiduplex Dominica II classis,
+default block of Quadp1-0).
+
+Trace: `horascommon.pl:1183`:
+
+```
+$version !~ /196/ && $winner{Rank} =~ /Dominica/i && $dayname[0] !~ /Nat1/i
+&& $rank <= 5 && $crank > 2.1 && $cwinner{Rule} =~ /Festum Domini/i
+```
+
+Pre-1960 Festum-Domini swap requires today rank ≤ 5. R55 5.6 > 5
+→ no swap (Sun keeps office). T1570/T1910/DA reduce Quad/Adv/Quadp
+Sundays to 2.99 / 4.9 in 2V concurrence (`horascommon.pl:862-869`),
+so their effective rank ≤ 5 — swap fires for those rubrics.
+
+Two coupled fixes in `src/horas.rs`:
+
+1. The unconditional `tomorrow_rule_marks_festum_domini → swap`
+   gate now requires `effective_today_rank_for_concurrence ≤ 5`.
+   Mirrors Perl's pre-1960 `$rank <= 5` clause; under R55 the
+   rank stays at 5.6 (no Sun-cession reduction) → no swap.
+2. `is_pre_da_sunday_with_2v_concession` was `week == "Quadp"`,
+   which doesn't match "Quadp1"/"Quadp2"/"Quadp3". Perl's regex
+   `/Quad[0-5]|Quadp|Adv|Pasc1/` matches "Quadp" anywhere. Switch
+   to `week.starts_with("Quadp")`. Without this, T1570 still
+   swapped via direct rank comparison (Quadp1-0 effective rank
+   wasn't being reduced for the comparison in question), but
+   T1910 / DA didn't swap correctly under the new gate.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged).
+    T1910: 99.55% → 99.62% (+2 cells: 02-01 V + 02-01 Compl).
+    DA:    99.28% (unchanged — DA 02-01 lands on Sancti).
+    R55:   99.01% → 99.04% (+1 cell: 02-01 V).
+    R60:   99.04% (unchanged — R60 has separate Festum-Domini
+                   logic via slice 79's `wipe-and-swap`).
+
+11-07 / 11-08 (the original slice that introduced the
+Festum-Domini swap) verified unchanged across all 5 rubrics.
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Slice 80: Epi1-0 → Epi1-0a redirect for ferial Sun-fallback — R55 +1 cell
 
 Symptom: 01-16 R55 Friday Vespera renders the Holy Family Oratio

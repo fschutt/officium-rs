@@ -1433,8 +1433,26 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     // of Lateran Basilica because today's Sun-Octave is rank 3.1
     // but tomorrow's "In Dedicatione Basilicæ Ss. Salvatoris;;Duplex"
     // carries `Festum Domini` in its [Rule].
+    //
+    // Gated on `today_rank ≤ 5` to mirror Perl's pre-1960 swap
+    // condition (`horascommon.pl:1183` requires `$rank <= 5`).
+    // Without this gate, R55 02-01 Sun Vespera (Septuagesima
+    // Dominica II classis rank 5.6) wrongly swaps to Sancti/02-02
+    // Purification (rank 5.1, Festum Domini) — Perl keeps the
+    // higher-ranked Sun.
     if tomorrow_rule_marks_festum_domini(tomorrow_key, rubric, hora) {
-        return tomorrow_key;
+        // Use the concurrence-effective rank, which honours the
+        // pre-DA Quad/Adv Sun-cession reduction (Trident: 2.99,
+        // Divino: 4.9). Without this reduction, T1570/T1910 02-01
+        // Septuagesima Sun (rank 6.1) wouldn't swap to Purif Festum
+        // Domini 1V; with it, the effective rank drops to 2.99
+        // (≤ 5) and the swap fires correctly. R55 doesn't have the
+        // Sunday-cession reduction so its rank stays at 5.6 → no
+        // swap, matching Perl's pre-1960 line 1183 gate.
+        let today_rank_check = effective_today_rank_for_concurrence(today_key, rubric, hora);
+        if today_rank_check <= 5.0 {
+            return tomorrow_key;
+        }
     }
     let today_rank = effective_today_rank_for_concurrence(today_key, rubric, hora);
     let tomorrow_rank =
@@ -1703,7 +1721,9 @@ fn is_pre_da_sunday_with_2v_concession(day_key: &str) -> bool {
     if !chars.all(|c| c.is_ascii_alphabetic()) {
         return false;
     }
-    if week == "Quadp" || week == "Pasc1" {
+    if week.starts_with("Quadp") || week == "Pasc1" {
+        // Quadp / Quadp1 / Quadp2 / Quadp3 — Septuagesima cycle.
+        // Perl's regex `/Quadp/` matches any "Quadp"-prefix week.
         return true;
     }
     if let Some(suffix) = week.strip_prefix("Quad") {

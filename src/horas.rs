@@ -2239,31 +2239,109 @@ fn splice_proper_into_slot(
     }
 }
 
-/// Apply Pius X 1910 classical spelling reform (`tr/Jj/Ii/`) under
-/// R60. Mirror of `crate::mass::apply_spelling_for_active_rubric`'s
-/// `Rubric::Rubrics1960` branch. The corpus stores the older
-/// `j`-form (`Jesum`, `cujus`, `justítiam`); R60 renders use the
-/// classical `i`-form (`Iesum`, `cuius`, `iustítiam`). Pre-1960
-/// rubrics keep the `j`-form verbatim.
+/// Apply spelling normalisation for the active rubric. Mirror of
+/// upstream `horascommon.pl::spell_var:2138-2169`.
 ///
-/// One known opt-out: the chant marker `H-Iesu` is restored to
-/// `H-Jesu` after the swap (per upstream's `s/H\-Iesu/H-Jesu/g`).
-/// And `er eúmdem` becomes `er eúndem`.
+/// R60 path (`$version =~ /196/`):
+///   * `tr/Jj/Ii/` (cujus→cuius, Jesum→Iesum)
+///   * `s/H-Iesu/H-Jesu/g` (chant marker opt-out)
+///   * `s/er eúmdem/er eúndem/g`
+///
+/// Pre-R60 path (T1570/T1910/DA/R55):
+///   * `s/Génetrix/Génitrix/g`
+///   * `s/Genetrí/Genitrí/g` (catches Genetricem/Genetricis/Genetrice)
+///   * `s/\bco(t[ií]d[ií])/quo$1/g` (cotidian-* → quotidian-*)
 fn apply_office_spelling(text: &str, rubric: crate::core::Rubric) -> String {
-    if !matches!(rubric, crate::core::Rubric::Rubrics1960) {
-        return text.to_string();
+    if matches!(rubric, crate::core::Rubric::Rubrics1960) {
+        let swapped: String = text
+            .chars()
+            .map(|c| match c {
+                'J' => 'I',
+                'j' => 'i',
+                other => other,
+            })
+            .collect();
+        return swapped
+            .replace("H-Iesu", "H-Jesu")
+            .replace("er eúmdem", "er eúndem");
     }
-    let swapped: String = text
-        .chars()
-        .map(|c| match c {
-            'J' => 'I',
-            'j' => 'i',
-            other => other,
-        })
-        .collect();
-    swapped
-        .replace("H-Iesu", "H-Jesu")
-        .replace("er eúmdem", "er eúndem")
+    let mut s = text.replace("Génetrix", "Génitrix");
+    s = s.replace("Genetrí", "Genitrí");
+    s = replace_cotidian_with_quotidian(&s);
+    s
+}
+
+/// Replace `\bco(t[ií]d[ií])` → `quo$1`. Matches "co" at a word
+/// boundary followed by "t[ií]d[ií]" (e.g. "cotidiano" → "quotidiano",
+/// "cotídie" → "quotídie"). Custom impl since we don't pull a regex
+/// dep just for this.
+fn replace_cotidian_with_quotidian(text: &str) -> String {
+    let bytes = text.as_bytes();
+    let n = bytes.len();
+    let mut out = String::with_capacity(n);
+    let mut i = 0;
+    while i < n {
+        // Word-boundary check: previous char is non-alphanumeric (or
+        // start of string). Looks at the byte before (ASCII-only, so
+        // non-ASCII bytes count as non-boundary which is fine for
+        // Latin contexts).
+        let at_boundary = i == 0
+            || !bytes[i - 1].is_ascii_alphanumeric();
+        if at_boundary && i + 2 <= n && (&bytes[i..i + 2] == b"co" || &bytes[i..i + 2] == b"Co") {
+            // Need to peek "t[ií]d[ií]" after.
+            // 't' or 'T' at i+2.
+            if i + 3 < n && (bytes[i + 2] == b't' || bytes[i + 2] == b'T') {
+                // [ií] at i+3 — could be 1 byte ('i') or 2 bytes (UTF-8 í = 0xC3 0xAD).
+                let (vowel1_len, vowel1_ok) = if bytes[i + 3] == b'i' {
+                    (1, true)
+                } else if i + 4 < n && bytes[i + 3] == 0xC3 && bytes[i + 4] == 0xAD {
+                    (2, true)
+                } else {
+                    (0, false)
+                };
+                if vowel1_ok {
+                    let after_v1 = i + 3 + vowel1_len;
+                    if after_v1 < n && (bytes[after_v1] == b'd' || bytes[after_v1] == b'D') {
+                        // [ií] again at after_v1 + 1
+                        let pos2 = after_v1 + 1;
+                        let (vowel2_len, vowel2_ok) = if pos2 < n && bytes[pos2] == b'i' {
+                            (1, true)
+                        } else if pos2 + 1 < n && bytes[pos2] == 0xC3 && bytes[pos2 + 1] == 0xAD {
+                            (2, true)
+                        } else {
+                            (0, false)
+                        };
+                        if vowel2_ok {
+                            // Match — emit "Quo" or "quo" preserving case.
+                            out.push_str(if bytes[i] == b'C' { "Quo" } else { "quo" });
+                            // Skip "co" (2 bytes), emit "t" or "T", "[ií]", "d" or "D",
+                            // "[ií]" — copy as-is.
+                            i += 2;
+                            // Copy through end of the matched "[t][í]d[í]" cluster.
+                            let end = pos2 + vowel2_len;
+                            out.push_str(&text[i..end]);
+                            i = end;
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+        let head = bytes[i];
+        let cp_len = match head {
+            0..=0x7F => 1,
+            0xC0..=0xDF => 2,
+            0xE0..=0xEF => 3,
+            0xF0..=0xF7 => 4,
+            _ => 1,
+        };
+        let end = (i + cp_len).min(n);
+        if let Ok(piece) = core::str::from_utf8(&bytes[i..end]) {
+            out.push_str(piece);
+        }
+        i = end;
+    }
+    out
 }
 
 /// Substitute the `N.` placeholder in a Commune-of-Saints body with

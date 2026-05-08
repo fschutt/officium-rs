@@ -2262,6 +2262,55 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 52: pre-1960 Latin spelling normalisation (Genetri→Genitri, cotidian→quotidian) — T1570 +44, R55 +70
+
+Symptom: Pre-1960 rubrics emitted "Sanctíssimæ Genetrícis tuæ
+sponsi..." (03-19 St. Joseph), "Filii tui Genetricem..."
+(08-15 Assumption Octave week), "Genetricis filii tui..."
+(02-09 Cyril & Methodius), and other "Genetri-" forms. Perl
+emits "Genitri-" — different by one letter.
+
+Trace: `horascommon.pl::spell_var:2138-2169` is a hour-side
+spelling normaliser called for every emitted block. For
+pre-1960 versions:
+
+  s/Génetrix/Génitrix/g;
+  s/Genetrí/Genitrí/g;
+  s/\bco(t[ií]d[ií])/quo$1/g;
+  ... (Cisterciensis-specific)
+
+Ports the medieval-into-classical spelling reform: corpus
+files keep the older "Genetrix/Genetrí-/cotidian-" forms,
+display fold to "Genitrix/Genitrí-/quotidian-" under non-
+1960 versions. R60 path was already implemented (`tr/Jj/Ii/`);
+the pre-1960 path was missing.
+
+Fix: extend `apply_office_spelling` to apply the pre-1960
+substitutions. New helper `replace_cotidian_with_quotidian`
+implements the regex `\bco(t[ií]d[ií])\w*` → `quo$1\w*`
+manually (UTF-8 byte walking, since "í" is a 2-byte
+codepoint and we don't pull a regex dep).
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Matutinum    97.53% → 98.90% (+5)
+      Laudes       97.53% → 99.73% (+8)
+      Tertia       97.53% → 99.73% (+8)
+      Sexta        97.53% → 99.73% (+8)
+      Nona         97.53% → 99.73% (+8)
+      Vespera      97.26% → 99.18% (+7)
+      Overall      97.60% → 99.11% (+44 cells)
+    R55: 94.45% → 96.85% (+70 cells)
+    R60: 97.36% (unchanged — R60 keeps "Genetri-" forms;
+         only the J→I path applies)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Hour-aware annotation filter** (slice 50 attempt): tried

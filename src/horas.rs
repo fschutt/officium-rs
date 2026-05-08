@@ -613,7 +613,28 @@ fn visit_chain(
     if depth > 5 || !visited.insert(key.to_string()) {
         return;
     }
-    let Some(file) = lookup(key) else { return };
+    // Some "resumed" Tempora keys are synthesised by the precedence
+    // engine (`Tempora/PentEpi5-5`) but no file with that name
+    // exists — upstream resolves them to the original Epi-cycle
+    // file (`Tempora/Epi5-5`). When the literal lookup misses,
+    // strip the `Pent` prefix off `PentEpi…` and retry. Drives
+    // Sun XXIV+ post Pentecost where the calendar resumes leftover
+    // Sundays after Epiphany.
+    let resolved_key: String;
+    let file = match lookup(key) {
+        Some(f) => f,
+        None => {
+            if let Some(epi) = key.strip_prefix("Tempora/PentEpi") {
+                resolved_key = format!("Tempora/Epi{epi}");
+                match lookup(&resolved_key) {
+                    Some(f) => f,
+                    None => return,
+                }
+            } else {
+                return;
+            }
+        }
+    };
     out.push(file);
     // Whole-file `@Commune/CXX` inheritance via `__preamble__` —
     // upstream `setupstring_parse_file` merges the parent file's
@@ -1125,19 +1146,29 @@ fn parse_vide_targets(rule: &str) -> Vec<String> {
 /// it looks like a corpus path: `Sancti/...`, `Tempora/...`,
 /// `Commune/...`. Strips trailing `;` and `,` punctuation that
 /// upstream rule bodies sprinkle around tokens.
+///
+/// Path prefix is case-insensitive on input — upstream rule bodies
+/// occasionally lowercase the directory (`Sancti/06-27oct` carries
+/// `vide sancti/06-24` in its `[Rule]`). Output is normalised to
+/// the canonical case (`Sancti/06-24`).
 fn first_path_token(s: &str) -> Option<String> {
     let token = s.split_whitespace().next()?;
     let token = token.trim_end_matches(|c: char| c == ';' || c == ',');
-    if token.starts_with("Sancti/")
-        || token.starts_with("Tempora/")
-        || token.starts_with("Commune/")
-        || token.starts_with("SanctiM/")
-        || token.starts_with("SanctiOP/")
-    {
-        Some(token.to_string())
+    let lower = token.to_ascii_lowercase();
+    let canonical = if lower.starts_with("sanctim/") {
+        Some(format!("SanctiM/{}", &token["sanctim/".len()..]))
+    } else if lower.starts_with("sanctiop/") {
+        Some(format!("SanctiOP/{}", &token["sanctiop/".len()..]))
+    } else if lower.starts_with("sancti/") {
+        Some(format!("Sancti/{}", &token["sancti/".len()..]))
+    } else if lower.starts_with("tempora/") {
+        Some(format!("Tempora/{}", &token["tempora/".len()..]))
+    } else if lower.starts_with("commune/") {
+        Some(format!("Commune/{}", &token["commune/".len()..]))
     } else {
         None
-    }
+    };
+    canonical
 }
 
 /// Map an Ordinarium section label to the per-day section names that

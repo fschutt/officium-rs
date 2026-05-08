@@ -834,6 +834,61 @@ Remaining 6 RustBlanks per ferial-band hour are non-Tempora-feria
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 23: case-insensitive `vide sancti/...` + Tempora/PentEpi → Epi remap — full year T1570 85.27% → 86.20%, **0 RustBlanks**
+
+Two separate fixes that close all remaining `RustBlank` cells in
+the year sweep:
+
+1. **`vide sancti/...` lowercase rule directives.** Sancti/06-27oct
+   (`Quarta die infra Octavam S. Joannis Baptistæ`) and
+   Sancti/08-19bmv (`Quinta die infra Octavam S. Assumptionis`)
+   carry `[Rule]` bodies with **lowercase**:
+
+   ```
+   vide sancti/06-24
+   vide sancti/08-15;
+   ```
+
+   `first_path_token` only accepted the canonical-case prefix
+   (`Sancti/`, `Tempora/`, `Commune/`, `SanctiM/`, `SanctiOP/`)
+   so the chain target was rejected → no parent file in chain →
+   no `[Oratio]` → RustBlank. Slice 23 makes the prefix match
+   case-insensitive and normalises the output to canonical case
+   (`sancti/` → `Sancti/`).
+
+2. **`Tempora/PentEpi<N>-<D>` synthetic keys.** When the calendar
+   "resumes" leftover Sundays after Epiphany during the late
+   Pentecost season (Sun XXIV+ post Pentecost = Sun-after-Epi
+   resumed), the precedence engine emits keys like
+   `Tempora/PentEpi5-5` for which no file exists. Upstream Perl
+   resolves these to the original Epi-cycle file
+   (`Tempora/Epi5-5`). `visit_chain` now strips the `Pent`
+   prefix off `PentEpi…` keys when the literal lookup misses
+   and retries with `Tempora/Epi…`. Closes 11-13, 11-15, 11-16,
+   11-20 RustBlanks.
+
+**30-day Jan 2026 × T1570:** stays at 240/240 (100.00%).
+
+**Full year 2026 × T1570 × Oratio:**
+2489/2920 (85.27%) → **2516/2920 (86.20%)** (+27 cells).
+
+| Hour          | Pre slice 23 | Post slice 23 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 324/365 (89%) | 329/365 (90%) | +5 |
+| Laudes        | 324/365 (89%) | 329/365 (90%) | +5 |
+| Prima         | 289/365 (79%) | 289/365 (79%) | — |
+| Tertia        | 324/365 (89%) | 329/365 (90%) | +5 |
+| Sexta         | 324/365 (89%) | 329/365 (90%) | +5 |
+| Nona          | 324/365 (89%) | 329/365 (90%) | +5 |
+| Vespera       | 292/365 (80%) | 294/365 (81%) | +2 |
+| Completorium  | 289/365 (79%) | 289/365 (79%) | — |
+
+🎯 **All `RustBlank` cells closed across all 8 hours** — the
+remaining 404 fails are all `Differ` (or 3 `PerlBlank`).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

@@ -463,10 +463,13 @@ fn preces_dominicales_et_feriales_fires(
     hour: &str,
     dayofweek: u32,
 ) -> bool {
-    // Sunday: no preces.
-    if dayofweek == 0 {
-        return false;
-    }
+    // Sunday: branch (b) of upstream `preces` fires on Sundays
+    // too — Septuagesima/Sexagesima/Quinquagesima/Lent Sundays
+    // emit the omittitur form on Prima/Compline. The Octave
+    // detection (rank-line title field + [Officium] body) below
+    // handles Sundays-within-an-Octave (Sun in Octave of Christmas
+    // / Epiphany / etc.) where Perl rejects preces. Don't blanket-
+    // exclude Sundays here.
     // Saturday Vespers: Vespera on Saturday is FIRST vespers of
     // Sunday — the upstream `preces` rejects this branch.
     if dayofweek == 6 && (hour == "Vespera" || hour == "Vesperae") {

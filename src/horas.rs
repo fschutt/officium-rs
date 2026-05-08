@@ -1156,6 +1156,32 @@ pub fn first_vespers_day_key_for_rubric<'a>(
                 let evaluated = eval_section_conditionals(&rule, rubric, hora);
                 let lc = evaluated.to_lowercase();
                 if lc.contains("no secunda vespera") {
+                    // Under R55, the swap to tomorrow's 1V is itself
+                    // gated on `cwrank ≥ 5` (Duplex II classis +) per
+                    // `horascommon.pl:938`. Both no_2V on today AND
+                    // 1V-suppressed on tomorrow can hold simultaneously
+                    // — Sancti/01-12 R55 (Feria 1.8 with `No secunda
+                    // Vespera`) before Sancti/01-13 R55 (Duplex majus
+                    // 4 < 5) is exactly that case. When both fire,
+                    // Perl's net result is the today-side Tempora
+                    // office (the "Feria II infra Hebdomadam"); we
+                    // return `today_key` here and let the upstream
+                    // R55 Tempora-redirect (slice 61, office_sweep.rs:
+                    // 437-488) re-route the Sancti-with-no-2V to
+                    // its Tempora counterpart.
+                    let suppress_tomorrow_1v = match rubric {
+                        crate::core::Rubric::Reduced1955 => {
+                            let tomorrow_rank =
+                                active_rank_line_with_annotations(tomorrow_key, rubric, hora)
+                                    .map(|(_, _, n)| n)
+                                    .unwrap_or(0.0);
+                            tomorrow_rank < 5.0
+                        }
+                        _ => false,
+                    };
+                    if suppress_tomorrow_1v {
+                        return today_key;
+                    }
                     return tomorrow_key;
                 }
             }

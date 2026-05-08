@@ -3077,6 +3077,56 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 77: R55 `No secunda Vespera` honours tomorrow's 1V suppression — R55 +1 cell
+
+Symptom: 01-12 R55 Mon Vespera emits Sancti/01-13's "Deus, cujus
+Unigénitus" Oratio. Perl emits Tempora/Epi1-1's "Vota, quǽsumus"
+Oratio with `{ex Proprio de Tempore}` header.
+
+Trace: under R55, Sancti/01-12 has `[Rank] (rubrica 196 aut
+rubrica 1955) Die Duodecima Januarii;;Feria;;1.8` and `[Rule]`
+contains `No secunda vespera`. Sancti/01-13 has `[Rank] (sed
+rubrica 1955) Commemoratio Baptismatis ...;;Duplex majus;;4`.
+
+Two Perl rules apply simultaneously:
+* `horascommon.pl:853-857`: today's `No secunda Vespera` wipes
+  $winner.
+* `horascommon.pl:938`: under `/1955/`, 1V is suppressed when
+  tomorrow's rank < 5. Rank 4 (Duplex majus) < 5 → tomorrow
+  also wiped.
+
+Net: both today and tomorrow are wiped, Perl falls back to the
+day's Tempora office (Tempora/Epi1-1 Feria, "Vota quaesumus" via
+Sun-after-Epi1's Oratio).
+
+Our `first_vespers_day_key_for_rubric` honoured `No secunda
+Vespera` and unconditionally returned `tomorrow_key`. The downstream
+splice rendered Sancti/01-13's Oratio for Mon Vespera.
+
+Fix in `src/horas.rs::first_vespers_day_key_for_rubric`: when
+the no-2V rule fires, check tomorrow's rank under R55 too. If
+tomorrow's rank < 5, return `today_key` instead — the upstream
+slice 61 R55 Tempora-redirect (`office_sweep.rs:437-488`) then
+swaps the Sancti-with-no-2V to its Tempora counterpart at the
+caller layer.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged).
+    T1910: 99.55% (unchanged).
+    DA:    99.25% (unchanged).
+    R55:   98.94% → 98.97% (+1 cell: 01-12).
+    R60:   98.90% (unchanged).
+
+  Other R55 Vespera fails (01-16 Fri, 02-01 Sun) have a different
+  mechanism (Holy Family / Purification 1V resolution) — deferred.
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Slice 76: `@:Section:s/PAT/REPL/` self-redirect substitution — T1910 +11, DA +9 cells
 
 Symptom: 06-13 T1910 (Anthony of Padua) Mat / Laudes / Tertia /

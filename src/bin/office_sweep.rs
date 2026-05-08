@@ -359,80 +359,10 @@ fn run_one_cell(
             Err(_) => return (SectionStatus::RustBlank, Some("rust panic in compute_office".into())),
         }
     };
-    // Christmas-Octave (Dec 26..31) office-context override. The
-    // Mass-side `Tempora/Nat29` carries [Rank] ";;Semiduplex;;2.92"
-    // (the missa file), so the precedence engine sees temporal_rank
-    // 2.92 and beats the Sancti's 2.2 → Tempora wins. But the OFFICE-
-    // side `horas/Tempora/Nat29` carries [Rank] ";;Semiduplex;;2.1",
-    // and Perl's Office occurrence — using horas-side ranks — gives
-    // Sancti (2.2) the win.
-    //
-    // Narrow override: for 12-26..12-31, when winner is `Tempora/
-    // Nat{X}` and a Sancti commemoration with rubric-active rank >
-    // Tempora-horas rank exists in the kalendarium, swap winner to
-    // the Sancti's stem. Drives both the T1570/T1910 missa-vs-horas
-    // divergence (slice 56) AND the R60 kalendar-vs-file divergence
-    // (slice 64): under R60, kalendarium 12-28 = "12-28r" with
-    // annotated rank 5, but Sancti/12-28r inherits from Sancti/12-28
-    // whose [Rank] (rubrica 196) is ";;Duplex II class;;5.4". Tempora/
-    // Nat28 R60 [Rank] = ";;Duplex II classis;;5". File-side: 5.4 > 5
-    // → sanctoral wins. Our compute_occurrence uses the kalendar
-    // annotation (5), not the file's actual rank, so the Tempora
-    // wrongly wins.
-    let derived_key = if (matches!(
-        rubric,
-        officium_rs::core::Rubric::Tridentine1570
-            | officium_rs::core::Rubric::Tridentine1910
-            | officium_rs::core::Rubric::DivinoAfflatu1911
-            | officium_rs::core::Rubric::Reduced1955
-            | officium_rs::core::Rubric::Rubrics1960
-    )) && mm == 12
-        && (26..=31).contains(&dd)
-        && derived_key.starts_with("Tempora/Nat")
-    {
-        let layer = rubric.kalendar_layer();
-        // Tempora's horas-side rank under the active rubric.
-        let tempora_rank = horas::active_rank_line_with_annotations(&derived_key, rubric, hour)
-            .map(|(_, _, n)| n)
-            .unwrap_or(0.0);
-        if let Some(cells) = officium_rs::kalendaria_layers::lookup(layer, mm, dd) {
-            if let Some(main) = cells.first() {
-                let sancti_key = format!("Sancti/{}", main.stem);
-                // Use file's actual rank (chases @inherit) rather
-                // than kalendar's annotation. For R60 12-28: kalendar
-                // says 5, file says 5.4 (via @Sancti/12-28).
-                let sancti_rank = horas::active_rank_line_with_annotations(
-                    &sancti_key, rubric, hour,
-                )
-                .map(|(_, _, n)| n)
-                .unwrap_or_else(|| main.rank_num().unwrap_or(0.0));
-                if sancti_rank > tempora_rank {
-                    sancti_key
-                } else if sancti_rank >= 2.0
-                    && matches!(
-                        rubric,
-                        officium_rs::core::Rubric::Tridentine1570
-                            | officium_rs::core::Rubric::Tridentine1910
-                    )
-                {
-                    // T1570/T1910 fallback: when sancti rank >= 2.0
-                    // (preserves slice 56 behaviour: missa-side
-                    // Tempora/Nat29 elevated to 2.92 by missa data
-                    // which we don't reflect on the horas side, so
-                    // any Sancti rank ≥ 2.0 wins).
-                    sancti_key
-                } else {
-                    derived_key
-                }
-            } else {
-                derived_key
-            }
-        } else {
-            derived_key
-        }
-    } else {
-        derived_key
-    };
+    // (Christmas-Octave office-context override moved into
+    // `occurrence::apply_christmas_octave_office_override` so any
+    // caller of `compute_office`/`compute_occurrence` — not just
+    // office_sweep — gets the correct Office winner for Dec 26..31.)
 
     // R55 Semiduplex 2.2..2.8 → Tempora at Vespera/Completorium.
     // Mirror of horascommon.pl:315-323 — under R55, Semiduplex

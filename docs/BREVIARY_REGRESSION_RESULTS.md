@@ -3077,6 +3077,66 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 74 (refactor): Move Christmas-Octave override into occurrence — 0 cells
+
+The Christmas-Octave (Dec 26..31) office-context override that
+swaps `Tempora/Nat{X}` for the Sancti winner under the file-rank
+comparison was inline in `src/bin/office_sweep.rs:382-435`. That
+location masked a real bug: anyone calling `compute_office` /
+`compute_occurrence` directly (without the office_sweep wrapper)
+got the wrong winner for those six dates.
+
+Moved into `occurrence.rs::apply_christmas_octave_office_override`,
+called as a tail-pass after `compute_occurrence_core`. Gated on
+`!input.is_mass_context` so the Mass code path (still using
+missa-side ranks via `compute_occurrence_core`) is byte-identical.
+
+Hour parameter passed to `active_rank_line_with_annotations` is
+`""`: verified that Tempora/Nat26..Nat29 and Sancti/12-26..12-31
+carry no hour-conditional `[Rank]` annotations, so the empty-hour
+path produces the same rank as any per-hour call.
+
+Behavioural surface unchanged: only `winner` is modified, mirroring
+the pre-refactor office_sweep behaviour byte-for-byte. Downstream
+`compute_office_hour` consumes only `winner`.
+
+T1570 / T1910 / DA / R55 / R60 office sweeps unchanged. Mass T1570
++ R60 stay 365/365. T1570 30-day stays 100%. 431 lib tests pass.
+
+## Slice 72 (refactor): Merge `first_at_path_inheritance` variants — 0 cells
+
+Folded `first_at_path_inheritance_rubric` (slice 65) into the bare
+function via an `Option<Rubric>` parameter. When `Some`, the
+preamble is run through `eval_section_conditionals` so `(sed
+rubrica X omittitur)` directives suppress the @inherit; when
+`None`, the preamble is read raw.
+
+All 7 call sites updated. 5 sites now pass `Some(rubric), hora`,
+honoring preamble conditionals where they previously didn't —
+behaviour change verified parity-neutral across all 5 rubrics.
+The 2 `section_via_inheritance_rubric` sites pass through the
+existing `Option<Rubric>` and `""` (no hour available).
+
+Pass-rates unchanged. ~7 LoC removed; eliminates a parallel-
+maintenance hazard for the preamble parsing grammar.
+
+## Slice 73 (refactor): Extract `rank_num_for_rubric` helper — 0 cells
+
+Two of the four sites that picked rubric-active rank from a
+`MassFile` were byte-identical match expressions. Extract into
+`rank_num_for_rubric(file, rubric) -> Option<f32>`, called from
+both the temporal-rank pick (`compute_occurrence`) and the
+transferred-sancti rank pick.
+
+Site 3 (`resolve_sancti_for_tridentine_1570`) keeps its inline
+match — it has an asymmetric `or(rank_num_1570)` tail-fallback for
+legacy `(rubrica 1570)`-only files (Bibiana 12-02 etc.) that's
+intentional and rubric-conditional.
+
+Site 4 (`mass.rs`) untouched per repo policy.
+
+Pass-rates unchanged. ~14 LoC removed.
+
 ## Slice 71 (refactor): Merge `expand_at_redirect` + `_rubric` — 0 cells, ~85 LoC removed
 
 A refactor-only slice. After slice 70 introduced

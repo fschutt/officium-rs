@@ -91,7 +91,88 @@ fn rank_num_for_rubric(file: &MassFile, rubric: Rubric) -> Option<f32> {
 /// PiusXI1939, etc. The rubric-RULE deltas (precedence, vigil
 /// suppression, octave handling) are still 1570-shape until each
 /// layer lands its rule overrides.
+///
+/// Wraps [`compute_occurrence_core`] with the Christmas-Octave
+/// office-context override (`apply_christmas_octave_office_override`),
+/// so any caller of `compute_occurrence` (not just `office_sweep`)
+/// gets the right `winner` for Dec 26..31 Office.
 pub fn compute_occurrence(input: &OfficeInput, corpus: &dyn Corpus) -> OccurrenceResult {
+    let result = compute_occurrence_core(input, corpus);
+    apply_christmas_octave_office_override(result, input)
+}
+
+/// Christmas Octave office-context override (slices 56 + 64).
+///
+/// Mass-side `Tempora/Nat29` carries `[Rank] ;;Semiduplex;;2.92` so
+/// `compute_occurrence_core` correctly gives it the win against any
+/// commemorated saint. But the *horas-side* `Tempora/Nat29` carries
+/// `[Rank] ;;Semiduplex;;2.1`, and Perl's Office occurrence — using
+/// horas-side ranks — gives the Sancti (rank 2.2 default, or higher
+/// under R60 `(rubrica 196)` overrides) the win.
+///
+/// We can't naively read horas-side ranks from inside
+/// `compute_occurrence_core` because the Mass code path shares it and
+/// must keep using missa-side ranks. Instead, apply this override as a
+/// final pass gated on `!input.is_mass_context`.
+///
+/// The hour parameter passed to `active_rank_line_with_annotations` is
+/// `""`: Christmas-Octave `[Rank]` blocks don't carry hour-conditional
+/// annotations (verified across Tempora/Nat26..Nat29 and Sancti/12-26..
+/// 12-31), so the empty-hour path produces the same rank as any
+/// per-hour call would.
+///
+/// Only `winner` is modified — `sanctoral_office`, `rank`, and the
+/// commemoration/commune chain are left intact. This matches the
+/// pre-refactor office_sweep behaviour byte-for-byte; downstream
+/// `compute_office_hour` consumes only `winner`.
+fn apply_christmas_octave_office_override(
+    result: OccurrenceResult,
+    input: &OfficeInput,
+) -> OccurrenceResult {
+    if input.is_mass_context {
+        return result;
+    }
+    let (m, d) = (input.date.month, input.date.day);
+    if m != 12 || !(26..=31).contains(&d) {
+        return result;
+    }
+    let derived_key = result.winner.render();
+    if !derived_key.starts_with("Tempora/Nat") {
+        return result;
+    }
+    let layer = input.rubric.kalendar_layer();
+    let tempora_rank =
+        crate::horas::active_rank_line_with_annotations(&derived_key, input.rubric, "")
+            .map(|(_, _, n)| n)
+            .unwrap_or(0.0);
+    let Some(cells) = crate::kalendaria_layers::lookup(layer, m, d) else {
+        return result;
+    };
+    let Some(main) = cells.first() else {
+        return result;
+    };
+    let sancti_key_str = format!("Sancti/{}", main.stem);
+    let sancti_rank = crate::horas::active_rank_line_with_annotations(
+        &sancti_key_str, input.rubric, "",
+    )
+    .map(|(_, _, n)| n)
+    .unwrap_or_else(|| main.rank_num().unwrap_or(0.0));
+    let swap = sancti_rank > tempora_rank
+        || (sancti_rank >= 2.0
+            && matches!(input.rubric, Rubric::Tridentine1570 | Rubric::Tridentine1910));
+    if !swap {
+        return result;
+    }
+    let sancti_key = FileKey::parse(&sancti_key_str);
+    OccurrenceResult { winner: sancti_key, ..result }
+}
+
+/// Core occurrence dispatch — runs the precedence rules without the
+/// Christmas-Octave office-context override (see [`compute_occurrence`]
+/// for that). Direct callers should prefer `compute_occurrence`; this
+/// is exposed only for the Mass code path that already bypasses the
+/// override via `is_mass_context`.
+fn compute_occurrence_core(input: &OfficeInput, corpus: &dyn Corpus) -> OccurrenceResult {
     let layer = input.rubric.kalendar_layer();
 
     let (d, m, y) = (input.date.day, input.date.month, input.date.year);

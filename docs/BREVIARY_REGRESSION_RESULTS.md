@@ -1824,6 +1824,67 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 43: pre-DA Sun-Semiduplex 1V cedes to concurrent Duplex — T1570 96.23% → 96.54% (+9 cells)
+
+Symptom: T1570 03-07 Sat-eve Compline emits text[4] omittitur
+(preces fired). Perl emits V/R Domine exaudi (preces did NOT
+fire). Same pattern: 03-21 Sat (Benedict), 05-09, 05-22, 06-25/
+26/27 (Sacred Heart Octave), 07-03/04/05 (Octave continuation),
+08-22 (Octave of Assumption), and similar Sat-eves where a
+Duplex Sancti is on TODAY.
+
+Trace: `horascommon.pl::concurrence:877-885` — pre-DA Sundays
+cede 1st Vespers to a concurrent Duplex:
+
+  if ( $cwrank[0] =~ /Dominica/i
+    && $cwrank[0] !~ /infra octavam/i
+    && $cwrank[1] =~ /semiduplex/i
+    && $version !~ /1955|196/)
+  {
+    # before 1955, even Major Sundays gave way at I Vespers
+    $cwrank[2] = $crank = $version =~ /altovadensis/i ? 3.9
+                       : $version =~ /trident/i ? 2.9
+                       : 4.9;
+  }
+
+For 03-07 Sat-eve: today=Sancti/03-07 Aquinas Duplex 3 vs
+tomorrow=Tempora/Quad3-0 (Sun in Quad3) [Rank] (rubrica 1570)
+= ";;II classis Semiduplex;;6.1". Without the cede, rank 6.1
+> 3 → swap to Sun → wrong office. With the cede, tomorrow
+reduces to 2.9 → 3 > 2.9 → Aquinas keeps 2V → preces predicate
+sees Sancti winner with class "Duplex" → duplex_class=3 → preces
+rejects → text[2-3] V/R emitted.
+
+Fix: new helper `effective_tomorrow_rank_for_concurrence`
+applies the cede when:
+  - rubric is pre-DA (T1570/T1910/DA)
+  - tomorrow's [Officium] contains "Dominica" but NOT "infra
+    octavam" (Octave Sundays keep full rank)
+  - tomorrow's [Rank] class field contains "Semiduplex"
+    (higher-class Sundays — Easter, Pentecost — keep their
+    rank too)
+Cede value: T1570/T1910 → 2.9, DA → 4.9.
+
+The helper plugs into the concurrence rank comparison
+alongside the existing `effective_today_rank_for_concurrence`.
+The body matches because the swap-decision flips, which makes
+the preces predicate also see the right winner.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Vespera      94.79% → 95.62% (+3)
+      Completorium 94.25% → 95.89% (+6)
+      Overall      96.23% → 96.54% (+9 cells)
+    R60: 96.85% (unchanged — rule is pre-DA only)
+    R55: 93.94% (unchanged — rule is pre-DA only)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Feria/Sabbato/Quattuor branches of the Vigil gate**: tried the

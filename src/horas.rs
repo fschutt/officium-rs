@@ -1169,9 +1169,8 @@ pub fn first_vespers_day_key_for_rubric<'a>(
         return tomorrow_key;
     }
     let today_rank = effective_today_rank_for_concurrence(today_key, rubric, hora);
-    let tomorrow_rank = active_rank_line_with_annotations(tomorrow_key, rubric, hora)
-        .map(|(_, _, n)| n)
-        .unwrap_or(0.0);
+    let tomorrow_rank =
+        effective_tomorrow_rank_for_concurrence(tomorrow_key, rubric, hora);
     if today_rank > tomorrow_rank {
         today_key
     } else {
@@ -1236,6 +1235,75 @@ fn effective_today_rank_for_concurrence(
         }
     }
     direct
+}
+
+/// Concurrence rank for TOMORROW's office. Pre-DA rule: Sundays
+/// whose [Rank] class is "Semiduplex" (Sun III post Epi, Sun in
+/// Quad/Adv, etc.) cede 1st Vespers to a concurrent Duplex feast.
+/// Mirror of upstream `horascommon.pl::concurrence:877-885`:
+///
+///   if ( $cwrank[0] =~ /Dominica/i
+///     && $cwrank[0] !~ /infra octavam/i
+///     && $cwrank[1] =~ /semiduplex/i
+///     && $version !~ /1955|196/)
+///   {
+///     # before 1955, even Major Sundays gave way at 1st Vespers
+///     # to a Duplex (or Duplex II. cl.)
+///     $cwrank[2] = $crank = $version =~ /altovadensis/i ? 3.9
+///                         : $version =~ /trident/i ? 2.9
+///                         : 4.9;
+///   }
+///
+/// Drives 03-07 Sat-eve T1570 — today=Sancti/03-07 Aquinas Duplex 3
+/// vs tomorrow=Tempora/Quad3-0 II classis Semiduplex 6.1. Without
+/// the cede, rank 6.1 > 3 → swap to Sun → wrong office. With it,
+/// tomorrow reduces to 2.9 → 3 > 2.9 → Aquinas keeps 2V.
+fn effective_tomorrow_rank_for_concurrence(
+    day_key: &str,
+    rubric: crate::core::Rubric,
+    hora: &str,
+) -> f32 {
+    let direct = active_rank_line_with_annotations(day_key, rubric, hora)
+        .map(|(_, _, n)| n)
+        .unwrap_or(0.0);
+    let cedes = matches!(
+        rubric,
+        crate::core::Rubric::Tridentine1570
+            | crate::core::Rubric::Tridentine1910
+            | crate::core::Rubric::DivinoAfflatu1911
+    );
+    if !cedes {
+        return direct;
+    }
+    let Some(file) = lookup(day_key) else {
+        return direct;
+    };
+    // [Officium] = "Dominica III in Quadragesima" / "Dominica I
+    // Adventus" — title field carries "Dominica". Octave Sundays
+    // ("Dominica infra octavam Epi") keep full rank — exception per
+    // line 878.
+    let officium = section_via_inheritance(file, "Officium").unwrap_or_default();
+    let lc_off = officium.to_lowercase();
+    if !lc_off.contains("dominica") || lc_off.contains("infra octavam") {
+        return direct;
+    }
+    // [Rank] class field must contain "Semiduplex" — the higher-class
+    // Sundays ("Duplex maius I classis" — Easter, Pentecost) keep
+    // their rank.
+    let class = active_rank_line_with_annotations(day_key, rubric, hora)
+        .map(|(_, c, _)| c)
+        .unwrap_or_default();
+    if !class.to_lowercase().contains("semiduplex") {
+        return direct;
+    }
+    // Pre-DA cede value:
+    //   Tridentine: 2.9 (cedes to Semiduplex+)
+    //   DA:         4.9 (cedes to Duplex II cl. +)
+    let ceded = match rubric {
+        crate::core::Rubric::DivinoAfflatu1911 => 4.9,
+        _ => 2.9,
+    };
+    direct.min(ceded)
 }
 
 /// True when `day_key` is one of the pre-DA Quad / Advent / Septuag

@@ -1938,6 +1938,28 @@ fn effective_tomorrow_rank_for_concurrence(
     // line 878.
     let officium = section_via_inheritance(file, "Officium").unwrap_or_default();
     let lc_off = officium.to_lowercase();
+    // Pre-DA "infra octavam Corp[oris Christi]" reduction. Mirror
+    // of `horascommon.pl:422-426`:
+    //
+    //   if ($version =~ /Trid/i
+    //       && ($trank[0] =~ /infra octavam Corp/i && $version !~ /Cist/i))
+    //   { $trank[2] = 2.9; }
+    //
+    // Applied at occurrence time (before concurrence reads $crank),
+    // so the effective tomorrow rank for Sat-eve concurrence with
+    // Pent02-0 (Sun II Post Pent infra Octavam Corporis Christi)
+    // becomes 2.9 — much lower than today's Norbert Duplex 3,
+    // which keeps 2V instead of yielding 1V to Sun.
+    //
+    // Closes 06-06 T1910 Sat Vespera (Norbert vs Pent02-0 with
+    // Octave-of-Corpus-Christi infra-octavam).
+    let is_tridentine = matches!(
+        rubric,
+        crate::core::Rubric::Tridentine1570 | crate::core::Rubric::Tridentine1910
+    );
+    if is_tridentine && lc_off.contains("infra octavam corp") {
+        return direct.min(2.9);
+    }
     if !lc_off.contains("dominica") || lc_off.contains("infra octavam") {
         return direct;
     }

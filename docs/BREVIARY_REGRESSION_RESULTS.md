@@ -3077,6 +3077,61 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 89: Tridentine "infra octavam Corp" rank reduction at concurrence — T1910 +1 cell
+
+Symptom: 06-06 T1910 Sat Vespera renders Sun II Post Pent Oratio
+("Sancti nominis tui...") via 1V swap to Pent02-0. Perl renders
+S. Norberti Episcopi (today's office, no swap) with the Sun
+commemorated.
+
+Trace: Pent02-0 [Officium] = "Dominica II Post Pentecosten infra
+Octavam Corporis Christi" with [Rank] body rank 5.9 (Semiduplex
+I classis). Norbert (today) is Duplex 3.
+
+Perl `horascommon.pl:422-426`:
+
+```
+if ($version =~ /Trid/i
+    && ( ($trank[2] < 5.1 && $trank[2] > 4.2 && $trank[0] =~ /Dominica/i && ...)
+      || ($trank[0] =~ /infra octavam Corp/i && $version !~ /Cist/i)))
+{
+    $trank[2] = 2.9;
+}
+```
+
+Under Tridentine (T1570/T1910), Tempora ferials whose [Officium]
+contains "infra octavam Corp[oris Christi]" have their rank
+forcibly reduced to 2.9 at occurrence-time. So when concurrence
+reads $crank for tomorrow=Sun II Post Pent (in Octave of Corpus
+Christi), $crank=2.9, NOT 5.9. With today=Norbert rank 3, today
+> 2.9 → today wins, no swap.
+
+Our `effective_tomorrow_rank_for_concurrence` had a generic
+Sun-cession reduction but EXEMPTED octave Sundays via the
+`infra octavam` check (slice 16's rule 1). The "infra octavam
+Corp" case is the exception to the exemption — it cedes to 2.9
+under Tridentine.
+
+Fix: in `effective_tomorrow_rank_for_concurrence`, before the
+`infra octavam` exit, add a Tridentine-only branch that returns
+`direct.min(2.9)` when officium contains "infra octavam corp".
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged — gate fires only when both
+                   tridentine AND infra-octavam-corp; T1570
+                   doesn't have a 06-06-style failure).
+    T1910: 99.86% → 99.90% (+1 cell — 06-06 Norbert Sat).
+    DA:    99.73% (unchanged — gate excludes DA).
+    R55:   99.04% (unchanged).
+    R60:   99.04% (unchanged).
+
+Mass T1570 + T1910 + R60 stay 365/365. T1570 30-day stays
+100%. 431 lib tests pass.
+
 ## Slice 88: T1910 a-capitulo flatten — "infra Octavam" 2.2 override — T1910 +1 cell
 
 Symptom: 12-11 T1910 Fri Vespera renders the Conception-Octave

@@ -3077,6 +3077,74 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 79: Tomorrow-is-Sunday wipe + Tempora-vs-Tempora 1V swap — DA +1, R60 +3 cells
+
+Symptom: 04-11 / 05-30 / 06-13 R60 Sat Vespera all keep today's
+Tempora office instead of swapping to 1V of tomorrow's Sunday.
+06-13 was an extra fix path on top of the R60 [Officium]
+inheritance bug; 04-11 and 05-30 are the Sat-1V cluster the audit
+flagged.
+
+Trace: `horascommon.pl:905-928`:
+
+```
+if ($ctrank[0] =~ /(?<!De )Dominica|Trinitatis/i
+    && !($version =~ /19(?:55|6)/ && $ctrank[0] =~ /Dominica Resurrectionis/i))
+{
+    if ($sanctoraloffice && ...) { ... } else {
+        %winner = {}; $winner = ''; $rank = 0;
+    }
+}
+```
+
+When tomorrow's office is a Sunday (or "Trinitatis"), today's
+Tempora winner is wiped at 2V, then the two-concurrent-Tempora
+swap (line 1032: `if ($crank >= $rank || $tempora{Rule} =~ /No
+secunda vespera/i)`) trivially fires (rank=0 ≤ anything) and the
+office swaps to tomorrow's 1V regardless of file-rank ordering.
+
+Concrete cases:
+* 04-11 R60 Sat: today=Pasc0-6 (rank 6.9), tomorrow=Pasc1-0
+  "Dominica in Albis" (rank 6) — by file-rank today wins, but
+  Pasc0-6 [Rule] has `No secunda Vespera` → wipe-then-swap.
+* 05-30 R60 Sat: today=Pasc7-6 (rank 6.9), tomorrow=Pent01-0
+  "Dominica Sanctissimæ Trinitatis" (rank 6.5) — by file-rank
+  today wins, but tomorrow is Trinity Sunday → wipe-then-swap.
+* 06-13 R60 Sat: today=Sancti/06-13 Anthony of Padua,
+  tomorrow=Pent03-0r "Dominica III Post Pentecosten" — different
+  fix needed because today is Sancti, not Tempora. The R60 [Officium]
+  inheritance check earlier in `first_vespers_day_key_for_rubric`
+  wasn't following `@Path` redirects (Pent03-0r = `@Pent03-0o`)
+  — fix was to use `section_via_inheritance` for the Officium
+  lookup so the redirect chain resolves.
+
+Two changes in `src/horas.rs::first_vespers_day_key_for_rubric`:
+
+1. R60 1V threshold's `[Officium]` lookup now uses
+   `section_via_inheritance` (chases `@Path` preamble redirects).
+   Closes 06-13 across hours where Pent03-0r's Officium "Dominica
+   III..." was being read as None due to the bare-section lookup.
+
+2. New tomorrow-is-Sunday-wipe gate: when both today and tomorrow
+   are Tempora and tomorrow's [Officium] contains "Dominica" or
+   "Trinitatis", swap to tomorrow. Excludes Easter-Sunday under
+   R55/R60 to mirror Perl's `!($version =~ /19(?:55|6)/ &&
+   /Dominica Resurrectionis/)` exclusion.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged).
+    T1910: 99.55% (unchanged).
+    DA:    99.25% → 99.28% (+1 cell).
+    R55:   98.97% (unchanged).
+    R60:   98.94% → 99.04% (+3 cells: 04-11, 05-30, 06-13).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Slice 78: R60 `Sub unica concl` strips inline `$Per`/`$Qui` at horamajor — R60 +1 cell
 
 Symptom: 06-30 R60 Laudes Oratio renders "Pauli Oratio + Per

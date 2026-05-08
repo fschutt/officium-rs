@@ -1187,6 +1187,51 @@ pub fn first_vespers_day_key_for_rubric<'a>(
             }
         }
     }
+    // Tomorrow-is-Sunday wipe: Perl `horascommon.pl:905-928` —
+    //
+    //   if ($ctrank[0] =~ /(?<!De )Dominica|Trinitatis/i
+    //       && !($version =~ /19(?:55|6)/ && $ctrank[0] =~ /Dominica Resurrectionis/i))
+    //   {
+    //       if ($sanctoraloffice && ...) { ... } else {
+    //           %winner = {}; $winner = ''; $rank = 0;
+    //       }
+    //   }
+    //
+    // When tomorrow's office is a Sunday (or Trinity), today's
+    // Tempora office is wiped at 2V, and the subsequent
+    // two-concurrent-Tempora swap (line 1032) fires regardless of
+    // rank ordering. Swap to tomorrow.
+    //
+    // Closes 04-11 R60 Sat Vespera (Pasc0-6 → Pasc1-0 Sun in Albis)
+    // and 05-30 R60 Sat Vespera (Pasc7-6 → Pent01-0 Trinity Sunday)
+    // — both have today_rank > tomorrow_rank by file ranks (6.9 > 6,
+    // 6.9 > 6.5) so the rank comparison alone wouldn't swap.
+    //
+    // Restricted to Tempora-vs-Tempora because the wipe-then-swap
+    // pattern only fires in the `!sanctoraloffice && !csanctoraloffice`
+    // Perl branch. When today is Sancti, the existing rules handle
+    // it (slice 78 / Sancti-with-no-2V / etc.).
+    if today_key.starts_with("Tempora/") && tomorrow_key.starts_with("Tempora/") {
+        if let Some(file) = lookup(tomorrow_key) {
+            if let Some(officium) = section_via_inheritance(file, "Officium") {
+                let evaluated = eval_section_conditionals(&officium, rubric, hora);
+                let lc = evaluated.to_lowercase();
+                let is_dominica = lc.contains("dominica");
+                let is_trinitatis = lc.contains("trinitatis");
+                let is_resurrectionis = lc.contains("dominica resurrectionis");
+                let r55_or_r60 = matches!(
+                    rubric,
+                    crate::core::Rubric::Reduced1955 | crate::core::Rubric::Rubrics1960
+                );
+                let is_match = (is_dominica || is_trinitatis)
+                    && !(r55_or_r60 && is_resurrectionis);
+                if is_match {
+                    return tomorrow_key;
+                }
+            }
+        }
+    }
+
     // No 1V for Vigilia days (other than Vigilia Epi). Mirror of the
     // Vigilia branch of `horascommon.pl::concurrence:950-951`:
     //
@@ -1254,10 +1299,19 @@ pub fn first_vespers_day_key_for_rubric<'a>(
             let tomorrow_rank = active_rank_line_with_annotations(tomorrow_key, rubric, hora)
                 .map(|(_, _, n)| n)
                 .unwrap_or(0.0);
+            // Use `section_via_inheritance` so `@Path` preamble
+            // redirects are chased — Tempora/Pent03-0r's file is
+            // `@Tempora/Pent03-0o` with no own [Officium], but the
+            // parent o-variant carries "Dominica III Post Pentecosten".
+            // Without chase, R60 reads `None` for the redirect-only
+            // file and falls through to the threshold-6 branch,
+            // suppressing the legitimate Sat-1V swap to Sunday.
+            // Closes 04-11 / 05-30 / 06-13 R60 Sat Vespera (Sun-1V
+            // cluster).
             let officium_is_dominica = lookup(tomorrow_key)
-                .and_then(|f| f.sections.get("Officium"))
+                .and_then(|f| section_via_inheritance(f, "Officium"))
                 .map(|body| {
-                    let evaluated = eval_section_conditionals(body, rubric, hora);
+                    let evaluated = eval_section_conditionals(&body, rubric, hora);
                     let lc = evaluated.to_lowercase();
                     lc.contains("dominica")
                 })

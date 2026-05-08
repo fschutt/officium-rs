@@ -3020,6 +3020,63 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 67: Winner-first Oratio candidate priority — T1910 +1 cell
+
+Symptom: 06-12 T1910 Sacred Heart Friday Vespera emits "Sancti
+nóminis tui..." (Pent02-0 Sun-of-week Oratio). Perl emits
+"Concéde quǽsumus omnípotens Deus: ut, qui in sanctíssimo
+dilécti Fílii tui Corde gloriántes..." (Sacred Heart from
+Pent02-5o [Oratio 2]).
+
+Trace: Tempora/Pent02-5o (Sacred Heart Friday) carries
+[Oratio 1] (Mat/Lauds form) and [Oratio 2] (Vespera form) but
+NO bare [Oratio] / [Oratio 3]. Perl's
+`specials/orationes.pl:67-95` priority for Vespera ($ind=3):
+
+  1. $w = $w{Oratio}                       (winner's bare)
+  2. $w = $w{"Oratio $ind"} = $w{Oratio 3} (winner's Vesp)
+  3. commune lookup
+  4. $w = $w{Oratio 2}                     (winner's Lauds form)
+  5. $w = $w{Oratio 1}                     (winner's MM form)
+  6. Tempora-Sun-fallback
+
+Winner=Pent02-5o: Oratio empty, Oratio 3 empty, commune empty,
+Oratio 2 = "Concede..." → match. Pent02-0's [Oratio] never
+consulted.
+
+Our chain candidate loop iterated breadth-first across the
+chain: for each candidate (e.g. "Oratio"), search the entire
+chain (winner, then commune, then week-Sun fallback). For
+"Oratio" the chain has Pent02-0 (week-Sun) which matches before
+the fallthrough to "Oratio 2" — Pent02-0's "Sancti nominis
+tui..." wrongly wins.
+
+Fix: in `splice_proper_into_slot`, before the chain-iterating
+candidate loop, run a winner-first pass — try each candidate
+against `chain[0]` (the winner file). When a hit is found,
+splice and return; otherwise fall through to the chain-based
+loop.
+
+Also extend Vespera's `slot_candidates` from `["Oratio 3",
+"Oratio"]` to `["Oratio 3", "Oratio", "Oratio 2", "Oratio 1"]`
+so the winner-first pass tries the alternates. Mat already had
+`["Oratio Matutinum", "Oratio 2", "Oratio"]` from slice 59.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged).
+    T1910: 99.08% → 99.11% (+1 cell — 06-12 Sacred Heart Fri
+                   Vespera).
+    DA:    98.77% (unchanged).
+    R55:   98.42% (unchanged).
+    R60:   98.42% (unchanged).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Triduum Prima Oratio suppression**: tried suppressing the

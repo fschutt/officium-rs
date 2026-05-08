@@ -2161,7 +2161,21 @@ fn slot_candidates(label: &str, hour: &str) -> Vec<String> {
         // the resolved day's Oratio variants.
         "Oratio" => match hour {
             "Prima" | "Completorium" => Vec::new(),
-            "Vespera" => vec!["Oratio 3".to_string(), "Oratio".to_string()],
+            // Mirror of `specials/orationes.pl:67-95` — Vespera
+            // ($ind=3) priority: Oratio → Oratio 3 → commune
+            // → Oratio 2 → Oratio 1. Drives 06-12 T1910 Sacred
+            // Heart Friday Vespera: Pent02-5o has [Oratio 1]
+            // (Mat/Lauds form) and [Oratio 2] (Vespera form),
+            // NO bare [Oratio] and NO [Oratio 3]. Without the
+            // Oratio 2/Oratio 1 fallback, the chain walker drops
+            // through to Pent02-0 Sun's [Oratio] = "Sancti
+            // nominis tui...".
+            "Vespera" => vec![
+                "Oratio 3".to_string(),
+                "Oratio".to_string(),
+                "Oratio 2".to_string(),
+                "Oratio 1".to_string(),
+            ],
             // Mirror of `specials/orationes.pl:70-71`:
             //   if ($hora eq 'Matutinum' && exists($winner{'Oratio Matutinum'})) {
             //     $w = $w{'Oratio Matutinum'};
@@ -2527,6 +2541,56 @@ fn splice_proper_into_slot(
     } else {
         slot_candidates(label, hour)
     };
+    // Mirror of `specials/orationes.pl:67-95` priority: search the
+    // WINNER (chain[0]) for ALL candidates first before falling
+    // through the chain. Drives 06-12 T1910 Sacred Heart Friday
+    // Vespera: Pent02-5o has [Oratio 1] (Mat/Lauds form) and [Oratio
+    // 2] (Vespera form) but NO bare [Oratio] / [Oratio 3]. Without
+    // winner-first priority, the breadth-first chain candidate loop
+    // tries [Oratio 3] across the chain (no match), then [Oratio]
+    // across the chain (matches Pent02-0 the week-Sun via the
+    // `tempora_sunday_fallback` injection) — so the Sun's Oratio
+    // wins instead of Pent02-5o's [Oratio 2].
+    if label == "Oratio" || label.starts_with("Oratio ") {
+        if let Some(winner) = chain.first() {
+            for cand in &candidates {
+                if let Some(body) = winner.sections.get(cand) {
+                    let resolved = expand_at_redirect(body, cand);
+                    let evaluated = eval_section_conditionals(&resolved, rubric, hour);
+                    let evaluated = if let Some(rest) = evaluated.trim().strip_prefix("@:") {
+                        let section_name = rest
+                            .split('\n')
+                            .next()
+                            .map(|s| s.trim())
+                            .unwrap_or("")
+                            .to_string();
+                        if !section_name.is_empty() {
+                            if let Some(self_body) =
+                                find_section_in_chain(chain, &section_name, rubric)
+                            {
+                                let r = expand_at_redirect(self_body, &section_name);
+                                eval_section_conditionals(&r, rubric, hour)
+                            } else {
+                                evaluated
+                            }
+                        } else {
+                            evaluated
+                        }
+                    } else {
+                        evaluated
+                    };
+                    let trimmed = take_first_oratio_chunk(&evaluated);
+                    let with_name = substitute_saint_name(&trimmed, saint_name);
+                    let macros_expanded =
+                        expand_dollar_macros_in_body(&with_name, prayers_file);
+                    let respelled = apply_office_spelling(&macros_expanded, rubric);
+                    out.push(RenderedLine::Plain { body: respelled });
+                    return;
+                }
+            }
+        }
+    }
+
     for cand in candidates {
         if let Some(body) = find_section_in_chain(chain, &cand, rubric) {
             let resolved = expand_at_redirect(body, &cand);

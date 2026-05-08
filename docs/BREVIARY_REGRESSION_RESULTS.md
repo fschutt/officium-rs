@@ -1225,7 +1225,44 @@ after `substitute_saint_name`, before `apply_office_spelling`.
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 31: chain follows `[Rank]` 4th-field commune-ref — T1570 91.47%→91.88%, R60 91.64%→91.99%
+
+`visit_chain` only consulted `[Rule]` for commune-chain targets.
+Some Sancti days carry the commune-ref in the `[Rank]` line's
+4th `;;`-separated field instead — `Sanctæ Mariæ Virginis ad
+Nives;;Duplex;;3;;vide C11` (Sancti/08-05 R60). Under R60 the
+`[Rule]` body's `ex C11` directive gets popped by the
+`(sed rubrica 196 omittitur)` SCOPE_CHUNK backscope, so without
+consulting `[Rank]` the chain stops at Sancti/08-05 (which has
+no `[Oratio]`) — RustBlank.
+
+`visit_chain` now runs `parse_vide_targets` on the
+`active_rank_line_for_rubric` full line in addition to the
+`[Rule]` body. Closes RustBlanks like 08-05 R60 Mat/Lauds/Min
+and lifts a handful of Sancti-Marian-feast Differs across both
+rubrics.
+
+**T1570 30-day Jan**: stays at 240/240 (100.00%).
+
+| Rubric × Window         | Pre slice 31 | Post slice 31 | Δ |
+|-------------------------|-------------:|--------------:|--:|
+| T1570 full year (2920c) | 91.47% | **91.88%** | +12 |
+| R60   full year (2920c) | 91.64% | **91.99%** | +10 |
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
+
+- **Section-level `[Rank] (rubrica 196)` annotated lookup
+  attempt** (slice 31a): tried evaluating section-header
+  conditionals so R60 could find Sancti/01-12 R60's annotated
+  `[Rank] (rubrica 196 aut rubrica 1955) Die Duodecima Januarii;;
+  Feria;;1.8` instead of the bare `[Rank]`. Required stripping
+  stopwords ("sed") via `find_conditional` before `vero`. Net
+  cell change was 0 across both rubrics, so reverted. The
+  annotated [Rank] variant gap remains documented as a TODO in
+  `active_rank_line_for_rubric`.
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9
   attempt): expanding `$Per Dominum`/`$Per eumdem` macros via

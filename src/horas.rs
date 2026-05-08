@@ -715,6 +715,19 @@ fn visit_chain(
             visit_chain(&parent, rubric, hora, visited, out, depth + 1);
         }
     }
+    // [Rank] line's 4th `;;`-separated field is a commune-ref
+    // (`;;vide C11` or `;;ex Sancti/01-06`). Sancti/08-05 R60 has
+    // `[Rank] (rubrica 196): Sanctæ Mariæ Virginis ad Nives;;Duplex;;3;;vide C11`
+    // — the [Rule] body's `ex C11` directive gets popped by the
+    // `(sed rubrica 196 omittitur)` SCOPE_CHUNK backscope under
+    // R60, so without consulting [Rank] the chain misses Commune/C11.
+    if let Some((full_line, _, _)) = active_rank_line_for_rubric(key, rubric, hora) {
+        for target in parse_vide_targets(&full_line) {
+            if !visited.contains(&target) {
+                visit_chain(&target, rubric, hora, visited, out, depth + 1);
+            }
+        }
+    }
     let Some(rule) = file.sections.get("Rule") else { return };
     // Evaluate `(sed rubrica X) vide CYY` overrides before parsing
     // commune targets — under T1570/1617, Sancti/01-14 [Rule] flips

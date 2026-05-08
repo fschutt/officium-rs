@@ -203,11 +203,42 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
         apply_template_conditionals(&file.template, args.rubric, args.hour);
     let mut out = Vec::with_capacity(filtered_template.len());
 
+    // Triduum-Prima/Compline Oratio suppression. Mirror of upstream
+    // `specials.pl:253-278` — for Holy Thursday/Friday/Saturday at
+    // Prima/Compline, the Oratio block is omitted entirely (no
+    // V/R Domine exaudi, no Visita prayer, no Per Dominum). The
+    // trigger is `[Rule] =~ /Limit.*?Oratio/`. We approximate via
+    // the more reliable day_key prefix match `Tempora/Quad6-[456]`
+    // (Holy Thu/Fri/Sat) since the Rule check requires walking
+    // chain inheritance and the Triduum days are the only ones
+    // with this Limit-Oratio pattern.
+    // Narrowed to Completorium only — Prima at Triduum still emits a
+    // special "Christus factus est" form that Perl computes via
+    // `oratio()` with the `special` flag (specials.pl:262-275).
+    // Compline Triduum genuinely has no Oratio body in Perl's output.
+    let suppress_oratio_block = matches!(args.hour, "Completorium")
+        && args.day_key.is_some_and(|k| {
+            k.starts_with("Tempora/Quad6-4")
+                || k.starts_with("Tempora/Quad6-5")
+                || k.starts_with("Tempora/Quad6-6")
+        });
+    let mut in_suppressed_oratio = false;
+
     for line in &filtered_template {
         match line.kind.as_str() {
             "blank" => {}
             "section" => {
                 if let Some(label) = &line.label {
+                    // Triduum: enter Oratio suppression when we hit
+                    // the #Oratio section, exit when the next #section
+                    // (typically #Conclusio) starts.
+                    if suppress_oratio_block && label == "Oratio" {
+                        in_suppressed_oratio = true;
+                        continue;
+                    }
+                    if in_suppressed_oratio {
+                        in_suppressed_oratio = false;
+                    }
                     out.push(RenderedLine::Section { label: label.clone() });
                     splice_proper_into_slot(
                         &mut out,
@@ -224,6 +255,9 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
                 }
             }
             "rubric" => {
+                if in_suppressed_oratio {
+                    continue;
+                }
                 let level = line.level.unwrap_or(1);
                 if level == 1 && !args.rubrics {
                     continue;
@@ -233,6 +267,9 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
                 }
             }
             "spoken" => {
+                if in_suppressed_oratio {
+                    continue;
+                }
                 if let (Some(role), Some(body)) = (&line.role, &line.body) {
                     out.push(RenderedLine::Spoken {
                         role: role.clone(),
@@ -241,6 +278,9 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
                 }
             }
             "plain" => {
+                if in_suppressed_oratio {
+                    continue;
+                }
                 if let Some(body) = &line.body {
                     // Expand `$<name>` macro references against the
                     // Prayers.txt section table. Used by Prima/
@@ -254,6 +294,9 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
                 }
             }
             "macro" => {
+                if in_suppressed_oratio {
+                    continue;
+                }
                 if let Some(name) = &line.name {
                     // `Dominus_vobiscum1` is the "Prima/Compline after
                     // preces" ScriptFunc — when preces would fire, it

@@ -2516,7 +2516,68 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 58: Triduum Compline Oratio suppression — T1570 +2, R60 +2, R55 +2
+
+Symptom: 04-02 Holy Thu, 04-03 Good Fri, 04-04 Holy Sat
+Compline emit the standard Visita Compline Oratio. Perl emits
+NOTHING (perl-blank — the section is collapsed during Triduum).
+
+Trace: `specials.pl:253-278`:
+
+  if ($item =~ /Oratio/) {
+    my $prime_or_compline = ($hora =~ /^(?:Prima|Completorium)$/i);
+    my $triduum = ($rule =~ /Limit.*?Oratio/);
+    if ($prime_or_compline && $triduum) {
+      $skipflag = 1;
+      $oratio_params{special} = 1;
+    }
+    if (!$prime_or_compline || $triduum) {
+      oratio($lang, $month, $day, %oratio_params);
+      next;
+    }
+  }
+
+For Compline (Prima too) at Triduum, the Oratio block is
+omitted entirely. Triduum [Rule] carries "Limit Benedictiones
+Oratio" — the trigger.
+
+Fix: in `compute_office_hour`, when day_key starts with
+`Tempora/Quad6-{4,5,6}` AND hour is `Completorium`, set a
+suppress flag from the `#Oratio` section header until the next
+section header (typically `#Conclusio`). All lines (rubric,
+plain, macro, spoken) inside that range skipped.
+
+**Narrowed to Completorium only** — Prima at Triduum emits a
+special "Christus factus est pro nobis obediens..." antiphon
+form via `oratio(... special=1)` (specials.pl:262-275). The
+slice-58 attempt at Prima emitted blank instead, regressing
+3 cells. Compline Triduum genuinely has no Oratio body in
+Perl's output.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Completorium 99.45% → 100.00% (+2 cells — 04-02..04)
+      Overall      99.66% → 99.73%
+    R60: 97.36% → 97.43% (+2 cells — same Triduum days)
+    R55: 96.85% → 96.92% (+2 cells)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
+
+- **Triduum Prima Oratio suppression**: tried suppressing the
+  Prima Oratio block alongside Completorium for Quad6-{4,5,6}.
+  Net Prima T1570 -3 cells (rust-blank). Perl's
+  `specials.pl:275` calls `oratio()` with `special=1` even for
+  Prima at Triduum — emitting the "Christus factus est"
+  Triduum antiphon. Reverted to Completorium-only; Prima
+  Triduum still fails (3 cells, deferred).
+
 
 - **Broad Octave-suffix file enumeration for preces reject**
   (slice 53 attempt): tried checking `Sancti/{MM-DD}{suffix}`

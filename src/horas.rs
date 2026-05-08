@@ -1239,6 +1239,37 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     let today_rank = effective_today_rank_for_concurrence(today_key, rubric, hora);
     let tomorrow_rank =
         effective_tomorrow_rank_for_concurrence(tomorrow_key, rubric, hora);
+    // Pre-DA "a capitulo de sequenti" — narrow: when tomorrow is an
+    // Octave-stem-day commemoration file (`Sancti/MM-DDoct`) AND
+    // today is also a Semiduplex-class Sancti (rank < 2.9), swap
+    // to the Octave commemoration (today commemorated). Mirror of
+    // the flcrank==flrank branch of `horascommon.pl::concurrence:
+    // 1216-1261`.
+    //
+    // Drives 07-03 Fri Vespera T1570: today=Sancti/07-03 Leo II
+    // Semiduplex 2.2, tomorrow=Sancti/07-04oct Day VI in Octave
+    // Petri+Pauli Semiduplex 2. Both flatten to 2 (rank < 2.9 → 2)
+    // and Perl's "a capitulo" swap fires.
+    //
+    // Narrowed to `oct`-suffix tomorrow keys: the broader f
+    // flrank/flcrank rule fires too aggressively across Tempora-
+    // ferial pairs. Octave-stem-day tomorrow keys are the canonical
+    // upstream "a capitulo" trigger.
+    let pre_da = matches!(
+        rubric,
+        crate::core::Rubric::Tridentine1570
+            | crate::core::Rubric::Tridentine1910
+            | crate::core::Rubric::DivinoAfflatu1911
+    );
+    if pre_da
+        && tomorrow_key.starts_with("Sancti/")
+        && tomorrow_key.ends_with("oct")
+        && today_key.starts_with("Sancti/")
+        && today_rank < 2.9
+        && tomorrow_rank < 2.9
+    {
+        return tomorrow_key;
+    }
     if today_rank > tomorrow_rank {
         today_key
     } else {

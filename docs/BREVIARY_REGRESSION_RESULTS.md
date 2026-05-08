@@ -2389,6 +2389,53 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 55: pre-DA "a capitulo de sequenti" for Octave-day tomorrow — T1570 +1
+
+Symptom: T1570 07-03 Fri Vespera resolved to Sancti/07-03
+(Leo II Semiduplex 2.2). Perl swaps to Sancti/07-04oct (Day
+VI in Octave Petri+Pauli Semiduplex 2). Page header shows
+"A capitulo de sequenti; commemoratio de praecedenti".
+
+Trace: `horascommon.pl::concurrence:1216-1261` — the
+`flcrank == flrank` branch fires when today and tomorrow's
+ranks flatten to the same bucket:
+
+  } elsif ($flcrank == $flrank) {
+    $vespera = 1; $cvespera = 3; $winner = $cwinner;
+    $dayname[2] .= "<br/>A capitulo de sequenti; commemoratio de praecedenti";
+  }
+
+T1570 flattening: rank < 2.9 → 2. Both Leo (2.2) and Octave
+Day VI (2) flatten to 2 → swap.
+
+Fix: narrow gate in `first_vespers_day_key_for_rubric` (after
+the existing rank comparison setup, before `today_rank >
+tomorrow_rank`). Fires only when:
+  - rubric is pre-DA (T1570/T1910/DA)
+  - tomorrow_key is `Sancti/.*oct$` (Octave-stem-day file)
+  - today_key starts with Sancti/
+  - both ranks < 2.9 (Semiduplex bucket)
+
+Documented attempted-and-reverted: the broader
+flrank/flcrank logic without `oct`-suffix narrowing regressed
+T1570 Vespera by 12 cells across Tempora-ferial pairs where
+the "a capitulo" rule shouldn't fire. The Octave-stem-day
+restriction is the canonical upstream trigger.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Vespera   99.18% → 99.45% (+1 cell — 07-03)
+      Overall   99.45% → 99.49%
+    R55: 96.85% (unchanged — pre-DA only)
+    R60: 97.36% (unchanged)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Broad Octave-suffix file enumeration for preces reject**

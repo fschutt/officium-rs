@@ -1471,6 +1471,56 @@ broken-out — now Vespera 81.92%, overall 93.05%.
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 36: Easter / Pentecost Octave ferial 1V suppression — T1570 93.32% → 93.56%, R60 95.92% → 96.16%, R55 93.05% → 93.25%
+
+Symptom: Easter Octave Mon/Wed/Thu/Fri Vesperas plus
+Pentecost Octave Mon/Wed/Thu/Fri/Sat Vesperas all emit
+tomorrow's Oratio under T1570 — 04-08 Wed should emit Pasc0-3
+"Deus, qui nos resurrectiónis Domínicæ..." but emits Pasc0-4
+"Deus, qui diversitátem géntium...".
+
+All Easter Octave ferials are Semiduplex I cl. 6.9 — at rank
+tie our `first_vespers_day_key_for_rubric` swaps to tomorrow.
+Perl suppresses 1V here.
+
+Trace: `horascommon.pl::concurrence:959-960` — within the
+suppress-1V OR chain:
+
+  || ($weekname =~ /Pasc[07]/i && $cwinner{Rank} !~ /Dominica/i)
+
+For an Easter Octave week ($weekname = "Pasc0") OR Pentecost
+Octave week ($weekname = "Pasc7"), if tomorrow's [Rank] field
+doesn't contain "Dominica" (i.e., tomorrow is another ferial in
+the same Octave, not the closing Sunday), 1V is suppressed and
+today's office continues.
+
+Fix: gate-add to `first_vespers_day_key_for_rubric`. If today's
+key starts with `Tempora/Pasc0-` or `Tempora/Pasc7-`, AND
+tomorrow's [Rank] (post conditional eval) doesn't contain
+"Dominica", return today_key.
+
+This rule fires for ALL rubrics — both Easter Octave and
+Pentecost Octave (where present, T1570/T1910/DA only —
+Pentecost Octave abolished in R55/R60).
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Vespera   89.32% → 91.23% (+7 cells)
+      Overall   93.32% → 93.56% (+7 cells)
+    R60:
+      Vespera   92.33% → 94.25% (+7 cells)
+      Overall   95.92% → 96.16% (+7 cells)
+    R55:
+      Vespera   81.92% → 83.56% (+6 cells)
+      Overall   93.05% → 93.25% (+6 cells)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Section-level `[Rank] (rubrica 196)` annotated lookup

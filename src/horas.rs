@@ -1024,6 +1024,34 @@ pub fn first_vespers_day_key_for_rubric<'a>(
             return today_key;
         }
     }
+    // Octava Paschae / Octava Pentecostes ferial — at 2V each ferial
+    // day stays on its own office (no swap to tomorrow's 1V) UNLESS
+    // tomorrow is a Sunday (Octave-end Sun in Albis closes Easter
+    // Octave; Trinity Sun closes Pentecost Octave).
+    //
+    // Mirror of upstream `horascommon.pl::concurrence:959-960`:
+    //
+    //   || ($weekname =~ /Pasc[07]/i && $cwinner{Rank} !~ /Dominica/i)
+    //
+    // — fires inside the suppress-1V OR chain. Without the gate,
+    // the rank-tie path swaps Pasc0-1 → Pasc0-2, Pasc0-3 → Pasc0-4,
+    // etc. (all Easter Octave ferials are Semiduplex I cl. 6.9), so
+    // each Easter-Octave Vespera emits the wrong day's Oratio.
+    // Same for Pentecost Octave (Pasc7-1 .. Pasc7-6 / Pasc7-3 etc).
+    let in_pasch_octave = today_key.starts_with("Tempora/Pasc0-")
+        || today_key.starts_with("Tempora/Pasc7-");
+    if in_pasch_octave {
+        let tomorrow_is_sunday = lookup(tomorrow_key)
+            .and_then(|f| f.sections.get("Rank"))
+            .map(|rank_body| {
+                let evaluated = eval_section_conditionals(rank_body, rubric, hora);
+                evaluated.to_lowercase().contains("dominica")
+            })
+            .unwrap_or(false);
+        if !tomorrow_is_sunday {
+            return today_key;
+        }
+    }
     // Sancti Simplex / Memoria / Commemoratio (rank < 2.0) has no
     // proper 2nd Vespers — the day's Vespers continues into the
     // next day's office. Tempora ferials don't have this problem

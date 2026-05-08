@@ -3077,6 +3077,75 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 76: `@:Section:s/PAT/REPL/` self-redirect substitution — T1910 +11, DA +9 cells
+
+Symptom: 06-13 T1910 (Anthony of Padua) Mat / Laudes / Tertia /
+Sexta / Nona emit the literal text `@:OratioText:s/ atque
+Doctóris//` as the Oratio body. 11-24 T1910 (John of the Cross)
+shows the same pattern with `@:Oratio_:s/ atque Doctorem//`.
+
+Trace: Sancti/06-13.txt has
+
+```
+[Oratio]
+@:OratioText:s/ atque Doctóris//
+(sed rubrica 195 aut rubrica 196 aut rubrica altovadensis)
+@:OratioText
+
+[OratioText]
+Ecclésiam tuam, Deus, beáti Antónii Confessóris tui atque
+Doctóris solémnitas votíva...
+```
+
+Under T1910 (where the rubric annotation `(sed rubrica 195/196/
+altovadensis)` doesn't apply — Anthony wasn't yet a Doctor of
+the Church under Pius X), the bare `[Oratio]` body fires:
+`@:OratioText:s/ atque Doctóris//` — pull the local
+`[OratioText]` body and strip the literal " atque Doctóris"
+suffix. Under DA (where Anthony WAS declared a Doctor in 1946,
+matching `/195/`), the annotated branch fires and pulls
+`[OratioText]` unmodified.
+
+Our self-redirect handler resolved bare `@:Section` correctly but
+treated the whole first line — including any `:s/PAT/REPL/`
+suffix — as the section name. The literal redirect text leaked
+to output.
+
+Fix in `src/horas.rs`: extract `resolve_self_at_redirect(body,
+chain, rubric, hour) -> String` that splits the first line on
+the first `:` to separate `section_name` from the inclusion-
+substitution `spec`, looks up the section in the chain, expands
+nested `@`-redirects via `expand_at_redirect`, then runs
+`do_inclusion_substitutions(&mut body, spec)` when present.
+Replaces two near-clone inline blocks (winner-first + main
+candidate loop) in `splice_proper_into_slot`.
+
+Mirrors `expand_at_redirect`'s existing `@Path:Section:s/PAT/REPL/`
+handling — same grammar, just same-chain instead of cross-file.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged).
+    T1910: 99.18% → 99.55% (+11 cells).
+    DA:    98.94% → 99.25% (+9 cells).
+    R55:   98.94% (unchanged — the Doctor-flip annotations
+                   match `/195|196/` so R55/R60 already pulled
+                   the unsubstituted body).
+    R60:   98.90% (unchanged).
+
+  Closes the 06-13 (Anthony of Padua) and 11-24 (John of the
+  Cross) clusters across 5 hours each = 10 cells, plus 02-08,
+  05-15/16/20, 11-23, 12-06/11/12 in the Vespera/Compline/Prima
+  cluster (saints whose Oratio uses the same redirect-with-
+  substitution pattern).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass. Net ~30 LoC removed (two parallel inline blocks
+folded into one helper).
+
 ## Slice 75: Preces predicate uses file's rubric-active rank — DA +5 cells
 
 Symptom: 11-22 DA Prima emits the preces "secunda Domine exaudi

@@ -2628,28 +2628,7 @@ fn splice_proper_into_slot(
                 if let Some(body) = winner.sections.get(cand) {
                     let resolved = expand_at_redirect(body, cand, rubric, hour);
                     let evaluated = eval_section_conditionals(&resolved, rubric, hour);
-                    let evaluated = if let Some(rest) = evaluated.trim().strip_prefix("@:") {
-                        let section_name = rest
-                            .split('\n')
-                            .next()
-                            .map(|s| s.trim())
-                            .unwrap_or("")
-                            .to_string();
-                        if !section_name.is_empty() {
-                            if let Some(self_body) =
-                                find_section_in_chain(chain, &section_name, rubric)
-                            {
-                                let r = expand_at_redirect(self_body, &section_name, rubric, hour);
-                                eval_section_conditionals(&r, rubric, hour)
-                            } else {
-                                evaluated
-                            }
-                        } else {
-                            evaluated
-                        }
-                    } else {
-                        evaluated
-                    };
+                    let evaluated = resolve_self_at_redirect(&evaluated, chain, rubric, hour);
                     let trimmed = take_first_oratio_chunk(&evaluated);
                     let with_name = substitute_saint_name(&trimmed, saint_name);
                     let macros_expanded =
@@ -2674,29 +2653,15 @@ fn splice_proper_into_slot(
             // `@:Section` is a SELF-redirect — Commune/C1v's [Oratio]
             // body is `@:Oratio 1 loco\n(sed commune C4)\n@:Oratio 2 loco`,
             // which evaluates to `@:Oratio 1 loco` under T1570 (the
-            // C4 alternative is filtered out). Resolve by re-querying
-            // the chain for the named section. Mirror of
-            // SetupString.pl's self-reference handling.
-            let evaluated = if let Some(rest) = evaluated.trim().strip_prefix("@:") {
-                let section_name = rest
-                    .split('\n')
-                    .next()
-                    .map(|s| s.trim())
-                    .unwrap_or("")
-                    .to_string();
-                if !section_name.is_empty() {
-                    if let Some(self_body) = find_section_in_chain(chain, &section_name, rubric) {
-                        let r = expand_at_redirect(self_body, &section_name, rubric, hour);
-                        eval_section_conditionals(&r, rubric, hour)
-                    } else {
-                        evaluated
-                    }
-                } else {
-                    evaluated
-                }
-            } else {
-                evaluated
-            };
+            // C4 alternative is filtered out). The variant
+            // `@:Section:s/PAT/REPL/[FLAGS]` adds an inclusion-substitution
+            // pass on the resolved body — used by Sancti/06-13 and
+            // 11-24 which include the local `[OratioText]` with " atque
+            // Doctóris" stripped under T1910 (which doesn't yet
+            // declare Anthony of Padua / John of the Cross as
+            // Doctors). Mirror of SetupString.pl's self-reference
+            // handling.
+            let evaluated = resolve_self_at_redirect(&evaluated, chain, rubric, hour);
             let trimmed = if cand == "Oratio" || cand.starts_with("Oratio ") {
                 take_first_oratio_chunk(&evaluated)
             } else {
@@ -3048,6 +3013,56 @@ fn expand_at_redirect(
     // Not found — fall back to the literal `@…` so the divergence
     // is visible rather than silently dropped.
     body.to_string()
+}
+
+/// Resolve a self-referential `@:Section` / `@:Section:s/PAT/REPL/`
+/// redirect in `body` against `chain`. Used by the Oratio splice
+/// after `expand_at_redirect` + `eval_section_conditionals`.
+///
+/// Forms recognised on the first non-blank line after the `@:` prefix:
+///   * `@:Section` — pull the same-chain `[Section]` body.
+///   * `@:Section:s/PAT/REPL/[FLAGS]` — pull the body, then run
+///     `do_inclusion_substitutions` on it. Used by Sancti/06-13
+///     (Anthony of Padua) and 11-24 (John of the Cross), whose
+///     `[Oratio]` body is `@:OratioText:s/ atque Doctóris//` —
+///     under pre-DA rubrics where the saint hasn't yet been declared
+///     a Doctor, the literal " atque Doctóris" suffix is stripped
+///     from the local `[OratioText]` body.
+///
+/// Returns `body.to_string()` unchanged when the body doesn't begin
+/// with `@:` or the section isn't found in the chain.
+fn resolve_self_at_redirect(
+    body: &str,
+    chain: &[&HorasFile],
+    rubric: crate::core::Rubric,
+    hour: &str,
+) -> String {
+    let trimmed = body.trim();
+    let Some(rest) = trimmed.strip_prefix("@:") else {
+        return body.to_string();
+    };
+    let first_line = rest.split('\n').next().unwrap_or("").trim();
+    if first_line.is_empty() {
+        return body.to_string();
+    }
+    // Split on FIRST `:` to separate section from optional `s/.../.../`
+    // spec. Section names don't contain `:` in the corpus.
+    let (section_name, spec) = match first_line.split_once(':') {
+        Some((s, sp)) => (s.trim().to_string(), sp.trim()),
+        None => (first_line.to_string(), ""),
+    };
+    if section_name.is_empty() {
+        return body.to_string();
+    }
+    let Some(self_body) = find_section_in_chain(chain, &section_name, rubric) else {
+        return body.to_string();
+    };
+    let mut resolved = expand_at_redirect(self_body, &section_name, rubric, hour);
+    if !spec.is_empty() {
+        use crate::setupstring::do_inclusion_substitutions;
+        do_inclusion_substitutions(&mut resolved, spec);
+    }
+    eval_section_conditionals(&resolved, rubric, hour)
 }
 
 /// Drop everything from the first standalone `_` chunk separator

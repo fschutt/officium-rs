@@ -1733,6 +1733,53 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 41: paired `N. <text> N.` saint-name collapse — T1570 +30, R60 +17, R55 +16
+
+Symptom: T1570 04-21 Vespera (1V of SS. Soter & Caius) emits
+"Beatórum Mártyrum paritérque Pontíficum Sotéris et Caji et
+Sotéris et Caji nos...". Perl emits the same with a SINGLE
+"Sotéris et Caji". Same pattern hits every "plural" saint
+day (martyr-pair feasts, joint-pope feasts) — Commune/C3
+[Oratio] body has "...beátos N. et N. Mártyres..." with two
+placeholders, and substituting both with the joined [Name]
+double-emits.
+
+Trace: `specials.pl::replaceNdot:809-810` is a TWO-PASS
+substitution:
+
+  $s =~ s/N\. .*? N\./$name[0]/;   # paired "N. <text> N." → name (once)
+  $s =~ s/N\./$name[0]/g;          # remaining "N." → name (all)
+
+The first regex is non-greedy — it collapses the LEFTMOST
+paired-placeholder span into a single name emission. For
+plural saint days [Name] is already the joined form (e.g.
+"Sotéris et Caji"), so emitting it once for the paired span
+yields the right text. Single-N. days (most ferials and
+single-saint feasts) skip the first pass and use only the
+global replace.
+
+Fix: `substitute_saint_name` now does the two-pass dance.
+First pass `collapse_paired_n_dot` finds the leftmost two
+word-boundary `N.` tokens and replaces the span between them
+(inclusive) with the name once. Second pass
+`replace_remaining_n_dot` handles any leftover `N.` —
+single-saint days fall through to this path unchanged.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Mat/Laudes/Ter/Sex/Non  95.62% → 96.99% (+5 each)
+      Vespera                 92.60% → 93.97% (+5)
+      Overall                 95.07% → 96.10% (+30 cells)
+    R60: 96.23% → 96.82% (+17 cells, mostly weekday hours)
+    R55: 93.36% → 93.90% (+16 cells)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Section-level `[Rank] (rubrica 196)` annotated lookup

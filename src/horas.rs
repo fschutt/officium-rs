@@ -1934,11 +1934,65 @@ fn substitute_saint_name(body: &str, name: Option<&str>) -> String {
     if name.is_empty() || !body.contains("N.") {
         return body.to_string();
     }
-    // Walk the string by byte indices so we can substitute `N.` at
-    // word boundaries while preserving UTF-8 codepoints elsewhere.
-    // ASCII-only matching is safe because the trigger sequence is
-    // pure ASCII; any non-ASCII byte (high bit set) is part of a
-    // UTF-8 continuation and never overlaps `N.`.
+    // Two-pass mirror of upstream `specials.pl::replaceNdot:809-810`:
+    //
+    //   $s =~ s/N\. .*? N\./$name[0]/;   # "N. <text> N." → name (once)
+    //   $s =~ s/N\./$name[0]/g;          # remaining "N."  → name (all)
+    //
+    // The first pass collapses paired placeholders ("N. et N." in
+    // Commune/C3 [Oratio]) into a single name — `[Name]` for plural
+    // saint days is already the joined form ("Sotéris et Caji"), so
+    // emitting it twice yields "Sotéris et Caji et Sotéris et Caji".
+    // First-pass regex equivalent: find the leftmost word-boundary
+    // "N." followed (within the same body) by another word-boundary
+    // "N.", with `.*?` matching anything in between (non-greedy).
+    let first_pass = collapse_paired_n_dot(body, name);
+    replace_remaining_n_dot(&first_pass, name)
+}
+
+/// First pass: replace the leftmost `N. <text> N.` span (non-greedy)
+/// with `name`. Returns the body unchanged if there's only one `N.`.
+fn collapse_paired_n_dot(body: &str, name: &str) -> String {
+    let bytes = body.as_bytes();
+    let n = bytes.len();
+    let Some(first_start) = find_n_dot_at_word_boundary(bytes, 0) else {
+        return body.to_string();
+    };
+    let after_first = first_start + 2; // past "N."
+    let Some(second_start) = find_n_dot_at_word_boundary(bytes, after_first) else {
+        return body.to_string();
+    };
+    let mut out = String::with_capacity(n - (second_start + 2 - first_start) + name.len());
+    out.push_str(&body[..first_start]);
+    out.push_str(name);
+    out.push_str(&body[second_start + 2..]);
+    out
+}
+
+/// Find the next `N.` token starting at or after `from` whose `N` is
+/// at a word boundary and whose `.` is followed by a delimiter (or
+/// end of string). Returns the byte index of the `N`.
+fn find_n_dot_at_word_boundary(bytes: &[u8], from: usize) -> Option<usize> {
+    let n = bytes.len();
+    let mut i = from;
+    while i + 2 <= n {
+        if bytes[i] == b'N' && bytes[i + 1] == b'.' {
+            let at_boundary = i == 0
+                || matches!(bytes[i - 1], b' ' | b'\t' | b'\n' | b'(' | b'.' | b',' | b';');
+            let next_ok = i + 2 >= n
+                || matches!(bytes[i + 2], b' ' | b'\t' | b'\n' | b',' | b';' | b':' | b'.');
+            if at_boundary && next_ok {
+                return Some(i);
+            }
+        }
+        i += 1;
+    }
+    None
+}
+
+/// Second pass: replace all remaining `N.` at word boundaries with
+/// `name`. Walks UTF-8 codepoints for safety.
+fn replace_remaining_n_dot(body: &str, name: &str) -> String {
     let bytes = body.as_bytes();
     let n = bytes.len();
     let mut out = String::with_capacity(n + name.len());
@@ -1955,7 +2009,6 @@ fn substitute_saint_name(body: &str, name: Option<&str>) -> String {
                 continue;
             }
         }
-        // Copy one UTF-8 codepoint.
         let head = bytes[i];
         let cp_len = match head {
             0..=0x7F => 1,

@@ -3077,6 +3077,67 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 78: R60 `Sub unica concl` strips inline `$Per`/`$Qui` at horamajor — R60 +1 cell
+
+Symptom: 06-30 R60 Laudes Oratio renders "Pauli Oratio + Per
+Dominum + Amen". Perl renders "Pauli Oratio + Commemoratio S.
+Petri Apostoli + Petri Oratio + Qui vivis + Amen".
+
+06-30 is "In Commemoratione S. Pauli Apostoli" with `[Rule]`
+flagging `Sub unica concl`. The Sancti file's `[Oratio]` body is
+
+```
+Deus, qui multitúdinem géntium beáti Pauli Apóstoli...
+$Per Dominum
+_
+@Sancti/01-25:Commemoratio4
+```
+
+The trailing `_\n@Sancti/01-25:Commemoratio4` resolves to a Petri
+commemoration block. Under R60, Perl strips the inline `$Per
+Dominum` from $w (so the conclusion appears only at the very end
+after the last commemoration), per `specials/orationes.pl:217-223`:
+
+```
+if ($horamajor && $winner{Rule} =~ /Sub unica conc/i) {
+    if ($version !~ /196/) {
+        # ... pre-R60: strip only the FINAL conclusion ...
+    } else {
+        $w =~ s/\$(Per|Qui) .*?\n//;   # R60: strip ALL
+    }
+}
+```
+
+Pre-R60 rubrics also strip but only the last conclusion (kept for
+appending to the last commemoration). Since our Rust doesn't yet
+emit the trailing commemorations, the pre-R60 strip wouldn't change
+visible output and is skipped — only R60 needs the fix today.
+
+The comparator's `p.contains(r)` test failed under R60 because
+Rust's body had "...Pauli...perdominumamen" (normalised) while
+Perl's R60 body had "...Pauli...commemoratiopetri...quivivisamen"
+— Rust's "perdominum" substring isn't anywhere in Perl's body.
+
+Fix in `src/horas.rs`: add `strip_sub_unica_conclusion` helper and
+call it after `take_first_oratio_chunk` in both Oratio splice
+emit paths (winner-first + main candidate loop). Helper gates on
+R60 + Laudes/Vespera + winner-Rule contains "Sub unica conc",
+then drops body lines starting with `$Per ` / `$Qui `.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved).
+
+  Full year × 2920 cells:
+    T1570: 99.83% (unchanged).
+    T1910: 99.55% (unchanged).
+    DA:    99.25% (unchanged).
+    R55:   98.97% (unchanged — gate excludes R55).
+    R60:   98.90% → 98.94% (+1 cell: 06-30 Laudes).
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Slice 77: R55 `No secunda Vespera` honours tomorrow's 1V suppression — R55 +1 cell
 
 Symptom: 01-12 R55 Mon Vespera emits Sancti/01-13's "Deus, cujus

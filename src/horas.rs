@@ -2656,6 +2656,7 @@ fn splice_proper_into_slot(
                     let evaluated = eval_section_conditionals(&resolved, rubric, hour);
                     let evaluated = resolve_self_at_redirect(&evaluated, chain, rubric, hour);
                     let trimmed = take_first_oratio_chunk(&evaluated);
+                    let trimmed = strip_sub_unica_conclusion(&trimmed, chain, rubric, hour);
                     let with_name = substitute_saint_name(&trimmed, saint_name);
                     let macros_expanded =
                         expand_dollar_macros_in_body(&with_name, prayers_file);
@@ -2693,6 +2694,28 @@ fn splice_proper_into_slot(
             } else {
                 evaluated
             };
+            // Sub unica concl: under R60 + Laudes/Vespera, strip the
+            // trailing `$Per ` / `$Qui ` conclusion macro from the
+            // primary Oratio body. Mirror of `specials/orationes.pl:
+            // 217-223`:
+            //
+            //   if ($horamajor && $winner{Rule} =~ /Sub unica conc/i) {
+            //       if ($version !~ /196/) {
+            //           # strip only the FINAL one (kept by ::oratio
+            //           # for tacking onto the last commemoration)
+            //       } else {
+            //           # R60: strip ALL `$(Per|Qui) ...` lines
+            //           $w =~ s/\$(Per|Qui) .*?\n//;
+            //       }
+            //   }
+            //
+            // Drives 06-30 R60 Laudes (Comm S. Pauli with Petri
+            // commemoration in trailing chunk): without strip, our
+            // Rust body emits "Pauli Oratio + Per Dominum + Amen",
+            // but Perl R60 emits "Pauli Oratio + Petri Comm + Qui
+            // vivis + Amen" — the trailing macro after Pauli broke
+            // the comparator's `p.contains(r)` substring check.
+            let trimmed = strip_sub_unica_conclusion(&trimmed, chain, rubric, hour);
             let with_name = substitute_saint_name(&trimmed, saint_name);
             let macros_expanded = expand_dollar_macros_in_body(&with_name, prayers_file);
             let respelled = apply_office_spelling(&macros_expanded, rubric);
@@ -3089,6 +3112,58 @@ fn resolve_self_at_redirect(
         do_inclusion_substitutions(&mut resolved, spec);
     }
     eval_section_conditionals(&resolved, rubric, hour)
+}
+
+/// Strip the trailing `$Per ` / `$Qui ` conclusion macro from the
+/// primary Oratio body when (a) the active hour is Laudes or Vespera
+/// (`horamajor`), (b) the winner's `[Rule]` contains `Sub unica
+/// concl`, AND (c) the active rubric is R60 — the only rubric that
+/// strips inline conclusions before the comparator sees the body.
+///
+/// Mirror of `specials/orationes.pl:217-223`. Pre-R60 rubrics also
+/// run a strip but only against the FINAL conclusion in the chunk
+/// chain, used to "tack onto" the last commemoration's
+/// `$addconclusio`. We don't yet emit the trailing commemorations,
+/// so the pre-R60 strip wouldn't change visible output and is
+/// skipped.
+///
+/// Drives 06-30 R60 Laudes (Comm S. Pauli with `_\n@Sancti/01-25:
+/// Commemoratio4` trailing): without this strip, Rust emits the
+/// inline `$Per Dominum` after Pauli's body, but Perl R60 emits
+/// "Pauli + Petri commemoration + Qui vivis (final)" with no
+/// conclusion after Pauli — the comparator's `p.contains(r)` check
+/// failed because Rust's "perdominum" substring isn't in Perl's
+/// commemoration-rich body.
+fn strip_sub_unica_conclusion(
+    body: &str,
+    chain: &[&HorasFile],
+    rubric: crate::core::Rubric,
+    hour: &str,
+) -> String {
+    if !matches!(rubric, crate::core::Rubric::Rubrics1960) {
+        return body.to_string();
+    }
+    if hour != "Laudes" && hour != "Vespera" && hour != "Vesperae" {
+        return body.to_string();
+    }
+    let has_sub_unica = chain
+        .first()
+        .and_then(|f| section_via_inheritance(f, "Rule"))
+        .map(|r| {
+            let evaluated = eval_section_conditionals(&r, rubric, hour);
+            evaluated.to_lowercase().contains("sub unica conc")
+        })
+        .unwrap_or(false);
+    if !has_sub_unica {
+        return body.to_string();
+    }
+    body.lines()
+        .filter(|l| {
+            let t = l.trim();
+            !(t.starts_with("$Per ") || t.starts_with("$Qui "))
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// Drop everything from the first standalone `_` chunk separator

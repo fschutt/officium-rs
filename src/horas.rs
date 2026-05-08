@@ -2075,6 +2075,32 @@ fn splice_proper_into_slot(
         if let Some(body) = find_section_in_chain(chain, &cand, rubric) {
             let resolved = expand_at_redirect(body, &cand);
             let evaluated = eval_section_conditionals(&resolved, rubric, hour);
+            // `@:Section` is a SELF-redirect — Commune/C1v's [Oratio]
+            // body is `@:Oratio 1 loco\n(sed commune C4)\n@:Oratio 2 loco`,
+            // which evaluates to `@:Oratio 1 loco` under T1570 (the
+            // C4 alternative is filtered out). Resolve by re-querying
+            // the chain for the named section. Mirror of
+            // SetupString.pl's self-reference handling.
+            let evaluated = if let Some(rest) = evaluated.trim().strip_prefix("@:") {
+                let section_name = rest
+                    .split('\n')
+                    .next()
+                    .map(|s| s.trim())
+                    .unwrap_or("")
+                    .to_string();
+                if !section_name.is_empty() {
+                    if let Some(self_body) = find_section_in_chain(chain, &section_name, rubric) {
+                        let r = expand_at_redirect(self_body, &section_name);
+                        eval_section_conditionals(&r, rubric, hour)
+                    } else {
+                        evaluated
+                    }
+                } else {
+                    evaluated
+                }
+            } else {
+                evaluated
+            };
             let trimmed = if cand == "Oratio" || cand.starts_with("Oratio ") {
                 take_first_oratio_chunk(&evaluated)
             } else {

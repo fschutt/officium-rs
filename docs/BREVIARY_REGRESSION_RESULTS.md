@@ -2046,6 +2046,54 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 47: `@:Section` self-redirect resolution — T1570 +5, R60 +5, R55 +5
+
+Symptom: T1570 07-24 Fri Vigilia of James Matutinum emits the
+literal directive `@:Oratio 1 loco` instead of the resolved body
+"Da, quaesumus, omnipotens Deus: ut beati Jacobi Apostoli tui...".
+
+Trace: Commune/C1v has the [Oratio] body:
+
+  [Oratio]
+  @:Oratio 1 loco
+  (sed commune C4)
+  @:Oratio 2 loco
+
+The `@:` form is a SELF-redirect — points to a section in the
+SAME file. Mirror of upstream `SetupString.pl` self-reference
+handling. Under T1570 the `(sed commune C4)` conditional fails
+so `eval_section_conditionals` reduces this to `@:Oratio 1 loco`.
+
+`expand_at_redirect` requires a corpus-path prefix
+(`Sancti/`/`Tempora/`/`Commune/`/...) — it can't resolve `@:`
+because there's no file context. The literal directive leaked
+into the body.
+
+Fix: in `splice_proper_into_slot`, after `expand_at_redirect`
+and `eval_section_conditionals`, check if the result starts with
+`@:`. If so, extract the section name and re-query
+`find_section_in_chain` for it. The chain contains the same
+Commune file at chain[0..n], so the named section resolves
+in-place.
+
+Affects every Apostle-Vigil day plus other days using Commune/
+C1v (Vigil-of-Apostles common). Cross-rubric — fires under all
+five rubrics.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Matutinum/Laudes/Tertia/Sexta/Nona  96.99% → 97.26% (+1 each)
+      Overall                             97.12% → 97.29% (+5 cells)
+    R60: 96.92% → 97.09% (+5 cells)
+    R55: 94.01% → 94.18% (+5 cells)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **`section_via_inheritance` walked + Officium-prepended Vigilia

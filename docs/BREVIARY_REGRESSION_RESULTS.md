@@ -2347,6 +2347,48 @@ Verification:
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 54: preces predicate Octave-commemoration via rubric-active kalendarium — T1570 +2
+
+Symptom: T1570 09-13 Sun (Octave Nativity BMV) Prima emits
+text[4] omittitur. Perl emits V/R Domine exaudi (preces NOT
+firing). Sancti/09-13bmv has [Rank] = "Sexta die infra
+Octavam Nativitatis BMV;;Semiduplex;;2;;...".
+
+Trace: same Octave-commemoration reject as slice 45, but the
+commemoration file is `Sancti/09-13bmv` (BMV-Octave-suffix),
+not `Sancti/09-13oct`. Slice 45 only checked the `oct` suffix.
+
+Slice 53 attempt to broaden to all suffixes regressed -7 cells
+because it picked up Imm. Conc. Octave (Sancti/12-09bmv) under
+T1570 — that Octave was added in 1854 and isn't in the T1570
+kalendar. File-existence is too broad as a proxy for "active
+commemoration on this date AND rubric".
+
+Fix: query the rubric-active kalendarium via
+`kalendaria_layers::lookup(rubric.kalendar_layer(), month, day)`.
+Each returned cell carries an `officium` string. Reject preces
+when any cell's officium contains "Octav" (excluding "post
+Octav"). For T1570 09-13: cell[0] is "Sexta die infra Octavam
+Nativitatis BMV" → match → reject. For T1570 12-09: no cells
+returned (kalendarium has no entry) → no reject.
+
+Verification:
+
+  T1570 30-day Jan: 240/240 (100.00%, preserved)
+
+  Full year × 2920 cells:
+    T1570:
+      Prima        98.90% → 99.18% (+1 — 09-13)
+      Completorium 99.18% → 99.45% (+1 — 09-12 Sat)
+      Overall      99.38% → 99.45% (+2 cells)
+    R55: 96.85% (unchanged — different active layer means
+         different cells; the Octave-of-Lawrence et al.
+         already triggered slice 45's `oct`-suffix path)
+    R60: 97.36% (unchanged — most Octaves abolished)
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Broad Octave-suffix file enumeration for preces reject**

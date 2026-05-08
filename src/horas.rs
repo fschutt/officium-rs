@@ -529,6 +529,24 @@ fn preces_dominicales_et_feriales_fires(
     if lookup(&oct_key).is_some() {
         return false;
     }
+    // Octave-day commemoration via the rubric-active kalendarium.
+    // Perl's `preces.pl:45` rejects preces when the commemoratio's
+    // [Rank] (Officium-prepended) matches /Octav/i. We approximate
+    // by consulting `kalendaria_layers::lookup` for the active
+    // rubric's layer and checking each cell's officium for "Octav"
+    // (excluding "post Octav"). This is rubric-aware: 09-13 Sun
+    // under T1570 sees the active "Sexta die infra Octavam
+    // Nativitatis BMV" cell; 12-09 under T1570 sees no cells
+    // (Imm. Conc. octave is post-1854).
+    let layer = rubric.kalendar_layer();
+    if let Some(cells) = crate::kalendaria_layers::lookup(layer, month, day) {
+        for cell in cells {
+            let lc = cell.officium.to_lowercase();
+            if lc.contains("octav") && !lc.contains("post octav") {
+                return false;
+            }
+        }
+    }
     // Pasc6 (post Octavam Ascensionis) + Pasc7 (Pent Octave week)
     // — preces rejected unconditionally per Perl `preces.pl:18-19`:
     //

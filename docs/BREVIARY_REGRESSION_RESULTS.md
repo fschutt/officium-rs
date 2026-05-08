@@ -889,6 +889,66 @@ remaining 404 fails are all `Differ` (or 3 `PerlBlank`).
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 24: rank-class duplex + [Officium] Octave detection — full year T1570 86.20% → 87.98%, +52 cells
+
+Two interlocking changes to the preces predicate:
+
+1. **`duplex` is rank-CLASS-based, not rank-NUMBER-based.** Upstream
+   `horascommon.pl:1583-1591` sets `$duplex` from `$dayname[1]`
+   (the rank class string), not the rank number:
+
+   ```
+   Simplex / Memoria / Commemoratio / Feria        → 1
+   Semiduplex (matches /semiduplex/i)              → 2
+   Duplex / Duplex maius / Duplex II classis       → 3
+   ```
+
+   The rank NUMBER for Septuagesima Sun is 6.1 (Tempora/Quadp1-0
+   `[Rank]` = ";;Semiduplex;;6.1") — but the CLASS is "Semiduplex"
+   so $duplex=2, not 3. Old Rust check `rank_num >= 3.0` rejected
+   Septuagesima Sun → preces never fired → Rust emitted lines [2,3]
+   while Perl emitted line[4] (omittitur).
+
+2. **Octave check on FULL rank line + [Officium].** The Octave
+   annotation typically lives in the title field of the rank line
+   (`Secunda die infra Octavam Epiphaniæ;;Semiduplex;;5.6`), not
+   the class field — so checking just the class string missed it.
+   Tempora/Epi1-0a goes one further: its rank line is bare
+   `";;Semiduplex;;5.61"` but `[Officium]` is "Dominica infra
+   Octavam Epiphaniæ". Upstream `winner.Rank =~ /octav/i` would
+   miss the latter, but in practice Perl rejects preces on
+   Tempora/Epi1-0a Saturday Compline — the closest detectable
+   proxy is checking [Officium] for "Octav" too.
+
+`active_rank_line_for_rubric` now returns
+`(full_line, class, rank_num)`. The preces predicate uses
+class for the duplex check and the full line + [Officium] body
+for the Octave check.
+
+**30-day Jan 2026 × T1570:** stays at 240/240 (100.00%).
+
+**Full year 2026 × T1570 × Oratio:**
+2516/2920 (86.20%) → **2569/2920 (87.98%)** (+53 cells).
+
+| Hour          | Pre slice 24 | Post slice 24 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 329/365 (90%) | 329/365 (90%) | — |
+| Laudes        | 329/365 (90%) | 329/365 (90%) | — |
+| Prima         | 289/365 (79%) | 315/365 (86%) | +26 |
+| Tertia        | 329/365 (90%) | 329/365 (90%) | — |
+| Sexta         | 329/365 (90%) | 329/365 (90%) | — |
+| Nona          | 329/365 (90%) | 329/365 (90%) | — |
+| Vespera       | 294/365 (81%) | 294/365 (81%) | — |
+| Completorium  | 289/365 (79%) | 315/365 (86%) | +26 |
+
+Closes Septuagesima/Sexagesima/Quinquagesima Sunday Prima/Compline
+omittitur emissions, Lent Sunday omittitur, etc. — all the
+"Semiduplex Sunday with high rank num but low duplex class"
+cases that the old `rank_num >= 3.0` rejection missed.
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

@@ -490,20 +490,61 @@ fn preces_dominicales_et_feriales_fires(
     // Parse the active rubric's [Rank] line. Follow whole-file
     // `@Commune/CXX` inheritance for files like Commune/C10b
     // (Saturday BVM Office) that defer their [Rank] to a parent.
-    let (rank_str, rank_num) = match active_rank_line_for_rubric(day_key, rubric, hour) {
+    let (full_line, rank_str, _rank_num) = match active_rank_line_for_rubric(day_key, rubric, hour) {
         Some(r) => r,
         None => return false,
     };
     // duplex > 2 → preces rejected (early-exit in upstream
-    // `preces`).
-    if rank_num >= 3.0 {
+    // `preces`). $duplex is set by `horascommon.pl:1583-1591`
+    // from the rank CLASS string, NOT the rank number:
+    //   Simplex / Memoria / Commemoratio / Feria etc. (no "duplex" in name) → 1
+    //   Semiduplex (matches /semiduplex/i)                                  → 2
+    //   Duplex / Duplex maius / Duplex II classis / Duplex I classis        → 3
+    // Septuagesima Sun is "Semiduplex 6.1" → $duplex = 2 → preces
+    // can fire (branch (b)). Earlier Rust used rank_num >= 3.0,
+    // which rejected this — that's the rank NUMBER, not the
+    // duplex classification.
+    let lc_rank = rank_str.to_lowercase();
+    let duplex_class: u8 = if lc_rank.is_empty() {
+        // Empty class string defaults to 3 in upstream — but we
+        // reach this branch only when [Rank] was parsed, so empty
+        // class is rare. Default to 3 to match upstream's
+        // conservative fall-through.
+        3
+    } else if lc_rank.contains("semiduplex") {
+        2
+    } else if lc_rank.contains("duplex") {
+        3
+    } else {
+        // Simplex, Memoria, Commemoratio, Feria, etc.
+        1
+    };
+    if duplex_class > 2 {
         return false;
     }
     // Octave-containing rank (other than "post Octav") rejects
-    // branch (b).
-    let lc_rank = rank_str.to_lowercase();
-    if lc_rank.contains("octav") && !lc_rank.contains("post octav") {
+    // branch (b). Upstream check is `$winner{Rank} =~ /octav/i`
+    // which inspects the FULL rank line — the `Octav` substring
+    // typically lives in the TITLE field (`Secunda die infra
+    // Octavam Epiphaniæ;;Semiduplex;;5.6`), not the class field.
+    let lc_full = full_line.to_lowercase();
+    if lc_full.contains("octav") && !lc_full.contains("post octav") {
         return false;
+    }
+    // ALSO check [Officium] body — for files like Tempora/Epi1-0a
+    // (Sunday within Octave of Epi) the rank line is bare
+    // ";;Semiduplex;;5.61" without an Octave annotation, but the
+    // [Officium] is "Dominica infra Octavam Epiphaniæ". Upstream
+    // doesn't check [Officium] directly here, but there must be
+    // something in the precedence state that makes preces reject —
+    // the [Officium] body containing "Octav" is the closest
+    // detectable proxy and matches the empirical Perl render.
+    if let Some(off_body) = file.sections.get("Officium") {
+        let evaluated = eval_section_conditionals(off_body, rubric, hour);
+        let lc_off = evaluated.to_lowercase();
+        if lc_off.contains("octav") && !lc_off.contains("post octav") {
+            return false;
+        }
     }
     // 1955/1960 only on Wednesdays/Fridays/Ember days. Pre-1955 has
     // no day-of-week restriction.
@@ -881,7 +922,7 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     // Simplex-skip path: when today.class is Simplex and today is
     // Sancti, tomorrow always wins regardless of rank ordering.
     if today_key.starts_with("Sancti/") {
-        if let Some((cls, num)) = active_rank_line_for_rubric(today_key, rubric, hora) {
+        if let Some((_full, cls, num)) = active_rank_line_for_rubric(today_key, rubric, hora) {
             let lc = cls.to_lowercase();
             let no_2v = num < 2.0
                 || lc.contains("simplex")
@@ -945,18 +986,21 @@ fn parse_horas_rank_for_rubric(
     rubric: crate::core::Rubric,
     hora: &str,
 ) -> Option<f32> {
-    active_rank_line_for_rubric(day_key, rubric, hora).map(|(_, num)| num)
+    active_rank_line_for_rubric(day_key, rubric, hora).map(|(_, _, num)| num)
 }
 
-/// Parse the active rubric's `[Rank]` line and return both its
-/// class string ("Semiduplex", "Duplex", "Simplex", "Feria", …)
-/// and its numeric rank. Used by [`preces_dominicales_et_feriales_fires`]
-/// for the `winner.Rank =~ /Octav/` check that filters branch (b).
+/// Parse the active rubric's `[Rank]` line and return its full
+/// line text + the class field ("Semiduplex", "Duplex", "Simplex",
+/// "Feria", …) + its numeric rank. The full line is the upstream
+/// `$winner{Rank}` value; the title field carries Octave annotations
+/// like "Secunda die infra Octavam Epiphaniæ" that the Perl
+/// `winner.Rank =~ /octav/i` check needs to see — splitting just
+/// the class field would miss them.
 fn active_rank_line_for_rubric(
     day_key: &str,
     rubric: crate::core::Rubric,
     hora: &str,
-) -> Option<(String, f32)> {
+) -> Option<(String, String, f32)> {
     let file = lookup(day_key)?;
     if let Some(body) = file.sections.get("Rank") {
         let evaluated = eval_section_conditionals(body, rubric, hora);
@@ -971,7 +1015,7 @@ fn active_rank_line_for_rubric(
             }
             let class = parts.get(1).unwrap_or(&"").trim().to_string();
             if let Ok(rank) = parts[2].trim().parse::<f32>() {
-                return Some((class, rank));
+                return Some((line.to_string(), class, rank));
             }
         }
     }

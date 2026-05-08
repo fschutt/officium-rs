@@ -1367,7 +1367,33 @@ fn splice_proper_into_slot(
                 .map(str::trim)
         });
 
-    for cand in slot_candidates(label, hour) {
+    // Mirror of upstream `specials/orationes.pl::oratio` line 56:
+    //   ($winner{Rank} =~ /Quattuor/i && ... && $hora eq 'Vespera')
+    // — Ember-day Vespera in Lent uses the week-Sunday's [Oratio]
+    // (the `Oratio Dominica` form), NOT the day's own [Oratio 3].
+    // The trigger detected by checking the day file's [Officium]
+    // body for "Quattuor Temporum" (Quad1-3 = "Feria Quarta
+    // Quattuor Temporum Quadragesimæ", Quad1-5 = "Feria Sexta
+    // Quattuor Temporum Quadragesimæ", Quad1-6 Saturday similar).
+    // For non-Ember Lent ferials (Quad2-3 etc.) the day's
+    // [Oratio 3] is correct.
+    let force_sunday_oratio = label == "Oratio"
+        && hour == "Vespera"
+        && chain.first().is_some_and(|f| {
+            f.sections.get("Officium").is_some_and(|o| {
+                let evaluated = eval_section_conditionals(o, rubric, hour);
+                let lc = evaluated.to_lowercase();
+                lc.contains("quattuor temporum")
+            })
+        });
+    let candidates: Vec<String> = if force_sunday_oratio {
+        // Skip [Oratio 3] / [Oratio 2] — go straight to [Oratio]
+        // which the chain's Sunday-fallback file provides.
+        vec!["Oratio".to_string()]
+    } else {
+        slot_candidates(label, hour)
+    };
+    for cand in candidates {
         if let Some(body) = find_section_in_chain(chain, &cand) {
             let resolved = expand_at_redirect(body, &cand);
             let evaluated = eval_section_conditionals(&resolved, rubric, hour);

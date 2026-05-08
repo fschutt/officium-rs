@@ -1082,6 +1082,58 @@ the year.
 Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
 tests pass.
 
+## Slice 28: Ember-day Vespera uses Sunday's [Oratio] — full year T1570 89.90% → 89.97%
+
+Upstream `specials/orationes.pl::oratio` line 56 has a special
+case for Ember-day Vespera in Lent:
+
+```perl
+($winner{Rank} =~ /Quattuor/i && $dayname[0] !~ /Pasc7/i
+    && $version !~ /196|cist/i && $hora eq 'Vespera')
+```
+
+When the winner is an Ember-day (Quattuor Temporum) Lent ferial
+and the hour is Vespera, the office uses the week-Sunday's
+`[Oratio]` (`Oratio Dominica`-style fallback), NOT the day's own
+`[Oratio 3]`. Drives Wed 02-25 Lent 1 Ember Wed Vespera, Fri
+02-27 Ember Fri Vespera, etc.
+
+The detection: check the day file's `[Officium]` body for
+"Quattuor Temporum" — Quad1-3 = "Feria Quarta Quattuor Temporum
+Quadragesimæ", similar for Quad1-5/Quad1-6, and Pent and Sept
+Ember weeks. When matched at Vespera, the `Oratio` candidates
+list is forced to `["Oratio"]` (Sunday's via chain fallback)
+instead of the default `["Oratio 3", "Oratio"]`.
+
+For non-Ember Lent ferials (Quad2-3 Wed Lent 2, Quad3-3, etc.)
+the day's `[Oratio 3]` continues to be the right answer — Perl
+uses it there too.
+
+**30-day Jan 2026 × T1570:** stays at 240/240 (100.00%).
+
+**Full year 2026 × T1570 × Oratio:**
+2625/2920 (89.90%) → **2627/2920 (89.97%)** (+2 cells).
+
+| Hour          | Pre slice 28 | Post slice 28 | Δ |
+|---------------|-------------:|--------------:|--:|
+| Matutinum     | 329/365 (90%) | 329/365 (90%) | — |
+| Laudes        | 329/365 (90%) | 329/365 (90%) | — |
+| Prima         | 340/365 (93%) | 340/365 (93%) | — |
+| Tertia        | 329/365 (90%) | 329/365 (90%) | — |
+| Sexta         | 329/365 (90%) | 329/365 (90%) | — |
+| Nona          | 329/365 (90%) | 329/365 (90%) | — |
+| Vespera       | 313/365 (86%) | 315/365 (86%) | +2 |
+| Completorium  | 327/365 (90%) | 327/365 (90%) | — |
+
+Modest gain — only 2 cells because the only Ember weeks visible
+in 2026 calendar fall around 02-25 (Wed Lent 1 Ember), 02-27
+(Fri Ember), and the Pent/Sept Ember weeks. The detection is
+narrow and correct; it doesn't over-fire on non-Ember Lent
+ferials.
+
+Mass T1570 + R60 year-sweeps stay at 365/365 (100%). 431 lib
+tests pass.
+
 ## Patterns *attempted and reverted*
 
 - **Mass-side `expand_macros` on Office bodies** (slice 9

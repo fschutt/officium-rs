@@ -1758,6 +1758,42 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     if tomorrow_has_no_prima_vespera(tomorrow_key, rubric, hora) {
         return today_key;
     }
+    // R55/R60 "no 1st Vespers of Easter Sunday / Patrocinii S. Joseph"
+    // — mirror of upstream `horascommon.pl::concurrence:968-969`:
+    //
+    //   || ($version =~ /19(?:55|6)/i && $cwinner{Rank} =~ /Dominica
+    //       Resurrectionis|Patrocinii S. Joseph/i)
+    //
+    // Under R55/R60 the Easter Vigil is restored to its night office
+    // and Easter Sunday no longer has a separate 1st Vespers — Holy
+    // Saturday's 2V continues the day's office (with `[Oratio 3]
+    // = @:Oratio Matutinum` from Quad6-6r driving the rendered
+    // anticipated-Easter-Vigil oratio "Concede, quaesumus, omnipotens
+    // Deus..."). Same suppression for Patrocinii S. Joseph (the
+    // movable feast in the Easter season). Closes 04-04-2026 R55+R60
+    // Vespera (and analogues in other years where the Quad6-6 → Pasc0
+    // pair lands).
+    let r55_or_r60 = matches!(
+        rubric,
+        crate::core::Rubric::Reduced1955 | crate::core::Rubric::Rubrics1960
+    );
+    if r55_or_r60 {
+        let tomorrow_rank_full =
+            active_rank_line_with_annotations(tomorrow_key, rubric, hora)
+                .map(|(full, _, _)| full)
+                .unwrap_or_default();
+        let tomorrow_officium = lookup(tomorrow_key)
+            .and_then(|f| section_via_inheritance(f, "Officium"))
+            .map(|o| eval_section_conditionals(&o, rubric, hora))
+            .unwrap_or_default();
+        let combined = format!("{tomorrow_rank_full}\n{tomorrow_officium}").to_lowercase();
+        if combined.contains("dominica resurrectionis")
+            || combined.contains("patrocinii s. joseph")
+            || combined.contains("patrocinii sancti joseph")
+        {
+            return today_key;
+        }
+    }
     // "No secunda Vespera" on today → today is wiped at 2V, tomorrow
     // wins regardless of rank. Mirror of `horascommon.pl::
     // concurrence:853-857`:

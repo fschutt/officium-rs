@@ -3,6 +3,30 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 125: R55/R60 — suppress 1st Vespers of Easter Sunday in concurrence
+
+Closes 04-04 Holy Saturday Vespera under R55/R60 (1 cell/year per
+rubric). After slice 124 closed Triduum Lauds/Tertia/Sexta/Nona/
+Vespera via `@:`-line termination, 04-04 Vespera still failed
+because Rust's concurrence swapped today=Quad6-6r → tomorrow=Pasc0-0
+(equal rank 7), wrongly rendering Easter Sunday's "Deus, qui hodierna
+die..." instead of Quad6-6r's [Oratio 3] = `@:Oratio Matutinum` =
+"Concede, quaesumus, omnipotens Deus..." (anticipated Easter Vigil).
+
+Add Perl's `concurrence:968-969` rule to `first_vespers_day_key_for_rubric`:
+under R55/R60, when tomorrow's [Rank] / [Officium] mentions
+"Dominica Resurrectionis" or "Patrocinii S. Joseph", suppress 1V
+unconditionally — today's office continues. Easter Vigil under
+post-1955 rubrics is a night office, not a 1st-Vesper-bearing
+Sunday.
+
+R55/R60 2026: 11 → 10 differs. T1570/T1910/DA unchanged. Mass
+T1570/R60 year-sweep stays 100%; all-rubrics 30-day office stays
+100%; spot-checked slices 121/122/123/124 prior closures intact.
+
+Remaining R55/R60 2026 differs (10 each): Triduum Prima ×3 (full
+&psalm(50) expansion) + All Souls cluster (11-02 ×7).
+
 ## Slice 124: terminate Oratio chunk at unresolved `@:Section` lines
 
 Closes the Triduum Lauds/Tertia/Sexta/Nona/Vespera cluster under

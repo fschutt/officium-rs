@@ -3,6 +3,68 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 107: R60 Festum-Domini × Festum-Domini concurrence swap — R60 +1/yr
+
+R60 Sat-eve Vespera concurrence: when both today and tomorrow
+have `Festum Domini` in their `[Rule]`, swap to tomorrow.
+
+Mirrors `horascommon.pl::concurrence:1131-1162` second OR clause:
+
+```perl
+( $version =~ /196/
+  && ($cwrank[0] =~ /Dominica/i || $cwinner{Rule} =~ /Festum Domini/i)
+  && ($rank < ($crank >= 6 ? 6 : 5)
+       || $wrank[0] =~ /Dominica/i
+       || $winner{Rule} =~ /Festum Domini/i))
+```
+
+Slice 98's earlier R60 "today keeps" rule mirrors the corresponding
+line 1107-1111 block which fires FIRST in Perl's chain (today =
+Festum Domini, tomorrow = Sun Dominica II classis without Festum
+Domini). When that doesn't fire, line 1131 swaps if both sides
+carry Festum Domini markers.
+
+The two cases are distinguished by tomorrow's Festum Domini
+status, which determines which Perl branch wins:
+
+| Case | Today | Tomorrow | Perl behaviour |
+|------|-------|----------|---------------|
+| 11-09 (Lateran/Pent22) | Festum Domini II | Dominica II (NOT Festum Domini) | KEEP today (1107) |
+| 01-06 (Epiphany/Holy Family) | Festum Domini I | Festum Domini II | SWAP (1131) |
+
+Closes 01-06-2035 R60 Sat Vespera: today =
+`Sancti/01-06` (Epiphany Festum Domini Class I, rank 6.5),
+tomorrow = `Tempora/Epi1-0` (Holy Family Festum Domini Class II,
+rank 5). Without the rule, today's higher rank kept 2V (6.5 > 5).
+With the rule, swap fires → renders Holy Family
+`Domine Iesu Christe, qui Mariæ et Joseph subditus...` matching
+Perl's `Vespera de sequenti; nihil de praecedenti`.
+
+Implementation in `src/horas.rs::first_vespers_day_key_for_rubric`,
+inside the existing R60 branch right after slice 98's "today
+keeps" check. The new gate is `today_is_festum_domini &&
+tomorrow_is_festum_domini && !is_nat1`, returning `tomorrow_key`.
+
+Regression results — R60 2035 Vespera Oratio:
+
+| | Before slice 107 | After slice 107 |
+|---|------------------|-----------------|
+| differs | 4 | 3 |
+| pass-rate | 98.90% | 99.18% |
+
+Closed cell: 01-06-2035 R60 Vespera. Remaining 3 differs are
+Triduum (03-22/23/24-2035) which are structural (`&psalm(50)`
+macro expander, not concurrence).
+
+No-regression checks pass:
+
+- `cargo test --release --lib` — 431 passed
+- Mass T1570 / T1910 / R60 2026 year-sweeps — 365/365 each (100%)
+- Office R60 2026 Vespera — unchanged (3 Triduum differs both
+  pre- and post-slice)
+- Office T1570 / T1910 / DA / R55 2026 Vespera — unchanged
+  (rule gated to R60 only)
+
 ## Slice 106: Sancti-Simplex Tempora-fallback applies rubric redirect — T1910 +2/yr
 
 `office_sweep`'s "Sancti-Simplex no-2V Tempora-of-week fallback"

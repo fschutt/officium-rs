@@ -1715,6 +1715,8 @@ pub fn first_vespers_day_key_for_rubric<'a>(
         let tomorrow_rank_direct = active_rank_line_with_annotations(tomorrow_key, rubric, hora)
             .map(|(_, _, n)| n)
             .unwrap_or(0.0);
+        let tomorrow_is_festum_domini =
+            tomorrow_rule_marks_festum_domini(tomorrow_key, rubric, hora);
         // Perl excludes Nat1 (Christmas Octave Sun) — our day_key
         // for that case starts with `Tempora/Nat`, never Sancti.
         let is_nat1 = tomorrow_key.starts_with("Tempora/Nat");
@@ -1725,6 +1727,31 @@ pub fn first_vespers_day_key_for_rubric<'a>(
             && today_rank_direct >= 5.0
         {
             return today_key;
+        }
+        // R60 today=Festum Domini AND tomorrow=Festum Domini swap.
+        // Mirror of `horascommon.pl::concurrence:1131-1162` second
+        // OR clause:
+        //
+        //   ( $version =~ /196/
+        //     && ($cwrank[0] =~ /Dominica/i || $cwinner{Rule} =~ /Festum Domini/i)
+        //     && ($rank < ($crank >= 6 ? 6 : 5)
+        //          || $wrank[0] =~ /Dominica/i
+        //          || $winner{Rule} =~ /Festum Domini/i))
+        //
+        // The "keep today" branch above (`tomorrow_is_dominica`)
+        // mirrors the corresponding line 1107-1111 block which
+        // fires FIRST in Perl's chain. When that doesn't fire,
+        // line 1131 fires the swap if both sides have Festum Domini
+        // markers (or tomorrow is Dominica).
+        //
+        // Closes 01-06-2035 R60 Sat Vespera: today=Sancti/01-06
+        // (Epiphany Festum Domini Class I 6.5), tomorrow=Tempora/
+        // Epi1-0 (Holy Family Festum Domini Class II 5). Without
+        // rule today keeps 2V (6.5 > 5). With rule swap fires →
+        // renders Holy Family "Domine Iesu Christe, qui Mariæ et
+        // Joseph subditus..." matching Perl.
+        if today_is_festum_domini && tomorrow_is_festum_domini && !is_nat1 {
+            return tomorrow_key;
         }
     }
     // "Festum Domini" priority: when tomorrow's [Rule] flags the

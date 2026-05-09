@@ -958,6 +958,34 @@ fn preces_dominicales_et_feriales_fires(
                     if cell.kind != "main" {
                         continue;
                     }
+                    // Vigilia exclusion. Mirror of `horascommon.pl::
+                    // concurrence:949-951`:
+                    //
+                    //   || ( $cwinner{Rank} =~ /Feria|Sabbato|Vigilia|Quat[t]*uor/i
+                    //     && $cwinner{Rank} !~ /in Vigilia Epi|in octava
+                    //                            |infra octavam|Dominica|C10/i)
+                    //
+                    // Tomorrow that's a Vigilia (and not within an
+                    // Octave / Dominica / Sat-BMV) is EXCLUDED from
+                    // concurrence-cede on Sun-Compline. Perl wipes
+                    // the commemoratio so preces fire.
+                    //
+                    // Closes 12-23-1990 DA Sun Compline: tomorrow=
+                    // Sancti/12-24 Vigilia Nat (Class I rank 6.9 in
+                    // Sancti file). Without this gate Rust sees
+                    // rank 6 ≥ ranklimit 3 and rejects preces; with
+                    // the gate the cell is skipped, no rejection,
+                    // preces fire matching Perl.
+                    let cell_off_lc = cell.officium.to_lowercase();
+                    let is_vigil_excluded = cell_off_lc.contains("vigil")
+                        && !cell_off_lc.contains("in vigilia epi")
+                        && !cell_off_lc.contains("in octava")
+                        && !cell_off_lc.contains("infra octavam")
+                        && !cell_off_lc.contains("dominica")
+                        && !cell_off_lc.contains("c10");
+                    if is_vigil_excluded {
+                        continue;
+                    }
                     let kalendar_rank = cell.rank_num().unwrap_or(0.0);
                     let sancti_path = format!("Sancti/{}", cell.stem);
                     let file_rank =

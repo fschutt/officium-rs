@@ -3,6 +3,46 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 117: Sun-Compl tomorrow-Vigilia exclusion in slice 110 — DA Compline +1 Sun-Adv-Sat-eve case
+
+Mirror of `horascommon.pl::concurrence:949-951` Vigilia exclusion:
+
+```perl
+|| ( $cwinner{Rank} =~ /Feria|Sabbato|Vigilia|Quat[t]*uor/i
+  && $cwinner{Rank} !~ /in Vigilia Epi|in octava|infra octavam|Dominica|C10/i)
+```
+
+When tomorrow's Sancti is a Vigilia (and not within an Octave /
+not Dominica / not C10), Perl's concurrence wipes the
+commemoratio so $commemoratio is empty and preces fire.
+
+Slice 110's tomorrow-cells loop iterated kalendar cells looking
+for rank ≥ ranklimit, ignoring the Vigilia exclusion. Closed
+12-23-1990 DA Sun Adv4 Compline (tomorrow=Sancti/12-24 Vigilia
+Nat rank 6.9 in DA file → Rust rejected, Perl wiped commemoration
+and fired preces).
+
+Fix: in slice 110's cells loop, skip cells where
+`cell.officium.to_lowercase()` contains "vigil" but NOT any of
+the Octave/Dominica/C10 exclusions. Mirror's the Perl regex
+literal exactly (case-insensitive substring match).
+
+Closes 12-23 cases in DA across years where Sun Adv4 falls on
+Dec 23 (1990 confirmed; pattern repeats every ~6-11 years
+based on the calendar). Preserves all slice 110/111/112/115/116
+cases — the Vigilia exclusion only narrows the rejection (cells
+that previously rejected via rank now skip via Vigilia gate, so
+a non-Vigilia tomorrow saint is unaffected).
+
+No-regression verified:
+
+- `cargo test --release --lib` — 431 passed
+- Mass T1570 / R60 2026 year-sweeps — 365/365 each (100%)
+- Slice 110 cases (02-21/06-20/07-11/08-08/12-05/03-23/04-03/
+  11-07/08-12/05-16) all preserved
+- T1570 / T1910 / R55 / R60 2026 Compline — unchanged
+- Prior closed slices 109 spot-checked clean
+
 ## Slice 116: Pasc[67] preces reject uses computed weekname (covers Sancti-overrides) — DA Compline +1 Pasc6/Pasc7 Sancti days
 
 The Pasc[67] preces-reject gate previously used `day_key.starts_

@@ -216,9 +216,23 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
             || k.starts_with("Tempora/Quad6-5")
             || k.starts_with("Tempora/Quad6-6")
     });
-    let suppress_oratio_block = (matches!(args.hour, "Completorium" | "Prima"))
-        && triduum_day;
-    let splice_special_oratio = args.hour == "Prima" && triduum_day;
+    // All Souls' Office of the Dead — Prima always (DA/R55/R60) and
+    // Compline under R60 only (DA/R55 already swap to tomorrow=Sancti/
+    // 11-03oct via slice 126's wipe rule, so their Compline doesn't
+    // hit this path). Sancti/11-02 carries `[Oratio Matutinum]` =
+    // `&Dominus_vobiscum @Commune/C9:Oratio_Fid` and the chain falls
+    // through to Commune/C9 `[Oratio 2]` / `[Oratio]` / `[Oratio
+    // Matutinum]` for the day-hour Office of the Dead form (Pater
+    // noster Et + V/R + A porta inferi …).
+    let all_souls_day = args.day_key == Some("Sancti/11-02");
+    let r60 = matches!(args.rubric, crate::core::Rubric::Rubrics1960);
+    let triduum_prima_or_compline = matches!(args.hour, "Completorium" | "Prima") && triduum_day;
+    let all_souls_prima = args.hour == "Prima" && all_souls_day;
+    let all_souls_r60_compline = args.hour == "Completorium" && all_souls_day && r60;
+    let suppress_oratio_block =
+        triduum_prima_or_compline || all_souls_prima || all_souls_r60_compline;
+    let splice_triduum_prima = args.hour == "Prima" && triduum_day;
+    let splice_all_souls = all_souls_prima || all_souls_r60_compline;
     let mut in_suppressed_oratio = false;
 
     for line in &filtered_template {
@@ -226,19 +240,16 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
             "blank" => {}
             "section" => {
                 if let Some(label) = &line.label {
-                    // Triduum: enter Oratio suppression when we hit
-                    // the #Oratio section, exit when the next #section
-                    // (typically #Conclusio) starts.
+                    // Triduum / All Souls: enter Oratio suppression
+                    // when we hit the #Oratio section, exit when the
+                    // next #section (typically #Conclusio) starts.
                     if suppress_oratio_block && label == "Oratio" {
                         in_suppressed_oratio = true;
-                        // Prima-only: emit the day's [Oratio] body in
+                        // Splice the day file's special-form Oratio in
                         // place of the suppressed template. Mirror of
                         // Perl's `oratio($lang, …, special => 1)` call
-                        // path (specials.pl:262-276) which renders the
-                        // winner file's `[Oratio]` body — Quad6-4
-                        // "Christus factus est obediens usque ad
-                        // mortem … Pater noster … Psalmus 50 …".
-                        if splice_special_oratio {
+                        // path (specials.pl:262-276).
+                        if splice_triduum_prima {
                             out.push(RenderedLine::Section { label: label.clone() });
                             splice_triduum_prima_oratio(
                                 &mut out,
@@ -246,6 +257,16 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
                                 args.hour,
                                 &chain,
                                 prayers_file,
+                            );
+                        } else if splice_all_souls {
+                            out.push(RenderedLine::Section { label: label.clone() });
+                            splice_special_oratio_body(
+                                &mut out,
+                                args.rubric,
+                                args.hour,
+                                &chain,
+                                prayers_file,
+                                &["Oratio 2", "Oratio Matutinum", "Oratio"],
                             );
                         }
                         continue;
@@ -4444,14 +4465,59 @@ fn splice_triduum_prima_oratio(
     chain: &[&HorasFile],
     prayers_file: Option<&HorasFile>,
 ) {
-    // Quad6-6 (Holy Saturday) carries `[Oratio 2]` instead of `[Oratio]`
-    // (Perl's $ind=2 priority for Prima matches the Lauds-form), with
-    // a `@Tempora/Quad6-4:Oratio:s/usque ad mortem/usque ad mortem,
-    // mortem autem crucis: ... /` redirect that adds the Christological
-    // tag. Preference order: `[Oratio]` → `[Oratio 2]`.
-    let Some(body) = chain
+    // Per-file priority: use chain[0] (the day file) as the source of
+    // truth — Quad6-6 carries [Oratio 2] but no [Oratio]; Quad6-4/5
+    // carry [Oratio]. Walking priority-first across the chain risks
+    // pulling in commune Sunday-Oratio fallbacks (Quad6-0 = Palm
+    // Sunday "Omnípotens sempitérne Deus, qui humáno géneri…") which
+    // is exactly the bug slice 123 closed by gating the
+    // tempora_feria_oratio_dominica fallback on the rank-num field.
+    let body = chain
         .iter()
-        .find_map(|f| f.sections.get("Oratio").or_else(|| f.sections.get("Oratio 2")))
+        .find_map(|f| f.sections.get("Oratio").or_else(|| f.sections.get("Oratio 2")));
+    let Some(body) = body.map(String::as_str) else {
+        return;
+    };
+    let resolved = expand_at_redirect(body, "Oratio", rubric, hour);
+    let evaluated = eval_section_conditionals(&resolved, rubric, hour);
+    let evaluated = resolve_self_at_redirect(&evaluated, chain, rubric, hour);
+    let trimmed = take_first_oratio_chunk(&evaluated);
+    let inlined = expand_inline_at_path_redirects(&trimmed, rubric, hour);
+    let macros_expanded = expand_dollar_macros_in_body(&inlined, prayers_file);
+    let cleaned = drop_unresolved_inline_refs(&macros_expanded);
+    let respelled = apply_office_spelling(&cleaned, rubric);
+    out.push(RenderedLine::Plain { body: respelled });
+}
+
+/// Generalised body splicer for special Prima/Compline forms — the
+/// regular Prima/Completorium ordo emits a fixed `$oratio_Domine`/
+/// `$oratio_Visita` prayer baked into the template, but in some
+/// scenarios (Triduum, All Souls) Perl replaces this with a body
+/// drawn from the day file's `[Oratio*]` sections via the standard
+/// `oratio()` pipeline. `priorities` is a section-name preference
+/// list — first match in `chain` wins. The body then runs through
+/// the same expand/eval/inline/macro/cleanup pipeline as the regular
+/// Oratio splice.
+fn splice_special_oratio_body(
+    out: &mut Vec<RenderedLine>,
+    rubric: crate::core::Rubric,
+    hour: &str,
+    chain: &[&HorasFile],
+    prayers_file: Option<&HorasFile>,
+    priorities: &[&str],
+) {
+    // Priority-first iteration: try EACH priority across ALL chain
+    // files before moving to the next priority. Mirrors Perl
+    // `orationes.pl` lookup order — Commune/C9 [Oratio 2] is the
+    // Office of the Dead Prima form even though Sancti/11-02 itself
+    // carries [Oratio Matutinum] (= `&Dominus_vobiscum @Commune/C9:
+    // Oratio_Fid`, just the Fidelium prayer without the framing
+    // Pater + V/R block). The naive per-file priority picks the
+    // chain[0] [Oratio Matutinum] before checking Commune for
+    // [Oratio 2], emitting the trimmed Fidelium-only form.
+    let Some(body) = priorities
+        .iter()
+        .find_map(|p| chain.iter().find_map(|f| f.sections.get(*p)))
         .map(String::as_str)
     else {
         return;

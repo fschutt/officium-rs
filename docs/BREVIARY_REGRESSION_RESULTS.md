@@ -3,6 +3,39 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 130: All Souls Prima/Compline body splice — `splice_special_oratio_body`
+
+Closes 11-02 Prima across DA/R55/R60 + 11-02 Compline R60 (4 cells/
+year). Mirror of slice 129's Triduum Prima approach extended to
+the All Souls' Office-of-the-Dead day-hour form.
+
+Generalised the Triduum-only `splice_triduum_prima_oratio` into a
+two-function pair:
+- `splice_triduum_prima_oratio` keeps its per-file priority search
+  (`[Oratio]` → `[Oratio 2]` on chain[0]) so Quad6-6's [Oratio 2]
+  Lauds-form variant wins without falling through to Quad6-0 = Palm
+  Sunday's Oratio (the slice 123 trap).
+- New `splice_special_oratio_body` does priority-first iteration
+  across the chain — `[Oratio 2]` on Sancti/11-02 → no, on Commune/C9
+  → yes, the full Pater + V/R + A porta inferi + Fidelium form.
+  Sancti/11-02's own [Oratio Matutinum] is the trimmed `&Dominus_
+  vobiscum @Commune/C9:Oratio_Fid` (Fidelium-only) — picking it
+  via per-file priority would emit just the Oratio prayer without
+  the framing Pater/V/R block.
+
+Extend the suppress gate to fire for:
+- Triduum Prima/Compline (slice 129) — `splice_triduum_prima_oratio`
+- 11-02 Prima (DA/R55/R60) — `splice_special_oratio_body`
+- 11-02 Compline (R60 only — DA/R55 already swap to tomorrow=
+  Sancti/11-03oct via slice 126's wipe rule)
+
+T1570 2026: 0 differs (99.97% — remainder is perl-blank/empty).
+T1910 2026: 0 differs (99.97%). DA 2026: 2 → 1 (just 11-01
+Compline = All Souls supersedes). R55 2026: 1 → 0 (100.00%).
+R60 2026: 2 → 0 (100.00%). Mass T1570/R60 year-sweep stays 100%;
+all-rubrics 30-day office stays 100%; spot-checked slices
+121-129 prior closures intact.
+
 ## Slice 129: Triduum Prima — splice day's [Oratio] body in place of regular template
 
 Closes Triduum Prima across all 5 rubrics (15 cells/year — 3 days

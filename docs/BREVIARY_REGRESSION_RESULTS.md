@@ -3,6 +3,51 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 118: Lent-week tomorrow Class III saint transfer — DA Compline +1 rare Sun-Quad-Sat-eve
+
+Pre-1955 rubrics transfer Class III saints (Duplex rank 3) on
+Lent week ferials (Quad1..Quad6 Mon-Sat) to after the Easter
+Octave. The actual cwinner becomes the Privileged Lent Tempora-
+Feria; Perl's `concurrence:949-951` Feria exclusion then wipes
+the commemoration on Sun's 2V/Compline so preces fire.
+
+Slice 110's tomorrow-cells loop iterates kalendar Sancti cells.
+For Mon Lent-week with a Class III saint (e.g. Sancti/02-27
+Gabriel rank 3), the cell appears in the kalendar pre-transfer.
+Without this fix, slice 110 saw rank 3 ≥ DA ranklimit 3 and
+rejected; with it, the cell is skipped (saint transferred) and
+preces fire matching Perl.
+
+Fix: in slice 110's cells loop, add a Lent-only Class III
+transfer gate. Skip rejection when:
+
+- `tom_weekname.starts_with("Quad") && !tom_weekname.starts_with("Quadp")`
+  — narrow to Lent Mon-Sat (Quad1..Quad6 weeks), excluding Quadp
+  pre-Lent weeks where Class III saints are commemorated normally
+- `effective_rank < 4.0` — only Class III (Duplex rank 3); Class
+  II+ saints (Cathedra Petri, Annunciation, etc.) take precedence
+  over the Privileged Lent Ferial and ARE commemorated
+
+Closes 02-26-2040 DA Sun Lent II Compline (rare year where
+02-26 falls on Sun with Mon Quad2-1 + Class III tomorrow saint).
+
+Preserves all prior slice cases:
+
+- Slice 110 (Cathedra Petri Class II rank 4 ≥ 4 — not transferred)
+- Slice 110 in non-Lent weeks (Pent05/Pent08/Pent12/Adv2 — gate
+  doesn't fire because tom_weekname not Quad)
+- Slice 115 (Sun Palm — today is Quad6, but tomorrow is also
+  Quad6 ferial; gate fires correctly to allow Class III transfer
+  there too — already handled by slice 115's Holy Week gate)
+- Slice 117 (Vigilia Nat — gate doesn't fire for Vigilia)
+
+No-regression verified:
+
+- `cargo test --release --lib` — 431 passed
+- Mass T1570 / R60 2026 year-sweeps — 365/365 each (100%)
+- T1570 / T1910 / R55 / R60 2026 Compline — unchanged
+- Slice 109 (R60 2027 Laudes) — unchanged at 4 differs
+
 ## Slice 117: Sun-Compl tomorrow-Vigilia exclusion in slice 110 — DA Compline +1 Sun-Adv-Sat-eve case
 
 Mirror of `horascommon.pl::concurrence:949-951` Vigilia exclusion:

@@ -954,28 +954,39 @@ fn preces_dominicales_et_feriales_fires(
                     | crate::core::Rubric::Tridentine1910 => 7.0_f32,
                     _ => 3.0_f32,
                 };
+                // Tomorrow's actual office: if Tempora-Feria of the
+                // week outranks the Sancti cell, the tomorrow winner
+                // is Tempora-Feria — Perl's `concurrence:949-951`
+                // Feria exclusion fires and wipes the commemoration
+                // so preces fire on Sun-Compl. Pre-compute the
+                // tempora rank for the comparison below.
+                let tom_weekname =
+                    crate::date::getweek(tom_d, tom_m, year, false, true);
+                // Lent-week (Quad1..Quad6) Privileged Ferial transfer
+                // rule: under pre-1955 rubrics, Class III saints
+                // (Duplex rank 3) on Lent week ferials (Mon-Sat) are
+                // TRANSFERRED to after Easter Octave, not commemorated.
+                // This is narrower than Advent ferials (which DO
+                // commemorate Class III) — so only Lent Mon-Sat
+                // ferials match.
+                //
+                // Quadp* (Septuagesima/Sexagesima/Quinquagesima
+                // pre-Lent weeks) are NOT Privileged the same way —
+                // Class III saints are commemorated there too.
+                let tom_in_lent_week = tom_weekname.starts_with("Quad")
+                    && !tom_weekname.starts_with("Quadp");
                 for cell in cells {
                     if cell.kind != "main" {
                         continue;
                     }
-                    // Vigilia exclusion. Mirror of `horascommon.pl::
-                    // concurrence:949-951`:
+                    // Vigilia exclusion (Sancti side). Mirror of
+                    // `horascommon.pl::concurrence:949-951`:
                     //
                     //   || ( $cwinner{Rank} =~ /Feria|Sabbato|Vigilia|Quat[t]*uor/i
                     //     && $cwinner{Rank} !~ /in Vigilia Epi|in octava
                     //                            |infra octavam|Dominica|C10/i)
                     //
-                    // Tomorrow that's a Vigilia (and not within an
-                    // Octave / Dominica / Sat-BMV) is EXCLUDED from
-                    // concurrence-cede on Sun-Compline. Perl wipes
-                    // the commemoratio so preces fire.
-                    //
-                    // Closes 12-23-1990 DA Sun Compline: tomorrow=
-                    // Sancti/12-24 Vigilia Nat (Class I rank 6.9 in
-                    // Sancti file). Without this gate Rust sees
-                    // rank 6 ≥ ranklimit 3 and rejects preces; with
-                    // the gate the cell is skipped, no rejection,
-                    // preces fire matching Perl.
+                    // Closes 12-23-1990 DA Sun Compline (Vigilia Nat).
                     let cell_off_lc = cell.officium.to_lowercase();
                     let is_vigil_excluded = cell_off_lc.contains("vigil")
                         && !cell_off_lc.contains("in vigilia epi")
@@ -993,6 +1004,33 @@ fn preces_dominicales_et_feriales_fires(
                             .map(|(_, _, n)| n)
                             .unwrap_or(0.0);
                     let effective_rank = kalendar_rank.max(file_rank);
+                    // Lent-week Class III saint transfer. Pre-1955
+                    // rubrics transfer Class III saints (Duplex rank
+                    // 3) on Lent Mon-Sat ferials (Quad1..Quad6
+                    // weeks, NOT Quadp pre-Lent) to after the
+                    // Easter Octave. Perl's
+                    // `concurrence:949-951` Feria exclusion then
+                    // wipes the commemoration on Sun's 2V/Compline.
+                    //
+                    // Skip the rejection only when:
+                    //   - Tomorrow is a Lent Mon-Sat ferial (weekname
+                    //     starts with "Quad" but NOT "Quadp"), AND
+                    //   - The cell rank is < 4 (Class III only —
+                    //     Class II+ saints like Cathedra Petri Duplex
+                    //     majus 4 take precedence and ARE commemorated).
+                    //
+                    // Closes 02-26-2040 DA Sun Lent II Compline:
+                    // tomorrow=Mon Quad2-1; Sancti/02-27 Gabriel
+                    // rank 3 < 4 → transferred → preces fire.
+                    //
+                    // Preserves slice 110 cases (02-21-2027 etc):
+                    // tomorrow=02-22 Cathedra Petri Duplex majus
+                    // rank 4 (Class II ≥ 4 → not transferred);
+                    // and 12-05-2027 etc: tomorrow weekname=Adv2,
+                    // not Lent → gate doesn't fire.
+                    if tom_in_lent_week && effective_rank < 4.0 {
+                        continue;
+                    }
                     if effective_rank >= ranklimit {
                         return false;
                     }

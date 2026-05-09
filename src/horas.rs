@@ -583,25 +583,44 @@ fn preces_dominicales_et_feriales_fires(
         })
         .unwrap_or(false);
     let today_oct_key = format!("Sancti/{month:02}-{day:02}oct");
-    // Tighten "in octave" detection: the corpus carries `MM-DDoct`
-    // files universally, but post-DA rubrics (DA / R55 / R60)
-    // suppressed several saints' octaves. The 1V-swap-to-tomorrow
-    // logic below should fire ONLY when the Octave is actually
-    // active under the rubric's kalendar — otherwise today's
-    // Sancti-saint (e.g. DA 08-12 Clarae Duplex 3) IS the
-    // commemoratio at Sat-Compline-1V-swap-to-Sun and its rank
-    // must be checked against ranklimit. Without this gate, Rust
-    // swaps to tomorrow's date, misses today's Sancti, and
-    // erroneously fires preces.
+    // Tighten "in octave" detection. The 1V-swap-to-tomorrow logic
+    // below mirrors Perl's concurrence:911-922 which WIPES today's
+    // Sancti-Octave-DAY winner when tomorrow is Sun (so $commemoratio
+    // becomes empty and preces fire). It applies ONLY when today
+    // IS the Octave-day-itself (main cell stem ends with "oct" or
+    // main officium begins with "Octava"/"Die N infra Octavam"),
+    // NOT when today is a regular saint with the Octave merely as a
+    // secondary commemoration.
+    //
+    // Two-step gate:
+    //   1. file `Sancti/MM-DDoct.txt` exists (necessary)
+    //   2. rubric-active kalendar's MAIN cell is itself the Octave —
+    //      either stem ends with "oct" or the main officium contains
+    //      "octav" (excluding "post octav") — sufficient
+    //
+    // Without the main-cell qualification, DA 07-05 (S. Antonii
+    // Mariae Zacharia Duplex 3 main + "Septima die infra Octavam
+    // Ss. Apostolis" commemoratio) wrongly triggers the swap; the
+    // Sat-Sancti commemoratio (Antonii rank 3 ≥ DA ranklimit 3) is
+    // missed and preces fire incorrectly.
     let today_in_octave = if lookup(&today_oct_key).is_some() {
         let layer_for_today = rubric.kalendar_layer();
         crate::kalendaria_layers::lookup(layer_for_today, month, day)
             .map(|cells| {
                 cells.iter().any(|c| {
+                    if c.kind != "main" {
+                        return false;
+                    }
+                    if c.stem.ends_with("oct") {
+                        return true;
+                    }
                     let lc = c.officium.to_lowercase();
                     if lc.contains("octav") && !lc.contains("post octav") {
                         return true;
                     }
+                    // Fall back to the file's [Officium] for the
+                    // main-cell octave detection (mirrors the
+                    // existing oct_key check below).
                     let path = format!("Sancti/{}", c.stem);
                     let officium = lookup(&path)
                         .and_then(|f| section_via_inheritance(f, "Officium"))

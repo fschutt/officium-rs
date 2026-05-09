@@ -3,6 +3,75 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 112: today_in_octave requires MAIN cell to be the Octave-day — DA +1/yr Compline (Sat-eve next to Octave commemoration)
+
+Slice 111 tightened the file-existence gate by adding a kalendar
+check, but the kalendar check was satisfied as long as ANY cell
+(main OR commemoratio) had Octave wording. That over-broadened
+the swap-to-tomorrow logic to dates where today is a regular
+saint with the Octave merely as a SECONDARY commemoration.
+
+Example case 07-05-2031 (Sat) DA Compline (1V swap to Sun
+Pent05):
+
+- DA kalendar 07-05: main = "S. Antonii Mariae Zacharia Confessor"
+  (Duplex 3) + commemoratio = "Septima die infra Octavam Ss.
+  Apostolis" (rank empty)
+- Sancti/07-05oct.txt exists
+- Slice 111 gate: any cell contains "octav" → today_in_octave=TRUE
+- Swap fires → cells loop iterates 07-06 (tomorrow), main "In
+  Octava P+P" is SKIPPED (kind=main + 1V-swap), loop empty,
+  preces fires
+- Perl: $commemoratio = today's Antonii Mariae rank 3 ≥ DA
+  ranklimit 3 → reject
+
+The original 1V-swap-to-tomorrow logic mirrors `concurrence:
+911-922` which WIPES today's Sancti-Octave-DAY winner when
+tomorrow is Sun. It applies ONLY when today IS the Octave-day-
+itself (e.g. DA 11-07 main = "Septima die infra Octavam Omnium
+Sanctorum" with stem "11-07oct"), NOT when today is a regular
+saint that merely commemorates an Octave.
+
+Fix: tighten `today_in_octave` to require the MAIN cell to be
+the Octave-day:
+
+```rust
+cells.iter().any(|c| {
+    if c.kind != "main" { return false; }
+    if c.stem.ends_with("oct") { return true; }
+    let lc = c.officium.to_lowercase();
+    if lc.contains("octav") && !lc.contains("post octav") {
+        return true;
+    }
+    // Fall back to file's [Officium]
+    ...
+})
+```
+
+Closes 07-05-2031 DA Sat Compline (DA 2031 Compline 2→1 differs).
+
+Verification:
+
+- 11-07-2026 DA Compline (original slice that introduced the
+  1V-swap logic): main = "Septima die infra Oct OS" stem
+  "11-07oct" → today_in_octave=TRUE → swap still fires → preces
+  fires correctly. Match preserved.
+- 08-12-2034 DA Compline (slice 111): main = "S. Clarae" stem
+  "08-12" doesn't end in "oct", officium doesn't contain "octav"
+  → today_in_octave=FALSE → no swap → today's-cells loop sees
+  Clarae rank 3 ≥ ranklimit 3 → reject preces. Match preserved.
+- 07-05-2031 DA Compline: main = "S. Antonii" stem "07-05"
+  doesn't end "oct", officium doesn't contain "octav" →
+  today_in_octave=FALSE → no swap → cells loop sees Antonii
+  rank 3 ≥ ranklimit 3 → reject preces. Match (new closure).
+
+No-regression verified:
+
+- `cargo test --release --lib` — 431 passed
+- Mass T1570 / R60 2026 year-sweeps — 365/365 each (100%)
+- Office T1570 / T1910 / R55 / R60 2026/2031 Compline — unchanged
+- Prior closed slices 107/108/109 spot-checked clean
+
 ## Slice 111: today_in_octave gate uses rubric-active kalendar — DA +1/yr Compline (Sat-eve under suppressed Lawrence Octave)
 
 The `is_1v_swap_at_compline_in_octave` detection in

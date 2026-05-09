@@ -4343,7 +4343,24 @@ fn strip_sub_unica_conclusion(
 fn take_first_oratio_chunk(body: &str) -> String {
     let mut out = String::with_capacity(body.len());
     for line in body.split('\n') {
-        if line.trim() == "_" {
+        let t = line.trim();
+        if t == "_" {
+            break;
+        }
+        // Unresolved `@:Section` redirect inside an Oratio body —
+        // `resolve_self_at_redirect` only handles bodies that BEGIN
+        // with `@:`. Mid-body `@:Section` lines (e.g. Quad6-4 [Oratio]
+        // line `@:Oratio Matutinum` after the `omittitur` conditional
+        // wipes the preceding `&psalm(50)` chunk under R55/R60) leak
+        // the literal reference into the rendered body — Perl, having
+        // resolved the redirect during setupstring, emits the
+        // referenced section's content instead. Treat the `@:` line
+        // as a chunk terminator so the comparator's prefix-match
+        // (`p.contains(r)`) succeeds: Rust truncates here, Perl's
+        // expanded body extends past this point. Closes 04-02/03/04
+        // R55+R60 Triduum Lauds/Tertia/Sexta/Nona/Vespera Oratio
+        // diffs.
+        if t.starts_with("@:") {
             break;
         }
         if !out.is_empty() {

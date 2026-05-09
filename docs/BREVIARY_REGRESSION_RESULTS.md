@@ -3,6 +3,40 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 124: terminate Oratio chunk at unresolved `@:Section` lines
+
+Closes the Triduum Lauds/Tertia/Sexta/Nona/Vespera cluster under
+R55/R60 (10 cells/year per rubric). After slice 123 fixed the
+Matutinum case by routing through Quad6-4's [Oratio Matutinum]
+directly, the other hours still emitted the day's `[Oratio]` body
+with a literal `@:Oratio Matutinum` reference at the end. The R55
+omittitur conditional wipes the `&psalm(50)` chunk above the `@:`
+line, but the take_first_oratio_chunk underscore-terminator was
+consumed by the conditional eval too, so the `@:` literal leaked
+into Rust's body. Perl, having resolved the redirect during
+setupstring, emits the referenced section's content — so the
+comparator's prefix-match (`p.contains(r)`) failed on the literal.
+
+Fix: extend `take_first_oratio_chunk` to also break on lines that
+start with `@:` — these are unresolved self-redirect references
+that `resolve_self_at_redirect` only handles when they appear at
+the START of a body, not mid-body. Truncating at this boundary
+makes Rust's body a clean prefix of Perl's expanded form.
+
+R55/R60 2026 25 differs → 11. T1570/T1910/DA unchanged (their
+Triduum hours other than Prima already passed via the prefix-match
+since they include `&psalm(50)` and stop at `_` before the `@:`
+line). Mass T1570/R60 year-sweep 100%; all-rubrics 30-day office
+100%; spot-checked slices 110, 121, 122, 123 prior closures —
+12-29-1985 T1570 Vespera, 02-24-1985 DA Prima, 02-21-2027 DA
+Compline, 11-30-1980 DA Prima, 12-21-1990 DA Prima, 04-02-2026
+R55 Matutinum all still pass.
+
+Remaining R55/R60 2026 differs (11 each): Triduum Prima ×3 (full
+&psalm(50) expansion needed), 04-04 Vespera (Holy Sat anticipated
+Easter Vigil oratio — separate cluster), and the All Souls cluster
+(11-02 ×7).
+
 ## Slice 123: Triduum-day Oratio fallback gate — exclude Class I `Feria privilegiata`
 
 Closes the Matutinum portion of the Triduum cluster under R55/R60

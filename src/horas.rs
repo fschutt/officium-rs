@@ -1648,7 +1648,21 @@ pub fn first_vespers_day_key_for_rubric<'a>(
                 || lc.contains("simplex")
                 || lc.contains("memoria")
                 || lc.contains("commemoratio");
-            if no_2v && !today_inherits_via_ex_sancti(today_key, rubric, hora) {
+            // The ex-Sancti inheritance exception blocks the swap
+            // when today inherits structure from a major feast
+            // (e.g. Sancti/01-09 Fri R60 Feria ex Epiphany before
+            // Sat BVM — Friday's Vespers stays on Epi inheritance,
+            // doesn't fall to Saturday BVM Simplex). But on Sat
+            // before a Sun marked `Festum Domini` in [Rule], the
+            // swap MUST fire regardless of inheritance — that's the
+            // Class II Feast-of-the-Lord 1V privilege. Closes
+            // 01-12-2030 R60 Sat Vespera (Sancti/01-12 Feria 1.8 ex
+            // Epi → Tempora/Epi1-0 Holy Family Sun rank 5 Festum
+            // Domini → swap on Sat).
+            let inherits = today_inherits_via_ex_sancti(today_key, rubric, hora);
+            let festum_domini_sat = today_dow == 6
+                && tomorrow_rule_marks_festum_domini(tomorrow_key, rubric, hora);
+            if no_2v && (!inherits || festum_domini_sat) {
                 return tomorrow_key;
             }
         }

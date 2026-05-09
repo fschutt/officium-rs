@@ -3,6 +3,54 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 97: Festum-Domini-on-Sat overrides ex-Sancti inheritance block — R60 +1/yr
+
+`first_vespers_day_key_for_rubric`'s "Sancti Simplex no-2V" swap
+now fires when (a) today is a Sancti Feria/Simplex AND (b)
+tomorrow's [Rule] marks `Festum Domini` AND (c) today is Sat —
+even when today inherits structure from a major feast via
+`[Rule] ex Sancti/MM-DD`. The `today_inherits_via_ex_sancti` block
+(slice faa083e) was meant to keep Vespera Friday on the inherited
+Epiphany office instead of swapping to Saturday BVM Simplex, but
+it over-fired on Sat-eve before Sun-Holy-Family Festum Domini.
+
+Mirror of Perl `horascommon.pl::concurrence:944-945` R60 1V
+threshold rule:
+
+```perl
+$cwrank[2] <
+(($cwrank[0] =~ /Dominica/i
+  || ($cwinner{Rule} =~ /Festum Domini/i && $dayofweek == 6)) ? 5 : 6)
+```
+
+— when tomorrow's [Rule] flags Festum Domini AND today is Sat,
+the threshold is 5 (Class II Feasts of the Lord get 1V on Sat).
+For Holy Family Sun (Tempora/Epi1-0 R60 rank 5), this means
+`5 < 5 → false → don't suppress`, and the "Sancti no-2V" swap
+fires regardless of the ex-Sancti inheritance.
+
+**Cell impact:** Closes 01-12-2030 R60 Sat Vespera. Today=
+Sancti/01-12 (Feria 1.8 ex Sancti/01-06 Epiphany under R60),
+tomorrow=Tempora/Epi1-0 (Sanctæ Familiæ Jesu Mariæ Joseph Duplex
+II classis 5 with `Festum Domini` in [Rule]). Without override
+inheritance keeps today; with override Sat 1V swap fires →
+Holy Family Sun's Oratio "Dómine Iesu Christe, qui Mariæ et
+Joseph subditus...".
+
+  | Sweep                | Before | After |
+  |----------------------|-------:|------:|
+  | R60 office 2030      | 40 differs | 39 differs |
+  | T1570 / T1910 / DA / R55 / R60 office 2026 | unchanged | unchanged |
+  | T1570 30-day office  | 100% | 100% |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+
+Investigated via Perl debug-print instrumentation (added STDERR
+prints to horascommon.pl::concurrence to dump cwinner.Rule and
+@cwrank). Found Tempora/Epi1-0 [Rule] ends with "Festum Domini"
+line — slice 97's check on `tomorrow_rule_marks_festum_domini`
+correctly identifies it; the bug was the inheritance-block
+exception swallowing the swap.
+
 ## Slice 96: Today-side "infra octavam Corp" rank reduction — T1910 +1/yr
 
 `effective_today_rank_for_concurrence` now applies the second

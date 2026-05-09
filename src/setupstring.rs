@@ -1759,11 +1759,138 @@ fn apply_one_substitution(body: &mut String, spec: &str) -> Option<usize> {
         dotall,
         multiline,
     };
+    // Pre-expand `$N` / `\N` backreferences in the replacement using
+    // the literal text of each capture group in the pattern. The
+    // corpus only uses backrefs against simple-literal captures
+    // (e.g. `(Apóstoli tui)`, `(Sed)`), so we extract the source
+    // text between paren pairs and substitute it into the
+    // replacement before compiling — no need to thread captures
+    // through the matcher. Groups whose source contains regex
+    // meta-characters are left unexpanded (the backref token stays
+    // literal in the output).
+    let expanded_repl_storage;
+    let expanded_repl: &str = {
+        let caps = extract_capture_literals(pat);
+        if caps.iter().any(Option::is_some) && replacement_has_backref(repl) {
+            expanded_repl_storage = expand_replacement_backrefs(repl, &caps);
+            &expanded_repl_storage
+        } else {
+            repl
+        }
+    };
+
     if let Some(compiled) = compile_regex(pat, opts) {
-        let new_body = compiled.replace_all(body, repl, global);
+        let new_body = compiled.replace_all(body, expanded_repl, global);
         *body = new_body;
     }
     Some(flag_end)
+}
+
+/// Walk `pat` and extract the literal source text of each capture
+/// group, numbered left-to-right by opening paren. Non-capturing
+/// groups (`(?...)`) are skipped. Returns `None` for groups whose
+/// inner source contains regex meta-characters or escapes — those
+/// can't safely be substituted into a replacement string verbatim
+/// (the runtime captured text wouldn't equal the literal source).
+///
+/// Mirrors what Perl's `s/(literal)/$1.../` does for simple captures.
+/// Used by `apply_one_substitution` to expand `$N` / `\N` in the
+/// replacement string before the pattern is compiled.
+fn extract_capture_literals(pat: &str) -> Vec<Option<String>> {
+    let bytes = pat.as_bytes();
+    let n = bytes.len();
+    let mut i = 0;
+    // Stack entries: (capture_index_or_sentinel, byte_offset_after_open_paren).
+    // Sentinel `usize::MAX` marks a non-capturing group (`(?...)`).
+    let mut stack: Vec<(usize, usize)> = Vec::new();
+    let mut caps: Vec<Option<String>> = Vec::new();
+    while i < n {
+        let c = bytes[i];
+        if c == b'\\' && i + 1 < n {
+            i += 2;
+            continue;
+        }
+        if c == b'(' {
+            if i + 1 < n && bytes[i + 1] == b'?' {
+                stack.push((usize::MAX, i + 1));
+            } else {
+                let idx = caps.len();
+                caps.push(None);
+                stack.push((idx, i + 1));
+            }
+            i += 1;
+            continue;
+        }
+        if c == b')' {
+            if let Some((idx, start)) = stack.pop() {
+                if idx != usize::MAX {
+                    let inner = &pat[start..i];
+                    if is_safe_literal_capture(inner) {
+                        caps[idx] = Some(inner.to_string());
+                    }
+                }
+            }
+            i += 1;
+            continue;
+        }
+        i += 1;
+    }
+    caps
+}
+
+/// True when `s` is a plain literal (no regex meta-characters or
+/// escape sequences) — safe to use as the captured text in a
+/// replacement string.
+fn is_safe_literal_capture(s: &str) -> bool {
+    !s.chars().any(|c| {
+        matches!(
+            c,
+            '\\' | '.' | '*' | '+' | '?' | '{' | '}' | '|' | '^' | '$' | '[' | ']' | '(' | ')'
+        )
+    })
+}
+
+/// True when `repl` contains a `$N` or `\N` backreference token
+/// (N in 1..=9). Cheap pre-check to avoid the full expansion pass
+/// on replacements without backrefs.
+fn replacement_has_backref(repl: &str) -> bool {
+    let bytes = repl.as_bytes();
+    let n = bytes.len();
+    let mut i = 0;
+    while i < n {
+        if (bytes[i] == b'$' || bytes[i] == b'\\') && i + 1 < n {
+            let d = bytes[i + 1];
+            if (b'1'..=b'9').contains(&d) {
+                return true;
+            }
+        }
+        i += 1;
+    }
+    false
+}
+
+/// Expand `$N` / `\N` (N in 1..=9) in `repl` with the literal text
+/// of capture N from `caps`. Tokens whose target capture is
+/// `None` (unsafe / out-of-range) are left untouched.
+fn expand_replacement_backrefs(repl: &str, caps: &[Option<String>]) -> String {
+    let mut out = String::with_capacity(repl.len());
+    let mut iter = repl.chars().peekable();
+    while let Some(c) = iter.next() {
+        if c == '$' || c == '\\' {
+            if let Some(&d) = iter.peek() {
+                if d.is_ascii_digit() && d != '0' {
+                    let idx = (d as u8 - b'0') as usize - 1;
+                    if let Some(Some(text)) = caps.get(idx) {
+                        out.push_str(text);
+                        iter.next();
+                        continue;
+                    }
+                }
+            }
+        }
+        out.push(c);
+    }
+    out
 }
 
 /// Find the next unescaped `/` starting at `from` in `bytes`. Returns

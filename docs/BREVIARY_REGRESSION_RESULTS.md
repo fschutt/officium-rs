@@ -3,6 +3,56 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 91: `$N` / `\N` backreferences in `s/PAT/REPL/` substitutions — multi-rubric +1 cell
+
+`do_inclusion_substitutions` now expands `$1` / `\1` etc. in the
+replacement string, using the literal source text of the matching
+capture group from the pattern. Mirrors Perl's `s///` substitution
+semantics for the simple-literal capture case used throughout the
+corpus.
+
+The replacement engine had been silently treating `$1` as literal
+output text, so directives like:
+
+```
+[Oratio pro Evangelistae]
+@:Oratio 1 loco:s/(Apóstoli tui)/$1 et Evangelístæ/
+```
+
+(from `Commune/C1v.txt`) emitted "...beáti Matthǽi $1 et
+Evangelístæ..." instead of "...beáti Matthǽi Apóstoli tui et
+Evangelístæ...". The new pre-expansion pass:
+
+1. Walks the pattern, numbers capture groups left-to-right, and
+   extracts the literal source text of each group whose contents
+   contain only plain literal characters (no regex meta-chars).
+2. Rewrites the replacement, substituting `$N` / `\N` with the
+   captured literal text.
+3. Compiles + matches the (unmodified) pattern as before.
+
+Groups whose source contains regex meta-characters are left
+unsubstituted — no captured runtime text is available without
+threading capture positions through the matcher, but those
+patterns aren't used with `$N` in the corpus.
+
+**Cell impact:** Closes 09-20-2027 T1570 Matutinum (and
+parallel cells under T1910/DA/R55/R60 where Matthew Vigil's
+Oratio is rendered). Also affects any year/hour where a saint's
+Oratio is rendered through `@:Oratio…:s/(literal)/…$1…/`.
+
+  | Rubric              | 2026 all-hours |
+  |---------------------|----------------|
+  | T1570               | 99.86% (unchanged — already passing on 2026) |
+  | T1910               | 99.86% (unchanged) |
+  | DA                  | 99.73% (unchanged) |
+  | R55 / R60           | 99.04% (unchanged) |
+  | Mass T1570/R60 2026 | 365/365 |
+
+Year 2027 specifically: T1570 09-20 (Matthew Vigil) goes from
+mismatch to match; remaining T1570 2027 differs are Triduum Prima
+(03-25/26/27) and the Apostolic-Vigil-on-Advent-feria pattern
+(11-29 Andrew Vigil, 12-20 Thomas Vigil) — separate cluster.
+
 ## Slice 90: Pre-Divino "Dominica minor" rank reduction (T1570/T1910) — T1570 +1 cell
 
 `effective_today_rank_for_concurrence` now mirrors `setrank` at

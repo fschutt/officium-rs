@@ -701,12 +701,25 @@ fn preces_dominicales_et_feriales_fires(
             | crate::core::Rubric::Tridentine1910
             | crate::core::Rubric::DivinoAfflatu1911
     );
-    if pre_1955_for_feriales && day_key.starts_with("Tempora/") {
+    if pre_1955_for_feriales && day_key.starts_with("Tempora/") && dayofweek != 0 {
         let stem = day_key.strip_prefix("Tempora/").unwrap_or("");
         let weekname = stem.split('-').next().unwrap_or("");
         let is_adv_or_quad = weekname.starts_with("Adv")
             || (weekname.starts_with("Quad") && !weekname.starts_with("Quadp"));
-        if is_adv_or_quad && dayofweek != 0 {
+        // Tempora's [Rule] contains "Preces" — Perl's first OR
+        // clause `$rule =~ /Preces/i` (preces.pl:27) fires
+        // independently of weekname. Quadp3-3 (Ash Wed under DA)
+        // has [Rule] "Preces Feriales" so this clause fires the
+        // Feriales path even though weekname=Quadp3 doesn't match
+        // /Adv|Quad(?!p)/. Closes 03-06-2030 DA Wed Prima.
+        let rule_has_preces = lookup(day_key)
+            .and_then(|f| section_via_inheritance_rubric(f, "Rule", Some(rubric)))
+            .map(|r| {
+                let evaluated = eval_section_conditionals(&r, rubric, hour);
+                evaluated.to_lowercase().contains("preces")
+            })
+            .unwrap_or(false);
+        if is_adv_or_quad || rule_has_preces {
             // Mirror Perl's early-rejection gate before firing
             // Feriales: `$duplex > 2` rejects when winner is
             // Duplex+ rank. Septem Dolorum BMV (Tempora/Quad5-5

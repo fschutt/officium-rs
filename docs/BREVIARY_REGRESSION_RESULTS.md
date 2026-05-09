@@ -3,6 +3,47 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 101: Preces Feriales fires on `[Rule]` "Preces" gate — DA +1/yr
+
+`preces_dominicales_et_feriales_fires`'s pre-1955 Feriales path
+now also fires when the Tempora's `[Rule]` contains "Preces"
+(matching Perl's `preces.pl:27` first OR clause `$rule =~
+/Preces/i`). Previously the path was gated only on `is_adv_or_quad`
+weekname, missing Quadp3-3 (Ash Wed under DA / Septuagesima cycle)
+which is `Quadp` weekname (excluded from Adv|Quad-not-p) but
+carries `[Rule] Preces Feriales`.
+
+Mirror of `specials/preces.pl:23-36`:
+
+```perl
+if ( $dayofweek
+  && !($dayofweek == 6 && $hora =~ /vespera/i)
+  && (
+    $winner !~ /sancti/i
+    && ($rule =~ /Preces/i || $dayname[0] =~ /Adv|Quad(?!p)/i || emberday())
+    || ($version !~ /1955|1960|Newcal/ && $winner{Rank} =~ /vigil/i ...))
+  && ($version !~ /1955|1960|Newcal/ || $dayofweek =~ /[35]/ || emberday())
+) { return 1; }
+```
+
+The `$rule =~ /Preces/i` clause fires regardless of weekname,
+including Septuagesima-cycle ferials whose [Rule] explicitly
+opts into preces.
+
+**Cell impact:** Closes 03-06-2030 DA Wed Prima. Today=Tempora/
+Quadp3-3 (Feria IV Cinerum, Ash Wed). [Rule] = "Preces Feriales".
+Without the rule-gate clause our predicate returned false (Quadp
+weekname excluded). With it, preces fire → Prima emits the
+"secunda Domine, exaudi omittitur" rubric (line 4 of [Dominus])
+matching Perl.
+
+  | Sweep                | Before | After |
+  |----------------------|-------:|------:|
+  | DA office 2030       | 13 differs | 12 differs |
+  | All 2026 sweeps      | unchanged | unchanged |
+  | T1570 30-day office  | 100% | 100% |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+
 ## Slice 100: Pre-1955 Ash Wed 2V cession — T1910 +2/yr, DA +1/yr
 
 `effective_today_rank_for_concurrence` now reduces today's rank

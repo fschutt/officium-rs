@@ -1882,10 +1882,22 @@ fn effective_today_rank_for_concurrence(
         rubric,
         crate::core::Rubric::Tridentine1570 | crate::core::Rubric::Tridentine1910
     );
-    let direct = if is_tridentine_only && direct > 4.2 && direct < 5.1 {
+    let direct = if is_tridentine_only {
         if let Some(file) = lookup(day_key) {
             let officium = section_via_inheritance(file, "Officium").unwrap_or_default();
-            if officium.to_lowercase().contains("dominica") {
+            let lc_off = officium.to_lowercase();
+            // Pre-Divino "infra octavam Corp" reduction (mirror of
+            // `horascommon.pl::set_dayname:422-426` second clause).
+            // Today=Pent02-0 (Dominica II Post Pentecosten infra
+            // Octavam Corporis Christi) rank 5.9 vs Mon Juliana Duplex
+            // 3 — without reduction Sun keeps 2V (5.9 > 3); with
+            // reduction Sun=2.9 < 3 → 1V swap to Mon Juliana. Closes
+            // 06-18-2028 T1910 Sun Vespera. Same as the existing
+            // `effective_tomorrow_rank` branch (slice 89) but for
+            // today-side concurrence.
+            if lc_off.contains("infra octavam corp") {
+                2.9_f32.min(direct)
+            } else if direct > 4.2 && direct < 5.1 && lc_off.contains("dominica") {
                 2.9
             } else {
                 direct

@@ -3,6 +3,37 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 96: Today-side "infra octavam Corp" rank reduction — T1910 +1/yr
+
+`effective_today_rank_for_concurrence` now applies the second
+clause of Perl's `setrank` rule (`horascommon.pl:422-426`): under
+Tridentine, when today's `[Officium]` contains "infra octavam
+Corp[oris Christi]", today's rank is reduced to 2.9 regardless of
+its direct value. The first clause (Dominica minor in (4.2, 5.1))
+was already in place from slice 90; this completes the parallel
+to the existing tomorrow-side branch (slice 89).
+
+**Cell impact:** Closes 06-18-2028 T1910 Sun Vespera. Today=
+Tempora/Pent02-0 ("Dominica II Post Pentecosten infra Octavam
+Corporis Christi", rank Semiduplex I cl. 5.9) vs tomorrow=
+Sancti/06-19 (Juliana Falconieri Duplex 3). Without the reduction
+today rank 5.9 > tomorrow 3 → keep 2V; with reduction today rank
+2.9 < tomorrow 3 → 1V swap to Mon Juliana, with Sun (Pent02-0),
+Gervasii (Sancti/06-19o), and Octava Corp Christi all
+commemorated.
+
+  | Sweep                | Before | After |
+  |----------------------|-------:|------:|
+  | T1910 office 2028    | 4 differs | 3 differs |
+  | T1570 / T1910 office 2026 | unchanged | unchanged |
+  | DA / R55 / R60 office 2026 | unchanged | unchanged |
+  | T1570 30-day office  | 100% | 100% |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+
+After this slice, T1910 office 2028 bottoms out at the Triduum
+Prima cluster only (3 differs across all hours, all `&psalm(50)`
+macro-driven).
+
 ## Slice 95: Office-context Tempora rank from horas-side `[Rank] (rubrica X)` — T1910 +8/yr
 
 `compute_occurrence_core` now overrides the missa-side

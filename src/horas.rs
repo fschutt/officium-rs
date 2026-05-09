@@ -1856,28 +1856,37 @@ pub fn first_vespers_day_key_for_rubric<'a>(
             // Pre-1960 Sancti-Festum-Domini setrank reduction.
             // Mirror of `horascommon.pl:477-481`:
             //
-            //   } elsif ($saint{Rule} =~ /Festum Domini/i
-            //            && $srank[2] >= 2 && $trank[2] <= 5) {
-            //     $srank[2] = 4.9 + $srank[2] / 100;
+            //   } elsif ($trank[0] =~ /Dominica/i && $dayname[0] !~ /Nat1/i) {
+            //     ...
+            //     } elsif ($saint{Rule} =~ /Festum Domini/i
+            //              && $srank[2] >= 2 && $trank[2] <= 5) {
+            //       $sanctoraloffice = 1;
+            //       $srank[2] = 4.9 + $srank[2] / 100;
+            //     }
             //   }
             //
-            // Sancti feasts marked `Festum Domini` get their rank
-            // reduced to `4.9 + rank/100` "to keep the Vespers in
-            // concurrence with other Duplex feasts" (per Perl
-            // comment). Lateran (Sancti/11-09 ;;Duplex II. classis
-            // ;;5 Festum Domini) is reduced 5 → 4.95, which falls
-            // below the R55 1V threshold of 5 and suppresses the
-            // 1V swap. Closes 11-08 R55 Sat-eve every year where
-            // 11-09 is Sun (~13 cells in 1976-2076).
+            // The reduction is gated on the OUTER elsif `$trank[0]
+            // =~ /Dominica/i` — the TEMPORAL-of-tomorrow must be a
+            // Sunday. So Lateran-on-Sun gets the reduction (closing
+            // 11-08 Sat-eve in years where 11-09 is Sun); Lateran-
+            // on-Sat (e.g. 11-09-1985, where tomorrow_temp = Sat
+            // post-Pent ferial) does NOT — 1V swap fires normally.
             //
-            // Sancti-only: Tempora-side Festum Domini files
-            // (Tempora/Nat2-0 = Holy Name Sun) do NOT trigger the
-            // Perl line-481 elsif (which is in the saint-precedence
-            // block). Without the Sancti-only gate, my fix would
-            // wrongly suppress 1V for Holy Name Sun in R55.
+            // Gate: tomorrow Sancti Festum Domini AND tomorrow's
+            // TEMPORAL-of-week is Sunday (today_dow=6). The Sancti
+            // file's [Officium] would be the Festum-Domini saint
+            // (Lateran/Annunciation/etc.); when this lands on a
+            // Sunday, the reduction suppresses 1V; otherwise, 1V
+            // swap fires normally.
             let tomorrow_is_sancti_festum_domini = tomorrow_key.starts_with("Sancti/")
                 && tomorrow_rule_marks_festum_domini(tomorrow_key, rubric, hora);
+            // Today is Sat (today_dow == 6) means tomorrow is Sun
+            // — the only case where Perl's line 463 outer elsif
+            // fires (tomorrow's tempora is Dominica). Sat-eve-of-
+            // Sun-Lateran is the exact slice 119 target.
+            let tomorrow_is_sunday = today_dow == 6;
             let effective_tomorrow_rank = if tomorrow_is_sancti_festum_domini
+                && tomorrow_is_sunday
                 && tomorrow_rank >= 2.0
                 && tomorrow_rank <= 5.0
             {

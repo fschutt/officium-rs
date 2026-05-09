@@ -3,6 +3,48 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 120: Festum-Domini reduction gated on tomorrow_temp=Dominica — R55 fix non-Sun Sat-eve regressions
+
+Slice 119 applied the Festum-Domini reduction unconditionally
+when `tomorrow_key.starts_with("Sancti/")`. But Perl's
+`horascommon.pl:481` reduction lives INSIDE the outer
+`elsif ($trank[0] =~ /Dominica/i)` branch (line 463). It only
+fires when tomorrow's TEMPORAL is a Sunday — so Lateran-on-Sun
+gets reduced (closing 11-08-1980 case), but Lateran-on-Sat
+(11-09-1985 etc., where tomorrow's tempora = Sat post-Pent
+ferial NOT Dominica) does NOT.
+
+Slice 119 over-applied the reduction, suppressing 1V swap on
+Fri-eve / Thu-eve / Wed-eve cases where Lateran lands on Sat.
+This regressed previously-matching cells.
+
+Traced via injected debug print into Perl horascommon.pl
+(reverted): for 11-09 on Sun, `cwrank[2]=4.95`; for 11-09 on
+Sat, `cwrank[2]=5.0` — the reduction is gated on Sunday-temporal.
+
+Fix: gate the reduction on `today_dow == 6` (today is Saturday,
+so tomorrow is Sunday). With this, slice 119's Sat-eve-Sun-
+Lateran target still closes (today_dow=6 ✓) but Fri/Thu/Wed-eve
+cases (today_dow≠6) keep their 1V swap unchanged.
+
+Closes 11-08-1985 / 11-08-1990 / 11-08-2000 R55 (and similarly
+all years where 11-09 falls on a non-Sunday) — matching slice
+119 + slice 120 together fix all 11-08 R55 Vesp cases without
+regression.
+
+No-regression verified:
+
+- `cargo test --release --lib` — 431 passed
+- Mass T1570 / R60 2026 year-sweeps — 365/365 each (100%)
+- 2026 all rubrics Vespera unchanged (R55 stays 4 differs:
+  Triduum + All Souls only; was 5 with slice 119 alone)
+- Slice 110/115/118 cases preserved
+- 01-03-2026 R55 Sat-eve Holy Name preserved (Tempora-side,
+  gate doesn't fire)
+- 04-11/05-30/06-13 R55 Sat-eve preserved (Tempora-Sun, no
+  Sancti Festum Domini)
+- 01-12-2030 R55 Sat-eve preserved
+
 ## Slice 119: Pre-1960 Sancti-Festum-Domini setrank reduction in R55 1V threshold — R55 +1/yr Sat-eve-of-Sun-Lateran-class
 
 R55 1V suppression at `first_vespers_day_key_for_rubric` was

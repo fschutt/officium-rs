@@ -3,6 +3,44 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 106: Sancti-Simplex Tempora-fallback applies rubric redirect — T1910 +2/yr
+
+`office_sweep`'s "Sancti-Simplex no-2V Tempora-of-week fallback"
+now applies the rubric-aware Tempora redirect via
+`tempora_table::redirect` — so the bare `{weekname}-{dow}` stem
+gets replaced by the rubric's preferred form before the lookup.
+Mirrors slice 61's R55 redirect path; extends to T1570/T1910/R60.
+
+Pent03-4 → Pent03-4Feria under T1570/T1910/R55/R60 (per
+`Tabulae/Tempora/Generale.txt` `Tempora/Pent03-4=Tempora/
+Pent03-4Feria;;1570 1888 1906 1960 Newcal`). The bare Pent03-4
+file ships with `[Officium]` "Die VII infra Octavam SSmi Cordis
+Jesu" inheriting Pent02-5 (Sacred Heart) Oratio — but post-1856
+Sacred-Heart-Octave was abolished under all the directorium-
+listed rubrics. The redirected Pent03-4Feria is a plain post-Pent
+ferial with `[Rule] Oratio Dominica` that pulls Pent03-0's
+[Oratio] (which is `@Tempora/Pent02-5:Oratio3` → "Protector in
+te sperantium"). Without this rubric redirect, the fallback
+landed on Pent03-4 and emitted the wrong Sacred-Heart Oratio.
+
+**Cell impact:** Closes 06-22-2034 T1910 Thu Vespera + Compl.
+Today=Sancti/06-22t (Paulinus Episc. Conf. Simplex 1.1) → Sancti-
+Simplex Tempora fallback to Tempora/Pent03-4Feria (post-Pent
+ferial) → Pent03-0 Oratio Dominica fallback → @Pent02-5:Oratio3
+"Protéctor in te sperántium...".
+
+  | Sweep                | Before | After |
+  |----------------------|-------:|------:|
+  | T1910 office 2034    | 5 differs | 3 differs |
+  | T1570 / T1910 / DA / R55 / R60 office 2026 | unchanged | unchanged |
+  | T1570 30-day office  | 100% | 100% |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+
+After this slice T1910 office 2034 bottoms out at the Triduum
+Prima cluster only. Same fix likely affects R55/R60 too via the
+same redirect; the directorium token list (1570/1888/1906/1960)
+covers all four rubrics.
+
 ## Slice 105: Tomorrow-side Dominica-minor setrank reduction — T1910 +1/yr
 
 `effective_tomorrow_rank_for_concurrence` now applies the

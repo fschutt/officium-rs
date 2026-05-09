@@ -519,7 +519,21 @@ fn run_one_cell(
                 .unwrap_or(false)
         {
             let weekname = officium_rs::date::getweek(dd, mm, yyyy, false, true);
-            let tempora_key = format!("Tempora/{weekname}-{today_dow}");
+            let bare_stem = format!("{weekname}-{today_dow}");
+            // Apply rubric-aware Tempora redirect (mirror of slice 61
+            // R55 redirect path). Pent03-4 → Pent03-4Feria under
+            // T1570/T1910/R55/R60 — the abolished Sacred-Heart-Octave
+            // file Pent03-4 redirects to a plain post-Pent ferial.
+            // Without this, the Sancti-Simplex Tempora-fallback lands
+            // on the Sacred-Heart-inheriting file and emits the wrong
+            // Oratio. Closes 06-22-2034 T1910 Thu Vespera (Paulinus
+            // Simplex → Pent03-4Feria post-Pent ferial Oratio
+            // Dominica → Pent03-0 → @Pent02-5:Oratio3 "Protector
+            // in te sperantium").
+            let resolved_stem = officium_rs::tempora_table::redirect(&bare_stem, rubric)
+                .map(String::from)
+                .unwrap_or(bare_stem);
+            let tempora_key = format!("Tempora/{resolved_stem}");
             if horas::lookup(&tempora_key).is_some() {
                 tempora_key
             } else {

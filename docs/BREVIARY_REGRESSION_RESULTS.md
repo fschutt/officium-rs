@@ -3,6 +3,49 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 102: R60 Festum Domini precedence on II classis Sun — R60 +8/yr
+
+`decide_sanctoral_wins_1570` now mirrors Perl's R60-specific
+Sun-handling (`horascommon.pl:467-471`):
+
+```perl
+if ($version =~ /196/) {
+    if ($trank[2] <= 5
+        && ($srank[2] >= 6
+          || ($srank[2] >= 5 && $saint{Rule} =~ /Festum Domini/i))) {
+        $sanctoraloffice = 1;
+    }
+    ...
+}
+```
+
+Under R60, II classis Feasts of the Lord (Festum Domini, rank ≥ 5)
+beat II classis Sundays in occurrence. The existing pre-1960
+Festum-Domini branch (line 720) is gated `is_pre_1960` and doesn't
+fire under R60; the new R60-specific branch fills that gap.
+
+**Cell impact:** Closes 8 cells in R60 2031:
+- 11-09 Sun Mat / Laudes / Prima / Tertia / Sexta / Nona / Vespera /
+  Compl (Lateran Dedication wins over Sun Pent23 — Lateran is
+  Festum Domini II classis 5, Pent23 Sun II classis 5 → Lateran
+  wins under R60).
+
+Indirectly closes 11-08 Sat Vespera (Sat-eve before Sun-Lateran)
+because tomorrow's compute now correctly returns Sancti/11-09
+(Lateran) which the slice 98 II-classis-Sun-cedes-1V rule
+already handles via today's 2V preservation.
+
+  | Sweep                | Before | After |
+  |----------------------|-------:|------:|
+  | R60 office 2031      | 36 differs | 27 differs |
+  | R60 office 2030      | 27 differs | 27 differs |
+  | T1570 / T1910 / DA / R55 / R60 office 2026 | unchanged | unchanged |
+  | T1570 30-day office  | 100% | 100% |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+
+After this slice, R60 office 2031 bottoms out at the structural
+Triduum (04-10/11/12) and All Souls (11-03) clusters only.
+
 ## Slice 101: Preces Feriales fires on `[Rule]` "Preces" gate — DA +1/yr
 
 `preces_dominicales_et_feriales_fires`'s pre-1955 Feriales path

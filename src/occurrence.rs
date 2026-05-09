@@ -735,6 +735,40 @@ fn decide_sanctoral_wins_1570(
         }
     }
 
+    // R60 Festum Domini precedence on II classis Sundays. Mirror of
+    // `horascommon.pl:467-471`:
+    //
+    //   if ($version =~ /196/) {
+    //     if ($trank[2] <= 5 && ($srank[2] >= 6
+    //         || ($srank[2] >= 5 && $saint{Rule} =~ /Festum Domini/i))) {
+    //       $sanctoraloffice = 1;
+    //     }
+    //     ...
+    //   }
+    //
+    // Under R60, when today is Dominica with trank ≤ 5 (II classis
+    // Sun) AND tomorrow Sancti is rank ≥ 5 with `Festum Domini` in
+    // [Rule] → Sancti wins. Closes 11-09-2031 R60 Sun: today=Sun
+    // Pent23-0 rank 5, sancti=Lateran Dedication rank 5 Festum
+    // Domini → Lateran wins over Sun. Without rule, default
+    // `srank > trank` (5 > 5 false) keeps Sun.
+    if matches!(rubric, Rubric::Rubrics1960)
+        && is_dominica
+        && trank <= 5.0
+        && srank >= 5.0
+    {
+        if let Some(sf) = sancti_file {
+            if sf
+                .sections
+                .get("Rule")
+                .map(|r| r.to_lowercase().contains("festum domini"))
+                .unwrap_or(false)
+            {
+                return true;
+            }
+        }
+    }
+
     // RG 15 (Rubricæ Generales 1960): the Immaculate Conception
     // outranks the II Sunday of Advent in occurrence. Mirrors Perl
     // `horascommon.pl:471-473`:

@@ -3,6 +3,46 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 115: Sun-Compline tomorrow-saint check skips Holy Week / Easter Octave — DA +N/yr Compline (Sun Palm + Sun Easter)
+
+Slice 110's Sun-Compline tomorrow-saint rejection iterates the
+kalendar cells for tomorrow's date, looking for rank ≥ ranklimit
+to reject preces. Under pre-1955 rubrics, Holy Week (Quad6-1..6)
+and Easter Octave (Pasc0-0..6) are Privileged Class I weeks where
+ordinary Sancti are TRANSFERRED to after the Octave — so on Sun
+Palm (Quad6-0) and Sun Easter (Pasc0-0) Compline, $commemoratio
+is empty and Perl fires preces.
+
+Rust's slice 110 wrongly saw the kalendar's pre-transfer entry
+(e.g. DA 03-24 = "S. Gabrielis Archangeli" Duplex majus 4 ≥ 3
+ranklimit) and rejected.
+
+Fix: gate slice 110's tomorrow-cells loop on
+`!(today_weekname == "Quad6" || today_weekname == "Pasc0")`.
+
+Closes 03-23-2070 (Sun Palm), 04-03-2050 (Sun Palm), 04-10-2033
+(Sun Palm) DA Compline. Multi-year: any year where Palm Sun or
+Easter Sun falls on a year-key Sunday with a tomorrow Mon-Sancti
+above the ranklimit.
+
+Preserves slice 110 cases: 02-21-2027 / 06-20 / 07-11 / 08-08 /
+12-05 — those today_weeknames are Quad2, Pent05, Pent08, Pent12,
+Adv2 — none are Quad6 or Pasc0, so the Holy-Week gate doesn't
+fire and the rejection still triggers as intended.
+
+Narrow scope: only fires inside the existing slice 110 gate
+(Sun-Compline at Tempora-Sun) which already restricted to a
+narrow set of dates. The new sub-gate just refines those.
+
+No-regression verified:
+
+- `cargo test --release --lib` — 431 passed
+- Mass T1570 / R60 2026 year-sweeps — 365/365 each (100%)
+- Slice 110 cases (2027 DA Compline) — preserved (1 differ =
+  All Souls only)
+- DA Compline 2027/2030/2034/2050/2060/2070 — all converge to
+  All Souls + remaining structural cases
+
 ## Slice 114: Pre-1955 Vigilia-Sancti Feriales path with $duplex≤2 gate — DA +1/yr Prima
 
 `specials/preces.pl:28` second OR clause:

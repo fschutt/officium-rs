@@ -913,6 +913,26 @@ fn preces_dominicales_et_feriales_fires(
         && hour == "Completorium"
         && day_key.starts_with("Tempora/")
     {
+        // Holy Week / Easter Octave skip: under pre-1955 these are
+        // Privileged Class I weeks where ordinary Sancti are
+        // TRANSFERRED to after the Octave (no commemoration on Sun
+        // Palm or any Holy Week / Easter Octave day). Perl's
+        // @commemoentries excludes transferred saints; iterating
+        // the kalendar (which lists the saint pre-transfer) wrongly
+        // sees them as commemorations.
+        //
+        // Today's day_key for these cases: Quad6-0 (Palm Sun) or
+        // Pasc0-0 (Easter Sun, but at 2V/Compline tomorrow=Mon
+        // Easter Octave-day). Skip the tomorrow-cells rejection
+        // when today is Sun Palm (Quad6-0), Sun Easter (Pasc0-0),
+        // or Sun-in-Albis (Pasc1-0 with tomorrow Mon ferial of
+        // Easter Octave still in Pasc0-week).
+        let today_weekname = day_key
+            .strip_prefix("Tempora/")
+            .and_then(|s| s.split('-').next())
+            .unwrap_or("");
+        let in_holy_week_or_easter_octave =
+            today_weekname == "Quad6" || today_weekname == "Pasc0";
         let dim = match month {
             1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
             4 | 6 | 9 | 11 => 30,
@@ -926,25 +946,28 @@ fn preces_dominicales_et_feriales_fires(
         } else {
             (1, 1)
         };
-        let layer = rubric.kalendar_layer();
-        if let Some(cells) = crate::kalendaria_layers::lookup(layer, tom_m, tom_d) {
-            let ranklimit = match rubric {
-                crate::core::Rubric::Tridentine1570
-                | crate::core::Rubric::Tridentine1910 => 7.0_f32,
-                _ => 3.0_f32,
-            };
-            for cell in cells {
-                if cell.kind != "main" {
-                    continue;
-                }
-                let kalendar_rank = cell.rank_num().unwrap_or(0.0);
-                let sancti_path = format!("Sancti/{}", cell.stem);
-                let file_rank = active_rank_line_with_annotations(&sancti_path, rubric, hour)
-                    .map(|(_, _, n)| n)
-                    .unwrap_or(0.0);
-                let effective_rank = kalendar_rank.max(file_rank);
-                if effective_rank >= ranklimit {
-                    return false;
+        if !in_holy_week_or_easter_octave {
+            let layer = rubric.kalendar_layer();
+            if let Some(cells) = crate::kalendaria_layers::lookup(layer, tom_m, tom_d) {
+                let ranklimit = match rubric {
+                    crate::core::Rubric::Tridentine1570
+                    | crate::core::Rubric::Tridentine1910 => 7.0_f32,
+                    _ => 3.0_f32,
+                };
+                for cell in cells {
+                    if cell.kind != "main" {
+                        continue;
+                    }
+                    let kalendar_rank = cell.rank_num().unwrap_or(0.0);
+                    let sancti_path = format!("Sancti/{}", cell.stem);
+                    let file_rank =
+                        active_rank_line_with_annotations(&sancti_path, rubric, hour)
+                            .map(|(_, _, n)| n)
+                            .unwrap_or(0.0);
+                    let effective_rank = kalendar_rank.max(file_rank);
+                    if effective_rank >= ranklimit {
+                        return false;
+                    }
                 }
             }
         }

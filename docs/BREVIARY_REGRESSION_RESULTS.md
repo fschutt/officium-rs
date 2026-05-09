@@ -3,6 +3,71 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 113: Pre-1960 Festum-Domini Sancti outranks Dominica at 1V swap + occurrence — DA +2/yr Mat+Vespera
+
+Two-part fix for the Sancti/11-18 (Dedicatio Basilicarum P+P)
+"Festum Domini" precedence problem under DA, where the Mass-side
+[Rule] doesn't carry "Festum Domini" but the horas-side does
+(`(rubrica divino aut rubrica 1955) Festum Domini`).
+
+### Part A — Office occurrence consults horas-side [Rule]
+
+`decide_sanctoral_wins_1570` was checking only the Mass-side
+file's [Rule] for `Festum Domini`, missing horas-only annotations.
+Added an optional `sancti_horas_rule: Option<&str>` parameter
+populated from `crate::horas::lookup(&sancti_key.render())`'s
+[Rule] body in Office context. The Festum-Domini precedence
+gate now fires when EITHER source contains the marker.
+
+Closes 11-18-2035 DA Sun Matutinum/Laudes/Mat-hours: Sun=Sancti/
+11-18 wins over Sun-resumed-Pent06 via the Festum-Domini-on-
+Dominica rule. Without the horas fallback, the gate saw no
+Festum Domini and fell through to default `srank > trank` which
+fails (4 < 4.9 after DA Dominica-minor reduction).
+
+### Part B — first_vespers concurrence "Festum Domini outranks Dominica"
+
+Mirror of `horascommon.pl::concurrence:1199-1209`:
+
+```perl
+} elsif (
+  ($version !~ /196/ && ($cwinner{Rank} =~ /Dominica/i
+    && $dayname[0] !~ /Nat1/i
+    && (($crank <= 5 && $rank > 2.1
+         && $winner{Rule} =~ /Festum Domini/i))))
+  || ...
+) { $vespera = 3; }   # 2V of today
+```
+
+When today is Festum Domini Duplex+ (rank > 2.1) and tomorrow
+is Dominica (Officium starts with "Dominica", crank ≤ 5), under
+pre-1960 Sat eve Vespera KEEPS today's 2V regardless of rank.
+
+Closes 11-18-2028 / 11-18-2029 / 11-18-2034 DA Sat Vespera 1V
+swap. Default rank comparison was swapping (today=Sancti/11-18
+rank 4 < tomorrow=Sun PentEpi6 rank 4.9 after Dominica-minor
+cede). With rule, Sat keeps 2V on Dedicatio matching Perl's
+"Vespera de praecedenti; commemoratio de sequenti".
+
+Narrow gates: pre-1960 only (R60 has its own `$rank >= $crank`
+rule); today_rank > 2.1; tomorrow_rank ≤ 5; tomorrow [Officium]
+starts with "Dominica"; today [Rule] contains "Festum Domini";
+not Nat1 cycle.
+
+### Combined results
+
+DA 2028 Vesp 2→1 (closed 11-18). DA 2029 Vesp 1→? (closed
+11-18 was 1 of 1 + All Souls = 2). DA 2034 Vesp 2→1. DA 2035
+Vesp 2→1. DA 2035 Mat closes 11-18 too (Part A). 2030 had no
+11-18 differ in baseline (year-specific).
+
+No-regression verified:
+
+- `cargo test --release --lib` — 431 passed
+- Mass T1570 / R60 2026 year-sweeps — 365/365 each (100%)
+- 2026 + 2034 multi-rubric Mat/Laud/Vesp/Compl — unchanged
+- Prior closed slices 107/108/109/110 spot-checked clean
+
 ## Slice 112: today_in_octave requires MAIN cell to be the Octave-day — DA +1/yr Compline (Sat-eve next to Octave commemoration)
 
 Slice 111 tightened the file-existence gate by adding a kalendar

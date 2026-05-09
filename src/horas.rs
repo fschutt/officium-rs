@@ -2044,6 +2044,56 @@ pub fn first_vespers_day_key_for_rubric<'a>(
             };
         }
     }
+    // Pre-1960 "Festum Domini outranks Dominica" 2V-keep rule.
+    // Mirror of `horascommon.pl::concurrence:1199-1209`:
+    //
+    //   } elsif (
+    //     ($version !~ /196/ && ($cwinner{Rank} =~ /Dominica/i
+    //       && $dayname[0] !~ /Nat1/i
+    //       && (($crank <= 5 && $rank > 2.1
+    //            && $winner{Rule} =~ /Festum Domini/i))))
+    //     || ...
+    //   ) {
+    //     $vespera = 3;  // 2V of today, commemoration of tomorrow
+    //   }
+    //
+    // Closes 11-18-2028 / 11-18-2034 / 11-18-2035 DA Sat Vespera:
+    // today=Sancti/11-18 (Dedicatio Basilicarum P+P) Duplex majus
+    // 4 with [Rule] containing `(rubrica divino aut rubrica 1955)
+    // Festum Domini`. Tomorrow=Tempora/PentEpi6-0 Sun Semiduplex
+    // 5 (reduced to 4.9 by DA Dominica-minor). Default rank
+    // comparison swaps (4 < 4.9), but Festum Domini privilege
+    // keeps today's 2V.
+    //
+    // Narrow gates: pre-1960 only (R60 has its own `$rank >= $crank`
+    // rule handled elsewhere); today is Festum Domini Duplex+
+    // (rank > 2.1); tomorrow is Dominica (Officium starts with
+    // "Dominica") with rank ≤ 5.
+    let is_pre_1960 = !matches!(rubric, crate::core::Rubric::Rubrics1960);
+    if is_pre_1960 && today_rank > 2.1 && tomorrow_rank <= 5.0 {
+        let tomorrow_is_dominica = lookup(tomorrow_key)
+            .and_then(|f| section_via_inheritance(f, "Officium"))
+            .map(|o| {
+                let evaluated = eval_section_conditionals(&o, rubric, hora);
+                evaluated.to_lowercase().starts_with("dominica")
+            })
+            .unwrap_or(false);
+        let today_is_festum_domini = lookup(today_key)
+            .and_then(|f| section_via_inheritance(f, "Rule"))
+            .map(|r| {
+                let evaluated = eval_section_conditionals(&r, rubric, hora);
+                evaluated.to_lowercase().contains("festum domini")
+            })
+            .unwrap_or(false);
+        // dayname[0] !~ /Nat1/i — exclude Christmas Octave Sun cycle
+        // (Nat1-0 = Sun within Octave Christmas which has its own
+        // precedence rules).
+        let is_nat1 = today_key.starts_with("Tempora/Nat1")
+            || tomorrow_key.starts_with("Tempora/Nat1");
+        if tomorrow_is_dominica && today_is_festum_domini && !is_nat1 {
+            return today_key;
+        }
+    }
     if today_rank > tomorrow_rank {
         today_key
     } else {

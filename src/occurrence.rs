@@ -402,6 +402,16 @@ fn compute_occurrence_core(input: &OfficeInput, corpus: &dyn Corpus) -> Occurren
 
     // ── Precedence ───────────────────────────────────────────────────
     let sancti_mass_file = corpus.mass_file(&sancti_key);
+    // Office context: also load the horas-side [Rule] body so the
+    // Festum-Domini precedence check can see horas-only annotations
+    // (Sancti/11-18 Dedicatio Basilicarum P+P carries Festum Domini
+    // only on the horas side).
+    let sancti_horas_rule_owned: Option<String> = if !input.is_mass_context {
+        crate::horas::lookup(&sancti_key.render())
+            .and_then(|hf| hf.sections.get("Rule").cloned())
+    } else {
+        None
+    };
     let sanctoral_office = decide_sanctoral_wins_1570(
         sancti_entry,
         tempora_file,
@@ -410,6 +420,7 @@ fn compute_occurrence_core(input: &OfficeInput, corpus: &dyn Corpus) -> Occurren
         input.rubric,
         sancti_mass_file,
         input.is_mass_context,
+        sancti_horas_rule_owned.as_deref(),
     );
 
     // ── Anticipated Sunday-Within-Octave-of-Epiphany ────────────────
@@ -631,6 +642,16 @@ fn decide_sanctoral_wins_1570(
     rubric: Rubric,
     sancti_file: Option<&MassFile>,
     is_mass_context: bool,
+    // Office context only: horas-side Sancti [Rule] body. The
+    // Mass-side [Rule] sometimes lacks `Festum Domini` (e.g.
+    // Sancti/11-18 Dedicatio Basilicarum P+P Mass-file [Rule] is
+    // just `ex C8; Gloria; CredoDA; Prefatio=Dedicatio` while the
+    // horas-side carries `(rubrica divino aut rubrica 1955)
+    // Festum Domini`). Perl's `setupstring()` reads the horas-side
+    // hash in Office context, so the precedence rule needs to see
+    // it too. None when called in Mass context or when horas file
+    // is absent.
+    sancti_horas_rule: Option<&str>,
 ) -> bool {
     let _sancti = match sancti {
         None => return false, // no sanctoral entry → temporal wins
@@ -773,15 +794,21 @@ fn decide_sanctoral_wins_1570(
         && trank_before_dominica_adjust <= 5.0
         && srank < trank_before_dominica_adjust
     {
-        if let Some(sf) = sancti_file {
-            if sf
-                .sections
-                .get("Rule")
-                .map(|r| r.to_lowercase().contains("festum domini"))
-                .unwrap_or(false)
-            {
-                return true;
-            }
+        let mass_has_fd = sancti_file
+            .and_then(|sf| sf.sections.get("Rule"))
+            .map(|r| r.to_lowercase().contains("festum domini"))
+            .unwrap_or(false);
+        // Mass-side [Rule] doesn't always carry "Festum Domini" — e.g.
+        // Sancti/11-18 Dedicatio Basilicarum P+P Mass-file [Rule] is
+        // `ex C8; Gloria; CredoDA; Prefatio=Dedicatio` while horas-side
+        // carries `(rubrica divino aut rubrica 1955) Festum Domini`.
+        // In Office context, also consult the horas-side body so the
+        // precedence rule fires for Office-only Festum-Domini marks.
+        let horas_has_fd = sancti_horas_rule
+            .map(|r| r.to_lowercase().contains("festum domini"))
+            .unwrap_or(false);
+        if mass_has_fd || horas_has_fd {
+            return true;
         }
     }
 

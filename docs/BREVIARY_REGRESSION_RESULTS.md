@@ -3,6 +3,34 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 123: Triduum-day Oratio fallback gate — exclude Class I `Feria privilegiata`
+
+Closes the Matutinum portion of the Triduum cluster under R55/R60
+(04-02 + 04-03 Holy Thursday/Friday Matutinum, 4 cells in 2026).
+
+The bug: `tempora_feria_oratio_dominica` (the Tempora-ferial → week-Sunday Oratio fallback at horas.rs:3678+) gated only on the
+`Feria` substring of the [Rank] class field, plus an exclusion for
+`Feria major`. Triduum days carry `[Rank] ;;Feria privilegiata
+Duplex I classis;;7` — the class string contains "feria" but NOT
+"feria major", so the fallback fired even though these are Class I
+days with a proper inherited [Oratio]/[Oratio Matutinum] via the
+`@Tempora/Quad6-4` redirect chain on Quad6-4r/5r/6r. The fallback
+then displaced the Triduum oratio with Quad6-0 = Palm Sunday's Oratio.
+
+Fix: also gate on the rank-num field (column 2) being numerically
+ferial (`< 4.0`). True ferials are rank 1; "Feria major" Lent
+ferials never reach this guard (already excluded by the prior
+`feria major` check); Triduum's rank 7 + Privileged-Class-I
+Sundays' high ranks now exit cleanly.
+
+Verified: T1570/T1910/DA/R55/R60 30-day all-hours sweep stays 100%;
+Mass T1570 / R60 year-sweep stays 100%; 04-02-2026 R55 Matutinum
+now matches Perl (Quad6-4 [Oratio Matutinum] = "Respice quaesumus");
+R55 2026 27 differs → 25, R60 same gain. T1570/T1910/DA unchanged
+(their Triduum-Mat path uses the natural chain). Spot-checked
+slices 110, 121, 122 prior closures: all still pass (12-29-1985,
+02-24-1985, 02-21-2027, 11-30-1980, 12-21-1990).
+
 ## Slice 122: don't override `Tempora/Nat1-0a` Sun-of-Octave winner with a lower-rank Sancti
 
 Closes the 12-29-Sun-in-Christmas-Octave cluster — pre-1955 Office

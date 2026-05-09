@@ -3701,6 +3701,23 @@ fn splice_proper_into_slot(
             if !class.contains("feria") || class.contains("feria major") {
                 return false;
             }
+            // Triduum days (Quad6-4..6) carry "Feria privilegiata
+            // Duplex I classis;;7" — they're Class I with proper
+            // inherited [Oratio Matutinum]/[Oratio] via the @-redirect
+            // chain. Without this rank gate the Sun-fallback (Quad6-0
+            // = Palm Sunday) wrongly displaces Quad6-4r/5r/6r's
+            // Triduum oratio under R55/R60. Restrict the fallback to
+            // numerically-ferial ranks (< 4) — bare ferials are rank
+            // 1, Lent ferials carry "Feria major" which is already
+            // excluded above, and Class I/II "Feria privilegiata"
+            // Triduum days exit via this gate.
+            let rank_num = segments
+                .get(2)
+                .and_then(|s| s.trim().parse::<f32>().ok())
+                .unwrap_or(0.0);
+            if rank_num >= 4.0 {
+                return false;
+            }
             // 4th field (commune source) — empty triggers Sun-fallback,
             // populated triggers commune-Oratio path (don't fire here).
             let fourth = segments.get(3).map(|s| s.trim()).unwrap_or("");

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>officium-rs — Liturgical Calendar (month grid)</title>
+<style>
+  /* ── Site shell (mirrors index.html / breviary.html) ────────── */
+  :root {
+    --bg: #f8f4ec;
+    --fg: #1a1612;
+    --muted: #6b6358;
+    --rule: #d8cfbf;
+    --accent: #8b1c2b;
+    --accent-soft: #ad3a4a;
+    --rubric-red: #a31a2a;
+    --card: #fffcf5;
+    --shadow: 0 1px 0 rgba(0,0,0,0.04), 0 4px 16px rgba(60,40,20,0.06);
+    --mono: ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
+    --serif: "EB Garamond", Garamond, Georgia, "Times New Roman", serif;
+
+    /* Liturgical-color swatches for the cell tag pill. */
+    --col-white:  #f4eedc;
+    --col-red:    #c4524a;
+    --col-green:  #6b8b5a;
+    --col-purple: #7a5b8a;
+    --col-black:  #1f1c1a;
+    --col-rose:   #d8a0a8;
+  }
+  * { box-sizing: border-box }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--serif);
+    font-size: 18px;
+    line-height: 1.55;
+  }
+  header.page, main, footer.page {
+    max-width: 1100px;
+    margin: 0;
+    padding: 0 36px;
+    text-align: left;
+  }
+  nav.toplinks {
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    gap: 18px;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  nav.toplinks a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid currentColor;
+  }
+  nav.toplinks a[aria-current="page"] {
+    color: var(--fg);
+    border-bottom-color: var(--fg);
+    font-weight: 500;
+  }
+  header.page {
+    padding-top: 56px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--rule);
+  }
+  header.page h1 {
+    font-size: 32px;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  header.page h1 .crate {
+    font-family: var(--mono);
+    font-size: 0.85em;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  header.page .tagline {
+    color: var(--muted);
+    margin: 0;
+    font-style: italic;
+  }
+  main {
+    padding-top: 24px;
+    padding-bottom: 64px;
+  }
+  section + section { margin-top: 32px; }
+  h2.section-h {
+    font-size: 14px;
+    font-family: var(--mono);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin: 0 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* Picker bar */
+  .picker {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .picker label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-right: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .picker select, .picker input[type=number] {
+    font-family: var(--serif);
+    font-size: 16px;
+    padding: 6px 10px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--card);
+    color: var(--fg);
+  }
+  .picker input[type=number] { width: 90px; }
+  .picker button {
+    padding: 7px 14px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    color: var(--fg);
+    font-family: var(--mono);
+    font-size: 13px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .picker button:hover { background: var(--bg); border-color: var(--accent-soft); }
+  .picker button.primary {
+    background: var(--accent);
+    color: #fffcf5;
+    border-color: var(--accent);
+  }
+  .picker button.primary:hover { background: var(--accent-soft); border-color: var(--accent-soft); }
+  .picker .spacer { flex: 1; }
+
+  /* Grid */
+  .grid-wrap {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .month-title {
+    font-family: var(--serif);
+    font-size: 22px;
+    margin: 0 0 14px;
+    color: var(--fg);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .grid .dow-head {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: center;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .cell {
+    min-height: 96px;
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 6px 8px 8px;
+    font-size: 13px;
+    line-height: 1.35;
+    cursor: pointer;
+    transition: border-color 0.1s, background 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+  .cell:hover { border-color: var(--accent-soft); background: var(--card); }
+  .cell.empty { background: transparent; border-color: transparent; cursor: default; }
+  .cell.empty:hover { background: transparent; }
+  .cell.today { border-color: var(--accent); border-width: 2px; }
+  .cell.today .day-num { color: var(--accent); font-weight: 600; }
+  .day-num {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .day-num .dow {
+    font-size: 10px;
+    color: var(--muted);
+    opacity: 0.7;
+  }
+  .day-title {
+    font-family: var(--serif);
+    font-size: 13px;
+    line-height: 1.3;
+    color: var(--fg);
+    margin: 2px 0 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .day-rank {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.3;
+  }
+  .day-color {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+    border: 1px solid rgba(0,0,0,0.15);
+  }
+  .day-color.color-white  { background: var(--col-white); }
+  .day-color.color-red    { background: var(--col-red); }
+  .day-color.color-green  { background: var(--col-green); }
+  .day-color.color-purple { background: var(--col-purple); }
+  .day-color.color-black  { background: var(--col-black); }
+  .day-color.color-rose   { background: var(--col-rose); }
+  .day-commem {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  #status {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    padding: 4px 0;
+  }
+  #status.error { color: var(--rubric-red); }
+  #status.ok    { color: #2e6b3e; }
+
+  footer.page {
+    padding-top: 32px;
+    padding-bottom: 56px;
+    border-top: 1px solid var(--rule);
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  footer.page a { color: var(--accent); text-decoration: none; border-bottom: 1px solid currentColor; }
+  footer.page a:hover { color: var(--accent-soft); }
+  .meta { font-family: var(--mono); font-size: 12px; }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--rule);
+  }
+  .legend .item { display: inline-flex; align-items: center; gap: 5px; }
+
+  @media (max-width: 700px) {
+    header.page, main, footer.page { padding: 0 18px; }
+    .cell { min-height: 70px; padding: 4px 6px; }
+    .day-title { font-size: 11px; -webkit-line-clamp: 2; }
+    .day-rank, .day-commem { font-size: 9px; }
+    .grid { gap: 3px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <h1><span class="crate">officium-rs</span> — Calendar</h1>
+  <p class="tagline">A month-grid view of the liturgical calendar. Pick a month, year, and rubric — every cell shows the day's resolved winner, color, and rank as computed by the same engine that drives the Mass and Breviary pages.</p>
+  <nav class="toplinks">
+    <a href="./">Mass</a>
+    <a href="./breviary.html">Breviary</a>
+    <a href="./calendar.html" aria-current="page">Calendar</a>
+    <a href="https://github.com/fschutt/officium-rs">GitHub</a>
+  </nav>
+</header>
+
+<main>
+
+  <section>
+    <h2 class="section-h">Pick a month</h2>
+    <div class="picker">
+      <label for="month">Month</label>
+      <select id="month">
+        <option value="1">January</option>
+        <option value="2">February</option>
+        <option value="3">March</option>
+        <option value="4">April</option>
+        <option value="5">May</option>
+        <option value="6">June</option>
+        <option value="7">July</option>
+        <option value="8">August</option>
+        <option value="9">September</option>
+        <option value="10">October</option>
+        <option value="11">November</option>
+        <option value="12">December</option>
+      </select>
+
+      <label for="year">Year</label>
+      <input type="number" id="year" min="1976" max="2076" step="1">
+
+      <label for="rubric">Rubric</label>
+      <select id="rubric">
+        <option value="trid-1570">Tridentine 1570</option>
+        <option value="trid-1910">Tridentine 1910 (Pius X)</option>
+        <option value="divino-afflatu">Divino Afflatu 1939 (pre-55)</option>
+        <option value="reduced-1955">Reduced 1955 (Pius XII)</option>
+        <option value="rubrics-1960" selected>Rubrics 1960 (John XXIII)</option>
+      </select>
+
+      <button id="prev-btn" type="button" title="Previous month">&larr;</button>
+      <button id="today-btn" type="button">Today</button>
+      <button id="next-btn" type="button" title="Next month">&rarr;</button>
+      <span class="spacer"></span>
+      <span id="status">Loading WASM…</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="grid-wrap">
+      <h3 id="month-title" class="month-title">&nbsp;</h3>
+      <div class="grid" id="grid"></div>
+      <div class="legend">
+        <span class="item"><span class="day-color color-white"></span> White</span>
+        <span class="item"><span class="day-color color-red"></span> Red</span>
+        <span class="item"><span class="day-color color-green"></span> Green</span>
+        <span class="item"><span class="day-color color-purple"></span> Violet</span>
+        <span class="item"><span class="day-color color-black"></span> Black</span>
+        <span class="item"><span class="day-color color-rose"></span> Rose</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="page">
+  <p>
+    <a href="https://github.com/fschutt/officium-rs">github.com/fschutt/officium-rs</a> ·
+    <a href="https://github.com/DivinumOfficium/divinum-officium">upstream Perl</a> ·
+    MIT
+  </p>
+  <p class="meta" id="version">officium-rs · WASM</p>
+</footer>
+
+<script type="module" src="./calendar.js"></script>
+</body>
+</html>

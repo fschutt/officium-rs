@@ -99,6 +99,83 @@ pub fn compute_office_json(year: i32, month: u32, day: u32, rubric: &str) -> Str
     )
 }
 
+/// Compact day-summary for the calendar grid view. Returns
+/// `title`, `winner`, `color`, `season`, `rank`, plus a list of
+/// commemoration titles. Cheaper than `compute_office_full` —
+/// no Mass propers / Office walker. Suitable for rendering 30-31
+/// cells per month at interactive speed.
+///
+/// JSON shape:
+/// ```json
+/// {
+///   "title": "S. Joseph Sponsi BMV Confessoris",
+///   "winner": "Sancti/03-19",
+///   "color": "White",
+///   "season": "Lent",
+///   "rank": "Duplex I classis",
+///   "commemorations": [{"title":"...","path":"..."}]
+/// }
+/// ```
+#[wasm_bindgen]
+pub fn compute_calendar_day(year: i32, month: u32, day: u32, rubric: &str) -> String {
+    let Some(rubric_enum) = parse_rubric(rubric) else {
+        return r#"{"error":"unknown rubric"}"#.to_string();
+    };
+    let input = OfficeInput {
+        date: Date::new(year, month, day),
+        rubric: rubric_enum,
+        locale: Locale::Latin,
+        is_mass_context: false,
+    };
+    let corpus = BundledCorpus;
+    let office = compute_office(&input, &corpus);
+
+    let title = officium_title(&office.winner.render());
+    let commems: Vec<String> = office
+        .commemoratio
+        .iter()
+        .map(|c| {
+            format!(
+                r#"{{"title":"{}","path":"{}"}}"#,
+                json_escape(&officium_title(&c.render())),
+                json_escape(&c.render()),
+            )
+        })
+        .collect();
+
+    format!(
+        r#"{{"title":"{}","winner":"{}","color":"{}","season":"{}","rank":"{}","commemorations":[{}]}}"#,
+        json_escape(&title),
+        json_escape(&office.winner.render()),
+        format!("{:?}", office.color),
+        format!("{:?}", office.season),
+        json_escape(&office.rank.raw_label),
+        commems.join(","),
+    )
+}
+
+/// Look up the [Officium] body of a winner path. Strips the
+/// rubric-conditional preamble so we get a plain human-readable
+/// title (e.g. "Dominica III in Quadragesima"). Falls back to
+/// the file path itself if [Officium] is missing.
+fn officium_title(path: &str) -> String {
+    let raw = horas::lookup(path)
+        .and_then(|f| f.sections.get("Officium"))
+        .map(|s| s.as_str())
+        .unwrap_or("");
+    if raw.is_empty() {
+        return path.to_string();
+    }
+    // Take the first non-rubric-gated line. Multi-line [Officium]
+    // bodies use `(sed rubrica X)` as line-prefixes; the Sancti
+    // file's first line is the default title (DA inherits this).
+    raw.lines()
+        .map(str::trim)
+        .find(|l| !l.is_empty() && !l.starts_with('('))
+        .unwrap_or(path)
+        .to_string()
+}
+
 fn block_json(b: Option<&ProperBlock>) -> String {
     match b {
         None => "null".to_string(),

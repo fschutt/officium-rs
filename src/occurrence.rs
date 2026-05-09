@@ -140,6 +140,25 @@ fn apply_christmas_octave_office_override(
     if !derived_key.starts_with("Tempora/Nat") {
         return result;
     }
+    // Sun-of-Octave override: when the year-letter Transfer table has
+    // already mapped today to `Tempora/Nat1-0a` (the "Sunday falls on
+    // Dec 29" file under T1570/T1888/T1906/etc.), the temporal winner
+    // is the Sunday-in-Octave with the proper Sun rank (2.93 under
+    // T1570). The day-coded ferial-of-Octave override below assumed
+    // a Nat25..Nat31 day-coded file (rank 2.1), so its OR clause
+    // (`sancti_rank >= 2.0 && T1570/T1910`) wrongly kicked the
+    // 2.93-rank Sun aside in favour of a 2.2-rank saint. Bail when
+    // the stem is week-coded (Nat1-0, Nat1-0a, Nat0-0, …) — those
+    // files carry the proper Sunday rank and `compute_occurrence_core`
+    // already chose them via the transfer table.
+    let stem = derived_key.strip_prefix("Tempora/").unwrap_or("");
+    let stem_is_day_coded = stem
+        .strip_prefix("Nat")
+        .map(|rest| !rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit()))
+        .unwrap_or(false);
+    if !stem_is_day_coded {
+        return result;
+    }
     let layer = input.rubric.kalendar_layer();
     let tempora_rank =
         crate::horas::active_rank_line_with_annotations(&derived_key, input.rubric, "")

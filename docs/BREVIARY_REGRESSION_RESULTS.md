@@ -3,6 +3,36 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 122: don't override `Tempora/Nat1-0a` Sun-of-Octave winner with a lower-rank Sancti
+
+Closes the 12-29-Sun-in-Christmas-Octave cluster — pre-1955 Office
+on Sundays falling Dec 26..31. Year-letter f.txt has the rule
+`12-29=Tempora/Nat1-0a;;1570 1888 1906 1960 DA Newcal M1963 M1617
+M1930` which `compute_occurrence_core` honours — it returns
+`Tempora/Nat1-0a` (rank 2.93 under T1570) as the temporal winner.
+
+The bug: `apply_christmas_octave_office_override` then unconditionally
+swapped that to `Sancti/12-29` (Becket, rank 2.2 under T1570) via
+its OR clause `(sancti_rank >= 2.0 && T1570/T1910)`. That clause
+was added (slices 56 + 64) to handle the day-coded ferial-of-Octave
+case where horas-side `Tempora/Nat29` carries rank 2.1 and
+Sancti/12-29 outranks at 2.2 — but it kicked in for the Sun-of-
+Octave too, dropping the legitimate 2.93-rank Sunday in favour of
+a 2.2-rank saint.
+
+Gate the override on the temporal stem being DAY-CODED (`Nat25`,
+`Nat29`, …) — i.e. `"Nat"` followed by digits only. Week-coded
+stems (`Nat1-0`, `Nat1-0a`, `Nat0-0`, …) carry the proper Sunday
+rank and `compute_occurrence_core` already chose them via the
+year-letter transfer table; the override has nothing to add.
+
+Verified: T1570 1985 9 differs → 3 differs (closes all 6
+12-29-1985 cells across Matins/Lauds/Tertia/Sexta/Nona/Vespera —
+the 3 remaining are the known Triduum-Prima cluster). All-rubrics
+30-day office sweep stays 100%; Mass T1570 / R60 year-sweep stays
+100%; spot-checked 12-29-1979, 12-29-1991, 12-26..31-1985, plus
+12-29..30-2026 all pass.
+
 ## Slice 121: bissextile shift + transfer-table consult on the preces today/tomorrow cells loop
 
 Closes the DA Apostle / Doctor on Privileged-Sunday cluster:

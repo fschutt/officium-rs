@@ -290,6 +290,42 @@ fn compute_occurrence_core(input: &OfficeInput, corpus: &dyn Corpus) -> Occurren
                     downgrade_post_1570_octave(hr, tempora_file.unwrap_or(&Default::default()), input.rubric);
             }
         }
+        // Tridentine-only "infra Octavam Corporis Christi" Tempora
+        // rank reduction. Mirror of `horascommon.pl::setrank:425`:
+        //
+        //   if ($version =~ /Trid/i
+        //       && $trank[0] =~ /infra octavam Corp/i
+        //       && $version !~ /Cist/i)
+        //   { $trank[2] = 2.9; }
+        //
+        // Perl's `/Trid/i` matches only Tridentine versions
+        // (1570/1888/1906/1910), NOT Divino Afflatu (DA reduces
+        // Sun rank to 4.9 via the Dominica-minor branch above
+        // instead). Applies regardless of original rank.
+        //
+        // The horas-side [Officium] body is authoritative — the
+        // mass corpus's `officium` field strips the octave qualifier
+        // (Pent02-0 mass officium = "Dominica II. Post Pentecosten"
+        // without "infra Octavam Corporis Christi"). Closes
+        // 06-19-2033 T1910 Sun cluster: Sun II Post Pent infra
+        // Octavam Corp rank 5.9 → 2.9 → Sancti Juliana Duplex 3
+        // wins (3 > 2.9). Applied AFTER horas-rank override so the
+        // reduction sticks.
+        let is_tridentine_only = matches!(
+            input.rubric,
+            Rubric::Tridentine1570 | Rubric::Tridentine1910
+        );
+        if is_tridentine_only {
+            let horas_off_has_infra_oct_corp = crate::horas::lookup(
+                &effective_tempora_key.render(),
+            )
+            .and_then(|f| f.sections.get("Officium"))
+            .map(|o| o.to_lowercase().contains("infra octavam corp"))
+            .unwrap_or(false);
+            if horas_off_has_infra_oct_corp {
+                temporal_rank = temporal_rank.min(2.9);
+            }
+        }
     }
 
     // ── Sanctoral side ───────────────────────────────────────────────
@@ -655,8 +691,22 @@ fn decide_sanctoral_wins_1570(
     }
     // "infra octavam Corp[oris Christi]" stays a 2.9 weekday for
     // every pre-1955 Roman rubric — see `horascommon.pl:425`.
+    // Mirror of the second clause of Perl `setrank`:
+    //
+    //   if ($version =~ /Trid/i
+    //       && ($trank[0] =~ /infra octavam Corp/i && $version !~ /Cist/i))
+    //   { $trank[2] = 2.9; }
+    //
+    // Unconditional on rank — fires for ANY trank when the title
+    // contains "infra octavam Corp". Closes 06-19-2033 T1910 Sun
+    // cluster: today=Pent02-0 (Sun II Post Pent infra Octavam Corp
+    // Christi rank 5.9). Without unconditional reduction Sun keeps
+    // 5.9 and Sun-handling at line 768 fires (is_sunday true) →
+    // Sancti Juliana 3 < 6 → Tempora wins. With reduction Sun rank
+    // = 2.9 → Sun-handling skipped → default `srank > trank` → 3
+    // > 2.9 → Sancti wins → Juliana office.
     if (is_tridentine || is_divino)
-        && temporal_name.contains("infra octavam Corp")
+        && temporal_name.to_lowercase().contains("infra octavam corp")
         && trank > 4.2
         && trank < 5.1
     {

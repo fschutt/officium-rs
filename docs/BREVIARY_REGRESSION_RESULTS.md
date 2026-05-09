@@ -3,6 +3,60 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 104: Tridentine "infra Octavam Corp" reduces ANY rank — T1910 +7/yr
+
+`compute_occurrence_core` now applies the unconditional-on-rank
+`infra Octavam Corporis Christi` reduction under T1570/T1910 by
+reading the horas-side `[Officium]` directly. Mirror of
+`horascommon.pl::setrank:425`:
+
+```perl
+if ($version =~ /Trid/i
+    && $trank[0] =~ /infra octavam Corp/i
+    && $version !~ /Cist/i)
+{ $trank[2] = 2.9; }
+```
+
+Perl's `/Trid/i` matches Tridentine versions only (1570/1888/1906/
+1910), NOT Divino Afflatu — DA reduces minor Sundays via the
+Dominica-minor 4.9 branch above instead. The reduction fires
+regardless of original rank when the [Officium] body contains
+"infra Octavam Corp".
+
+The horas-side [Officium] body is the source of truth — the mass
+corpus's `officium` field strips the octave qualifier (Pent02-0
+mass officium = "Dominica II. Post Pentecosten" without "infra
+Octavam Corporis Christi"). Reading horas-side mirrors how Perl
+evaluates `$trank[0]` against the post-SetupString `[Rank]` field
+which carries the prepended [Officium] body.
+
+The existing `decide_sanctoral_wins_1570` rank-(4.2, 5.1)-gated
+reduction is kept (mirroring the parallel Dominica-minor clause)
+to handle the cases the new occurrence-side override doesn't.
+
+**Cell impact:** Closes 7 cells in T1910 2033:
+- 06-18 Sat Vespera (Sat-eve before 06-19 Sun Pent II infra Oct
+  Corp; today=Pent01-6 reduced 5.6 → 2.9, tomorrow=Sancti Juliana
+  3 → swap)
+- 06-19 Sun Mat / Laudes / Tertia / Sexta / Nona / Vespera
+  (Sun II Post Pent infra Octavam Corp Christi rank 5.9 reduced
+  to 2.9, Sancti Juliana Duplex 3 wins → renders Juliana office)
+
+  | Sweep                | Before | After |
+  |----------------------|-------:|------:|
+  | T1910 office 2033    | 11 differs | 4 differs |
+  | T1570 / T1910 / DA / R55 / R60 office 2026 | unchanged | unchanged |
+  | T1570 30-day office  | 100% | 100% |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+
+Verification trail: an earlier draft removed the rank-(4.2, 5.1)
+gate from `decide_sanctoral_wins_1570`'s parallel reduction,
+which over-fired under DA and regressed DA 2026 from 7 to 16
+differs (06-05/06 Pent01-5/6 Friday/Saturday infra Oct Corp). The
+final shape keeps the rank gate on the Tridentine-or-Divino
+branch and adds the unconditional reduction in the new
+Tridentine-only override that uses horas-side `[Officium]`.
+
 ## Slice 103: Tridentine flatten table on Tempora-Tempora pair — T1570 +1/yr
 
 `first_vespers_day_key_for_rubric` now applies the Tridentine

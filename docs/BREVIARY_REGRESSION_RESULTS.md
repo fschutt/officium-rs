@@ -3,6 +3,53 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 99: Office-context Sancti rank from horas-side `[Rank] (rubrica 196)` — R60 +11/yr
+
+`compute_occurrence_core` now overrides `sanctoral_rank` with the
+horas-side `active_rank_line_with_annotations` rank for Sancti
+files in office context under R60 (mirror of slice 95 but for
+Sancti instead of Tempora). The mass corpus build script doesn't
+always extract every per-rubric `[Rank]` second-header into the
+`rank_num_{1570,1906,1955,1960}` slots, so files diverging on
+`(rubrica 196)` ship with bare `rank_num` only.
+
+`Sancti/09-08` (Nativity BVM) is one such file:
+
+```
+[Rank]
+In Nativitate Beatæ Mariæ Virginis;;Duplex II classis cum Octava simplici;;5.1;;ex C11
+
+[Rank] (rubrica 196)
+In Nativitate Beatæ Mariæ Virginis;;Duplex II classis cum Octava simplici;;5;;ex C11
+```
+
+The mass corpus has only `rank_num=5.1`. Under R60 the office
+should use 5; with 5 the rank-tie with Pent Sun (also 5) makes
+`srank > trank` false → Tempora wins → Sun celebrated. Without
+override `sancti_rank=5.1 > trank=5` → Sancti wins (wrong).
+
+Gated on `!is_mass_context && rubric=R60` and on
+`sanctoral_rank > 1.1` (so we don't double-fire with the existing
+slice 69 R60 demotion override below 1.1).
+
+**Cell impact:** Closes 11 cells in R60 2030:
+- 09-07 Sat Vespera (Sat eve before 09-08 Nativity-BVM-on-Sun)
+- 09-08 Sun Mat / Tertia / Sexta / Nona / Vespera (Nativity BVM
+  cluster — Sun Pent13 wins, BVM commemorated)
+- 09-15 Sun Mat / Tertia / Sexta / Nona / Vespera (Seven Sorrows
+  cluster — same precedence pattern)
+
+  | Sweep                | Before | After |
+  |----------------------|-------:|------:|
+  | R60 office 2030      | 38 differs | 27 differs |
+  | T1570 / T1910 / DA / R55 / R60 office 2026 | unchanged | unchanged |
+  | T1570 30-day office  | 100% | 100% |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+
+After this slice, R60 office 2030 differs are concentrated on
+the structural Triduum (04-18/19/20) and All Souls (11-02)
+clusters only.
+
 ## Slice 98: R60 II classis Sun cedes 1V to today=Festum Domini — R60 +1 cell
 
 `first_vespers_day_key_for_rubric` now keeps today's 2V when (a)

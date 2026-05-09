@@ -335,6 +335,35 @@ fn compute_occurrence_core(input: &OfficeInput, corpus: &dyn Corpus) -> Occurren
         }
     }
 
+    // Office-context Sancti rank override under R60 — mirror of
+    // slice 95 (Tempora). The mass corpus build script doesn't
+    // always extract every `[Rank] (rubrica 196)` second-header
+    // into `rank_num_1960`. Sancti/09-08 (Nativity BVM) ships with
+    // bare `rank_num=5.1` even though its file declares `[Rank]
+    // (rubrica 196) ;;Duplex II classis cum Octava simplici;;5`.
+    // Use horas-side `active_rank_line_with_annotations` (R60-aware
+    // conditional eval) to read the file's rubric-active rank.
+    //
+    // Closes 09-08 R60 Sun: Nativity BVM 5 ties with Pent13-0 Sun 5
+    // under horas-side; pre-1960 srank > trank gate fails (5 > 5 is
+    // false) and the Sun handling correctly returns Tempora as
+    // winner. Without override sancti_rank=5.1 > trank=5 → Sancti
+    // wins (wrong; Sun should win, Sancti commemorates).
+    if !input.is_mass_context && matches!(input.rubric, Rubric::Rubrics1960) && sanctoral_rank > 1.1
+    {
+        let horas_rank = crate::horas::active_rank_line_with_annotations(
+            &sancti_key.render(),
+            input.rubric,
+            "",
+        )
+        .map(|(_, _, n)| n);
+        if let Some(hr) = horas_rank {
+            if hr > 0.0 && (hr - sanctoral_rank).abs() > 0.01 {
+                sanctoral_rank = hr;
+            }
+        }
+    }
+
     // ── Precedence ───────────────────────────────────────────────────
     let sancti_mass_file = corpus.mass_file(&sancti_key);
     let sanctoral_office = decide_sanctoral_wins_1570(

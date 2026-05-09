@@ -3,6 +3,56 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 131: 11-01 (All Saints) Compline → All Souls swap under DA/R55
+
+🏁 **2026 office sweep: 0 differs across all 5 rubrics.**
+
+Closes 11-01 Compline DA (the last 2026 differ). Mirror of upstream
+`horascommon.pl::occurrence-tomorrow-block` lines 273-282:
+
+```perl
+if ($tomorrow) {
+    $svesp = 1;
+    if ( $version !~ /196|Trident/
+        && $hora =~ /Completorium/i
+        && $month == 11
+        && (($day == 1 && $dayofweek != 0) || ($day == 2 && $dayofweek == 1)))
+    {
+        $srank[2] = 7; $srank =~ s/;;[0-9]/;;7/;
+    }
+```
+
+Under DA/R55, when computing tomorrow's office at concurrence-time
+on 11-01 Compline (and tomorrow is not Sunday), Perl boosts
+tomorrow's All Souls rank to 7 — same as today's All Saints —
+which makes 1V/Compline of tomorrow's office (Sancti/11-02) win
+over today's 2V/Compline of All Saints. Result: All Saints' eve
+Compline renders the Office of the Dead.
+
+Two fixes:
+1. Add the swap rule to `first_vespers_day_key_for_rubric`:
+   `today_key=Sancti/11-01 && hora=Completorium && DA/R55 &&
+   today_dow != 6` → return tomorrow_key.
+2. Generalise slice 130's R60-only `all_souls_r60_compline` splice
+   gate to fire for ANY rubric when day_key=Sancti/11-02 +
+   Compline (now `all_souls_compline`). This covers both the new
+   DA/R55 routed-via-concurrence case and the existing R60 direct
+   case. DA/R55 11-02 Compline still routes through slice 126's
+   wipe-to-tomorrow swap before reaching this gate, so `day_key=
+   Sancti/11-02` only resolves at this rendering point for the
+   11-01-routed DA/R55 case + the R60 11-02-direct case.
+
+T1570/T1910/DA/R55/R60 2026: 0 differs each. T1570/T1910/DA show
+99.97% (the .03% is perl-blank/empty section cells where Perl
+emits no Oratio body). Mass T1570/R60 year-sweep stays 100%;
+all-rubrics 30-day office stays 100%; spot-checked slices
+121-130 prior closures intact.
+
+Year-specific residuals remain in pre-2026 sweeps (e.g. DA 1985
+11-02 Sat Compline preces-fires-omittitur via the slice 126 swap
+to Tempora/Pent23-0 — the kalendar-octave detection for 11-02oct
+needs cleanup); these are tackled in subsequent slices.
+
 ## Slice 130: All Souls Prima/Compline body splice — `splice_special_oratio_body`
 
 Closes 11-02 Prima across DA/R55/R60 + 11-02 Compline R60 (4 cells/

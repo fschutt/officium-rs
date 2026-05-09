@@ -217,22 +217,28 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
             || k.starts_with("Tempora/Quad6-6")
     });
     // All Souls' Office of the Dead — Prima always (DA/R55/R60) and
-    // Compline under R60 only (DA/R55 already swap to tomorrow=Sancti/
-    // 11-03oct via slice 126's wipe rule, so their Compline doesn't
-    // hit this path). Sancti/11-02 carries `[Oratio Matutinum]` =
-    // `&Dominus_vobiscum @Commune/C9:Oratio_Fid` and the chain falls
-    // through to Commune/C9 `[Oratio 2]` / `[Oratio]` / `[Oratio
-    // Matutinum]` for the day-hour Office of the Dead form (Pater
-    // noster Et + V/R + A porta inferi …).
+    // Compline whenever today_key resolves to Sancti/11-02. Two paths
+    // bring us here:
+    //   * Direct: 11-02 R60 Compline. R60 doesn't enter slice 126's
+    //     wipe-to-tomorrow swap (the wipe is non-1960 only), so 11-02
+    //     stays the day_key.
+    //   * Concurrence-routed: 11-01 DA/R55 Compline routes through
+    //     the 1V boost (slice 131 above in `first_vespers_day_key_
+    //     for_rubric`), which returns tomorrow=Sancti/11-02 as the
+    //     winner — so by the time horas.rs renders Compline, day_key
+    //     IS Sancti/11-02. Same body splice applies for both paths.
+    // Sancti/11-02 carries `[Oratio Matutinum]` = `&Dominus_vobiscum
+    // @Commune/C9:Oratio_Fid` and the chain falls through to
+    // Commune/C9 `[Oratio 2]` / `[Oratio]` for the day-hour Office of
+    // the Dead form (Pater noster Et + V/R + A porta inferi …).
     let all_souls_day = args.day_key == Some("Sancti/11-02");
-    let r60 = matches!(args.rubric, crate::core::Rubric::Rubrics1960);
     let triduum_prima_or_compline = matches!(args.hour, "Completorium" | "Prima") && triduum_day;
     let all_souls_prima = args.hour == "Prima" && all_souls_day;
-    let all_souls_r60_compline = args.hour == "Completorium" && all_souls_day && r60;
+    let all_souls_compline = args.hour == "Completorium" && all_souls_day;
     let suppress_oratio_block =
-        triduum_prima_or_compline || all_souls_prima || all_souls_r60_compline;
+        triduum_prima_or_compline || all_souls_prima || all_souls_compline;
     let splice_triduum_prima = args.hour == "Prima" && triduum_day;
-    let splice_all_souls = all_souls_prima || all_souls_r60_compline;
+    let splice_all_souls = all_souls_prima || all_souls_compline;
     let mut in_suppressed_oratio = false;
 
     for line in &filtered_template {
@@ -1792,6 +1798,29 @@ pub fn first_vespers_day_key_for_rubric<'a>(
 ) -> &'a str {
     if tomorrow_has_no_prima_vespera(tomorrow_key, rubric, hora) {
         return today_key;
+    }
+    // 11-01 (All Saints) Compline → 11-02 (All Souls) swap under
+    // DA / R55. Mirror of upstream `horascommon.pl::occurrence-
+    // tomorrow-block` (lines 273-282), which boosts tomorrow's
+    // Sancti/11-02 srank to 7 at the 1V/Compline phase when:
+    //   * version !~ /1960|Trident/ (DA / R55)
+    //   * hora = Completorium
+    //   * (today=11-01 AND today_dow != 0 in Perl's TOMORROW-frame
+    //     dayofweek — i.e., tomorrow is not Sunday)
+    // After the boost, concurrence picks tomorrow's All Souls
+    // (rank 7) over today's All Saints (rank 7) — Compline of 11-01
+    // evening is therefore the Office of the Dead. Closes 11-01 DA/R55
+    // Compline.
+    let da_or_r55 = matches!(
+        rubric,
+        crate::core::Rubric::DivinoAfflatu1911 | crate::core::Rubric::Reduced1955
+    );
+    if hora == "Completorium"
+        && today_key == "Sancti/11-01"
+        && da_or_r55
+        && today_dow != 6 // today_dow=Sat means tomorrow=Sun, suppress
+    {
+        return tomorrow_key;
     }
     // All Souls' Day Vespera/Completorium wipe under non-1960 rubrics.
     // Mirror of upstream `horascommon.pl::concurrence`-side

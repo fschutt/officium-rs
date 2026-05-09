@@ -583,7 +583,37 @@ fn preces_dominicales_et_feriales_fires(
         })
         .unwrap_or(false);
     let today_oct_key = format!("Sancti/{month:02}-{day:02}oct");
-    let today_in_octave = lookup(&today_oct_key).is_some();
+    // Tighten "in octave" detection: the corpus carries `MM-DDoct`
+    // files universally, but post-DA rubrics (DA / R55 / R60)
+    // suppressed several saints' octaves. The 1V-swap-to-tomorrow
+    // logic below should fire ONLY when the Octave is actually
+    // active under the rubric's kalendar — otherwise today's
+    // Sancti-saint (e.g. DA 08-12 Clarae Duplex 3) IS the
+    // commemoratio at Sat-Compline-1V-swap-to-Sun and its rank
+    // must be checked against ranklimit. Without this gate, Rust
+    // swaps to tomorrow's date, misses today's Sancti, and
+    // erroneously fires preces.
+    let today_in_octave = if lookup(&today_oct_key).is_some() {
+        let layer_for_today = rubric.kalendar_layer();
+        crate::kalendaria_layers::lookup(layer_for_today, month, day)
+            .map(|cells| {
+                cells.iter().any(|c| {
+                    let lc = c.officium.to_lowercase();
+                    if lc.contains("octav") && !lc.contains("post octav") {
+                        return true;
+                    }
+                    let path = format!("Sancti/{}", c.stem);
+                    let officium = lookup(&path)
+                        .and_then(|f| section_via_inheritance(f, "Officium"))
+                        .unwrap_or_default()
+                        .to_lowercase();
+                    officium.contains("octav") && !officium.contains("post octav")
+                })
+            })
+            .unwrap_or(false)
+    } else {
+        false
+    };
     let is_1v_swap_at_compline_in_octave = dayofweek == 6
         && hour == "Completorium"
         && day_key_is_tempora_sunday

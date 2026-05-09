@@ -3,6 +3,54 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 111: today_in_octave gate uses rubric-active kalendar — DA +1/yr Compline (Sat-eve under suppressed Lawrence Octave)
+
+The `is_1v_swap_at_compline_in_octave` detection in
+`preces_dominicales_et_feriales_fires` was checking only file
+existence (`Sancti/MM-DDoct.txt`) — but post-DA rubrics
+(DA / R55 / R60) suppressed several saints' octaves. Under DA,
+the Lawrence Octave (08-12oct…08-17oct) is suppressed, so on
+Sat 08-12 with day_key=Pent11-0 (1V swap to Sun XI Post Pent),
+the saint S. Clarae Virginis (Duplex 3) IS the commemoratio
+at Sat-Compline-1V-swap. Its rank 3 ≥ DA ranklimit 3 → Perl
+rejects preces.
+
+Pre-fix Rust: `today_in_octave = lookup(&today_oct_key).is_some()`
+returned TRUE because `Sancti/08-12oct.txt` exists in the
+corpus → swapped lookup_m/d to TOMORROW (08-13). Today's saint
+Clarae was missed; tomorrow's Hippolyti (rank 1) was below
+ranklimit → preces fired wrongly.
+
+Fix: tighten `today_in_octave` so the file-existence gate is
+followed by a rubric-active kalendar check. The Octave is
+"in" only when at least one cell in `kalendar_layer().lookup
+(layer, month, day)` has Officium containing "octav" (excluding
+"post octav") — either in the cell's officium directly or in
+the referenced Sancti file's [Officium] body.
+
+Closes 08-12-2034 DA Sat Compline (DA 2034 Compline 2→1
+differs; only 11-01 All Souls remains structural).
+
+T1570/T1910 unaffected: their kalendar lists "Tertia die infra
+Octavam S. Laurentii" on 08-12, so today_in_octave correctly
+remains TRUE → swap to tomorrow → Lawrence-Octave commemoratio
+detection works as before. Verified clean (T1570/T1910 2026/
+2034 Compline 100%).
+
+R55 / R60 also pre-DA-style suppress Lawrence Octave; fix
+applies symmetrically to their layers. R55 2026/2034 99.73%
+(Triduum-only), R60 2026/2034 99.45% (Triduum/All Souls) —
+unchanged.
+
+No-regression verified:
+
+- `cargo test --release --lib` — 431 passed
+- Mass T1570 / R60 2026 year-sweeps — 365/365 each (100%)
+- Office T1570 / T1910 / R55 2026/2034 Compline — unchanged
+- Slice 110 still closes DA 2027 Sun-Compl cells; DA 2030/
+  2034 Compline closures preserved
+- Prior closed slices 107/108/109 spot-checked clean
+
 ## Slice 110: Sun-Compl 2V commemoratio rejects preces under non-Trident — DA +4-5/yr Compline
 
 At Sun Compline, when Sun is the 2V winner (Sun outranks Mon, no

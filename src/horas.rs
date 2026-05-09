@@ -1667,6 +1667,53 @@ pub fn first_vespers_day_key_for_rubric<'a>(
             }
         }
     }
+    // R60 "II classis Sun + today=Festum Domini" 2V-keep rule.
+    // Mirror of upstream `horascommon.pl::concurrence:1107-1111`:
+    //
+    //   || ( $version =~ /196/
+    //     && ($cwinner{Rank} =~ /Dominica/i && $dayname[0] !~ /Nat1/i && $crank <= 5)
+    //     && ($rank >= 5 && $winner{Rule} =~ /Festum Domini/i))
+    //
+    // Under R60, when today is a Festum Domini (rank ≥ 5) and
+    // tomorrow is a II classis Sunday (Dominica, rank ≤ 5), today's
+    // 2V is kept — the Sunday's 1V cedes to the Feast of the Lord.
+    // The exception `$dayname[0] !~ /Nat1/i` excludes Christmas
+    // Octave Sundays (Sun within Octave of Nativity).
+    //
+    // Closes 11-09-2030 R60 Sat Vespera: today=Sancti/11-09 Lateran
+    // Dedication (Festum Domini Duplex II classis 5) vs tomorrow=
+    // Tempora/Pent22-0 (Sun XXII Post Pentecosten Semiduplex II
+    // classis 5). Without rule today rank == tomorrow rank → swap;
+    // with rule Lateran keeps 2V → render Lateran's anniversary
+    // Oratio "Deus, qui nobis per síngulos annos...".
+    if matches!(rubric, crate::core::Rubric::Rubrics1960) {
+        let today_rank_direct = active_rank_line_with_annotations(today_key, rubric, hora)
+            .map(|(_, _, n)| n)
+            .unwrap_or(0.0);
+        let today_is_festum_domini =
+            tomorrow_rule_marks_festum_domini(today_key, rubric, hora);
+        let tomorrow_is_dominica = lookup(tomorrow_key)
+            .and_then(|f| section_via_inheritance(f, "Officium"))
+            .map(|o| {
+                let evaluated = eval_section_conditionals(&o, rubric, hora);
+                evaluated.to_lowercase().contains("dominica")
+            })
+            .unwrap_or(false);
+        let tomorrow_rank_direct = active_rank_line_with_annotations(tomorrow_key, rubric, hora)
+            .map(|(_, _, n)| n)
+            .unwrap_or(0.0);
+        // Perl excludes Nat1 (Christmas Octave Sun) — our day_key
+        // for that case starts with `Tempora/Nat`, never Sancti.
+        let is_nat1 = tomorrow_key.starts_with("Tempora/Nat");
+        if today_is_festum_domini
+            && tomorrow_is_dominica
+            && !is_nat1
+            && tomorrow_rank_direct <= 5.0
+            && today_rank_direct >= 5.0
+        {
+            return today_key;
+        }
+    }
     // "Festum Domini" priority: when tomorrow's [Rule] flags the
     // day as a feast of the Lord, the Festum Domini wins first
     // Vespers concurrence over Sunday-of-Octave / lower-rank Sancti

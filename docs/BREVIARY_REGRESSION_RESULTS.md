@@ -3,6 +3,41 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 98: R60 II classis Sun cedes 1V to today=Festum Domini — R60 +1 cell
+
+`first_vespers_day_key_for_rubric` now keeps today's 2V when (a)
+rubric is R60, (b) today is rank ≥ 5 with `Festum Domini` in
+[Rule], (c) tomorrow's [Officium] is "Dominica" rank ≤ 5, (d)
+tomorrow_key isn't `Tempora/Nat*` (excludes Christmas Octave Sun).
+Mirror of `horascommon.pl::concurrence:1107-1111`:
+
+```perl
+|| ( $version =~ /196/
+  && ($cwinner{Rank} =~ /Dominica/i && $dayname[0] !~ /Nat1/i && $crank <= 5)
+  && ($rank >= 5 && $winner{Rule} =~ /Festum Domini/i))
+```
+
+Under R60, when today is a Class II Feast of the Lord and
+tomorrow is a Class II Sunday, today's 2V is preserved — the
+Sunday cedes 1V to the Festum Domini.
+
+**Cell impact:** Closes 11-09-2030 R60 Sat Vespera. Today=
+Sancti/11-09 (In Dedicatione Archibasilicæ Ss. Salvatoris,
+Festum Domini Duplex II classis 5) vs tomorrow=Tempora/Pent22-0
+(Dominica XXII Post Pentecosten Semiduplex II classis 5). Without
+rule the rank tie cascades to a swap → Pent22-0 Sun Oratio
+"Deus, refúgium nostrum et virtus"; with rule today's 2V is kept
+→ Lateran's "In Anniversario Dedicationis Ecclesiæ" Oratio
+"Deus, qui nobis per síngulos annos huius sancti templi tui
+consecratiónis réparas diem".
+
+  | Sweep                | Before | After |
+  |----------------------|-------:|------:|
+  | R60 office 2030      | 39 differs | 38 differs |
+  | T1570 / T1910 / DA / R55 / R60 office 2026 | unchanged | unchanged |
+  | T1570 30-day office  | 100% | 100% |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+
 ## Slice 97: Festum-Domini-on-Sat overrides ex-Sancti inheritance block — R60 +1/yr
 
 `first_vespers_day_key_for_rubric`'s "Sancti Simplex no-2V" swap

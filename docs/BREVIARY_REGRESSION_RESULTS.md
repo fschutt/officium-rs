@@ -3,6 +3,66 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 114: Pre-1955 Vigilia-Sancti Feriales path with $duplex≤2 gate — DA +1/yr Prima
+
+`specials/preces.pl:28` second OR clause:
+
+```perl
+($version !~ /1955|1960|Newcal/
+  && $winner{Rank} =~ /vigil/i
+  && $dayname[1] !~ /Epi|Pasc/i)
+```
+
+Rust's existing `pre_1955_for_feriales` Feriales path required
+`day_key.starts_with("Tempora/")` — Sancti-Vigil winners (e.g.
+Sancti/02-23o "In Vigilia S. Matthiæ" rank ";;Vigilia;;1.5")
+fell through, leaving preces falsely off when Perl fired them.
+
+Fix: new gate after the Tempora-Feriales block. Mirrors the
+Sancti-Vigil OR clause with the same `$duplex > 2` early-reject
+to filter out Class I Vigils:
+
+- 02-23o (Vigilia S. Matthiæ) `;;Vigilia;;1.5` → cls="Vigilia"
+  → no "duplex" → $duplex=1 → fires (correct: closes
+  02-24-2028 DA Thu Prima, 02-24 Mon-Sat in any year)
+- 12-24 (Vigilia Nat) `;;Duplex I classis;;6.9` → cls="Duplex
+  I classis" → $duplex=3 > 2 → REJECTS (matches Perl which
+  rejects Vigilia Nat via line-18 `$duplex > 2`)
+
+Without the duplex gate, the broad `vigil` regex would catch
+Vigilia Nat on 12-24 (which Perl's line-18 reject filters
+through `$duplex` derived from the rank class string).
+
+Tomorrow's weekname check: `$dayname[1] !~ /Epi|Pasc/i`. Compute
+next-day MM-DD and run `crate::date::getweek` to derive the
+weekname. Reject preces if Epi or Pasc.
+
+Closes 02-24-2028 DA Thu Prima (Vigilia S. Matthiæ ferial Vigil
+fires preces). Doesn't break 12-24 Vigilia Nat (Class I Vigil).
+
+Regression results — DA 2028 Prima Oratio:
+
+| | Before slice 114 | After slice 114 |
+|---|------------------|-----------------|
+| differs | 7 | 6 |
+
+Per-year cells closed depend on whether the year has any
+Sancti-Vigil falling on a non-Sun day with non-Epi/Pasc next
+weekname. Vigilia S. Matthiæ (02-23/24), Vigilia Apostles
+(other), Vigilia All Saints (10-31).
+
+Narrow gates: pre-1955 only; dayofweek != 0 (not Sun); not
+Sat-Vespera; day_key starts with "Sancti/"; rank class contains
+"vigil" (or full rank line contains "vigilia"); $duplex ≤ 2;
+tomorrow's weekname not Epi/Pasc.
+
+No-regression verified:
+
+- `cargo test --release --lib` — 431 passed
+- Mass T1570 / R60 2026 year-sweeps — 365/365 each (100%)
+- T1570 / T1910 2026 Prima/Tertia/Sexta/Nona — unchanged
+- Prior closed slices 107/108/110/113 spot-checked clean
+
 ## Slice 113: Pre-1960 Festum-Domini Sancti outranks Dominica at 1V swap + occurrence — DA +2/yr Mat+Vespera
 
 Two-part fix for the Sancti/11-18 (Dedicatio Basilicarum P+P)

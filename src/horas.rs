@@ -804,6 +804,90 @@ fn preces_dominicales_et_feriales_fires(
             }
         }
     }
+    // Pre-1955 Vigilia-Sancti Feriales path. Mirror of
+    // `specials/preces.pl:28`:
+    //
+    //   || ($version !~ /1955|1960|Newcal/
+    //        && $winner{Rank} =~ /vigil/i
+    //        && $dayname[1] !~ /Epi|Pasc/i)
+    //
+    // Inside the same outer `$dayofweek && !($dayofweek==6 && Vespera)`
+    // gate (line 23-25), the Sancti-Vigil branch fires preces when the
+    // winner is a Vigil-class Sancti and the next-Sun weekname is NOT
+    // Epi or Pasc.
+    //
+    // Rust's existing pre_1955_for_feriales path required day_key
+    // starts with "Tempora/" — Sancti-Vigil winners fall through.
+    //
+    // Closes 02-24-2028 DA Thu Prima: today=Sancti/02-23o (Vigilia
+    // S. Matthiae) → preces fires (winner.Rank contains "Vigilia",
+    // tomorrow weekname=Quad1, dayofweek=4 Thu).
+    //
+    // Narrow gates: pre-1955 rubric only; dayofweek != 0 (not Sun);
+    // not (Sat at Vespera); winner is Sancti/MM-DDo (Vigil-stem-day);
+    // tomorrow's weekname not Epi or Pasc.
+    if pre_1955_for_feriales
+        && day_key.starts_with("Sancti/")
+        && dayofweek != 0
+        && !(dayofweek == 6 && (hour == "Vespera" || hour == "Vesperae"))
+    {
+        // Vigil detection: file [Rank]'s class field contains "Vigil"
+        // OR the [Officium] body starts with "In Vigilia" / "Vigilia".
+        // Also gate on $duplex ≤ 2 to mirror Perl's `($duplex > 2)`
+        // early reject. Vigilia Nat (Sancti/12-24 ";;Duplex I
+        // classis;;6.9") has class "Duplex I classis" → $duplex=3 →
+        // Perl rejects; only true Vigilia-class days
+        // (";;Vigilia;;1.5") with $duplex=1 fire.
+        let (is_vigil, duplex_class) = active_rank_line_for_rubric(day_key, rubric, hour)
+            .map(|(full, cls, _)| {
+                let lc_cls = cls.to_lowercase();
+                let lc_full = full.to_lowercase();
+                let vigil = lc_cls.contains("vigil") || lc_full.contains("vigilia");
+                let duplex: u8 = if lc_cls.contains("semiduplex") {
+                    2
+                } else if lc_cls.contains("duplex") {
+                    3
+                } else {
+                    1
+                };
+                (vigil, duplex)
+            })
+            .unwrap_or((false, 1));
+        if is_vigil && duplex_class <= 2 {
+            // Tomorrow's weekname check: $dayname[1] !~ /Epi|Pasc/i.
+            // Compute next-day's MM-DD and run getweek to derive the
+            // liturgical weekname.
+            let dim = match month {
+                1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+                4 | 6 | 9 | 11 => 30,
+                2 => 28,
+                _ => 31,
+            };
+            let (tom_m, tom_d, tom_y) = if day < dim {
+                (month, day + 1, year)
+            } else if month < 12 {
+                (month + 1, 1, year)
+            } else {
+                (1, 1, year + 1)
+            };
+            let tom_weekname = crate::date::getweek(tom_d, tom_m, tom_y, false, true);
+            let weekname_excludes = tom_weekname.starts_with("Epi")
+                || tom_weekname.starts_with("Pasc");
+            // Omit-Preces check on today's [Rule] (defensive — same
+            // as the Tempora-side gate above).
+            let omit_preces = lookup(day_key)
+                .and_then(|f| section_via_inheritance_rubric(f, "Rule", Some(rubric)))
+                .map(|r| {
+                    let evaluated = eval_section_conditionals(&r, rubric, hour);
+                    let lc = evaluated.to_lowercase();
+                    lc.contains("omit") && lc.contains("preces")
+                })
+                .unwrap_or(false);
+            if !weekname_excludes && !omit_preces {
+                return true;
+            }
+        }
+    }
 
     // Sun-Compline: 2V commemoratio of tomorrow's saint. When Sun
     // is the winner at 2V (Sun outranks Mon, no 1V swap), but Mon's

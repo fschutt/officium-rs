@@ -3,6 +3,62 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 119: Pre-1960 Sancti-Festum-Domini setrank reduction in R55 1V threshold — R55 +1/yr Sat-eve-of-Sun-Lateran-class
+
+R55 1V suppression at `first_vespers_day_key_for_rubric` was
+gated on `tomorrow_rank < 5.0`. For Lateran Class II Festum
+Domini (Sancti/11-09 ;;Duplex II. classis;;5), 5<5=FALSE so 1V
+fired. But Perl renders Sat-BMV (no 1V swap) — the Sat eve of
+Sun Lateran in R55 keeps the Saturday office.
+
+Traced via temporary debug print injected into Perl
+`horascommon.pl` (reverted): `cwrank[2]=4.95` for Lateran. The
+0.95 fractional comes from `horascommon.pl:481` Festum-Domini
+setrank reduction:
+
+```perl
+} elsif ($saint{Rule} =~ /Festum Domini/i
+         && $srank[2] >= 2 && $trank[2] <= 5) {
+    $srank[2] = 4.9 + $srank[2] / 100;
+}
+```
+
+— "to keep the Vespers in concurrence with other Duplex feasts"
+(per Perl comment). Lateran's reduced rank 4.95 falls below
+the R55 1V threshold of 5 → 1V suppressed.
+
+Fix: in Rust's R55 `suppress_1v` branch, when tomorrow's day_key
+is a Sancti file with [Rule] containing "Festum Domini" and
+rank ∈ [2.0, 5.0], reduce effective rank to `4.9 + rank/100`
+before threshold comparison.
+
+Sancti-only: gate on `tomorrow_key.starts_with("Sancti/")`.
+Tempora-side Festum Domini files (Tempora/Nat2-0 = Holy Name
+Sun) do NOT trigger Perl's line-481 elsif (saint-precedence
+block only). Without the Sancti-only gate, the reduction
+wrongly suppressed 1V for Holy Name Sun in R55.
+
+Closes 11-08 R55 Sat-eve every year where 11-09 falls on Sun
+(~13 cells in 1976-2076: 1980, 1986, 1997, 2003, 2008, 2014,
+2025, 2031, 2036, 2042, 2053, 2059, 2064, 2070).
+
+Verified preservations:
+
+- 01-03-2026 R55 Sat-eve of Sun Holy Name (Tempora/Nat2-0):
+  Match (Tempora-side, gate doesn't fire, 1V swap preserved)
+- Slice 110/115/118 R55 cases preserved
+- 04-11-2026 / 05-30-2026 / 06-13-2026 R55 Sat-eve-of-Sun
+  preserved (Tempora-side Sundays, gate doesn't fire)
+- 01-12-2030 R55 Sat-eve-of-Sun-Holy-Family preserved
+
+No-regression verified:
+
+- `cargo test --release --lib` — 431 passed
+- Mass T1570 / R60 2026 year-sweeps — 365/365 each (100%)
+- T1570 / T1910 / DA / R55 / R60 2026 Vespera — unchanged
+  (R55 stays 4 differs, others unchanged)
+- R55 1980 Vespera 5→4 (closed 11-08-1980)
+
 ## Slice 118: Lent-week tomorrow Class III saint transfer — DA Compline +1 rare Sun-Quad-Sat-eve
 
 Pre-1955 rubrics transfer Class III saints (Duplex rank 3) on

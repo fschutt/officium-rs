@@ -1853,7 +1853,39 @@ pub fn first_vespers_day_key_for_rubric<'a>(
             let tomorrow_rank = active_rank_line_with_annotations(tomorrow_key, rubric, hora)
                 .map(|(_, _, n)| n)
                 .unwrap_or(0.0);
-            tomorrow_rank < 5.0
+            // Pre-1960 Sancti-Festum-Domini setrank reduction.
+            // Mirror of `horascommon.pl:477-481`:
+            //
+            //   } elsif ($saint{Rule} =~ /Festum Domini/i
+            //            && $srank[2] >= 2 && $trank[2] <= 5) {
+            //     $srank[2] = 4.9 + $srank[2] / 100;
+            //   }
+            //
+            // Sancti feasts marked `Festum Domini` get their rank
+            // reduced to `4.9 + rank/100` "to keep the Vespers in
+            // concurrence with other Duplex feasts" (per Perl
+            // comment). Lateran (Sancti/11-09 ;;Duplex II. classis
+            // ;;5 Festum Domini) is reduced 5 → 4.95, which falls
+            // below the R55 1V threshold of 5 and suppresses the
+            // 1V swap. Closes 11-08 R55 Sat-eve every year where
+            // 11-09 is Sun (~13 cells in 1976-2076).
+            //
+            // Sancti-only: Tempora-side Festum Domini files
+            // (Tempora/Nat2-0 = Holy Name Sun) do NOT trigger the
+            // Perl line-481 elsif (which is in the saint-precedence
+            // block). Without the Sancti-only gate, my fix would
+            // wrongly suppress 1V for Holy Name Sun in R55.
+            let tomorrow_is_sancti_festum_domini = tomorrow_key.starts_with("Sancti/")
+                && tomorrow_rule_marks_festum_domini(tomorrow_key, rubric, hora);
+            let effective_tomorrow_rank = if tomorrow_is_sancti_festum_domini
+                && tomorrow_rank >= 2.0
+                && tomorrow_rank <= 5.0
+            {
+                4.9 + tomorrow_rank / 100.0
+            } else {
+                tomorrow_rank
+            };
+            effective_tomorrow_rank < 5.0
         }
         crate::core::Rubric::Rubrics1960 => {
             let tomorrow_rank = active_rank_line_with_annotations(tomorrow_key, rubric, hora)

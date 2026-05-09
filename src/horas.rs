@@ -1969,6 +1969,30 @@ fn effective_today_rank_for_concurrence(
     } else {
         direct
     };
+    // Pre-1955 Ash Wed 2V cession: when today is Quadp3 (Septuagesima
+    // week before Quad1) AND dow == 3 (Wed = Ash Wed), today's rank
+    // reduces to 2.99 — Ash Wed gave way at 2V to any concurrent
+    // Duplex. Mirror of `horascommon.pl::concurrence:858-861`:
+    //
+    //   } elsif ($dayname[0] =~ /Quadp3/ && $dayofweek == 3 && $version !~ /1960|1955/) {
+    //       # before 1955, Ash Wednesday gave way at 2nd Vespers in concurrence to a Duplex
+    //       $rank = $wrank[2] = 2.99;
+    //   }
+    //
+    // Closes 03-06-2030 T1910 Wed Vespera: today=Quadp3-3 (Feria
+    // privilegiata 6.9) cedes to tomorrow=Sancti/03-07 (Thomas
+    // Aquinas Duplex 3) — without reduction Wed keeps 2V (6.9 > 3),
+    // with reduction Wed=2.99 < 3 → 1V swap to Thomas.
+    let is_ash_wed = day_key.starts_with("Tempora/Quadp3-3");
+    let pre_1955 = matches!(
+        rubric,
+        crate::core::Rubric::Tridentine1570
+            | crate::core::Rubric::Tridentine1910
+            | crate::core::Rubric::DivinoAfflatu1911
+    );
+    if is_ash_wed && pre_1955 {
+        return direct.min(2.99);
+    }
     // Pre-DA Quad/Adv Sundays cede their 2nd Vespers to a concurrent
     // Duplex feast — mirror of `horascommon.pl::concurrence:862-869`:
     //

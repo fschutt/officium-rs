@@ -3,6 +3,45 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 100: Pre-1955 Ash Wed 2V cession — T1910 +2/yr, DA +1/yr
+
+`effective_today_rank_for_concurrence` now reduces today's rank
+to 2.99 when day_key is `Tempora/Quadp3-3` (Ash Wed) under pre-
+1955 rubrics (T1570/T1910/DA). Mirror of Perl
+`horascommon.pl::concurrence:858-861`:
+
+```perl
+} elsif ($dayname[0] =~ /Quadp3/ && $dayofweek == 3 && $version !~ /1960|1955/) {
+    # before 1955, Ash Wednesday gave way at 2nd Vespers in concurrence to a Duplex
+    $rank = $wrank[2] = 2.99;
+}
+```
+
+Pre-1955: Ash Wed (Feria privilegiata 6.9) gave way at 2V to
+any concurrent Duplex feast on Thursday — the Duplex's 1V
+overrode Ash Wed's 2V despite the higher direct rank.
+
+**Cell impact:** Closes 03-06-2030 T1910 Wed Vespera + Wed
+Compl. Today=Quadp3-3 (Feria IV Cinerum, Feria privilegiata
+6.9 default) cedes to tomorrow=Sancti/03-07 (Thomas Aquinas
+Confessor et Doctor, Duplex 3 default under T1910). Without
+reduction Wed keeps 2V (6.9 > 3); with reduction Wed=2.99 < 3
+→ 1V swap to Thu Thomas Aquinas. Same pattern fires under DA
+on Wed Vespera. Under T1570 the date 03-07 sees Thomas reduced
+to Semiduplex 2.2 by `(rubrica 1570)` annotation, so the
+Ash-Wed-cession-to-Thomas case doesn't materialize there.
+
+  | Sweep                | Before | After |
+  |----------------------|-------:|------:|
+  | T1910 office 2030    | 5 differs | 3 differs |
+  | DA office 2030       | 14 differs | 13 differs |
+  | All 2026 sweeps      | unchanged | unchanged |
+  | T1570 30-day office  | 100% | 100% |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+
+After this slice, T1910 office 2030 bottoms out at the Triduum
+Prima cluster only (3 differs).
+
 ## Slice 99: Office-context Sancti rank from horas-side `[Rank] (rubrica 196)` — R60 +11/yr
 
 `compute_occurrence_core` now overrides `sanctoral_rank` with the

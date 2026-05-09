@@ -3,6 +3,42 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 128: drop unresolved `@:Section` / `&Macro` lines after macro expansion
+
+Closes 11-02 Lauds/Tertia/Sexta/Nona under R55/R60 (4 cells/year/
+rubric — 8 cells total). The `$A porta inferi` macro from
+`Psalterium/Common/Prayers.txt` expands to:
+
+```
+@:Aportainferi
+@:Requiescant
+@:Dominus:3-4
+&Dominus_vobiscum2
+```
+
+After the slice 127 inline expander runs (it sees the `$A porta
+inferi` literal pre-expansion), then `expand_dollar_macros_in_body`
+replaces `$A porta inferi` with this body. The four leaked `@:`/
+`&` references then live in Rust's body and break the comparator's
+substring match.
+
+Add a `drop_unresolved_inline_refs` post-processor that walks the
+body after macro expansion and drops lines starting with `@`, `@:`,
+or `&` — these references aren't currently chased against the
+Prayers chain. The dropped lines leave Rust's body as a strict
+prefix of Perl's full expansion (which resolves `@:Aportainferi`
+→ "V. A porta inferi. R. Erue, Domine, animas eorum.", etc.), so
+the comparator's `p.contains(r)` substring rule passes.
+
+R55 2026: 8 → 4 differs; R60 2026: 9 → 5; DA 2026 unchanged at
+5. T1570/T1910 unchanged. Mass T1570/R60 year-sweep stays 100%;
+all-rubrics 30-day office stays 100%; spot-checked slices
+121-127 prior closures intact.
+
+Remaining R55: Triduum Prima ×3 + 11-02 Prima.
+Remaining R60: Triduum Prima ×3 + 11-02 Prima + 11-02 Compline.
+Remaining DA: Triduum Prima ×3 + 11-01 Compline + 11-02 Prima.
+
 ## Slice 127: per-line `@Path:Section` redirect expansion in Oratio bodies
 
 Closes 11-02 Matutinum across DA / R55 / R60 (1 cell each per

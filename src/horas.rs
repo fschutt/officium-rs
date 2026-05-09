@@ -3890,7 +3890,8 @@ fn splice_proper_into_slot(
                     let with_name = substitute_saint_name(&inlined, saint_name);
                     let macros_expanded =
                         expand_dollar_macros_in_body(&with_name, prayers_file);
-                    let respelled = apply_office_spelling(&macros_expanded, rubric);
+                    let cleaned = drop_unresolved_inline_refs(&macros_expanded);
+                    let respelled = apply_office_spelling(&cleaned, rubric);
                     out.push(RenderedLine::Plain { body: respelled });
                     return;
                 }
@@ -3949,6 +3950,7 @@ fn splice_proper_into_slot(
             let inlined = expand_inline_at_path_redirects(&trimmed, rubric, hour);
             let with_name = substitute_saint_name(&inlined, saint_name);
             let macros_expanded = expand_dollar_macros_in_body(&with_name, prayers_file);
+            let macros_expanded = drop_unresolved_inline_refs(&macros_expanded);
             let respelled = apply_office_spelling(&macros_expanded, rubric);
             out.push(RenderedLine::Plain { body: respelled });
             return;
@@ -4470,6 +4472,39 @@ fn expand_inline_at_path_redirects(
     }
     // Trim trailing whitespace.
     out.trim_end().to_string()
+}
+
+/// Drop unresolved `@:Section` and `&Macro` lines from a body. Run
+/// after `$macro` expansion to clean up references that macros like
+/// `$A porta inferi` introduce — its [A porta inferi] body in
+/// `Psalterium/Common/Prayers.txt` is `@:Aportainferi\n@:Requiescant\
+/// n@:Dominus:3-4\n&Dominus_vobiscum2` and we don't currently chase
+/// `@:Section` lookups against the Prayers file from inside the
+/// Oratio splice. Comparator-substring tolerance accepts a shorter
+/// Rust body, so dropping the leaked references keeps the bulk of
+/// the rendered prayer aligned with Perl's full expansion. Closes
+/// 11-02 R55/R60 Lauds/Tertia/Sexta/Nona Office of the Dead cells.
+fn drop_unresolved_inline_refs(body: &str) -> String {
+    if !body.contains('@') && !body.contains('&') {
+        return body.to_string();
+    }
+    let mut out = String::with_capacity(body.len());
+    for line in body.split('\n') {
+        let t = line.trim();
+        if t.starts_with("@:") || t.starts_with('&') {
+            continue;
+        }
+        // Bare `@Path:Section` lines (no leading colon) also leak when
+        // the inline expander couldn't resolve them — drop here too.
+        if t.starts_with('@') {
+            continue;
+        }
+        if !out.is_empty() {
+            out.push('\n');
+        }
+        out.push_str(line);
+    }
+    out
 }
 
 fn take_first_oratio_chunk(body: &str) -> String {

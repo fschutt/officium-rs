@@ -3,6 +3,41 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 105: Tomorrow-side Dominica-minor setrank reduction — T1910 +1/yr
+
+`effective_tomorrow_rank_for_concurrence` now applies the
+Tridentine setrank Dominica-minor reduction (mirror of
+`horascommon.pl::setrank:422-426` first clause) to TOMORROW's
+rank — same rule already in `effective_today_rank_for_concurrence`
+(slice 90). The setrank rule has NO "infra octavam" exclusion
+(unlike the separate concurrence-cede rule which does); this
+distinction matters for Sundays infra-Octavam-Ascensionis whose
+rank should still drop to 2.9 under Tridentine.
+
+The earlier code conflated setrank with concurrence-cede in the
+tomorrow-side function: the "infra octavam" early return at line
+2158 blocked BOTH rules from firing. The fix splits them: the
+Dominica-minor setrank reduction now fires before the early
+return.
+
+**Cell impact:** Closes 05-28-2033 T1910 Sat Vespera. Today=
+Sancti/05-28 (Augustine of Canterbury Duplex 3) vs tomorrow=
+Tempora/Pasc6-0 (Dominica infra Octavam Ascensionis Semiduplex
+5). Without the setrank reduction tomorrow stays at 5 → Sun
+wins → Sat eve swaps. With the reduction tomorrow=2.9 → today
+3 > tomorrow 2.9 → Sat keeps 2V → renders Augustine Cant Oratio
+"Deus, qui Anglórum gentes...".
+
+  | Sweep                | Before | After |
+  |----------------------|-------:|------:|
+  | T1910 office 2033    | 4 differs | 3 differs |
+  | T1570 / T1910 / DA / R55 / R60 office 2026 | unchanged | unchanged |
+  | T1570 30-day office  | 100% | 100% |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+
+After this slice T1910 office 2033 bottoms out at the Triduum
+Prima cluster only (3 differs).
+
 ## Slice 104: Tridentine "infra Octavam Corp" reduces ANY rank — T1910 +7/yr
 
 `compute_occurrence_core` now applies the unconditional-on-rank

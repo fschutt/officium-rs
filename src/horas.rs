@@ -2155,6 +2155,18 @@ fn effective_tomorrow_rank_for_concurrence(
     if is_tridentine && lc_off.contains("infra octavam corp") {
         return direct.min(2.9);
     }
+    // Pre-Divino "Dominica minor" setrank reduction (mirror of
+    // `horascommon.pl:422-426` first clause). Tridentine-only; no
+    // "infra octavam" exclusion (the exclusion below is for the
+    // separate concurrence-cede rule, not setrank). Applies to any
+    // Sun with rank in (4.2, 5.1) — including infra-Octavam-of-
+    // Ascension Sundays. Closes 05-28-2033 T1910 Sat Vespera:
+    // tomorrow=Pasc6-0 (Dominica infra Octavam Ascensionis,
+    // Semiduplex 5) → reduced to 2.9 → today=Sancti/05-28
+    // Augustine Cant Duplex 3 wins (3 > 2.9), Sat keeps 2V.
+    if is_tridentine && direct > 4.2 && direct < 5.1 && lc_off.contains("dominica") {
+        return 2.9;
+    }
     if !lc_off.contains("dominica") || lc_off.contains("infra octavam") {
         return direct;
     }

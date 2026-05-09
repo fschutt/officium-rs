@@ -3,6 +3,57 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 93: Sat-eve Dec 23 first vespers swaps to Adv4-0, not Sancti/12-24 — T1570 +1/year
+
+`office_sweep` post-processes `next_derived_key` so that on Dec 23,
+when tomorrow's compute returns `Sancti/12-24` (Vigilia Nativitatis),
+it's overridden to `Tempora/{weekname}-0` (i.e. Adv4-0 in years
+where 12-24 falls on Sun, Adv3-* otherwise). Mirrors Perl's
+`horascommon.pl::occurrence:290-296`:
+
+```perl
+} elsif ($month == 12 && $day == 23) {
+    # ensure the Dominica IV adventus win in case it has a
+    # "1st Vespers" on Dec 23
+    $srank = '';
+    %saint = {};
+    $sname = '';
+    @srank = ();
+}
+```
+
+The rule fires inside `occurrence(tomorrow=1)` (concurrence's
+"tomorrow" call): when the calling date is Dec 23, Sancti for the
+NEXT day (12-24) is wiped, so Tempora wins for 1V swap purposes.
+This is structural — Vigilia Nat is a fast-day office without
+proper 1st Vespers; Sat eve before Sun-Vigilia-Nat sings 1V of
+the Sun-of-Adv-4 instead, even though Sun morning's Mat/Day Hours
+are Sancti/12-24 Vigilia Nat.
+
+Without this override the existing "Vigilia 1V suppression" rule
+in `first_vespers_day_key_for_rubric` rejected the swap (because
+$cwinner.Rank in our model includes "Vigilia"), leaving today's
+Tempora/Adv3-6 (Sat Q.T. Adv) — and the Quattuor-Sun-Oratio rule
+then injected Adv3-0's "Aurem tuam" instead of Adv4-0's "Excita
+... et magna nobis virtute succurre".
+
+**Cell impact:** Closes 12-23-2028 T1570 Sat Vespera. Same pattern
+fires in any year where 12-23 falls on Sat (so 12-24 on Sun) —
+includes 2017, 2028, 2034, etc. across the 1976-2076 window.
+
+  | Sweep                | Before | After |
+  |----------------------|-------:|------:|
+  | T1570 office 2028    | 5 differs | 4 differs |
+  | T1570 office 2026    | 3 differs | 3 differs |
+  | T1570 office 30-day  | 100% | 100% |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+
+Investigated via Perl debug-print instrumentation (added `print STDERR`
+in `horascommon.pl::occurrence` and `concurrence`, observed
+`cwinner=Tempora/Adv4-0o.txt` with `srank[0]=''` empty for 12-24,
+then traced back to the explicit `month==12 && day==23` wipe).
+Debug instrumentation reverted before commit.
+
 ## Slice 92: Apostolic-Vigil precedence is Mass-only — T1570 +10 cells/year (2027)
 
 `decide_sanctoral_wins_1570` now gates the Apostolic-Vigil-on-Advent

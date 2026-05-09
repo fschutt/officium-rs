@@ -438,9 +438,50 @@ fn run_one_cell(
                 locale: Locale::Latin,
                 is_mass_context: false,
             };
-            std::panic::catch_unwind(|| compute_office(&next_input, &BundledCorpus))
+            let raw = std::panic::catch_unwind(|| compute_office(&next_input, &BundledCorpus))
                 .ok()
-                .map(|o| o.winner.render())
+                .map(|o| o.winner.render());
+            // Sat-eve Dec 23 → 1V of Sun Adv 4 with Vigilia Nat (Sancti/12-24)
+            // suppressed. Mirror of `horascommon.pl::occurrence:290-296`:
+            //
+            //   } elsif ($month == 12 && $day == 23) {
+            //     # ensure the Dominica IV adventus win in case it has a "1st Vespers" on Dec 23
+            //     $srank = '';
+            //     %saint = {};
+            //     $sname = '';
+            //     @srank = ();
+            //   }
+            //
+            // When 12-23 falls on Sat (so 12-24 falls on Sun), Sun 12-24's
+            // own office is Sancti/12-24 Vigilia Nat (Mat/Day Hours) but
+            // its 1V (sung on Sat eve) is of the Sunday-of-Adv4 — Vigilia
+            // Nat as a fast-day office structure has no proper 1V. Perl's
+            // `occurrence` wipes srank in tomorrow-mode when today is
+            // Dec 23, forcing Tempora to win for 1V swap purposes.
+            //
+            // Only relevant when raw resolves to Sancti/12-24 — under
+            // post-Trident rubrics the transfer table already redirects
+            // 12-24 → 12-24s/12-24so and the suppression rule is moot.
+            if mm == 12 && dd == 23 {
+                if let Some(k) = raw.as_ref() {
+                    if k.starts_with("Sancti/12-24") {
+                        let weekname =
+                            officium_rs::date::getweek(nd, nm, ny, false, true);
+                        let tempora_key = format!("Tempora/{weekname}-0");
+                        if horas::lookup(&tempora_key).is_some() {
+                            Some(tempora_key)
+                        } else {
+                            raw
+                        }
+                    } else {
+                        raw
+                    }
+                } else {
+                    raw
+                }
+            } else {
+                raw
+            }
         }
     } else {
         None

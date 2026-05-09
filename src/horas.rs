@@ -1758,6 +1758,35 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     if tomorrow_has_no_prima_vespera(tomorrow_key, rubric, hora) {
         return today_key;
     }
+    // All Souls' Day Vespera/Completorium wipe under non-1960 rubrics.
+    // Mirror of upstream `horascommon.pl::concurrence`-side
+    // `(occurrence-Vespera-block)` lines 324-331:
+    //
+    //   elsif (($version !~ /196/ || $dayofweek == 6)
+    //       && $month == 11
+    //       && $srank =~ /Omnium Fidelium defunctorum/i
+    //       && !$caller)
+    //   {
+    //       # Office of All Souls' day ends after None.
+    //       $srank[2] = 1; $srank = '';
+    //   }
+    //
+    // Under DA / R55 (non-1960), the All Souls Office wraps up after
+    // None. At Vespera/Completorium, today's saint side is wiped —
+    // the day's office reverts to its Tempora ferial (rank 1), so
+    // Sun-2V continuation (Sancti/11-03oct, the Octave-day of All
+    // Saints, rank 2 inheriting Sancti/11-01) wins concurrence.
+    // Without this rule, Sancti/11-02 (Defunctorum rank 3) stays the
+    // winner and Rust emits the All Souls Oratio where Perl emits
+    // Sancti/11-01's "Omnípotens sempitérne Deus, qui nos ómnium
+    // Sanctórum tuórum mérita…". Closes 11-02 Vespera DA (and
+    // analogous R55 cells).
+    if (hora == "Vespera" || hora == "Vesperae" || hora == "Completorium")
+        && today_key == "Sancti/11-02"
+        && !matches!(rubric, crate::core::Rubric::Rubrics1960)
+    {
+        return tomorrow_key;
+    }
     // R55/R60 "no 1st Vespers of Easter Sunday / Patrocinii S. Joseph"
     // — mirror of upstream `horascommon.pl::concurrence:968-969`:
     //

@@ -3,6 +3,41 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 126: All Souls Vespera/Compline wipe under non-1960 rubrics
+
+Closes 11-02 Vespera DA and 11-02 Vespera R55 (1 cell each per
+year). Mirror of `horascommon.pl::concurrence`-side
+`(occurrence-Vespera-block)` lines 324-331:
+
+```perl
+elsif (($version !~ /196/ || $dayofweek == 6)
+    && $month == 11
+    && $srank =~ /Omnium Fidelium defunctorum/i
+    && !$caller)
+{
+    $srank[2] = 1; $srank = '';
+}
+```
+
+Under DA / R55, the All Souls Office wraps up after None. At
+Vespera/Compline of 11-02, today's All Souls saint is wiped → the
+day reverts to its Tempora ferial (rank 1), so the 1V swap to
+tomorrow=Sancti/11-03oct (rank 2, the Octave-day of All Saints
+inheriting Sancti/11-01) wins. Result: Sancti/11-01's "Omnípotens
+sempitérne Deus, qui nos ómnium Sanctórum tuórum mérita…" oratio
+matches Perl.
+
+Narrow gate in `first_vespers_day_key_for_rubric`: `today_key ==
+"Sancti/11-02"` AND hora ∈ {Vespera, Compline} AND non-1960 →
+return tomorrow_key. R60 excluded because Perl's wipe condition
+(`$version !~ /196/ || $dayofweek == 6`) reduces to `$dayofweek ==
+6` for R60 — the Sat-eve-only path is a separate slice.
+
+DA 2026: 7 → 6 differs; R55 2026: 10 → 9. T1570/T1910/R60 unchanged.
+Mass T1570/R60 year-sweep stays 100%; all-rubrics 30-day office
+stays 100%; spot-checked slices 121/122/123/124/125 prior
+closures intact.
+
 ## Slice 125: R55/R60 — suppress 1st Vespers of Easter Sunday in concurrence
 
 Closes 04-04 Holy Saturday Vespera under R55/R60 (1 cell/year per

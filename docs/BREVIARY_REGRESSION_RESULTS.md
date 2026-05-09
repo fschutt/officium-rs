@@ -3,6 +3,52 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 121: bissextile shift + transfer-table consult on the preces today/tomorrow cells loop
+
+Closes the DA Apostle / Doctor on Privileged-Sunday cluster:
+11-30-1980 Adv1 (Andrew), 12-21-1990 Adv4 (Thomas), 02-24-1985
+Quad1 (Matthias), 02-25-2024 Quad2 (Matthias leap-shifted),
+02-27-2000 Quadp2 Sexagesima Prima (Gabriel leap-shifted),
+plus the matching Compline cases.
+
+Two related fixes both rooted in `preces_dominicales_et_feriales_fires`'s
+cells loop:
+
+1. **Bissextile shift** — Perl's `Date::get_sday` keeps the
+   leap day on Feb 24 (numbered internally 02-29) and shifts
+   real Feb 25..28 each by one back, so a saint listed at
+   `02-27` in `Kalendaria/1939.txt` actually fires on real Feb
+   28 in a leap year. Without the shift Rust looked up cells at
+   actual `(month, day)` and saw saints that Perl's sday-based
+   lookup wouldn't see; the Class-III rank-≥-3 ranklimit then
+   fired and rejected preces. Apply the shift to BOTH the
+   today-cells lookup (line ~1098) AND the Sun-Compline
+   tomorrow-cells lookup (line ~970).
+
+2. **Year-letter transfer-table consult** — Perl's
+   `horascommon::sub horas` line 226 calls
+   `Directorium::transfered($sfile)` and wipes `$sfile` when the
+   year-letter / Easter-coded transfer rule has moved this saint
+   elsewhere. Without this skip our cells loop sees the raw
+   kalendar entry on Privileged Class I/II Sundays and rejects
+   preces. Add a `dayofweek == 0 && cell.kind == "main"` gate
+   that calls `transfer_table::stem_transferred_away` on the
+   cell's stem-mm-dd; on truthy result skip the cell.
+
+Removed the slice-118 `tom_in_lent_week && rank < 4` Lent-week
+Class-III transfer rule — it was wrong for non-leap-year cases
+(03-26-2000 Sun Quad3 + Mon 03-27 Damascene rank 3 → Perl
+COMMEMORATES → preces don't fire). The bissextile shift now
+handles the leap-year cases (where Perl's sday machinery makes
+the kalendar slot empty) without the broad transfer rule.
+
+Verified: T1570/T1910/DA/R55/R60 30-day all-hours sweep stays
+100%; Mass T1570 / R60 year-sweep stays 100%; DA Prima 2024
+60-day sweep 100%. DA full-year 2000 went 99.66% → 99.73% (net
++1 cell closure on Sun-Compline cluster; the remaining 7 cells
+are the known Triduum + All-Saints/All-Souls structural
+clusters that pre-date this slice).
+
 ## Slice 120: Festum-Domini reduction gated on tomorrow_temp=Dominica — R55 fix non-Sun Sat-eve regressions
 
 Slice 119 applied the Festum-Domini reduction unconditionally

@@ -537,6 +537,23 @@ fn dominus_vobiscum_preces_form(prayers: &HorasFile) -> Option<&'static str> {
     cached.as_deref()
 }
 
+/// Parse a Sancti file stem (e.g. `"02-24"`, `"02-23o"`, `"02-24.txt"`)
+/// into its leading `(month, day)`. Used by the preces today-cells
+/// loop to consult the transfer table for the saint's NATIVE date.
+fn parse_stem_mm_dd(stem: &str) -> Option<(u32, u32)> {
+    let trimmed = stem.trim_end_matches(".txt");
+    let mm = trimmed.get(0..2)?.parse::<u32>().ok()?;
+    if trimmed.as_bytes().get(2) != Some(&b'-') {
+        return None;
+    }
+    let dd_str: String = trimmed[3..]
+        .chars()
+        .take_while(|c| c.is_ascii_digit())
+        .collect();
+    let dd = dd_str.parse::<u32>().ok()?;
+    Some((mm, dd))
+}
+
 /// Narrow port of `specials/preces.pl::preces` for the
 /// `Dominus_vobiscum1` "did preces fire?" gate. Returns true when
 /// the Perl `preces('Dominicales et Feriales')` call would fire on
@@ -948,7 +965,30 @@ fn preces_dominicales_et_feriales_fires(
         };
         if !in_holy_week_or_easter_octave {
             let layer = rubric.kalendar_layer();
-            if let Some(cells) = crate::kalendaria_layers::lookup(layer, tom_m, tom_d) {
+            // Bissextile shift for tomorrow's kalendar lookup (mirrors
+            // Perl `Date::get_sday`). In leap years the kalendar slot
+            // for actual Feb 25..28 is one day BEHIND the actual
+            // date, so the Sun-Compl tomorrow-saint scan must apply
+            // the same shift Perl's `nextday(...)` + sday machinery
+            // applies internally. Without this, 02-27-2000 Sun Sex.
+            // Compline misses Gabriel on Mon 02-28 (leap-shifted to
+            // sday=02-27), wrongly fires preces, and emits omittitur
+            // where Perl renders V/R Domine.
+            let (tom_kal_m, tom_kal_d) = {
+                let leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+                if leap && tom_m == 2 {
+                    if tom_d == 24 {
+                        (2, 29)
+                    } else if tom_d > 24 {
+                        (2, tom_d - 1)
+                    } else {
+                        (tom_m, tom_d)
+                    }
+                } else {
+                    (tom_m, tom_d)
+                }
+            };
+            if let Some(cells) = crate::kalendaria_layers::lookup(layer, tom_kal_m, tom_kal_d) {
                 let ranklimit = match rubric {
                     crate::core::Rubric::Tridentine1570
                     | crate::core::Rubric::Tridentine1910 => 7.0_f32,
@@ -960,21 +1000,8 @@ fn preces_dominicales_et_feriales_fires(
                 // Feria exclusion fires and wipes the commemoration
                 // so preces fire on Sun-Compl. Pre-compute the
                 // tempora rank for the comparison below.
-                let tom_weekname =
+                let _tom_weekname =
                     crate::date::getweek(tom_d, tom_m, year, false, true);
-                // Lent-week (Quad1..Quad6) Privileged Ferial transfer
-                // rule: under pre-1955 rubrics, Class III saints
-                // (Duplex rank 3) on Lent week ferials (Mon-Sat) are
-                // TRANSFERRED to after Easter Octave, not commemorated.
-                // This is narrower than Advent ferials (which DO
-                // commemorate Class III) — so only Lent Mon-Sat
-                // ferials match.
-                //
-                // Quadp* (Septuagesima/Sexagesima/Quinquagesima
-                // pre-Lent weeks) are NOT Privileged the same way —
-                // Class III saints are commemorated there too.
-                let tom_in_lent_week = tom_weekname.starts_with("Quad")
-                    && !tom_weekname.starts_with("Quadp");
                 for cell in cells {
                     if cell.kind != "main" {
                         continue;
@@ -1004,33 +1031,6 @@ fn preces_dominicales_et_feriales_fires(
                             .map(|(_, _, n)| n)
                             .unwrap_or(0.0);
                     let effective_rank = kalendar_rank.max(file_rank);
-                    // Lent-week Class III saint transfer. Pre-1955
-                    // rubrics transfer Class III saints (Duplex rank
-                    // 3) on Lent Mon-Sat ferials (Quad1..Quad6
-                    // weeks, NOT Quadp pre-Lent) to after the
-                    // Easter Octave. Perl's
-                    // `concurrence:949-951` Feria exclusion then
-                    // wipes the commemoration on Sun's 2V/Compline.
-                    //
-                    // Skip the rejection only when:
-                    //   - Tomorrow is a Lent Mon-Sat ferial (weekname
-                    //     starts with "Quad" but NOT "Quadp"), AND
-                    //   - The cell rank is < 4 (Class III only —
-                    //     Class II+ saints like Cathedra Petri Duplex
-                    //     majus 4 take precedence and ARE commemorated).
-                    //
-                    // Closes 02-26-2040 DA Sun Lent II Compline:
-                    // tomorrow=Mon Quad2-1; Sancti/02-27 Gabriel
-                    // rank 3 < 4 → transferred → preces fire.
-                    //
-                    // Preserves slice 110 cases (02-21-2027 etc):
-                    // tomorrow=02-22 Cathedra Petri Duplex majus
-                    // rank 4 (Class II ≥ 4 → not transferred);
-                    // and 12-05-2027 etc: tomorrow weekname=Adv2,
-                    // not Lent → gate doesn't fire.
-                    if tom_in_lent_week && effective_rank < 4.0 {
-                        continue;
-                    }
                     if effective_rank >= ranklimit {
                         return false;
                     }
@@ -1040,7 +1040,31 @@ fn preces_dominicales_et_feriales_fires(
     }
 
     let layer = rubric.kalendar_layer();
-    if let Some(cells) = crate::kalendaria_layers::lookup(layer, lookup_m, lookup_d) {
+    // Bissextile (leap-year February) shift. Mirrors Perl
+    // `Date::get_sday`: in leap years, 02-24 → 02-29 internally and
+    // 02-25..02-28 each step back by one (the leap day is kept on
+    // Feb 24). The kalendarium is keyed on the SHIFTED date, so a
+    // saint listed at 02-27 in `Kalendaria/1939.txt` actually fires
+    // on real Feb 28 in a leap year — and on real Feb 27 the slot is
+    // empty. Without this shift, Rust sees Gabriel (02-27) on real
+    // Feb 27 in 2000 and rejects preces; Perl's `sday`-based lookup
+    // sees an empty slot and preces fire (omittitur). Closes 02-27-2000
+    // DA Sun Quadp2 Sexagesima Prima.
+    let (kalendar_lookup_m, kalendar_lookup_d) = {
+        let leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+        if leap && lookup_m == 2 {
+            if lookup_d == 24 {
+                (2, 29)
+            } else if lookup_d > 24 {
+                (2, lookup_d - 1)
+            } else {
+                (lookup_m, lookup_d)
+            }
+        } else {
+            (lookup_m, lookup_d)
+        }
+    };
+    if let Some(cells) = crate::kalendaria_layers::lookup(layer, kalendar_lookup_m, kalendar_lookup_d) {
         // Branch (b) `Dominicales` commemoratio rank check.
         // Mirror of `specials/preces.pl:41-58`:
         //
@@ -1060,11 +1084,47 @@ fn preces_dominicales_et_feriales_fires(
             crate::core::Rubric::Tridentine1570 | crate::core::Rubric::Tridentine1910 => 7.0_f32,
             _ => 3.0_f32,
         };
+        // Saints transferred AWAY by the year's transfer table never
+        // become a commemoratio on their native date — Perl's
+        // `horascommon::sub horas` line 226 calls
+        // `Directorium::transfered($sfile)` and wipes `$sfile` when
+        // the year-letter / Easter-coded transfer rule has moved this
+        // saint elsewhere. Without this skip our cells loop sees the
+        // raw kalendar entry (Andrew on 11-30, Matthias on 02-24,
+        // Thomas on 12-21, Gabriel on 02-27) and wrongly rejects
+        // preces on Privileged Class I/II Sundays where the saint
+        // was actually transferred to the next free day. Closes the
+        // DA Apostle / Doctor on Privileged-Sunday cluster: 11-30 Adv1
+        // (Andrew), 12-21 Adv4 (Thomas), 02-24 Quad1 (Matthias),
+        // 02-27 Quadp2 Sexagesima (Gabriel) when the year-letter file
+        // contains the corresponding transfer rule.
         for cell in cells {
             // 1V-swap: tomorrow's main cell is the WINNER (now today's
             // office, post-swap), not a commemoration. Skip it.
             if is_1v_swap_at_compline_in_octave && cell.kind == "main" {
                 continue;
+            }
+            // Skip cells whose stem this year's transfer table moves
+            // off the cell's NATIVE date (e.g. `02-25=02-24` in
+            // `f.txt` under DA/1570/1906/M1617/M1930 → Matthias not
+            // commemorated on 02-24 when 02-24 is Sun Quad1). Mirrors
+            // Perl's `transfered($sfile)` wipe in `horascommon::sub
+            // horas` line 226 — `$sfile` is the SAINT's filename
+            // (e.g. `Sancti/02-24`), not today's date — so the
+            // transfer rule applies to the saint regardless of leap-
+            // shift.
+            //
+            // Narrow gate: today is a Sunday AND main-cell only —
+            // secondary cells (commemorationes attached to someone
+            // else's day) aren't subject to this transfer.
+            if dayofweek == 0 && cell.kind == "main" {
+                if let Some((cell_m, cell_d)) = parse_stem_mm_dd(&cell.stem) {
+                    if crate::transfer_table::stem_transferred_away(
+                        year, rubric.transfer_rubric_tag(), cell_m, cell_d,
+                    ) {
+                        continue;
+                    }
+                }
             }
             let lc = cell.officium.to_lowercase();
             if lc.contains("octav") && !lc.contains("post octav") {

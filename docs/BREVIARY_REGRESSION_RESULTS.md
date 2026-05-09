@@ -3,6 +3,98 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 109: [Rule] "Oratio Dominica" forces week-Sun [Oratio] — R60 +5/yr × Mat/Laud/Tertia/Sexta/Nona
+
+R60 reformatted Pasc5-1 (Mon of Pasc5 week, the old "Feria Secunda
+in Rogationibus") as Pasc5-1r:
+
+```
+[Rule]
+Oratio Dominica   ← R60 trigger
+…
+[Oratio 2]
+@Tempora/Pasc5-1:Oratio 2   ← Rogation oratio (pre-1960)
+[Oratio 3]
+@Tempora/Pasc5-0:Oratio     ← Sun-V-after-Pasch oratio
+```
+
+The chain walker's Mat/Laud/Tertia/Sexta/Nona candidates list is
+`[Oratio 2, Oratio]` — so `[Oratio 2]` wins and Rust emitted the
+Rogation oratio "Praesta, quaesumus, omnipotens Deus: ut, qui in
+afflictione nostra…". Perl's `specials/orationes.pl:55-61` instead
+applies the `Oratio Dominica` override:
+
+```perl
+if (($rule =~ /Oratio Dominica/i
+     && (!exists($winner{Oratio}) || $hora eq 'Vespera'))
+    || ($winner{Rank} =~ /Quattuor/i && …))
+{
+    my $name = "$dayname[0]-0";
+    %w = setupstring($lang, "Tempora/$name.txt");
+}
+```
+
+Once `%w` is REPLACED with the week-Sun's contents, the subsequent
+`$w = $w{Oratio}` pulls Pasc5-0:Oratio = "Deus, a quo bona cuncta
+procedunt, largire supplicibus tuis…" — bypassing the day-file's
+own Oratio variants entirely.
+
+Fix: new `oratio_dominica_force_sunday` gate in
+`src/horas.rs::compute_office_hour` Oratio path. Trigger:
+
+- `label == "Oratio"`
+- `day_key.starts_with("Tempora/")`
+- `chain[0] [Rule]` contains "Oratio Dominica" (after rubric
+  conditional eval)
+- `chain[0]` has no bare `[Oratio]` OR `hora == "Vespera"`
+
+When triggered, splice the week-Sun `[Oratio]` (with the same
+Epi1-0 → Epi1-0a redirect as `commune_chain_for_rubric`).
+
+Closes 05-03-2027 R60 Mon Pasc5-1r at Mat/Laud/Tertia/Sexta/Nona
+(5 hours per year). At Vespera the candidates list `Oratio 3 →
+Oratio → Oratio 2` already preferred `[Oratio 3]` which redirects
+to Pasc5-0:Oratio — so the override is consistent there. At
+Prima/Compline the candidates list is empty (no Oratio block
+emitted) — also unaffected.
+
+Regression results — R60 2027 Laudes Oratio:
+
+| | Before slice 109 | After slice 109 |
+|---|------------------|-----------------|
+| differs | 5 | 4 |
+| pass-rate | 98.63% | 98.90% |
+
+Same pattern across all 5 hours that materialise [Oratio]
+(Mat/Laud/Tertia/Sexta/Nona). Total +5 cells per year for years
+where 05-03 lands as Pasc5-1r under R60.
+
+Scope analysis — files with `[Rule] Oratio Dominica` AND
+non-trivial `[Oratio 2]`/`[Oratio 3]` AND no bare `[Oratio]`:
+
+- `Pasc5-1r` (R60): `[Oratio 2]` = Rogation, `[Oratio 3]` =
+  Sun-V-after-Pasch. Override fires under R60 → Sun-Oratio.
+  ✓ this is the closure.
+- `Pasc5-2`, `Pasc5-3` (pre-1960): `[Oratio 2]` already redirects
+  to Pasc5-0:Oratio — same content the override would splice.
+  Override fires harmlessly under T1570/T1910/DA. ✓ no-op.
+
+For all other files with `[Rule] Oratio Dominica` (~225 total),
+chain[0] has no bare [Oratio] AND no [Oratio 2]/[Oratio 3] either,
+so Rust already pulled from week-Sun via the chain walker's
+`tempora_sunday_fallback` injection. Override fires harmlessly,
+splicing the same content. ✓ no-op.
+
+No-regression verified:
+
+- `cargo test --release --lib` — 431 passed
+- Mass T1570 / R60 2026 year-sweeps — 365/365 each (100%)
+- Office T1570 / T1910 / DA / R55 2026 + 2027 unchanged
+- Prior closed slices (105/106/107/108) spot-checked clean:
+  T1910 2030 Vespera 99.73%, R60 2035 Vespera (slice 107)
+  closes 01-06 Match, R60 2028 Vespera (slice 108) closes
+  06-16 Match.
+
 ## Slice 108: Annotated [Oratio (rubrica X)] counts toward "has Oratio" gate — R60 +1/yr × all hours
 
 The "Tempora ferial → week-Sun Oratio fallback" in

@@ -3121,6 +3121,78 @@ fn splice_proper_into_slot(
         }
     }
 
+    // [Rule] "Oratio Dominica" → force week-Sun [Oratio]. Mirror of
+    // `specials/orationes.pl:55-61`:
+    //
+    //   if (($rule =~ /Oratio Dominica/i
+    //        && (!exists($winner{Oratio}) || $hora eq 'Vespera'))
+    //       || ($winner{Rank} =~ /Quattuor/i && ...))
+    //   {
+    //     my $name = "$dayname[0]-0";
+    //     %w = setupstring($lang, "Tempora/$name.txt");
+    //   }
+    //
+    // Once `%w` is REPLACED with the week-Sun's contents, the
+    // subsequent `$w = $w{Oratio}` pulls the Sun-Oratio regardless
+    // of whatever Oratio 2/3 the day-file might carry.
+    //
+    // Closes 05-03-2027 R60 Mon Pasc5-1r at Mat/Laud/Tertia/Sexta/Nona
+    // (5 hours per year). Pasc5-1r [Rule] = "Oratio Dominica\n…",
+    // [Oratio 2] = `@Tempora/Pasc5-1:Oratio 2` (Rogation Day oratio
+    // "Praesta, quaesumus, omnipotens Deus: ut, qui in afflictione
+    // nostra…"), [Oratio 3] = `@Tempora/Pasc5-0:Oratio` (Sun-V-after-
+    // Pasch). The chain walker at Mat/Laud/Tertia/Sexta/Nona prefers
+    // [Oratio 2] (Rogation) — but Perl's "Oratio Dominica" override
+    // bypasses the day-file Oratio variants entirely and pulls
+    // Pasc5-0 [Oratio] = "Deus, a quo bona cuncta procedunt,
+    // largire supplicibus tuis…".
+    //
+    // At Vespera the candidates list `Oratio 3 → Oratio → Oratio 2`
+    // already prefers [Oratio 3] (= week-Sun:Oratio), so the override
+    // is consistent there. At Prima/Compline the candidates list is
+    // empty (no [Oratio] block emitted) — also unaffected.
+    //
+    // Gate (per Perl line 55): chain[0] [Rule] contains "Oratio
+    // Dominica" AND (chain[0] has no bare [Oratio] OR hora ==
+    // Vespera). In practice no Tempora file carries both
+    // `[Rule] Oratio Dominica` and a bare `[Oratio]`, so the
+    // Vespera disjunct is a no-op safety; we keep it for fidelity.
+    let oratio_dominica_force_sunday = label == "Oratio"
+        && day_key.is_some_and(|k| k.starts_with("Tempora/"))
+        && chain.first().is_some_and(|f| {
+            section_via_inheritance(f, "Rule").is_some_and(|r| {
+                let evaluated = eval_section_conditionals(&r, rubric, hour);
+                evaluated.to_lowercase().contains("oratio dominica")
+            })
+        })
+        && chain.first().is_some_and(|f| {
+            hour == "Vespera"
+                || best_matching_section(f, "Oratio", Some(rubric)).is_none()
+        });
+    if oratio_dominica_force_sunday {
+        if let Some(parent) = day_key.and_then(tempora_sunday_fallback) {
+            // Same Epi1-0 → Epi1-0a redirect as `commune_chain_for_rubric`.
+            let parent = if parent == "Tempora/Epi1-0" {
+                "Tempora/Epi1-0a".to_string()
+            } else {
+                parent
+            };
+            if let Some(file) = lookup(&parent) {
+                if let Some(body) = section_via_inheritance(file, "Oratio") {
+                    let resolved = expand_at_redirect(&body, "Oratio", rubric, hour);
+                    let evaluated = eval_section_conditionals(&resolved, rubric, hour);
+                    let trimmed = take_first_oratio_chunk(&evaluated);
+                    let with_name = substitute_saint_name(&trimmed, saint_name);
+                    let macros_expanded =
+                        expand_dollar_macros_in_body(&with_name, prayers_file);
+                    let respelled = apply_office_spelling(&macros_expanded, rubric);
+                    out.push(RenderedLine::Plain { body: respelled });
+                    return;
+                }
+            }
+        }
+    }
+
     // Tempora ferial → week-Sun Oratio fallback. Mirror of
     // `specials/orationes.pl:115-121`:
     //

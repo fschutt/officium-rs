@@ -3,6 +3,59 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 108: Annotated [Oratio (rubrica X)] counts toward "has Oratio" gate — R60 +1/yr × all hours
+
+The "Tempora ferial → week-Sun Oratio fallback" in
+`src/horas.rs::tempora_feria_oratio_dominica` checks whether the
+day's chain head has its own `[Oratio]`/`[Oratio 2]`/`[Oratio 3]`
+section before falling back to the parent Sunday. The pre-slice-108
+test was a bare `f.sections.contains_key("Oratio")` lookup — but
+several R60-only Tempora bodies carry only the annotated form
+`[Oratio] (rubrica 196) @Tempora/<weekSun>:OratioW`. Bare-key
+absent + annotated form ignored ⇒ fallback wrongly fires ⇒
+parent Sun's `[Oratio]` (e.g. Trinity Sunday) renders instead of
+the redirected `[OratioW]` (Pent01 weekday ferial Oratio).
+
+Fix: replace `f.sections.contains_key("Oratio")` with
+`best_matching_section(f, "Oratio", Some(rubric)).is_none()`. Same
+for `Oratio 2`/`Oratio 3`. The helper already considers annotated
+variants whose annotation matches the active rubric, so the gate
+now correctly recognises files that have an effective Oratio under
+the rubric even when only the annotated form exists.
+
+Closes 06-16-2028 (Fri Pent01-5 ferial) under R60 across all
+hours where the [Oratio] is materialised:
+
+- Vespera: today=Tempora/Pent01-5. Pent01-5 has only `[Oratio]
+  (rubrica 196) @Tempora/Pent01-0:OratioW`. Bare lookup fails
+  ⇒ fallback fires ⇒ Pent01-0 [Oratio] = "Omnipotens sempiterne
+  Deus, qui dedisti famulis tuis…" (Trinity oratio). With slice
+  108: gate sees the annotated form, fallback skipped, the
+  redirect resolves to Pent01-0:OratioW = "Deus, in te
+  sperantium fortitudo…" matching Perl.
+- Same for Laudes / Tertia / Sexta / Nona / Compline that
+  materialise [Oratio] from this file.
+
+Regression results — R60 2028 Vespera Oratio:
+
+| | Before slice 108 | After slice 108 |
+|---|------------------|-----------------|
+| differs | 4 | 3 |
+| pass-rate | 98.90% | 99.18% |
+
+Same +1 cell shows in 2028 Laudes/Tertia/Sexta (6 → 5 each).
+Closed cell: 06-16-2028 R60 across all hours.
+
+The fix narrows the fallback gate (more cases now correctly skip
+the fallback) — it cannot newly fire the fallback, so it cannot
+introduce regressions by construction. Verified:
+
+- `cargo test --release --lib` — 431 passed
+- Mass T1570 / R60 2026 year-sweeps — 365/365 each
+- Office T1570 / T1910 / DA / R55 2026 + 2028 — unchanged
+- Prior closed slices spot-checked: 2030 T1910 Vespera (slice
+  105/106) unchanged at 99.73%, 2027 R60 Vespera unchanged.
+
 ## Slice 107: R60 Festum-Domini × Festum-Domini concurrence swap — R60 +1/yr
 
 R60 Sat-eve Vespera concurrence: when both today and tomorrow

@@ -3162,9 +3162,17 @@ fn splice_proper_into_slot(
     let tempora_feria_oratio_dominica = label == "Oratio"
         && day_key.is_some_and(|k| k.starts_with("Tempora/"))
         && chain.first().is_some_and(|f| {
-            !f.sections.contains_key("Oratio")
-                && !f.sections.contains_key("Oratio 2")
-                && !f.sections.contains_key("Oratio 3")
+            // File has an "effective" Oratio if either the bare
+            // [Oratio] key is present OR a rubric-annotated variant
+            // `[Oratio (rubrica X)]` applies under the active rubric.
+            // Without checking annotations, R60-only Tempora bodies
+            // like Pent01-5's `[Oratio] (rubrica 196) @Tempora/
+            // Pent01-0:OratioW` look "missing" → fallback fires →
+            // Trinity Sunday's main [Oratio] is rendered instead of
+            // Pent01-0:OratioW. Closes 06-16-2028 R60 Fri Vespera.
+            best_matching_section(f, "Oratio", Some(rubric)).is_none()
+                && best_matching_section(f, "Oratio 2", Some(rubric)).is_none()
+                && best_matching_section(f, "Oratio 3", Some(rubric)).is_none()
         })
         && day_key.is_some_and(|k| {
             let line = match active_rank_line_with_annotations(k, rubric, hour) {

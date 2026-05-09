@@ -1096,9 +1096,19 @@ fn preces_dominicales_et_feriales_fires(
     //
     //   return 0 if (... || $dayname[0] =~ /Pasc[67]/i);
     //
-    // dayname[0] is the weekname; for `Tempora/Pasc6-5` etc. the
-    // prefix `Tempora/Pasc6-` / `Tempora/Pasc7-` matches. Drives
-    // 05-22 Fri (post Asc Octave) Prima — preces rejected.
+    // `$dayname[0]` is the LITURGICAL WEEKNAME, not the day_key —
+    // when a Sancti winner overrides a Pasc6/Pasc7 ferial (e.g.
+    // Sancti/05-16 S. Ubaldi on Fri 05-16-2070 in Pasc6 week),
+    // day_key starts with "Sancti/" but dayname[0]="Pasc6" still
+    // satisfies the Perl rule. Compute weekname from the date so
+    // the Sancti-override case is also caught.
+    //
+    // Closes 05-16-2070 DA Fri Compline (S. Ubaldi Semiduplex on
+    // Pasc6-Fri).
+    let today_weekname = crate::date::getweek(day, month, year, false, true);
+    if today_weekname == "Pasc6" || today_weekname == "Pasc7" {
+        return false;
+    }
     if day_key.starts_with("Tempora/Pasc6-")
         || day_key.starts_with("Tempora/Pasc7-")
     {

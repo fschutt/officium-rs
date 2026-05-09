@@ -3,6 +3,44 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 116: Pasc[67] preces reject uses computed weekname (covers Sancti-overrides) — DA Compline +1 Pasc6/Pasc7 Sancti days
+
+The Pasc[67] preces-reject gate previously used `day_key.starts_
+with("Tempora/Pasc6-")` etc. — but Perl's rule is on `$dayname[0]`,
+the LITURGICAL WEEKNAME computed from the date, not the day_key
+prefix. When a Sancti winner overrides a Pasc6 / Pasc7 ferial
+(e.g. Sancti/05-16 S. Ubaldi Semiduplex on Fri 05-16-2070 in
+Pasc6 week), day_key starts with "Sancti/" but Perl's
+$dayname[0]="Pasc6" still satisfies the reject rule.
+
+Fix: compute today's weekname via `crate::date::getweek` and
+add a separate gate before the day_key check:
+
+```rust
+let today_weekname = crate::date::getweek(day, month, year, false, true);
+if today_weekname == "Pasc6" || today_weekname == "Pasc7" {
+    return false;
+}
+```
+
+Closes 05-16-2070 DA Fri Compline (S. Ubaldi Semiduplex 2.2 in
+Pasc6 week — Perl rejects via `$dayname[0]=~/Pasc[67]/i`,
+Rust-side now also rejects).
+
+DA 2070 Compline 2→1 differ (only 11-02 All Souls remains).
+
+The new gate is strictly narrower than the prior day_key check
+(only adds Sancti-override cases in Pasc6/Pasc7 weeks). Other
+rubrics + other dates unchanged. Verified clean across:
+
+- T1570/T1910/R55 2026/2070 Compline — 100% / 99.73%
+- R60 2026/2070 Compline — 99.45% (Triduum/All Souls only)
+- Slice 110 cases (02-21-2027 etc.) — preserved (Quad/Pent
+  weeks, not Pasc6/7)
+- Slice 115 cases (03-23-2070 Sun Palm) — preserved (Quad6
+  not Pasc6/7)
+- Slices 107/108/109 spot-checked clean
+
 ## Slice 115: Sun-Compline tomorrow-saint check skips Holy Week / Easter Octave — DA +N/yr Compline (Sun Palm + Sun Easter)
 
 Slice 110's Sun-Compline tomorrow-saint rejection iterates the

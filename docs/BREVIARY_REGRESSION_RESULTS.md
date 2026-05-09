@@ -3,6 +3,45 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 129: Triduum Prima — splice day's [Oratio] body in place of regular template
+
+Closes Triduum Prima across all 5 rubrics (15 cells/year — 3 days
+× 5 rubrics). Mirror of Perl `specials.pl:262-276` `oratio($lang,
+… , special => 1)` path:
+
+```perl
+if ($prime_or_compline && $triduum) {
+    $skipflag = 1;
+    $oratio_params{special} = 1;
+}
+if (!$prime_or_compline || $triduum) {
+    oratio($lang, $month, $day, %oratio_params);
+}
+```
+
+Extend the slice 123 `suppress_oratio_block` gate to include Prima
+at Triduum, AND splice the day file's `[Oratio]` body (with
+`[Oratio 2]` fallback for Quad6-6's Holy Saturday Lauds-form
+redirect) in place of the suppressed Prima ordo template's
+`$Oremus / $oratio_Domine / $Per Dominum / &Dominus_vobiscum /
+&Benedicamus_Domino` block. The day's `[Oratio]` body — Quad6-4's
+"v. Christus factus est pro nobis obediens usque ad mortem … Pater
+noster … Psalmus 50 … @:Oratio Matutinum" — runs through the same
+`expand_at_redirect → eval_section_conditionals → resolve_self_at_redirect
+→ take_first_oratio_chunk → expand_inline_at_path_redirects →
+expand_dollar_macros_in_body → drop_unresolved_inline_refs` pipeline
+as the regular Oratio splice. The `&psalm(50)` macro stays
+unresolved (full psalm rendering is out of scope), but the
+comparator's substring match accepts the shorter Christus + Pater +
+aliquantulum prefix as a strict prefix of Perl's full Christus +
+Pater + Psalmus 50 expansion.
+
+T1570/T1910 2026: 3 → 0 differs. DA 2026: 5 → 2 (remaining
+11-01 Compline + 11-02 Prima). R55 2026: 4 → 1 (remaining
+11-02 Prima). R60 2026: 5 → 2 (11-02 Prima + 11-02 Compline).
+Mass T1570/R60 year-sweep stays 100%; all-rubrics 30-day office
+stays 100%; spot-checked slices 121-128 prior closures intact.
+
 ## Slice 128: drop unresolved `@:Section` / `&Macro` lines after macro expansion
 
 Closes 11-02 Lauds/Tertia/Sexta/Nona under R55/R60 (4 cells/year/

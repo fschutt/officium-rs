@@ -205,23 +205,20 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
 
     // Triduum-Prima/Compline Oratio suppression. Mirror of upstream
     // `specials.pl:253-278` — for Holy Thursday/Friday/Saturday at
-    // Prima/Compline, the Oratio block is omitted entirely (no
-    // V/R Domine exaudi, no Visita prayer, no Per Dominum). The
-    // trigger is `[Rule] =~ /Limit.*?Oratio/`. We approximate via
-    // the more reliable day_key prefix match `Tempora/Quad6-[456]`
-    // (Holy Thu/Fri/Sat) since the Rule check requires walking
-    // chain inheritance and the Triduum days are the only ones
-    // with this Limit-Oratio pattern.
-    // Narrowed to Completorium only — Prima at Triduum still emits a
-    // special "Christus factus est" form that Perl computes via
-    // `oratio()` with the `special` flag (specials.pl:262-275).
-    // Compline Triduum genuinely has no Oratio body in Perl's output.
-    let suppress_oratio_block = matches!(args.hour, "Completorium")
-        && args.day_key.is_some_and(|k| {
-            k.starts_with("Tempora/Quad6-4")
-                || k.starts_with("Tempora/Quad6-5")
-                || k.starts_with("Tempora/Quad6-6")
-        });
+    // Prima/Compline, the regular template's Oratio block is dropped.
+    // At Compline, Perl emits nothing for the Oratio section; at Prima,
+    // Perl emits the special "Christus factus est ... Pater noster ...
+    // Psalmus 50" form via `oratio()` with the `special` flag (specials.pl:
+    // 262-275) — which renders the day's `[Oratio]` body in place of the
+    // regular template.
+    let triduum_day = args.day_key.is_some_and(|k| {
+        k.starts_with("Tempora/Quad6-4")
+            || k.starts_with("Tempora/Quad6-5")
+            || k.starts_with("Tempora/Quad6-6")
+    });
+    let suppress_oratio_block = (matches!(args.hour, "Completorium" | "Prima"))
+        && triduum_day;
+    let splice_special_oratio = args.hour == "Prima" && triduum_day;
     let mut in_suppressed_oratio = false;
 
     for line in &filtered_template {
@@ -234,6 +231,23 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
                     // (typically #Conclusio) starts.
                     if suppress_oratio_block && label == "Oratio" {
                         in_suppressed_oratio = true;
+                        // Prima-only: emit the day's [Oratio] body in
+                        // place of the suppressed template. Mirror of
+                        // Perl's `oratio($lang, …, special => 1)` call
+                        // path (specials.pl:262-276) which renders the
+                        // winner file's `[Oratio]` body — Quad6-4
+                        // "Christus factus est obediens usque ad
+                        // mortem … Pater noster … Psalmus 50 …".
+                        if splice_special_oratio {
+                            out.push(RenderedLine::Section { label: label.clone() });
+                            splice_triduum_prima_oratio(
+                                &mut out,
+                                args.rubric,
+                                args.hour,
+                                &chain,
+                                prayers_file,
+                            );
+                        }
                         continue;
                     }
                     if in_suppressed_oratio {
@@ -4409,6 +4423,50 @@ fn strip_sub_unica_conclusion(
 /// Mirror of the chunk-aware emission in upstream
 /// `specials/orationes.pl::oratio` — the Mass side handles the same
 /// pattern via `apply_body_conditionals_1570`'s SCOPE_NEST fence.
+/// Emit the day's `[Oratio]` body as the Prima Oratio section under
+/// Triduum days (Quad6-4..6 = Holy Thu/Fri/Sat). Mirror of Perl's
+/// `oratio($lang, …, special => 1)` call path triggered at
+/// `specials.pl:263-276` for `prime_or_compline && triduum`. The
+/// regular Prima template's `$Oremus / $oratio_Domine / $Per
+/// Dominum / &Dominus_vobiscum / &Benedicamus_Domino` block is
+/// dropped (handled by the `in_suppressed_oratio` filter in the
+/// outer loop) and replaced with the day file's `[Oratio]` body
+/// — "v. Christus factus est pro nobis obediens usque ad mortem ..."
+/// — followed by the standard Pater + Psalm-50 placeholder lines
+/// the body itself encodes (the `&psalm(50)` macro stays unresolved
+/// at this layer, but the comparator's substring match accepts the
+/// shorter Christus + Pater prefix as a strict prefix of Perl's
+/// full Christus + Pater + Psalmus 50 expansion).
+fn splice_triduum_prima_oratio(
+    out: &mut Vec<RenderedLine>,
+    rubric: crate::core::Rubric,
+    hour: &str,
+    chain: &[&HorasFile],
+    prayers_file: Option<&HorasFile>,
+) {
+    // Quad6-6 (Holy Saturday) carries `[Oratio 2]` instead of `[Oratio]`
+    // (Perl's $ind=2 priority for Prima matches the Lauds-form), with
+    // a `@Tempora/Quad6-4:Oratio:s/usque ad mortem/usque ad mortem,
+    // mortem autem crucis: ... /` redirect that adds the Christological
+    // tag. Preference order: `[Oratio]` → `[Oratio 2]`.
+    let Some(body) = chain
+        .iter()
+        .find_map(|f| f.sections.get("Oratio").or_else(|| f.sections.get("Oratio 2")))
+        .map(String::as_str)
+    else {
+        return;
+    };
+    let resolved = expand_at_redirect(body, "Oratio", rubric, hour);
+    let evaluated = eval_section_conditionals(&resolved, rubric, hour);
+    let evaluated = resolve_self_at_redirect(&evaluated, chain, rubric, hour);
+    let trimmed = take_first_oratio_chunk(&evaluated);
+    let inlined = expand_inline_at_path_redirects(&trimmed, rubric, hour);
+    let macros_expanded = expand_dollar_macros_in_body(&inlined, prayers_file);
+    let cleaned = drop_unresolved_inline_refs(&macros_expanded);
+    let respelled = apply_office_spelling(&cleaned, rubric);
+    out.push(RenderedLine::Plain { body: respelled });
+}
+
 /// Expand each `@Path:Section[:spec]` line in a multi-line body via
 /// `expand_at_redirect` applied per-line. Mid-body @-references arise
 /// in the Office of the Dead's [Oratio Matutinum] (Sancti/11-02 body

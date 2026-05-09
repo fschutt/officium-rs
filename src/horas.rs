@@ -1870,6 +1870,43 @@ pub fn first_vespers_day_key_for_rubric<'a>(
             return tomorrow_key;
         }
     }
+    // Tridentine flatten table for the default rank comparison.
+    // Mirror of `horascommon.pl:1063-1093`'s asymmetric trident
+    // flatten: today's rank in (2.0, 2.9] flattens UP to 2.0,
+    // tomorrow's rank in (2.0, 2.91) flattens DOWN to 2.0 — so a
+    // Sun-of-Octave-Corpus today (rank reduced to 2.9 by slice 89)
+    // vs Mon-infra-Octava tomorrow (rank 2.9): flrank=2.9,
+    // flcrank=2 → today wins. Without flatten the raw 2.9 == 2.9
+    // tie defaulted to tomorrow.
+    //
+    // Closes 05-30-2032 T1570 Sun Vespera: today=Tempora/Pent02-0o
+    // (Sun II Post Pent infra Octavam Corp Christi 5.9 reduced to
+    // 2.9 by slice 89), tomorrow=Tempora/Pent02-1 (Mon infra
+    // Octava 2.9). Today keeps 2V → renders Pent02-0's "Sancti
+    // nóminis tui..." instead of swapping to Pent02-1 which
+    // inherits Pent01-4 Corpus Christi Oratio.
+    //
+    // Narrowed to Tempora-vs-Tempora: the Sancti-vs-Sancti and
+    // Sancti-vs-Tempora-Nat[26-31] cases above already handle
+    // those tie-rank swaps explicitly (slices 92, 94).
+    if is_trident
+        && today_key.starts_with("Tempora/")
+        && tomorrow_key.starts_with("Tempora/")
+    {
+        let cwinner_is_dominica = lookup(tomorrow_key)
+            .and_then(|f| section_via_inheritance(f, "Officium"))
+            .map(|o| o.to_lowercase().contains("dominica"))
+            .unwrap_or(false);
+        let flrank = flrank_trident(today_rank);
+        let flcrank = flcrank_trident(tomorrow_rank, cwinner_is_dominica);
+        if (flrank - flcrank).abs() > 0.001 {
+            return if flrank > flcrank {
+                today_key
+            } else {
+                tomorrow_key
+            };
+        }
+    }
     if today_rank > tomorrow_rank {
         today_key
     } else {

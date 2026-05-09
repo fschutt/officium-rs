@@ -3,6 +3,58 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 103: Tridentine flatten table on Tempora-Tempora pair — T1570 +1/yr
+
+`first_vespers_day_key_for_rubric` now applies the Tridentine
+flrank/flcrank flatten table for Tempora-vs-Tempora pairs at the
+default rank-comparison fall-through. Mirror of
+`horascommon.pl:1063-1093` asymmetric flatten:
+
+```perl
+my $flrank = ...
+  : $version =~ /trident/i ? (
+      ($rank < 2.9 && !($rank == 2.1 && ...)) ? 2
+    : (...) ? 3 : $rank
+  ) : ...;
+my $flcrank = ...
+  : $version =~ /trident/i ? (
+      $crank < 2.91
+      ? ($crank > 2 ? 2 : $crank)
+      : ...
+    ) : ...;
+```
+
+Today's flatten (`flrank_trident`) leaves rank 2.9 alone (returns
+direct). Tomorrow's flatten (`flcrank_trident`) collapses 2.9
+down to 2 (since 2 < 2.9 < 2.91, returns 2). The asymmetry
+matters when both ranks are 2.9 — flrank=2.9 > flcrank=2 →
+today wins.
+
+Without the flatten, raw `today_rank > tomorrow_rank` defaulted
+to tomorrow on ties (≥), missing the today-wins case for
+Sun-of-Octave-Corp paired with Mon-infra-Octava (both with
+slice 89's "infra octavam corp" reduction to 2.9).
+
+**Cell impact:** Closes 05-30-2032 T1570 Sun Vespera. Today=
+Tempora/Pent02-0o (Dominica II Post Pentecosten infra Octavam
+Corporis Christi), reduced from 5.9 → 2.9 by slice 89's "infra
+octavam Corp" rule. Tomorrow=Tempora/Pent02-1 (Mon infra Octava,
+rank 2.9). Without flatten the raw 2.9 == 2.9 tie defaulted to
+tomorrow → swap to Mon → chain pulled Pent01-4 (Corpus Christi)
+Oratio "Deus, qui nobis sub Sacraménto mirábili...". With
+flatten today wins → renders Pent02-0's "Sancti nóminis tui...".
+
+  | Sweep                | Before | After |
+  |----------------------|-------:|------:|
+  | T1570 office 2032    | 4 differs | 3 differs |
+  | All 2026 sweeps      | unchanged | unchanged |
+  | T1570 30-day office  | 100% | 100% |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+
+After this slice T1570 office 2032 bottoms out at the Triduum
+Prima cluster only. Same flatten pattern likely fires across the
+full 1976-2076 window for Pent02-0-Sun-eve cases.
+
 ## Slice 102: R60 Festum Domini precedence on II classis Sun — R60 +8/yr
 
 `decide_sanctoral_wins_1570` now mirrors Perl's R60-specific

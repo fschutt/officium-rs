@@ -3,6 +3,76 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 110: Sun-Compl 2V commemoratio rejects preces under non-Trident — DA +4-5/yr Compline
+
+At Sun Compline, when Sun is the 2V winner (Sun outranks Mon, no
+1V swap) but Mon's saint is high-rank enough to be commemorated
+at Sun's 2V, Perl's `specials/preces.pl:42-46` reads `$commemoratio`
+(set during concurrence to tomorrow's saint) and rejects preces
+when its rank ≥ ranklimit:
+
+```perl
+my $ranklimit = $version =~ /^Trident/ ? 7 : 3;
+if ($r[2] >= $ranklimit ...) { $dominicales = 0; }
+```
+
+Rust's `preces_dominicales_et_feriales_fires` only iterated
+TODAY's kalendaria cells — at Sun (no Sancti for Feb 21 etc.)
+the loop was empty, so the rejection never triggered, preces
+fired, and `Dominus_vobiscum1` emitted the
+`/:secunda «Domine, exaudi» omittitur:/` directive. Perl,
+seeing Mon's Cathedra Petri (Duplex majus rank 4 ≥ 3) as the
+2V commemoratio, rejected and emitted the standard
+`Domine, exaudi orationem meam` couplet.
+
+Fix: new gate inside `preces_dominicales_et_feriales_fires`
+that, when `dayofweek == 0 && hour == "Completorium" &&
+day_key.starts_with("Tempora/")`, ALSO iterates TOMORROW's
+main Sancti cells against the same `ranklimit` rejection.
+
+Closes 5 DA Sun-Compline cells in 2027:
+
+| Date | Tomorrow saint | Rank |
+|------|----------------|------|
+| 02-21-2027 | Cathedra Petri | Duplex majus 4 |
+| 06-20-2027 | S. Aloysii Gonzaga | Duplex 3 |
+| 07-11-2027 | S. Joannis Gualberti | Duplex 3 |
+| 08-08-2027 | Vigilia S. Laurentii | (commemoratio) |
+| 12-05-2027 | S. Nicolai | Duplex 3 |
+
+Regression results — DA 2027 Compline Oratio:
+
+| | Before slice 110 | After slice 110 |
+|---|------------------|-----------------|
+| differs | 6 | 1 |
+| pass-rate | 98.36% | 99.73% |
+
+Closed cells per year vary by Sun-Mon-saint occurrences. 2030
+DA Compline: 6→2 (4 closed). 2034 DA Compline: 6→2 (4 closed).
+Remaining differs are 11-01/02 (All Souls structural).
+
+Narrow gates:
+
+- `dayofweek == 0` — Sun only.
+- `hour == "Completorium"` — only Compline. Vespera at Sun
+  already rejects via `!$dayofweek` in preces.pl Feriales gate;
+  Mat/Lauds/Prima/Tertia/Sexta/Nona run before the 2V swap so
+  $commemoratio is empty.
+- `day_key.starts_with("Tempora/")` — Sun-Office is in play;
+  excludes higher-rank Sancti overrides on Sundays.
+
+T1570/T1910 unaffected (ranklimit=7 — Mon Duplex majus rank 4
+< 7 so doesn't reject; matches Perl). Verified clean.
+
+No-regression verified:
+
+- `cargo test --release --lib` — 431 passed
+- Mass T1570 / R60 2026 year-sweeps — 365/365 each (100%)
+- Office T1570 / T1910 / R55 2027 Compline — unchanged
+- Prior closed slices (105/106/107/108/109) spot-checked clean:
+  R60 2035 Vespera (107) 99.18%, R60 2028 Vespera (108) 99.18%,
+  R60 2027 Laudes (109) 98.90%.
+
 ## Slice 109: [Rule] "Oratio Dominica" forces week-Sun [Oratio] — R60 +5/yr × Mat/Laud/Tertia/Sexta/Nona
 
 R60 reformatted Pasc5-1 (Mon of Pasc5 week, the old "Feria Secunda

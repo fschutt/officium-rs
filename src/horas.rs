@@ -756,6 +756,67 @@ fn preces_dominicales_et_feriales_fires(
         }
     }
 
+    // Sun-Compline: 2V commemoratio of tomorrow's saint. When Sun
+    // is the winner at 2V (Sun outranks Mon, no 1V swap), but Mon's
+    // saint is high-rank enough to be commemorated at Sun's 2V/
+    // Compline, Perl's preces.pl:42-46 sees `$commemoratio` set to
+    // tomorrow's saint and rejects via:
+    //
+    //   my $ranklimit = $version =~ /^Trident/ ? 7 : 3;
+    //   if ($r[2] >= $ranklimit ...) { $dominicales = 0; }
+    //
+    // Mirrors today's-cells loop below but reads tomorrow's main
+    // Sancti cell. Closes 02-21-2027 / 06-20 / 07-11 / 08-08 /
+    // 12-05 DA Sun Compline (5 cells per year for years where a
+    // Sun precedes a Mon-Duplex saint).
+    //
+    // Narrow gates: dayofweek == 0 AND hour == Completorium AND
+    // day_key is Tempora-Sunday — ensures the Sun-Office is in
+    // play (not e.g. a higher-rank Sancti override). Other hours
+    // at Sun (Mat/Lauds/Prima/etc.) don't have this commemoration
+    // since their preces predicate runs on TODAY's $commemoratio
+    // (typically empty for Sundays without a today-Sancti).
+    if dayofweek == 0
+        && hour == "Completorium"
+        && day_key.starts_with("Tempora/")
+    {
+        let dim = match month {
+            1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+            4 | 6 | 9 | 11 => 30,
+            2 => 28,
+            _ => 31,
+        };
+        let (tom_m, tom_d) = if day < dim {
+            (month, day + 1)
+        } else if month < 12 {
+            (month + 1, 1)
+        } else {
+            (1, 1)
+        };
+        let layer = rubric.kalendar_layer();
+        if let Some(cells) = crate::kalendaria_layers::lookup(layer, tom_m, tom_d) {
+            let ranklimit = match rubric {
+                crate::core::Rubric::Tridentine1570
+                | crate::core::Rubric::Tridentine1910 => 7.0_f32,
+                _ => 3.0_f32,
+            };
+            for cell in cells {
+                if cell.kind != "main" {
+                    continue;
+                }
+                let kalendar_rank = cell.rank_num().unwrap_or(0.0);
+                let sancti_path = format!("Sancti/{}", cell.stem);
+                let file_rank = active_rank_line_with_annotations(&sancti_path, rubric, hour)
+                    .map(|(_, _, n)| n)
+                    .unwrap_or(0.0);
+                let effective_rank = kalendar_rank.max(file_rank);
+                if effective_rank >= ranklimit {
+                    return false;
+                }
+            }
+        }
+    }
+
     let layer = rubric.kalendar_layer();
     if let Some(cells) = crate::kalendaria_layers::lookup(layer, lookup_m, lookup_d) {
         // Branch (b) `Dominicales` commemoratio rank check.

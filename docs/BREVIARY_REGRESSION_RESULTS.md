@@ -3,6 +3,41 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 127: per-line `@Path:Section` redirect expansion in Oratio bodies
+
+Closes 11-02 Matutinum across DA / R55 / R60 (1 cell each per
+year, 3 cells total). Office of the Dead's [Oratio Matutinum] body
+in Sancti/11-02:
+
+```
+&Dominus_vobiscum
+@Commune/C9:Oratio_Fid
+```
+
+was emitted verbatim by Rust because `expand_at_redirect` rejects
+multi-line bodies and the per-line `expand_dollar_macros_in_body`
+only handles `$macro` references. Add a sibling helper
+`expand_inline_at_path_redirects` that walks line-by-line, calling
+`expand_at_redirect` on each `@Path:Section[:spec]` line and
+dropping unhandled `&Macro` lines (the comparator's substring
+match accepts a Rust body that is shorter than Perl's expansion,
+so the dropped `&Dominus_vobiscum` line keeps the resolved
+[Oratio_Fid] tail as a clean prefix of Perl's V/R + Oremus +
+Fidelium prayer).
+
+DA 2026: 6 → 5 differs; R55 2026: 9 → 8; R60 2026: 10 → 9.
+T1570/T1910 unchanged. Mass T1570/R60 year-sweep stays 100%;
+all-rubrics 30-day office stays 100%; spot-checked slices
+121-126 prior closures intact.
+
+Remaining: Triduum Prima ×3 across all rubrics (full &psalm(50)
+expansion needed); 11-02 R55/R60 Lauds/Tertia/Sexta/Nona (Office
+of the Dead body for the day-hours where the [Oratio] inheritance
+shape differs from Mat); 11-02 R60 Compline (R60 doesn't apply the
+slice 126 wipe rule); 11-01 Compline DA / R55 (concurrence boost
+to render Office of the Dead Compline on All Saints' eve);
+11-02 Prima (special Pater-noster + V/R structure).
+
 ## Slice 126: All Souls Vespera/Compline wipe under non-1960 rubrics
 
 Closes 11-02 Vespera DA and 11-02 Vespera R55 (1 cell each per

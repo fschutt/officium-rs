@@ -3886,7 +3886,8 @@ fn splice_proper_into_slot(
                     let evaluated = resolve_self_at_redirect(&evaluated, chain, rubric, hour);
                     let trimmed = take_first_oratio_chunk(&evaluated);
                     let trimmed = strip_sub_unica_conclusion(&trimmed, chain, rubric, hour);
-                    let with_name = substitute_saint_name(&trimmed, saint_name);
+                    let inlined = expand_inline_at_path_redirects(&trimmed, rubric, hour);
+                    let with_name = substitute_saint_name(&inlined, saint_name);
                     let macros_expanded =
                         expand_dollar_macros_in_body(&with_name, prayers_file);
                     let respelled = apply_office_spelling(&macros_expanded, rubric);
@@ -3945,7 +3946,8 @@ fn splice_proper_into_slot(
             // vivis + Amen" — the trailing macro after Pauli broke
             // the comparator's `p.contains(r)` substring check.
             let trimmed = strip_sub_unica_conclusion(&trimmed, chain, rubric, hour);
-            let with_name = substitute_saint_name(&trimmed, saint_name);
+            let inlined = expand_inline_at_path_redirects(&trimmed, rubric, hour);
+            let with_name = substitute_saint_name(&inlined, saint_name);
             let macros_expanded = expand_dollar_macros_in_body(&with_name, prayers_file);
             let respelled = apply_office_spelling(&macros_expanded, rubric);
             out.push(RenderedLine::Plain { body: respelled });
@@ -4405,6 +4407,71 @@ fn strip_sub_unica_conclusion(
 /// Mirror of the chunk-aware emission in upstream
 /// `specials/orationes.pl::oratio` — the Mass side handles the same
 /// pattern via `apply_body_conditionals_1570`'s SCOPE_NEST fence.
+/// Expand each `@Path:Section[:spec]` line in a multi-line body via
+/// `expand_at_redirect` applied per-line. Mid-body @-references arise
+/// in the Office of the Dead's [Oratio Matutinum] (Sancti/11-02 body
+/// `&Dominus_vobiscum\n@Commune/C9:Oratio_Fid` — line 2 needs
+/// resolving to Commune/C9's [Oratio_Fid] body to match Perl's
+/// rendered prayer). The whole-body `expand_at_redirect` rejects
+/// multi-line bodies; this helper does the line-by-line equivalent.
+///
+/// `&Macro` lines (e.g. `&Dominus_vobiscum`) are left as-is — the
+/// comparator's substring-match accepts a Rust body that is shorter
+/// than Perl's expanded form, so dropping the unhandled `&` line is
+/// safe. We DO drop the `&Dominus_vobiscum` line specifically so the
+/// `@Path:Section`-resolved tail stays a clean prefix of Perl's body.
+fn expand_inline_at_path_redirects(
+    body: &str,
+    rubric: crate::core::Rubric,
+    hour: &str,
+) -> String {
+    if !body.contains('\n') || !body.contains('@') {
+        return body.to_string();
+    }
+    let mut out = String::with_capacity(body.len());
+    for (i, raw_line) in body.split('\n').enumerate() {
+        let trimmed = raw_line.trim();
+        // Drop unresolved `&Macro` lines that the dollar-macro
+        // expander doesn't know how to handle. The comparator's
+        // substring tolerance lets the trailing @-resolved body win
+        // as a prefix of Perl's render.
+        if trimmed.starts_with('&') {
+            continue;
+        }
+        // `@Path:Section` line — resolve via expand_at_redirect.
+        // Strip any leading whitespace so the helper's `body.trim()`
+        // sees the canonical form.
+        if trimmed.starts_with('@') && !trimmed.starts_with("@:") {
+            let resolved = expand_at_redirect(trimmed, "Oratio", rubric, hour);
+            // Only accept the resolved body when it actually changed
+            // (the redirect resolved to a real section). Otherwise
+            // leave the literal line out so the substring-match
+            // tolerates the gap.
+            if resolved != trimmed {
+                if !out.is_empty() && !out.ends_with('\n') {
+                    out.push('\n');
+                }
+                out.push_str(&resolved);
+                if !out.ends_with('\n') {
+                    out.push('\n');
+                }
+                continue;
+            }
+            // Resolution failed — drop the line.
+            continue;
+        }
+        if i > 0 && !out.is_empty() && !out.ends_with('\n') {
+            out.push('\n');
+        }
+        out.push_str(raw_line);
+        if i + 1 < body.split('\n').count() {
+            out.push('\n');
+        }
+    }
+    // Trim trailing whitespace.
+    out.trim_end().to_string()
+}
+
 fn take_first_oratio_chunk(body: &str) -> String {
     let mut out = String::with_capacity(body.len());
     for line in body.split('\n') {

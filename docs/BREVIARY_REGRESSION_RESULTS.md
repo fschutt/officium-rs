@@ -3,6 +3,54 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 92: Apostolic-Vigil precedence is Mass-only — T1570 +10 cells/year (2027)
+
+`decide_sanctoral_wins_1570` now gates the Apostolic-Vigil-on-Advent
+rule on `is_mass_context = true`. The rule was previously firing
+for both Mass and Office, against Perl's `set_dayname` at
+`horascommon.pl:484-487`:
+
+```perl
+} elsif ($missa
+      && $srank[1] eq 'Vigilia'
+      && $trank[0] =~ /Advent/
+      && $trank[0] !~ /Quatt?uor/) {
+    # Vigil of St. Andrews and St. Thomas, Apostles, in Missa only
+    $sanctoraloffice = 1;
+}
+```
+
+The `$missa` guard means: when 11-29 (Andrew Vigil) or 12-20
+(Thomas Vigil) falls on a Mon/Tue of Advent, the Mass is of the
+Vigil but the Office stays on the Tempora ferial. The Tempora
+ferial's Oratio inherits from the Sunday via `Oratio Dominica`
+(Adv1 Sunday Oratio "Excita, quǽsumus, Dómine, poténtiam tuam,
+et veni" for Mon Adv I; Adv4 Sunday Oratio "Excita, quǽsumus,
+Dómine, poténtiam tuam" for Mon Adv IV).
+
+The decision function now takes an extra `is_mass_context: bool`
+parameter, threaded from `OfficeInput::is_mass_context` at the
+caller. All the preceding 1570 precedence rules (Class I temporal,
+Sun handling, privileged-feria, Imm Conc exception) are unchanged.
+
+**Cell impact:** Closes 10 cells per affected year for T1570 office
+sweep — 11-29 Mat/Laudes/Tertia/Sexta/Nona + 12-20 same hours,
+when those dates fall on Mon (or in some years Tue) of Advent.
+Affected years include 2021, 2022, 2027, and similar mod-7 years.
+2027 specifically: T1570 office year-sweep down from 13 differs
+to 3 (only Triduum Prima remains).
+
+  | Sweep                | Before | After |
+  |----------------------|-------:|------:|
+  | T1570 office 2027    | 13 differs | 3 differs |
+  | T1570 office 2026    | 3 differs | 3 differs |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+  | Mass T1570 2027      | 365/365 (Vigil-of-Andrew/Thomas Mass still wins) | 365/365 |
+
+The remaining T1570 office-side residuals are concentrated on
+Triduum Prima (`&psalm(50)` macro) and All Souls (Office of the
+Dead) — both structural clusters.
+
 ## Slice 91: `$N` / `\N` backreferences in `s/PAT/REPL/` substitutions — multi-rubric +1 cell
 
 `do_inclusion_substitutions` now expands `$1` / `\1` etc. in the

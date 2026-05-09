@@ -316,6 +316,7 @@ fn compute_occurrence_core(input: &OfficeInput, corpus: &dyn Corpus) -> Occurren
         sanctoral_rank,
         input.rubric,
         sancti_mass_file,
+        input.is_mass_context,
     );
 
     // ── Anticipated Sunday-Within-Octave-of-Epiphany ────────────────
@@ -536,6 +537,7 @@ fn decide_sanctoral_wins_1570(
     mut srank: f32,
     rubric: Rubric,
     sancti_file: Option<&MassFile>,
+    is_mass_context: bool,
 ) -> bool {
     let _sancti = match sancti {
         None => return false, // no sanctoral entry → temporal wins
@@ -735,15 +737,29 @@ fn decide_sanctoral_wins_1570(
         return srank >= 6.0;
     }
 
-    // Apostolic-Vigil precedence rule (Tridentine 1570): Vigils of
-    // Apostles (Andrew Nov 29, Thomas Dec 20) are CELEBRATED on
-    // ADVENT Feria major days. Lenten ferias (Quad*), which encode
-    // a higher actual privilege than Advent ferias despite sharing
-    // the rank label "Feria major", still preempt the Vigil — Feb 23
-    // (Vigil of Matthias) yields to the Quadragesimae feria. Advent
-    // Quattuor Temporum (Ember days, also "Feria major") similarly
-    // outrank the Apostolic Vigil — the Embertide is a privileged
-    // class.
+    // Apostolic-Vigil precedence rule — MASS-ONLY. Mirrors
+    // `horascommon.pl:484-487`:
+    //
+    //   } elsif ($missa
+    //         && $srank[1] eq 'Vigilia'
+    //         && $trank[0] =~ /Advent/
+    //         && $trank[0] !~ /Quatt?uor/) {
+    //       # Vigil of St. Andrews and St. Thomas, Apostles, in Missa only
+    //       $sanctoraloffice = 1;
+    //   }
+    //
+    // The Office on Mon Adv I (11-29 in years where Andrew Vigil falls
+    // on a weekday in Advent week) keeps the Tempora ferial — the
+    // Mon Adv I office "Feria II infra Hebdomadam I Adventus"
+    // inherits the Sunday Adv I Oratio "Excita, quǽsumus, Dómine,
+    // poténtiam tuam, et veni" via `Oratio Dominica`. The Mass on
+    // the same day is of the Apostolic Vigil. Same pattern for
+    // Thomas Vigil (12-20) on Mon Adv IV.
+    //
+    // Lenten ferias (Quad*) and Advent Quattuor Temporum (Embertide,
+    // also "Feria major") additionally preempt the Mass-side rule —
+    // Feb 23 Vigil of Matthias yields to Quadragesimae feria; Adv
+    // Wed/Fri/Sat Ember days yield even in Mass.
     let sancti_name = _sancti.name.as_str();
     let is_apostolic_vigil = sancti_name.starts_with("Vigilia")
         && (sancti_name.contains("Apostoli")
@@ -754,7 +770,8 @@ fn decide_sanctoral_wins_1570(
         || temporal_name.contains("Hebdomadam I Adventus")
         || temporal_name.contains("Hebdomadam IV Adventus");
     let is_quattuor_temporum = temporal_name.contains("Quattuor Temporum");
-    if is_apostolic_vigil
+    if is_mass_context
+        && is_apostolic_vigil
         && is_advent_temporal
         && !is_quattuor_temporum
         && srank >= 1.5

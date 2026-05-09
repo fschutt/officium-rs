@@ -3,6 +3,47 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 94: "A capitulo" tie-rank swap extended to Tempora/Nat[26..31] — T1570 +1 cell
+
+The pre-DA "a capitulo" swap (Perl `horascommon.pl::concurrence:
+1216-1261`, "flrank == flcrank → swap to tomorrow") now fires for
+Sancti-vs-Tempora pairs where TOMORROW is a Christmas-Octave Day
+(`Tempora/Nat26..Nat31`), in addition to the existing Sancti-vs-
+Sancti case.
+
+Christmas Octave Days (Stephen, John, Innocents, Day-V/VI/VII)
+inherit Sancti/12-25's Oratio via `[Rule] ex Sancti/12-25`. Under
+T1570 they have rank Semiduplex 2.1 (vs Tridentine 5.0 under R60),
+which ties exactly with Sancti Semiduplex 2.x feasts that fall
+within the Octave (Thomas Becket Sancti/12-29 Semiduplex 2.2).
+The flatten table maps both to flat-rank 2 → tie → Perl swaps
+Vespera "a capitulo de sequenti".
+
+The Tempora-Christmas-Octave check accepts trailing alphabetic
+suffixes (`Tempora/Nat30o` for the 1570 directorium redirect) so
+the swap fires whether the tomorrow_key is the bare or redirected
+form.
+
+**Cell impact:** Closes 12-29-2028 Fri T1570 Vespera (today=Thomas
+Becket Semiduplex 2.2, tomorrow=Tempora/Nat30 Day VI infra Octavam
+Nativitatis Semiduplex 2.1; both flatten to 2 → swap; Day VI
+inherits Christmas Day Oratio "Concéde, quǽsumus, omnípotens Deus
+... Nativitas liberet"). Same pattern fires in any year where
+Sancti Semiduplex 2.x feasts in Christmas Octave concur with
+Tempora Octave Days.
+
+  | Sweep                | Before | After |
+  |----------------------|-------:|------:|
+  | T1570 office 2028    | 4 differs | 3 differs |
+  | T1570 office 2026    | 3 differs | 3 differs |
+  | T1570 office 2027    | 3 differs | 3 differs |
+  | T1570 30-day         | 100% | 100% |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+
+After this slice, T1570 office 2026/2027/2028 all bottom out at
+3 Triduum-Prima differs only (the structural `&psalm(50)` macro
+cluster).
+
 ## Slice 93: Sat-eve Dec 23 first vespers swaps to Adv4-0, not Sancti/12-24 — T1570 +1/year
 
 `office_sweep` post-processes `next_derived_key` so that on Dec 23,

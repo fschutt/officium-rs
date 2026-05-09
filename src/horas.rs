@@ -1737,9 +1737,24 @@ pub fn first_vespers_day_key_for_rubric<'a>(
         rubric,
         crate::core::Rubric::Tridentine1570 | crate::core::Rubric::Tridentine1910
     );
+    // Today=Sancti AND tomorrow is either Sancti OR a Tempora
+    // Christmas-Octave Day (Tempora/Nat26..Nat31). Mirror of Perl
+    // flcrank==flrank "a capitulo" rule — Christmas Octave Days
+    // inherit Sancti/12-25's Oratio via "ex Sancti/12-25", so the
+    // tied-rank swap from a Sancti Semiduplex into the Octave Day
+    // is identical in effect to a Sancti-vs-Sancti tie. Closes
+    // 12-29-2028 Fri T1570: today=Sancti/12-29 Thomas Becket
+    // Semiduplex 2.2, tomorrow=Tempora/Nat30 "Diei VI infra Octavam
+    // Nativitatis" Semiduplex 2.1 — both flatten to 2 → tie → swap.
+    let tomorrow_is_christmas_octave_tempora = tomorrow_key
+        .strip_prefix("Tempora/Nat")
+        .map(|s| s.trim_end_matches(|c: char| c.is_ascii_alphabetic()))
+        .and_then(|s| s.parse::<u32>().ok())
+        .map(|d| (26..=31).contains(&d))
+        .unwrap_or(false);
     if is_trident
         && today_key.starts_with("Sancti/")
-        && tomorrow_key.starts_with("Sancti/")
+        && (tomorrow_key.starts_with("Sancti/") || tomorrow_is_christmas_octave_tempora)
     {
         let cwinner_is_dominica = lookup(tomorrow_key)
             .and_then(|f| section_via_inheritance(f, "Officium"))

@@ -3,6 +3,63 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 95: Office-context Tempora rank from horas-side `[Rank] (rubrica X)` — T1910 +8/yr
+
+`compute_occurrence_core` now overrides the missa-side
+`rank_num_for_rubric` lookup with the horas-side
+`active_rank_line_with_annotations` rank for Tempora files in
+office context (`!is_mass_context`). Mirror of how Perl evaluates
+the per-rubric `[Rank] (rubrica X)` annotated headers in
+`setupstring`-driven office occurrence.
+
+The mass corpus build script doesn't always extract every per-
+rubric `[Rank]` second-header into the `rank_num_{1570,1906,1955,1960}`
+slots, so files that diverge between rubrics on `[Rank]` second-
+headers ship with bare `rank_num` only. `Tempora/Quad3-0` (Sun III
+in Quadragesima) is one such file:
+
+```
+[Rank]
+;;I classis Semiduplex;;6.9              # default
+
+[Rank] (rubrica 1570 aut rubrica 1888 aut rubrica 1617)
+;;II classis Semiduplex;;6.1
+
+[Rank] (rubrica 1906)
+;;II classis Semiduplex;;5.6
+```
+
+The mass corpus has only `rank_num=6.9`. Under T1910 (perl_version
+"Tridentine - 1906/1910") the office should use 5.6; under T1570
+it should use 6.1; under R60 it stays 6.9. The new horas-side
+override threads through `active_rank_line_with_annotations` (the
+same path that backs concurrence rank lookups), reusing the
+existing rubric-conditional evaluation.
+
+Mass-context bypassed via the `is_mass_context` guard — Mass-side
+precedence keeps its missa corpus rank slots.
+
+**Cell impact:** Closes the entire Sun-Joseph 03-19-2028 day
+under T1910 (Mat/Prima/Tertia/Sexta/Nona/Vespera/Compline = 8
+cells). Without override, Tempora/Quad3-0 trank=6.9 outranks
+Sancti/03-19 srank=6.1 → Quad3 Sun office, Joseph commemorated.
+With override, Tempora trank=5.6 (rubrica 1906) — Joseph (6.1)
+> Tempora (5.6) → Joseph wins, Quad3 Sun commemorated. Same
+pattern fires for any year where 03-19 falls on a non-Class-I
+Sunday under T1910 (Quad2/Quad3/Quad4 ferials all match).
+
+  | Sweep                | Before | After |
+  |----------------------|-------:|------:|
+  | T1910 office 2028    | 12 differs | 4 differs |
+  | T1910 office 2026    | 3 differs | 3 differs |
+  | T1570 / DA / R55 / R60 office 2026 | unchanged | unchanged |
+  | T1570 30-day office  | 100% | 100% |
+  | Mass T1570/T1910/R60 2026 | 365/365 | 365/365 |
+
+After this slice, T1910 office 2028 has 3 Triduum + 1 misc
+(06-18 Pent03 Sun → Mon Gervasii swap) — the Joseph cluster is
+closed.
+
 ## Slice 94: "A capitulo" tie-rank swap extended to Tempora/Nat[26..31] — T1570 +1 cell
 
 The pre-DA "a capitulo" swap (Perl `horascommon.pl::concurrence:

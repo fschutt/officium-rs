@@ -255,7 +255,7 @@ fn compute_occurrence_core(input: &OfficeInput, corpus: &dyn Corpus) -> Occurren
     // Heart from 4.01 to 6.5 under T1910; Pent02-1 has 1570-only 2.9
     // override; etc.). Pick the slot that matches the active rubric,
     // then fall back to the bare default.
-    let temporal_rank = if mass_broken_redirect_active {
+    let mut temporal_rank = if mass_broken_redirect_active {
         0.0
     } else {
         tempora_file
@@ -263,6 +263,34 @@ fn compute_occurrence_core(input: &OfficeInput, corpus: &dyn Corpus) -> Occurren
             .map(|r| downgrade_post_1570_octave(r, tempora_file.unwrap(), input.rubric))
             .unwrap_or(0.0)
     };
+
+    // Office-context Tempora rank override — use the horas-side
+    // `(rubrica X)` annotated [Rank] slot when present. The mass
+    // corpus build script doesn't always extract every per-rubric
+    // [Rank] second-header into `rank_num_{1570,1906,1955,1960}`
+    // slots — Tempora/Quad3-0 in particular ships with bare
+    // `rank_num=6.9` even though its file carries `[Rank] (rubrica
+    // 1906) ;;II classis Semiduplex;;5.6`. Mirror Perl's
+    // `setupstring`-driven occurrence which always evaluates the
+    // active rubric's annotated [Rank] body for office context.
+    //
+    // Closes 03-19-2028 T1910 Sun (Joseph Duplex I cl. 6.1 vs
+    // Quad3-0 5.6 → Sancti wins; without override Quad3-0=6.9 and
+    // Sancti loses).
+    //
+    // Mass-context bypassed via `is_mass_context` — Mass-side
+    // precedence stays on the missa-side rank slots.
+    if !input.is_mass_context && !mass_broken_redirect_active {
+        let horas_rank =
+            crate::horas::active_rank_line_with_annotations(&effective_tempora_key.render(), input.rubric, "")
+                .map(|(_, _, n)| n);
+        if let Some(hr) = horas_rank {
+            if hr > 0.0 && (hr - temporal_rank).abs() > 0.01 {
+                temporal_rank =
+                    downgrade_post_1570_octave(hr, tempora_file.unwrap_or(&Default::default()), input.rubric);
+            }
+        }
+    }
 
     // ── Sanctoral side ───────────────────────────────────────────────
     let (sancti_key, sancti_entry_holder) =

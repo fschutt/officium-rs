@@ -381,11 +381,47 @@ fn run_one_cell(
     // `1955|Monastic.*Divino|1963` — R60 ('196') uses a different
     // path and is excluded.
     let today_dow_pre = officium_rs::date::day_of_week(dd, mm, yyyy);
+    // All Souls' "Office ends after None" wipe at non-Sat Vespera /
+    // Compline under DA/R55. Mirror of `horascommon.pl:324-331` —
+    // when today=Sancti/11-02 (All Souls) AND
+    // hour ∈ {Vespera, Compline} AND dow != 6, today reverts to its
+    // Tempora ferial. Slice 126's swap-to-tomorrow (in horas.rs)
+    // works on Sat 11-02 (today_dow=6) because tomorrow is Sun (Dom
+    // rank 5, gets 1V under R55/DA), but breaks on non-Sat: Fri
+    // 11-02 (1979/1984) → swap goes to Sat 11-03 = Commune/C10
+    // (Sat-BVM Simplex 1.3), which under R55 doesn't get 1V — Perl
+    // keeps today's Fri Tempora 2V instead. Override here forces
+    // today's Tempora before slice 126 sees the Sancti/11-02 key.
+    // Closes 11-02 Fri / Thu / Wed / etc. Vespera under DA/R55
+    // (e.g. 11-02-1979 Fri R55, 11-02-1984 Fri R55).
+    let derived_key = if (hour == "Vespera" || hour == "Completorium")
+        && derived_key == "Sancti/11-02"
+        && today_dow_pre != 6
+        && matches!(
+            rubric,
+            officium_rs::core::Rubric::DivinoAfflatu1911
+                | officium_rs::core::Rubric::Reduced1955
+        )
+    {
+        let weekname = officium_rs::date::getweek(dd, mm, yyyy, false, true);
+        let bare_stem = format!("{weekname}-{today_dow_pre}");
+        let resolved_stem = officium_rs::tempora_table::redirect(&bare_stem, rubric)
+            .map(String::from)
+            .unwrap_or(bare_stem);
+        let tempora_key = format!("Tempora/{resolved_stem}");
+        if horas::lookup(&tempora_key).is_some() {
+            tempora_key
+        } else {
+            derived_key
+        }
+    } else {
+        derived_key
+    };
     // Transferred All Souls (Sancti/11-03sec on Mon 11-03 in letter-
     // e/etc years) "ends after None" under DA/R55 — Vespera/Compline
     // revert to today's Tempora ferial. Mirror of
     // `horascommon.pl:324-331` (the wipe at Vespera/Compline when
-    // srank matches /Omnium Fidelium defunctorum/). Slice 138.
+    // srank matches /Omnium Fidelium defunctorum/). Slice 135.
     let derived_key = if (hour == "Vespera" || hour == "Completorium")
         && derived_key == "Sancti/11-03sec"
         && matches!(

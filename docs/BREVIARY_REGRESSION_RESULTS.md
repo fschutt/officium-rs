@@ -3,6 +3,45 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 138: Non-Sat 11-02 Vespera Tempora redirect under DA/R55
+
+Closes 1979/1984 R55 (Fri 11-02 Vespera differs, 1 each year).
+Counterpart to slice 137 — slice 126's swap-to-tomorrow at
+Vespera/Compline for `Sancti/11-02` under DA/R55 was firing
+unconditionally, but Perl only renders tomorrow's 1V when
+tomorrow's office is eligible (Duplex II classis or Dominica
+under R55, i.e. rank ≥ 5 or Officium starts with "Dominica").
+
+**Failure mode**: Fri 11-02 R55/DA → tomorrow=Sat 11-03 = Sat-BVM
+(Commune/C10) Simplex 1.3. Under R55's "No 1st Vespers except for
+Duplex I cl. & II cl. & Dominica" rule
+(`horascommon.pl:937-938`), Sat-BVM doesn't get 1V → Perl keeps
+today's Fri Tempora 2V. Rust's slice-126 swap landed on
+Sat-BVM and rendered "Concede nos famulos…" where Perl renders
+the Fri-Pent21-5 Tempora Oratio Dominica from Pent21-0
+"Familiam tuam, quaesumus, Domine, continua pietate custodi…".
+
+**Fix** (`src/bin/office_sweep.rs:384-410`): added a derived_key
+override BEFORE slice 126's swap fires. When:
+- derived_key == "Sancti/11-02"
+- hour ∈ {Vespera, Completorium}
+- today_dow != 6 (not Saturday)
+- rubric ∈ {DA, R55}
+
+override derived_key to today's Tempora ferial
+(`Tempora/<weekname>-<dow>` with rubric-aware redirect). Sat
+11-02 (today_dow=6) keeps the existing slice-126 swap, which
+correctly targets Sun-1V where the Sun rank-5 office gets 1V
+under R55/DA. The 2026 Mon-11-02 case (which already matched
+Perl) coincidentally worked because Mon and Tue inherit the
+same Sunday's Oratio Dominica — the override now makes the
+match explicit rather than coincidental.
+
+**1979 R55: 1 → 0 differs.** 1984 R55: 1 → 0. Tests 440/440.
+2026 across all 5 rubrics still 0 differs. Mass T1570 2026
+year-sweep stays 100%. Slices 137/136/135 regression-checked
+clean.
+
 ## Slice 137: R60 Sat 11-02 Vespera/Compline All Souls wipe
 
 Closes 1985 R60 (Sat Nov 2 = All Souls' Day, 2 differs at Vespera +

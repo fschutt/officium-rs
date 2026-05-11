@@ -662,3 +662,32 @@ mod transferred_all_souls_office {
         assert_eq!(office.winner.render(), "Sancti/11-03sec");
     }
 }
+
+#[cfg(test)]
+mod sat_11_03_probes {
+    use crate::corpus::BundledCorpus;
+    use crate::core::{Date, Locale, OfficeInput, Rubric};
+    use crate::precedence::compute_office;
+
+    #[test]
+    fn probe_sat_11_03_1979_r55_winner() {
+        let input = OfficeInput {
+            date: Date::new(1979, 11, 3),
+            rubric: Rubric::Reduced1955,
+            locale: Locale::Latin,
+            is_mass_context: false,
+        };
+        eprintln!("Sat 11-03-1979 R55 = {:?}", compute_office(&input, &BundledCorpus).winner.render());
+    }
+
+    #[test]
+    fn probe_tue_11_03_2026_r55_winner() {
+        let input = OfficeInput {
+            date: Date::new(2026, 11, 3),
+            rubric: Rubric::Reduced1955,
+            locale: Locale::Latin,
+            is_mass_context: false,
+        };
+        eprintln!("Tue 11-03-2026 R55 = {:?}", compute_office(&input, &BundledCorpus).winner.render());
+    }
+}

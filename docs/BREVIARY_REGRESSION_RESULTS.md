@@ -3,6 +3,44 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 143: Holy Saturday 1V of Easter — Special Vespera 1
+
+Closes 04-14-1979 T1910 Vespera (and any year where Holy Saturday
+gets a 1V routing to `Tempora/Pasc0-0`). Rust was emitting the
+Easter Sunday daytime Oratio (`Deus, qui hodiérna die per
+Unigénitum tuum…`) for what Perl renders as the special "Sabbato
+Sancto special Paschal Vespera" — a continuous block ending in
+"Spíritum nobis, Dómine, tuæ caritátis infúnde…" with no
+`<H2>Oratio</H2>` separator. The cell registered as `PerlBlank`
+in the harness (Rust non-empty, Perl section extractor finds no
+Oratio section).
+
+Upstream Perl (`specials.pl:36-37`):
+
+```perl
+my $i = $hora eq 'Laudes' ? ' 2'
+      : $hora eq 'Vespera' ? " $vespera" : '';
+if (!$special && exists($w{"Special $hora$i"})) {
+    return loadspecial($w{"Special $hora$i"});
+}
+```
+
+For Vespera with `$vespera == 1`, the walker short-circuits with
+the winner file's `[Special Vespera 1]` body. Only one file in the
+corpus carries this section: `Tempora/Pasc0-0.txt`.
+
+**Fix** (`src/horas.rs::compute_office_hour`, ~line 246): added a
+narrow `holy_sat_1v_special_vespera` flag (hour=Vespera,
+day_key=Tempora/Pasc0-0, dow=Saturday) and wired it into the
+existing `suppress_oratio_block` machinery. With no `splice_*`
+branch taken, the Oratio section emits empty — matching Perl's
+section-extractor view (also empty, since the Special Paschal
+Vespera body has no labelled Oratio header).
+
+Verified: 1979 all 5 rubrics × Vespera = 100%, lib tests 445/445,
+Mass T1570 + R60 2026 baselines hold 100%, 2026 office sweep
+holds 0 differs × 5 rubrics.
+
 ## Slice 142: refresh stale 1977-1993 residual rows in CSV
 
 No code change. Re-swept every (year, rubric) pair that had

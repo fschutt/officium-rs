@@ -243,8 +243,21 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
     let triduum_prima_or_compline = matches!(args.hour, "Completorium" | "Prima") && triduum_day;
     let all_souls_prima = args.hour == "Prima" && all_souls_day;
     let all_souls_compline = args.hour == "Completorium" && all_souls_day;
-    let suppress_oratio_block =
-        triduum_prima_or_compline || all_souls_prima || all_souls_compline;
+    // Holy Saturday 1V of Easter Sunday — Pasc0-0 carries
+    // `[Special Vespera 1]` and Perl's `specials.pl:36-37`
+    // short-circuits the entire walker for that section. The body
+    // ("Sabbato Sancto special Paschal Vespera") is a continuous
+    // chunk with no labelled `<H2>Oratio</H2>`, so the section
+    // extractor returns empty perl-side. Suppressing the Oratio
+    // block here makes Rust emit empty on the same section, matching
+    // Perl's effective per-section view.
+    let holy_sat_1v_special_vespera = args.hour == "Vespera"
+        && args.day_key == Some("Tempora/Pasc0-0")
+        && crate::date::day_of_week(args.day, args.month, args.year) == 6;
+    let suppress_oratio_block = triduum_prima_or_compline
+        || all_souls_prima
+        || all_souls_compline
+        || holy_sat_1v_special_vespera;
     let splice_triduum_prima = args.hour == "Prima" && triduum_day;
     let splice_all_souls = all_souls_prima || all_souls_compline;
     let mut in_suppressed_oratio = false;

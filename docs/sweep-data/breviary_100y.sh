@@ -10,7 +10,7 @@ set -uo pipefail
 REPO=/Users/fschutt/Development/officium-rs
 OUT="$REPO/docs/sweep-data/breviary_100y_partial.csv"
 LOG="$REPO/docs/sweep-data/breviary_100y_partial.log"
-START_YEAR=${START_YEAR:-1988}
+START_YEAR=${START_YEAR:-2011}
 END_YEAR=${END_YEAR:-2076}
 START=$(date +%s)
 

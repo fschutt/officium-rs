@@ -196,6 +196,25 @@ mod tests {
     }
 
     #[test]
+    fn octave_nativity_bmv_lives_on_09_15t_under_t1910() {
+        // T1910 = PiusX1906 layer. 1570 baseline has
+        // `09-15=09-15t~09-15cc=In Octava Nativitatis BMV=3=...`.
+        // Neither 1888 nor 1906 overrides this — T1910 should resolve
+        // 09-15 to `09-15t` (Octave Day of Nativity BMV), NOT `09-15`
+        // (which under 1939+ is Septem Dolorum BMV).
+        assert_eq!(
+            lookup(Layer::PiusX1906, 9, 15).map(|c| c[0].stem.as_str()),
+            Some("09-15t"),
+        );
+        // DA (1939 layer) replaces the redirect with Septem Dolorum
+        // directly on 09-15.
+        assert_eq!(
+            lookup(Layer::PiusXI1939, 9, 15).map(|c| c[0].stem.as_str()),
+            Some("09-15"),
+        );
+    }
+
+    #[test]
     fn cell_rank_num_parses_vigilia() {
         // 02-23o = Vigil of Matthias, rank 1.5.
         let e = lookup(Layer::Pius1570, 2, 23).unwrap();

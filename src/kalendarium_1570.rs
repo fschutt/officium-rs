@@ -153,6 +153,16 @@ mod tests {
     }
 
     #[test]
+    fn nativity_bmv_octave_via_t1910_layer() {
+        // T1910 inherits 1570's 09-15=09-15t redirect (Octave Day of
+        // Nativity BMV) — neither 1888 nor 1906 overrides. Mirrors the
+        // assertion in kalendaria_layers but exercises the
+        // kalendarium_1570 wrapper used by occurrence.rs.
+        let e = lookup_for_layer(Layer::PiusX1906, 9, 15);
+        assert_eq!(e.map(|x| x.main.stem.as_str()), Some("09-15t"));
+    }
+
+    #[test]
     fn vigil_of_matthias_in_1570() {
         // 02-23 = Vigil of Matthias, stem `02-23o`, rank 1.5 (Vigilia).
         let e = lookup(2, 23).expect("02-23 should exist");

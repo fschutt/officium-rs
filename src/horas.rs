@@ -2701,6 +2701,49 @@ fn effective_today_rank_for_concurrence(
         // for these Sundays, but defensive).
         return direct.min(concession);
     }
+    // Privileged Octave Day 2V-keep boost. Mirror of
+    // `horascommon.pl:870-874`:
+    //
+    //   } elsif ($wrank[0] =~ /(?<!Albis )In Octava/i
+    //       && ($rank > 5 || $wrank[0] =~ /Asc|Nat|Cord/i)) {
+    //       # Dies Octavae privilegiatae (post-Divino) and Octavae
+    //       # Festorum Domini, si primaria fuerint et solemniora
+    //       # (pre-Divino) give way at 2nd Vespers to Duplex I. et II.
+    //       # classis only!
+    //       $rank = $wrank[2] = 4.99 unless $version =~ /Cist/i;
+    //   }
+    //
+    // Today's Octave-Day-of-(Ascension/Nativity/Sacred-Heart) — primary
+    // and more-solemn octaves — retain 2V over a concurrent Duplex
+    // majus (rank ≤ 4.99). Sat 09-15 T1910 1V vs Sun 09-DT Septem
+    // Dolorum Duplex majus 4.1: without boost today's 3.1 < 4.1 → 1V
+    // swap to Septem Dolorum. With boost today=4.99 > 4.1 → 2V of
+    // Octave Nativity BMV kept, Septem Dolorum commemorated. Closes
+    // 09-15-1979 T1910 Sat Vespera (and analogous Octave-Day-of-Nat
+    // / -Cord / -Asc Saturdays).
+    //
+    // The Albis (Easter Octave) exclusion uses a Perl negative
+    // lookbehind `(?<!Albis )`; we mirror by also requiring the
+    // [Rank]'s first field (the officium title) not to contain
+    // "albis". Perl reads `$wrank[0]` which is the first `;;`-
+    // separated element of the rank line — i.e. the prepended
+    // title from the [Rank] body. Mirror that here via the rank
+    // line's full text rather than a separate [Officium] section
+    // (octave-day files like Sancti/09-15t have no [Officium] of
+    // their own; the title lives in the [Rank] body).
+    if !matches!(rubric, crate::core::Rubric::Monastic) {
+        let rank_title = active_rank_line_with_annotations(day_key, rubric, hora)
+            .map(|(full, _, _)| full)
+            .and_then(|full| full.split(";;").next().map(|s| s.to_string()))
+            .unwrap_or_default();
+        let lc = rank_title.to_lowercase();
+        let in_octava = lc.contains("in octava") && !lc.contains("albis");
+        let asc_nat_cord =
+            lc.contains("asc") || lc.contains("nat") || lc.contains("cord");
+        if in_octava && (direct > 5.0 || asc_nat_cord) {
+            return direct.max(4.99);
+        }
+    }
     // Only apply the inheritance boost when the direct rank is
     // low (< 2.0 — Feria/Memoria/Commemoratio). Days with their
     // own real rank (Semiduplex 5.6 sub-Octave-of-Epi under T1570)

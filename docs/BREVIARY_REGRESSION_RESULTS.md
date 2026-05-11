@@ -3,6 +3,63 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 134: Octave-Day-2V-priority boost in concurrence
+
+Picked 1979 T1910 09-15 Vespera (2 differs in the year) from the
+residual list. The diff was:
+
+- Today (Sat 09-15-1979) = Sancti/09-15t = "In Octava Nativitatis
+  BMV" (Octave Day of Nativity BMV, rank 3.1 under T1910).
+- Tomorrow (Sun 09-16-1979) = Sancti/09-DT = Septem Dolorum BMV
+  (rank 4.1 under T1910 via the `(rubrica Trident)` annotation).
+  The Sun-09-16 office is itself the result of the letter-g
+  transfer rule `09-16=09-DT~09-16~09-16cc;;1888 1906`.
+
+Default rank comparison says today (3.1) < tomorrow (4.1), so the
+1V swap fires and Rust renders Septem Dolorum (the Oratio chain
+falls through to Sancti/09-15 via `@Sancti/09-15` inheritance).
+Perl renders Octave Nativity BMV with Septem Dolorum
+commemorated.
+
+**Trace**: Perl's `horascommon.pl:870-874`:
+
+```perl
+} elsif ($wrank[0] =~ /(?<!Albis )In Octava/i
+    && ($rank > 5 || $wrank[0] =~ /Asc|Nat|Cord/i)) {
+    # Dies Octavae privilegiatae (post-Divino) and Octavae
+    # Festorum Domini, si primaria fuerint et solemniora
+    # (pre-Divino) give way at 2nd Vespers to Duplex I. et II.
+    # classis only!
+    $rank = $wrank[2] = 4.99 unless $version =~ /Cist/i;
+}
+```
+
+The "primary and more solemn" octaves — Asc / Nat / Cord — keep
+their 2V over any concurrent Duplex of class III or lower (rank
+≤ 4.99). The `(?<!Albis )` negative lookbehind excludes Easter
+Octave (Albis).
+
+**Fix** (`src/horas.rs::effective_today_rank_for_concurrence`):
+added a boost block that reads the active `[Rank]` line's first
+`;;`-separated field (the octave-day files like 09-15t have no
+`[Officium]` of their own — Perl's `$wrank[0]` is the title
+embedded in the rank line). When the title contains "In Octava"
+(excluding "Albis") AND either rank > 5 OR title mentions
+"Asc"/"Nat"/"Cord", today's concurrence rank is boosted to
+max(direct, 4.99). Gate is `rubric != Monastic` (mirroring
+Perl's `!~ /Cist/`).
+
+**1979 T1910: 2 → 1 differs** (09-15 Sat Vespera closed; 01-13
+Octave Day Epi vs Holy Name remains for a later iteration).
+**1984 T1910: 1 → 0** (same 09-15 cluster). **1990 T1910: 2 → 1**
+(same cluster, 09-15-1990 closed; 01-13 remains).
+
+Verified: cargo test --release --lib 433/433 pass (two probe
+tests added documenting the kalendar resolution). 2026 across
+all 5 rubrics still 0 differs. Mass T1570 2026 year-sweep stays
+100%. Slices 133/132/131 regression-checked clean (11-02 R55
+Compline DA, 05-11 R55 Tertia, 11-01 R55 Compline 2026).
+
 ## Slice 133: All Souls wipe in preces predicate (11-02 Sat Compline)
 
 Picked 1985 DA 11-02 Compline (1 differ) from the residual list.

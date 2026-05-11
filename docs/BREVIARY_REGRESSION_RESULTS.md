@@ -3,6 +3,59 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 133: All Souls wipe in preces predicate (11-02 Sat Compline)
+
+Picked 1985 DA 11-02 Compline (1 differ) from the residual list.
+The diff was a missing `secunda «Domine, exaudi» omittitur` marker
+— Perl fired preces, Rust didn't.
+
+**Trace**: on 11-02-1985 Sat DA Compline, `compute_office` picks
+Sancti/11-02 (All Souls Duplex rank 3) as today's winner.
+`first_vespers_day_key_for_rubric` (slice 126 wipe-to-tomorrow at
+horas.rs:1848) swaps the key to tomorrow_key = Tempora/Pent... Sun,
+so the rendered Compline body is the ordinary "Visita" form. Both
+Rust and Perl pick the same Sunday-Compline body.
+
+The omittitur marker fires when `preces('Dominicales')` returns 1.
+Perl's `preces.pl:41-58` rejects preces if `$commemoratio{Rank}
+=~ /Octav/` or rank ≥ ranklimit(3). In our case, `$commemoratio`
+would be today's All Souls — rank 3 ≥ 3 → preces rejected. BUT
+Perl's earlier `horascommon.pl:324-331` `restrict II. Vespers` block
+WIPES the sanctoral side ahead of the preces check whenever:
+
+```perl
+($version !~ /196/ || $dayofweek == 6)
+  && $month == 11
+  && $srank =~ /Omnium Fidelium defunctorum/i
+  && !$caller
+```
+
+After the wipe, `$commemoratio` is empty → the rank check is
+skipped → dominicales=1 → preces fire → omittitur emitted.
+
+Rust's `preces_dominicales_et_feriales_fires` iterates the kalendar
+cells for the day and rank-checks every commemoratio cell against
+ranklimit. Without the All Souls wipe, the 11-02 cell (kalendar rank
+4) trips ≥3 and returns false.
+
+**Fix** (`src/horas.rs::preces_dominicales_et_feriales_fires` ~line
+1108-1153): added a pre-loop `suppress_all_souls_cell` flag that
+fires when:
+- month=11, day=2
+- hour ∈ {Vespera, Vesperae, Completorium}
+- !R60 OR dayofweek=6 (mirroring Perl's OR-gate)
+
+In the cells loop, any cell with `stem=="11-02"` or officium
+containing "omnium fidelium" is skipped. This mirrors Perl's
+`$srank=''` wipe — the cells loop now sees no All Souls
+commemoratio and the rank check passes (no other ≥3-rank commemos
+on 11-02).
+
+Verified: cargo test --release --lib 431/431 pass. 1985 DA: 1 → 0
+differs. 2026 across all 5 rubrics still 0. Mass T1570/R60 2026
+year-sweep 100%. Slices 132/131/130 regression-checked clean
+(05-11 R55 Tertia, 11-01 R55 Compline, 11-02 R60 Compline).
+
 ## Slice 132: R55 file-rank override + Festum Domini rank ties
 
 Picked from the paused 100-year sweep at 1986 R55 (lowest pass-rate

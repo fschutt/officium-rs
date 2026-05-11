@@ -1139,10 +1139,42 @@ fn preces_dominicales_et_feriales_fires(
         // (Andrew), 12-21 Adv4 (Thomas), 02-24 Quad1 (Matthias),
         // 02-27 Quadp2 Sexagesima (Gabriel) when the year-letter file
         // contains the corresponding transfer rule.
+        // All Souls' Day wipe at Vespera/Compline. Mirror of
+        // `horascommon.pl:324-331`:
+        //
+        //   } elsif (($version !~ /196/ || $dayofweek == 6)
+        //       && $month == 11
+        //       && $srank =~ /Omnium Fidelium defunctorum/i
+        //       && !$caller)
+        //   { $srank[2] = 1; $srank = ''; }
+        //
+        // When today is 11-02 (All Souls) at Vespera/Compline AND
+        // (rubric ≠ R60 OR Saturday), Perl wipes the sanctoral side
+        // — so the preces commemoratio rank check should not see the
+        // All Souls cell. Without this, the kalendar's 11-02 entry
+        // (rank 4 DA / rank 6 R60) trips ranklimit=3 and rejects
+        // preces. Combined with `first_vespers_day_key_for_rubric`'s
+        // wipe-to-tomorrow swap (lines 1848-1853 for DA/R55), today's
+        // Sat 11-02 Compline renders Sun-1V Compline with the
+        // `secunda Domine, exaudi omittitur` marker. Closes 11-02
+        // Vespera/Compline DA + R55 cells (e.g. 11-02-1985 Sat DA
+        // Compline).
+        let suppress_all_souls_cell = month == 11
+            && day == 2
+            && (hour == "Vespera" || hour == "Vesperae" || hour == "Completorium")
+            && (!matches!(rubric, crate::core::Rubric::Rubrics1960) || dayofweek == 6);
         for cell in cells {
             // 1V-swap: tomorrow's main cell is the WINNER (now today's
             // office, post-swap), not a commemoration. Skip it.
             if is_1v_swap_at_compline_in_octave && cell.kind == "main" {
+                continue;
+            }
+            // All Souls wipe: skip the 11-02 All Souls cell entirely
+            // (kalendar entry + commemoratio rank check).
+            if suppress_all_souls_cell
+                && (cell.stem == "11-02"
+                    || cell.officium.to_lowercase().contains("omnium fidelium"))
+            {
                 continue;
             }
             // Skip cells whose stem this year's transfer table moves

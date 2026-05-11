@@ -590,6 +590,19 @@ mod tests {
     }
 
     #[test]
+    fn probe_carmel_to_sab_1977_r60() {
+        // 1977 is letter b (Easter Apr 10). b.txt:
+        //   `07-16=07-16sab;;1960 Newcal`
+        // Under R60 (transfer tag "1960"), Sat 07-16-1977 office =
+        // Sancti/07-16sab — the BVM-Sabbato variant that inherits
+        // Carmel's [Oratio] via @Sancti/07-16.
+        let t = transfers_for(1977, "1960", 7, 16);
+        eprintln!("transfers_for(1977, \"1960\", 7, 16) = {:?}", t);
+        assert!(!t.is_empty());
+        assert_eq!(t[0].main, "07-16sab");
+    }
+
+    #[test]
     fn all_souls_to_monday_1980_r60() {
         // 1980 letter e (Easter Apr 6). e.txt has:
         //   `11-03=11-03sec;;1955 1960 M1963 M1963B`
@@ -606,6 +619,30 @@ mod transferred_all_souls_office {
     use crate::corpus::BundledCorpus;
     use crate::core::{Date, Locale, OfficeInput, Rubric};
     use crate::precedence::compute_office;
+
+    #[test]
+    fn probe_07_16sab_rank() {
+        // Active rank for Sancti/07-16sab under R60 should be 1.4
+        // (horas-side [Rank] "Sanctæ Mariæ Sabbato;;Feria;;1.4;;ex C10").
+        let r = crate::horas::active_rank_line_with_annotations(
+            "Sancti/07-16sab",
+            Rubric::Rubrics1960,
+            "",
+        );
+        eprintln!("07-16sab R60 active_rank = {:?}", r);
+    }
+
+    #[test]
+    fn probe_07_16_1977_r60_office_winner() {
+        let input = OfficeInput {
+            date: Date::new(1977, 7, 16),
+            rubric: Rubric::Rubrics1960,
+            locale: Locale::Latin,
+            is_mass_context: false,
+        };
+        let office = compute_office(&input, &BundledCorpus);
+        eprintln!("07-16-1977 R60 winner = {:?}", office.winner.render());
+    }
 
     #[test]
     fn mon_11_03_1980_r60_winner_is_transferred_all_souls() {

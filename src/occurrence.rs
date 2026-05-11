@@ -375,18 +375,31 @@ fn compute_occurrence_core(input: &OfficeInput, corpus: &dyn Corpus) -> Occurren
     // declare `Simplex 1.1` under `(rubrica 196)`, both should yield
     // ferial Office with saint as commemoration.
     if !input.is_mass_context && matches!(input.rubric, Rubric::Rubrics1960) {
-        let (look_m, look_d) = date::sday_pair(m, d, y);
-        let entries = corpus.sancti_entries(look_m, look_d);
-        // Match `196` first; under R60 Perl's tag-match is `/196/` which
-        // hits both bare `196` and the `1960` aut-form. Demotion fires
-        // when the rubric-specific rank is ≤ 1.1.
-        let r60_override = entries
-            .iter()
-            .find(|e| e.rubric == "196" || e.rubric == "1960")
-            .and_then(|e| e.rank_num)
-            .filter(|r| *r <= 1.1);
-        if let Some(r) = r60_override {
-            sanctoral_rank = r;
+        // Skip the demotion when the sancti_key was set by the
+        // year's transfer table to a non-default stem (e.g.
+        // `Sancti/07-16sab` under letter-b R60 — Tabulae/Transfer/
+        // b.txt `07-16=07-16sab;;1960 Newcal`). The transferred
+        // stem carries its own rank (1.4 for 07-16sab) that
+        // shouldn't be wiped by the original date's R60 demotion.
+        // Detected by checking that the resolved sancti_key stem
+        // matches `MM-DD` exactly — transferred variants have an
+        // additional suffix (`sab`, `oct`, etc).
+        let bare_stem = format!("{m:02}-{d:02}");
+        let sancti_key_is_bare = sancti_key.stem == bare_stem;
+        if sancti_key_is_bare {
+            let (look_m, look_d) = date::sday_pair(m, d, y);
+            let entries = corpus.sancti_entries(look_m, look_d);
+            // Match `196` first; under R60 Perl's tag-match is `/196/` which
+            // hits both bare `196` and the `1960` aut-form. Demotion fires
+            // when the rubric-specific rank is ≤ 1.1.
+            let r60_override = entries
+                .iter()
+                .find(|e| e.rubric == "196" || e.rubric == "1960")
+                .and_then(|e| e.rank_num)
+                .filter(|r| *r <= 1.1);
+            if let Some(r) = r60_override {
+                sanctoral_rank = r;
+            }
         }
     }
 
@@ -1325,6 +1338,25 @@ fn apply_transfer_sancti_1570(
         // 03-20 day.
         let rank = mass
             .and_then(|m| rank_num_for_rubric(m, rubric))
+            .or_else(|| {
+                // Horas-only files (no missa-side equivalent) like
+                // Sancti/07-16sab (BVM-Sabbato variant on Carmel day
+                // under R60 letter-b years). Read the rank from the
+                // horas-side [Rank] body via
+                // `active_rank_line_with_annotations`. Without this
+                // the transferred Sancti gets rank 0 → Sat-BVM check
+                // in `compute_occurrence_core` fires and replaces the
+                // winner with Commune/C10, losing Carmel's Oratio
+                // (which 07-16sab inherits via `[Oratio] @Sancti/
+                // 07-16`). Closes 07-16 Carmel-Saturday R60 cluster
+                // (1977, 1983, 1988).
+                crate::horas::active_rank_line_with_annotations(
+                    &resolved_key.render(),
+                    rubric,
+                    "",
+                )
+                .map(|(_, _, n)| n)
+            })
             .unwrap_or(0.0);
         return Some((entry.main, rank));
     }

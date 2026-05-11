@@ -3,6 +3,47 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 136: Carmel-on-Saturday R60 (07-16sab transfer)
+
+Closes the 5-differ-per-year R60 cluster on Sat 07-16 in letter-b
+years (Easter Apr 3 / Apr 10: 1977, 1983, 1988, …). Three years
+of identical regressions traced to one root cause.
+
+**Trace**: Tabulae/Transfer/b.txt has
+`07-16=07-16sab;;1960 Newcal`. Under R60, Sat 07-16 office =
+`Sancti/07-16sab` — a horas-only file whose `[Rank]` reads
+"Sanctæ Mariæ Sabbato;;Feria;;1.4;;ex C10" and whose `[Oratio]`
+@-inherits Carmel's "Deus, qui beatissimæ semper Virginis et
+Genetricis tuæ Mariæ singulari titulo Carmeli ordinem
+decorasti…". The combined effect: Sat-BVM-IV-classis office
+title with the saint's own Oratio. Perl renders this correctly;
+Rust was falling through to plain Sat-BVM (Commune/C10) and
+losing the Carmel Oratio.
+
+**Two-part fix** (`src/occurrence.rs`):
+
+1. **`apply_transfer_sancti_1570`** — when `corpus.mass_file()`
+   returns None for the transferred stem (Sancti/07-16sab has
+   no missa-side file), fall back to
+   `active_rank_line_with_annotations` to read the rank from the
+   horas-side `[Rank]` body. Without this, the returned rank
+   was 0, so the Sat-BVM check (`sanctoral_rank < 1.4`) wrongly
+   fired and replaced the winner with Commune/C10.
+
+2. **R60 simplex-demotion gate** (~line 377-405) — the
+   slice-95-pre Sancti demotion (R60 rank-≤-1.1 simplex feasts
+   become commemorations only) was wiping `sanctoral_rank` from
+   1.4 (transferred 07-16sab) down to 1.1 (Carmel's original
+   `(rubrica 196)` Simplex rank), re-firing Sat-BVM. Gated the
+   demotion on `sancti_key.stem == "MM-DD"` (the bare date stem)
+   so transferred variants (07-16sab, 11-03sec, …) keep their
+   transferred rank.
+
+**1977/1983/1988 R60: 5 → 0 differs each (15 total).** Tests
+438/438 pass. 2026 all-rubric still 0 differs. Mass T1570 2026
+year-sweep stays 100%. Slices 135/134/133 regression-checked
+clean.
+
 ## Slice 135: Transferred All Souls (11-03sec) + Sun-11-02 Compline swap
 
 Closes the "deferred All Souls" cluster in letter-e years (1980,

@@ -1839,6 +1839,22 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     if tomorrow_has_no_prima_vespera(tomorrow_key, rubric, hora) {
         return today_key;
     }
+    // Sacred Heart vs Most Precious Blood: today keeps 2V, no
+    // commemoration of MPB. Mirror of `horascommon.pl:1117`
+    // (Github #4586):
+    //
+    //   || ($winner =~ /Pent02-5/ && $cwinner =~ /07-01\./)
+    //
+    // When today=Tempora/Pent02-5 (Sacratissimi Cordis Iesu) and
+    // tomorrow=Sancti/07-01 (Pretiosissimi Sanguinis DNJC), both
+    // Festum Domini Duplex I classis (R60 rank 6). Without this
+    // special case, slice 130's R60 FD-FD swap would fire and pick
+    // tomorrow's MPB; Perl explicitly keeps today's Sacred Heart.
+    // Closes 06-30-2000 R60 Fri Vespera (and analogous years
+    // where Sacred Heart falls on June 30 — letter-a Easters).
+    if today_key == "Tempora/Pent02-5" && tomorrow_key == "Sancti/07-01" {
+        return today_key;
+    }
     // 11-01 (All Saints) Compline → 11-02 (All Souls) swap under
     // DA / R55. Mirror of upstream `horascommon.pl::occurrence-
     // tomorrow-block` (lines 273-282), which boosts tomorrow's

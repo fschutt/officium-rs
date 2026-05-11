@@ -3,6 +3,41 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 141: Sacred Heart vs Most Precious Blood concurrence
+
+Closes 06-30-2000 R60 Fri Vespera (and analogous letter-a-Easter
+years where Sacred Heart falls on Friday June 30, eve of MPB on
+Sat July 1). Both are Festum Domini Duplex I classis (rank 6 under
+R60), so slice 130's R60 FD-FD swap fires and lands on tomorrow's
+MPB. Perl explicitly keeps today's Sacred Heart per the upstream
+Github-#4586 special case:
+
+```perl
+# no commemoration of Precious Blood on the Feast of the Sacred
+# Heart: Github #4586
+|| ($winner =~ /Pent02-5/ && $cwinner =~ /07-01\./)
+```
+
+(`horascommon.pl:1117`, inside the first big if-block where the
+body wipes `$cwinner = ''` → tomorrow's commemoration is dropped,
+today's office wins solo at Vespera.)
+
+**Fix** (`src/horas.rs::first_vespers_day_key_for_rubric` ~line
+1842): added a narrow check that runs BEFORE slice 130's FD-FD
+swap. When today_key == "Tempora/Pent02-5" (Sacratissimi Cordis
+Iesu) AND tomorrow_key == "Sancti/07-01" (Pretiosissimi Sanguinis
+DNJC), return today_key. Mirrors Perl's literal regex pair.
+
+The fix is narrow (specific stem pair, all rubrics — Perl's rule
+isn't rubric-gated). I considered a broader R60 "tie → today
+wins" rule but it regressed 21 cells in 2026 DA. The Sacred-Heart-
+vs-MPB pair is the only known Festum-Domini-vs-Festum-Domini
+tied-rank concurrence in the year-sweep range.
+
+**06-30-2000 R60: 1 → 0 differs.** Tests 445/445. 2026 across all
+5 rubrics still 0. Mass T1570/R60 2026 100%. Slices 140/139/138
+regression-checked clean.
+
 ## Slice 140: Vigilia wipe at Vespera/Compline under pre-1955
 
 Closes the final 1976-1987 residual: 02-23-1982 T1570 Vespera

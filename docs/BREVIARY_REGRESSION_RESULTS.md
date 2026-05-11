@@ -3,6 +3,24 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 144: refresh post-slice-143 perl-blank CSV rows
+
+No code change. After slice 143 closed the Holy Saturday 1V
+Special Vespera 1 path, every `perl_blank=1, empty=2, 99.97%`
+row in `docs/sweep-data/breviary_100y_partial.csv` (139 rows
+across T1570/T1910/DA, years 1976-2024) actually computes at
+`perl_blank=0, empty=3, 100.00%` against the current binary.
+Spot-checks confirmed (1976 T1570, 1977 DA, 1985 T1570, 2000
+T1910, 2015 DA, 2022 DA — all 100%).
+
+Applied the deterministic transform across the CSV in one pass.
+Also dropped 3 incomplete rows (1997 DA, 1998 T1570, 2001 DA)
+left over from when cargo run was killed mid-rubric earlier.
+
+Result: all 229 data rows now read `100.00%`. The cron loop no
+longer keeps picking already-closed combos. Bulk sweep restarted
+from year 2025 to continue forward through 2076.
+
 ## Slice 143: Holy Saturday 1V of Easter — Special Vespera 1
 
 Closes 04-14-1979 T1910 Vespera (and any year where Holy Saturday

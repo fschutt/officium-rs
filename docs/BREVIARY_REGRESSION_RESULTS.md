@@ -3,6 +3,30 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 137: R60 Sat 11-02 Vespera/Compline All Souls wipe
+
+Closes 1985 R60 (Sat Nov 2 = All Souls' Day, 2 differs at Vespera +
+Compline). The slice-126 swap (Sancti/11-02 → tomorrow_key at
+Vespera/Compline) was gated `!Rubrics1960`, but Perl's
+`horascommon.pl:324-331` wipe is `(version !~ /196/ ||
+dayofweek == 6)` — under R60, the wipe DOES fire when 11-02 is
+Saturday. On Sat 11-02-1985 R60 the wipe converts today's office
+to Tempora (rank 1), and concurrence with tomorrow's Sun 11-03
+Pent23-0 (rank 5) makes Vespera = 1V of Sunday → renders
+"Absolve, quaesumus, Domine…".
+
+**Fix** (`src/horas.rs::first_vespers_day_key_for_rubric` ~line
+1888): gate updated from `!Rubrics1960` to
+`!Rubrics1960 || today_dow == 6` — preserves the R60 weekday
+behavior (Mon..Fri 11-02 keeps All Souls through Compline via
+slice 130's `all_souls_compline` splice) and adds the Saturday
+exception (Sat 11-02 swaps to tomorrow_key for Vespera +
+Compline).
+
+**1985 R60: 2 → 0 differs.** Tests 438/438. 2026 all-rubric still
+0 differs. Mass T1570 2026 100%. Slices 136/135/134 regression-
+checked clean.
+
 ## Slice 136: Carmel-on-Saturday R60 (07-16sab transfer)
 
 Closes the 5-differ-per-year R60 cluster on Sat 07-16 in letter-b

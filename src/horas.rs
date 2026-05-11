@@ -1913,8 +1913,13 @@ pub fn first_vespers_day_key_for_rubric<'a>(
     // analogous R55 cells).
     if (hora == "Vespera" || hora == "Vesperae" || hora == "Completorium")
         && today_key == "Sancti/11-02"
-        && !matches!(rubric, crate::core::Rubric::Rubrics1960)
+        && (!matches!(rubric, crate::core::Rubric::Rubrics1960) || today_dow == 6)
     {
+        // Perl's `horascommon.pl:324-331` gate is
+        // `(version !~ /196/ || dayofweek == 6)`. For R60, the wipe
+        // fires only on Sat (dow==6); other dows keep All Souls as
+        // today's office through Compline. Closes 11-02 Sat Vespera /
+        // Compline under R60 (e.g. 11-02-1985 Sat).
         return tomorrow_key;
     }
     // R55/R60 "no 1st Vespers of Easter Sunday / Patrocinii S. Joseph"

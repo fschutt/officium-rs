@@ -691,3 +691,45 @@ mod sat_11_03_probes {
         eprintln!("Tue 11-03-2026 R55 = {:?}", compute_office(&input, &BundledCorpus).winner.render());
     }
 }
+
+#[cfg(test)]
+mod holy_name_probes {
+    use crate::corpus::BundledCorpus;
+    use crate::core::{Date, Locale, OfficeInput, Rubric};
+    use crate::precedence::compute_office;
+
+    #[test]
+    fn probe_sun_01_14_1979_t1910() {
+        let input = OfficeInput {
+            date: Date::new(1979, 1, 14),
+            rubric: Rubric::Tridentine1910,
+            locale: Locale::Latin,
+            is_mass_context: false,
+        };
+        eprintln!("Sun 01-14-1979 T1910 = {:?}", compute_office(&input, &BundledCorpus).winner.render());
+    }
+    #[test]
+    fn probe_sat_01_13_1979_t1910() {
+        let input = OfficeInput {
+            date: Date::new(1979, 1, 13),
+            rubric: Rubric::Tridentine1910,
+            locale: Locale::Latin,
+            is_mass_context: false,
+        };
+        eprintln!("Sat 01-13-1979 T1910 = {:?}", compute_office(&input, &BundledCorpus).winner.render());
+    }
+}
+
+#[cfg(test)]
+mod jan_13_probes {
+    use crate::core::Rubric;
+    #[test]
+    fn probe_01_13_rank_title() {
+        let r = crate::horas::active_rank_line_with_annotations(
+            "Sancti/01-13",
+            Rubric::Tridentine1910,
+            "Vespera",
+        );
+        eprintln!("Sancti/01-13 T1910 rank = {:?}", r);
+    }
+}

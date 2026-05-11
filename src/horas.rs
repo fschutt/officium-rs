@@ -2770,6 +2770,15 @@ fn effective_today_rank_for_concurrence(
     // line's full text rather than a separate [Officium] section
     // (octave-day files like Sancti/09-15t have no [Officium] of
     // their own; the title lives in the [Rank] body).
+    //
+    // Perl ASSIGNS rank=4.99 (`$rank = $wrank[2] = 4.99`), not
+    // `max(rank, 4.99)`. The 4.99 is a CAP that lets these
+    // privileged octave days yield 2V to anything ≥ 5 (Duplex II
+    // classis & Sun) — slice 139 corrected this from
+    // `direct.max(4.99)` to plain `4.99`. Promotes low ranks
+    // (3.1 → 4.99, for 09-15t Octave Nativity BMV) AND demotes
+    // high ranks (6.9 → 4.99, for 01-13 T1910 Octave Day Epi)
+    // so 01-13 Sat 1V correctly cedes to Sun Holy Name (5.91).
     if !matches!(rubric, crate::core::Rubric::Monastic) {
         let rank_title = active_rank_line_with_annotations(day_key, rubric, hora)
             .map(|(full, _, _)| full)
@@ -2780,7 +2789,7 @@ fn effective_today_rank_for_concurrence(
         let asc_nat_cord =
             lc.contains("asc") || lc.contains("nat") || lc.contains("cord");
         if in_octava && (direct > 5.0 || asc_nat_cord) {
-            return direct.max(4.99);
+            return 4.99;
         }
     }
     // Only apply the inheritance boost when the direct rank is

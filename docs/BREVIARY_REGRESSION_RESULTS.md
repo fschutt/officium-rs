@@ -3,6 +3,40 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 139: Octave-Day-2V-priority CAP (not boost) — slice 134 fix
+
+Slice 134 misread Perl's `horascommon.pl:870-874`:
+
+```perl
+} elsif ($wrank[0] =~ /(?<!Albis )In Octava/i
+    && ($rank > 5 || $wrank[0] =~ /Asc|Nat|Cord/i)) {
+    $rank = $wrank[2] = 4.99 unless $version =~ /Cist/i;
+}
+```
+
+The assignment is `$rank = 4.99` (unconditional SET / CAP),
+NOT `max($rank, 4.99)`. The rule lets privileged Octave Days
+yield 2V to anything ≥ 5 (Duplex II classis & Sun) — high-rank
+octave days like Sancti/01-13 T1910 (Octave Day Epi, rank 6.9
+via the `(sed rubrica tridentina)` block) MUST be capped down
+to 4.99 so Sun 01-14 Holy Name (Sancti/01-00 rank 5.91) wins 1V
+in concurrence.
+
+Rust's slice 134 used `direct.max(4.99)` which kept 6.9 →
+01-13 kept 2V → wrong office at Sat Vespera. Changed to plain
+`4.99` set (`src/horas.rs::effective_today_rank_for_concurrence`
+~line 2706-2735).
+
+**Verification**: slice 134's 09-15 closure still works (3.1
+→ 4.99 promote, beats Septem Dolorum 4.1). 01-13 case now also
+works (6.9 → 4.99 cap, cedes to Sun Holy Name 5.91).
+
+**1979 T1910: 1 → 0 differs** (01-13 Sat Vespera). **1990
+T1910: 1 → 0 differs** (same cluster). 1984 T1910 (slice 134
+09-15 closure): still 0. Tests 443/443. 2026 across all 5
+rubrics still 0 differs. Mass T1570 2026 year-sweep stays
+100%. Slices 138/137/136 regression-checked clean.
+
 ## Slice 138: Non-Sat 11-02 Vespera Tempora redirect under DA/R55
 
 Closes 1979/1984 R55 (Fri 11-02 Vespera differs, 1 each year).

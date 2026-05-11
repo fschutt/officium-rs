@@ -588,4 +588,40 @@ mod tests {
         // the 03-25 stem stays on its native date.
         assert!(!stem_transferred_away(2025, "1570", 3, 25));
     }
+
+    #[test]
+    fn all_souls_to_monday_1980_r60() {
+        // 1980 letter e (Easter Apr 6). e.txt has:
+        //   `11-03=11-03sec;;1955 1960 M1963 M1963B`
+        // Under R60 (transfer tag "1960"), Mon 11-03-1980 = deferred
+        // All Souls (Sancti/11-03sec @-inherits from Sancti/11-02).
+        let t = transfers_for(1980, "1960", 11, 3);
+        assert!(!t.is_empty(), "expected 11-03=11-03sec under R60 letter e");
+        assert_eq!(t[0].main, "11-03sec");
+    }
+}
+
+#[cfg(test)]
+mod transferred_all_souls_office {
+    use crate::corpus::BundledCorpus;
+    use crate::core::{Date, Locale, OfficeInput, Rubric};
+    use crate::precedence::compute_office;
+
+    #[test]
+    fn mon_11_03_1980_r60_winner_is_transferred_all_souls() {
+        // 1980 is letter e (Easter Apr 6). e.txt:
+        //   `11-03=11-03sec;;1955 1960 M1963 M1963B`
+        // So Mon 11-03-1980 under R60 (transfer tag "1960") becomes
+        // the deferred All Souls (Sancti/11-03sec @-inherits from
+        // Sancti/11-02). Documents the upstream-mirror flow used by
+        // slice 135's horas.rs Prima / Compline splice extension.
+        let input = OfficeInput {
+            date: Date::new(1980, 11, 3),
+            rubric: Rubric::Rubrics1960,
+            locale: Locale::Latin,
+            is_mass_context: false,
+        };
+        let office = compute_office(&input, &BundledCorpus);
+        assert_eq!(office.winner.render(), "Sancti/11-03sec");
+    }
 }

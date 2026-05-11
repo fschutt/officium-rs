@@ -3,6 +3,52 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 135: Transferred All Souls (11-03sec) + Sun-11-02 Compline swap
+
+Closes the "deferred All Souls" cluster in letter-e years (1980,
+1986, …). When 11-02 falls on a Sunday under DA / R55 / R60, the
+upstream transfer table `Tabulae/Transfer/e.txt` (and analogues)
+re-routes Monday 11-03 to `Sancti/11-03sec`, which `@`-inherits
+from `Sancti/11-02`. Rust's `compute_office` correctly resolves
+to `Sancti/11-03sec` via the existing transfer machinery, but the
+horas-side rendering had three gaps:
+
+**Fix 1 — `all_souls_day` extended to `Sancti/11-03sec`**
+(`src/horas.rs:234`). The Prima / Compline splice gate previously
+matched only `Sancti/11-02`. Extended to also fire for
+`Sancti/11-03sec` so that Mon-11-03 Matins / Lauds / Prima / Tertia
+/ Sexta / Nona render the Office-of-the-Dead body.
+
+**Fix 2 — Vespera/Compline Tempora redirect for transferred All
+Souls under DA/R55** (`src/bin/office_sweep.rs:384-410`). Perl's
+`horascommon.pl:324-331` wipes the sanctoral side at Vespera /
+Compline ("Office of All Souls' day ends after None") whenever
+`$srank =~ /Omnium Fidelium defunctorum/i` AND
+`(version !~ /196/ || $dayofweek == 6)`. The wipe converts the
+day to its Tempora ferial. In Rust, when `derived_key ==
+"Sancti/11-03sec"` AND hour is Vespera/Compline AND rubric ∈
+{DA, R55}, override to today's `Tempora/<weekname>-<dow>` (with
+the standard rubric-aware redirect) so the rendering reads the
+Monday ferial body inheriting Sunday's Oratio Dominica.
+
+**Fix 3 — Sun-11-02 Compline → Mon-11-03 swap under DA/R55**
+(`src/horas.rs::first_vespers_day_key_for_rubric` ~line 1872).
+Mirror of the second clause of `horascommon.pl:273-282`:
+`($day == 2 && $dayofweek == 1)`. In Perl's $tomorrow-frame,
+$dayofweek is tomorrow's dow — when today=Sun 11-02, tomorrow=Mon
+=1 → boost tomorrow's srank to 7 and concurrence picks Mon's
+transferred All Souls (Sancti/11-03sec) over today's Sun Tempora.
+Rust mirror: when today_key starts with `Tempora/` AND
+today_dow=0 AND hora=Completorium AND rubric ∈ {DA, R55} AND
+tomorrow_key starts with `Sancti/11-03`, return tomorrow_key.
+
+**1980 R60: 2 → 0 differs.** 1980 DA: 2 → 0. 1986 R55: 2 → 0.
+1986 DA: 2 → 0. Verified: cargo test --release --lib 435/435
+pass (one probe added for the `11-03=11-03sec` letter-e transfer
+under R60). 2026 across all 5 rubrics: still 0 differs. Mass
+T1570/R60 2026 year-sweep stays 100%. Slices 134/133/132
+regression-checked clean.
+
 ## Slice 134: Octave-Day-2V-priority boost in concurrence
 
 Picked 1979 T1910 09-15 Vespera (2 differs in the year) from the

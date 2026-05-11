@@ -217,8 +217,9 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
             || k.starts_with("Tempora/Quad6-6")
     });
     // All Souls' Office of the Dead — Prima always (DA/R55/R60) and
-    // Compline whenever today_key resolves to Sancti/11-02. Two paths
-    // bring us here:
+    // Compline whenever today_key resolves to Sancti/11-02 OR
+    // Sancti/11-03sec (the transferred All Souls when 11-02 falls
+    // on a Sunday). Three paths bring us here:
     //   * Direct: 11-02 R60 Compline. R60 doesn't enter slice 126's
     //     wipe-to-tomorrow swap (the wipe is non-1960 only), so 11-02
     //     stays the day_key.
@@ -227,11 +228,18 @@ pub fn compute_office_hour(args: &OfficeArgs<'_>) -> Vec<RenderedLine> {
     //     for_rubric`), which returns tomorrow=Sancti/11-02 as the
     //     winner — so by the time horas.rs renders Compline, day_key
     //     IS Sancti/11-02. Same body splice applies for both paths.
+    //   * Transferred: when 11-02 is Sun, the transfer table moves
+    //     All Souls to Mon (Sancti/11-03sec @-inherits from
+    //     Sancti/11-02). E.g. `11-03=11-03sec;;1955 1960 …` in
+    //     Tabulae/Transfer/e.txt (letter e years, 1980 / 1986 / …).
+    //     The day_key on Mon 11-03 becomes Sancti/11-03sec which
+    //     resolves to the same Office-of-the-Dead body via @inherit.
     // Sancti/11-02 carries `[Oratio Matutinum]` = `&Dominus_vobiscum
     // @Commune/C9:Oratio_Fid` and the chain falls through to
     // Commune/C9 `[Oratio 2]` / `[Oratio]` for the day-hour Office of
     // the Dead form (Pater noster Et + V/R + A porta inferi …).
-    let all_souls_day = args.day_key == Some("Sancti/11-02");
+    let all_souls_day =
+        args.day_key == Some("Sancti/11-02") || args.day_key == Some("Sancti/11-03sec");
     let triduum_prima_or_compline = matches!(args.hour, "Completorium" | "Prima") && triduum_day;
     let all_souls_prima = args.hour == "Prima" && all_souls_day;
     let all_souls_compline = args.hour == "Completorium" && all_souls_day;
@@ -1853,6 +1861,32 @@ pub fn first_vespers_day_key_for_rubric<'a>(
         && today_dow != 6 // today_dow=Sat means tomorrow=Sun, suppress
     {
         return tomorrow_key;
+    }
+    // Sun-11-02 Compline → Mon-11-03 transferred All Souls swap under
+    // DA / R55. Mirror of the second clause of
+    // `horascommon.pl:273-282`:
+    //
+    //   ($day == 2 && $dayofweek == 1)
+    //
+    // In Perl's $tomorrow-frame, $dayofweek is tomorrow's dow — when
+    // today=Sun 11-02, tomorrow's dow=1 (Mon) → boost tomorrow's
+    // srank to 7. Concurrence then picks Mon's transferred All Souls
+    // (Sancti/11-03sec via the letter-e transfer rule) over today's
+    // Sun Tempora. Today_key here is the Sun's Tempora (Pent22-0 or
+    // similar) since today_dow == 0 and the Sun outranks the
+    // suppressed Sancti/11-02 on Sunday. Closes 11-02 Sun Compline
+    // DA / R55 (e.g. 11-02-1980, 11-02-1986).
+    if hora == "Completorium"
+        && da_or_r55
+        && today_dow == 0
+        && today_key.starts_with("Tempora/")
+    {
+        // Decide via the next-day stem: only swap when the result is
+        // a Sancti/11-03 transferred-All-Souls variant. Tomorrow_key
+        // already reflects the letter-aware transfer-table resolution.
+        if tomorrow_key.starts_with("Sancti/11-03") {
+            return tomorrow_key;
+        }
     }
     // All Souls' Day Vespera/Completorium wipe under non-1960 rubrics.
     // Mirror of upstream `horascommon.pl::concurrence`-side

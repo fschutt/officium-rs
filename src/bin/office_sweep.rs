@@ -381,6 +381,33 @@ fn run_one_cell(
     // `1955|Monastic.*Divino|1963` — R60 ('196') uses a different
     // path and is excluded.
     let today_dow_pre = officium_rs::date::day_of_week(dd, mm, yyyy);
+    // Transferred All Souls (Sancti/11-03sec on Mon 11-03 in letter-
+    // e/etc years) "ends after None" under DA/R55 — Vespera/Compline
+    // revert to today's Tempora ferial. Mirror of
+    // `horascommon.pl:324-331` (the wipe at Vespera/Compline when
+    // srank matches /Omnium Fidelium defunctorum/). Slice 138.
+    let derived_key = if (hour == "Vespera" || hour == "Completorium")
+        && derived_key == "Sancti/11-03sec"
+        && matches!(
+            rubric,
+            officium_rs::core::Rubric::DivinoAfflatu1911
+                | officium_rs::core::Rubric::Reduced1955
+        )
+    {
+        let weekname = officium_rs::date::getweek(dd, mm, yyyy, false, true);
+        let bare_stem = format!("{weekname}-{today_dow_pre}");
+        let resolved_stem = officium_rs::tempora_table::redirect(&bare_stem, rubric)
+            .map(String::from)
+            .unwrap_or(bare_stem);
+        let tempora_key = format!("Tempora/{resolved_stem}");
+        if horas::lookup(&tempora_key).is_some() {
+            tempora_key
+        } else {
+            derived_key
+        }
+    } else {
+        derived_key
+    };
     let derived_key = if (hour == "Vespera" || hour == "Completorium")
         && matches!(rubric, officium_rs::core::Rubric::Reduced1955)
         && derived_key.starts_with("Sancti/")

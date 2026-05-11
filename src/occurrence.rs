@@ -390,31 +390,58 @@ fn compute_occurrence_core(input: &OfficeInput, corpus: &dyn Corpus) -> Occurren
         }
     }
 
-    // Office-context Sancti rank override under R60 — mirror of
+    // Office-context Sancti rank override under R55/R60 — mirror of
     // slice 95 (Tempora). The mass corpus build script doesn't
     // always extract every `[Rank] (rubrica 196)` second-header
     // into `rank_num_1960`. Sancti/09-08 (Nativity BVM) ships with
     // bare `rank_num=5.1` even though its file declares `[Rank]
     // (rubrica 196) ;;Duplex II classis cum Octava simplici;;5`.
-    // Use horas-side `active_rank_line_with_annotations` (R60-aware
-    // conditional eval) to read the file's rubric-active rank.
+    // Use horas-side `active_rank_line_with_annotations` (R55/R60-
+    // aware conditional eval) to read the file's rubric-active rank.
     //
     // Closes 09-08 R60 Sun: Nativity BVM 5 ties with Pent13-0 Sun 5
     // under horas-side; pre-1960 srank > trank gate fails (5 > 5 is
     // false) and the Sun handling correctly returns Tempora as
     // winner. Without override sancti_rank=5.1 > trank=5 → Sancti
     // wins (wrong; Sun should win, Sancti commemorates).
-    if !input.is_mass_context && matches!(input.rubric, Rubric::Rubrics1960) && sanctoral_rank > 1.1
+    //
+    // R55 extension (slice 132): Apostle Philip & James moved to
+    // 05-11 under 1955. Horas-side `Sancti/05-11r.txt` is a body-
+    // less @-redirect to `Sancti/05-01` whose default [Rank] is
+    // 5.1 (the `(sed rubrica 196)` 5-rank override is R60-only).
+    // Missa-side `Sancti/05-11r.txt` has an EXPLICIT `[Rank] ;;Duplex
+    // II classis;;5;;ex C1`, so `corpus.mass_file()` reports 5 and
+    // Sancti ties with Pasc6-0 Sun 5 under R55 (default `srank >
+    // trank` fails). Horas-side via this override gives 5.1 →
+    // Sancti wins, matching Perl. The Semiduplex demotion is
+    // re-applied here (mirror of `resolve_sancti_for_tridentine_1570`
+    // line 2155) so Lenten Semiduplex feasts like Casimir 03-04
+    // stay at 1.2 (Simplex) rather than escaping to 2.2.
+    // Closes 05-11-1986 R55 cluster (Mat/Lauds/Prima/T/S/N/Vesp).
+    if !input.is_mass_context
+        && matches!(input.rubric, Rubric::Reduced1955 | Rubric::Rubrics1960)
+        && sanctoral_rank > 1.1
     {
-        let horas_rank = crate::horas::active_rank_line_with_annotations(
+        let horas_info = crate::horas::active_rank_line_with_annotations(
             &sancti_key.render(),
             input.rubric,
             "",
-        )
-        .map(|(_, _, n)| n);
-        if let Some(hr) = horas_rank {
+        );
+        if let Some((_, rank_class, hr)) = horas_info {
             if hr > 0.0 && (hr - sanctoral_rank).abs() > 0.01 {
                 sanctoral_rank = hr;
+                // R55-only Semiduplex demotion. Mirrors the demotion
+                // in `resolve_sancti_for_tridentine_1570` line 2155
+                // (Pius XII `Cum nostra hac aetate` 1955: Semiduplex
+                // 2.2..<2.9 → Simplex 1.2). Re-apply because the
+                // horas-side rank above bypasses that earlier site.
+                if matches!(input.rubric, Rubric::Reduced1955)
+                    && sanctoral_rank >= 2.2
+                    && sanctoral_rank < 2.9
+                    && rank_class.to_ascii_lowercase().contains("semiduplex")
+                {
+                    sanctoral_rank = 1.2;
+                }
             }
         }
     }
@@ -807,11 +834,17 @@ fn decide_sanctoral_wins_1570(
             | Rubric::Reduced1955
             | Rubric::Monastic
     );
+    // Mirror Perl's `elsif ($trank[0] =~ /Dominica/i …) … elsif (Festum
+    // Domini …)`: the elsif chain reaches the Festum Domini branch
+    // when `srank <= trank` (the `srank > trank` branch above already
+    // returned). Use `<=` here — rank ties between a 1955-Apostle file
+    // (Sancti/05-11r horas 5.1, Sancti/11-09 horas 5) and a II-class
+    // Sunday (Pasc6-0 5, Pent23-0 5) need Festum Domini to fire.
     if is_pre_1960
         && is_dominica
         && srank >= 2.0
         && trank_before_dominica_adjust <= 5.0
-        && srank < trank_before_dominica_adjust
+        && srank <= trank_before_dominica_adjust
     {
         let mass_has_fd = sancti_file
             .and_then(|sf| sf.sections.get("Rule"))

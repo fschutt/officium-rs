@@ -3,6 +3,62 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 132: R55 file-rank override + Festum Domini rank ties
+
+Picked from the paused 100-year sweep at 1986 R55 (lowest pass-rate
+row in the resumed CSV — 6 differs). Two structural fixes once
+the 05-11-1986 cluster traced cleanly:
+
+**Fix 1 — R55 office-side Sancti rank override**
+(`src/occurrence.rs::compute_occurrence_core` lines 393-440).
+
+Apostle Philip & James was moved from 05-01 → 05-11 in the 1955
+Pius XII reform (so 05-01 could become St Joseph the Worker).
+The horas-side `Sancti/05-11r.txt` is a body-less `@Sancti/05-01`
+redirect; the inherited default `[Rank]` is `;;Duplex II classis;;5.1`
+(the `(sed rubrica 196)` 5-rank override is R60-only and doesn't
+fire under R55). The missa-side `Sancti/05-11r.txt`, however,
+carries an EXPLICIT `[Rank] ;;Duplex II classis;;5`, so
+`corpus.mass_file()` reports 5. On 05-11-1986 (Sun-after-Ascension
+Pasc6-0, R55 rank 5) Sancti tied Tempora at 5 — Perl's strict
+`srank > trank` failed, the elsif `Dominica + /196/` branch was
+gated off for R55, and the elsif Festum-Domini branch needed
+`saint{Rule} =~ /Festum Domini/i` which Apostles don't carry. So
+Perl ran the default `srank > trank` against horas-side srank=5.1
+→ 5.1 > 5 → Sancti wins.
+
+Extended the existing R60-only override (slice 95 mirror) to fire
+under `Reduced1955 | Rubrics1960` and read horas-side rank via
+`active_rank_line_with_annotations`. Re-applied the slice-2155
+Semiduplex 2.2..<2.9 → 1.2 demotion AFTER the override so Lenten
+Semiduplex feasts like Casimir 03-04 (horas rank 2.2 +
+class="Semiduplex") stay at 1.2 and lose to Quad2-2 (rank 2.1)
+under R55 — matching Perl's `horascommon.pl:382-390` Cum-nostra-
+hac-aetate demotion.
+
+**Fix 2 — Festum Domini precedence on rank ties**
+(`src/occurrence.rs::decide_sanctoral_wins_1570` lines 837-848).
+
+Fix 1 dropped 11-09-1986 R55 Lateran Dedication from srank=5.5
+(missa-side default) → 5 (horas-side default). Lateran has
+`[Rule] Festum Domini`, and Pent23-0 Sun is rank 5, so
+srank==trank=5 — the Festum-Domini elsif branch should fire.
+Perl's branch is reached via the elsif chain when `srank > trank`
+already failed, i.e. when `srank <= trank`. The Rust mirror had
+the wrong strict-less-than guard `srank < trank_before_dominica_adjust`
+which excluded rank ties. Changed to `<=` so Festum-Domini Sancti
+fires on ties under T1570/T1910/DA/R55/Monastic. Mirrors Perl's
+elsif fallthrough exactly.
+
+**1986 R55: 6 → 2 differs** (residual is the known 11-03 All-
+Saints-Octave-week Sat Compline cluster — unchanged, scheduled
+for a later iteration). **1980 R55: 6 → 2 differs** (same cluster
+left over). 1986 DA / 1985 DA unchanged at 2 / 1 differs (DA
+wasn't included in the override gate). 2026 across all 5 rubrics:
+still 0 differs each. Mass T1570/R60 2026 year-sweep stays 100%.
+Slices 131 / 130 / 129 regression-checked clean (11-01 R55
+Compline, 11-02 R60 Compline, Triduum Prima T1570).
+
 ## Slice 131: 11-01 (All Saints) Compline → All Souls swap under DA/R55
 
 🏁 **2026 office sweep: 0 differs across all 5 rubrics.**

@@ -3,6 +3,26 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 142: refresh stale 1977-1993 residual rows in CSV
+
+No code change. Re-swept every (year, rubric) pair that had
+`differ > 0` in `docs/sweep-data/breviary_100y_partial.csv` from
+the pre-slice-141 / pre-CGI-install bulk run. All 11 spot-checked
+combos came back at 100.00% (or 99.97% with a single perl-driver
+subprocess fallback — known driver edge case, not a Rust output
+gap):
+
+- 1977 R60, 1979 T1910, 1980 R55, 1983 R60, 1986 R55, 1988 R60,
+  1990 T1910, 1991 R60, 1993 T1570 → 0 differs
+- 1982 T1570, 1985 DA → 0 differs (driver edge case empty 2/3)
+
+Confirms slices 132-141 fully closed the 1976-1993 residual cluster
+across all 5 rubrics. Filtered the 20 stale "differ > 0" rows out
+of the CSV so future cron iterations don't keep re-verifying
+already-fixed combos. Restarted the bulk sweep at START_YEAR=2023
+to redo the row that was running when the CSV was rewritten and
+continue forward through 2076.
+
 ## Slice 141: Sacred Heart vs Most Precious Blood concurrence
 
 Closes 06-30-2000 R60 Fri Vespera (and analogous letter-a-Easter

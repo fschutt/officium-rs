@@ -3,6 +3,47 @@
 Tracks the Office-side year-sweep against upstream Perl. Mirrors
 `REGRESSION_RESULTS.md` for the Mass side.
 
+## Slice 140: Vigilia wipe at Vespera/Compline under pre-1955
+
+Closes the final 1976-1987 residual: 02-23-1982 T1570 Vespera
+(Vigil of Matthias). Mirror of `horascommon.pl:305-307`:
+
+```perl
+($srank =~ /vigilia/i
+    && ($version !~ /196/ || $sname !~ /08-09/))
+```
+
+Vigils of Apostles get wiped at Vespera/Compline under non-R60
+rubrics — today's office reverts to its Tempora ferial (the
+Vigil's Office is essentially Mass-only outside Matins/Lauds/
+little-hours). For Tue 02-23-1982 T1570: Vigil of Matthias
+(Sancti/02-23o, Vigilia rank 1.5) wiped → today's Tempora =
+Quadp3-2 (Tue Quinquagesima) which inherits Quinquagesima Sun's
+Oratio "Preces nostras, quaesumus, Domine, clementer exaudi…"
+via Oratio Dominica. Tomorrow's Ash Wed (Quadp3-3, Feria
+privilegiata rank 6.9) doesn't get 1V either (the
+`horascommon.pl:950-951` Feria-no-1V gate) — so today's 2V
+wins.
+
+**Fix** (`src/bin/office_sweep.rs`): added a derived_key
+override that redirects Sancti/MM-DDo (and other Vigilia-class
+Sancti) to today's Tempora at Vespera/Compline when:
+- hour ∈ {Vespera, Compline}
+- derived_key starts with "Sancti/"
+- rubric ≠ R55 (Perl's `version !~ /1955/` — R55 has its own
+  separate wipe path, slice 138)
+- R60 exception: skip when `derived_key contains "08-09"`
+  (Perl's `$sname !~ /08-09/` mirror — covers Sancti/08-09,
+  Sancti/08-09t, etc.)
+- Vigilia class confirmed via `active_rank_line_with_annotations`
+
+**1982 T1570: 1 → 0 differs.** All other 1976-1987 residuals
+also clean (verified via re-sweep on each year). Tests 445/445.
+2026 across all 5 rubrics still 0 differs. Mass T1570 2026
+year-sweep stays 100%. Slices 139/138/137 regression-checked
+clean. 🏁 **The 1976-1987 baseline residual cluster is now
+fully closed.**
+
 ## Slice 139: Octave-Day-2V-priority CAP (not boost) — slice 134 fix
 
 Slice 134 misread Perl's `horascommon.pl:870-874`:

@@ -381,6 +381,55 @@ fn run_one_cell(
     // `1955|Monastic.*Divino|1963` — R60 ('196') uses a different
     // path and is excluded.
     let today_dow_pre = officium_rs::date::day_of_week(dd, mm, yyyy);
+    // Vigilia wipe at Vespera/Compline under pre-1955 rubrics.
+    // Mirror of `horascommon.pl:305-307`:
+    //
+    //   ($srank =~ /vigilia/i
+    //     && ($version !~ /196/ || $sname !~ /08-09/))
+    //
+    // Vigils of Apostles get wiped at Vespera/Compline — today's
+    // office reverts to Tempora (the Vigil is Mass-only for Office
+    // purposes outside Matins/Lauds/little-hours). Under R60 the
+    // exception is St Lawrence's Vigil (Sancti/08-09), but that
+    // matches Perl's negative match `$sname !~ /08-09/` so the
+    // wipe still fires for OTHER R60 Vigils.
+    //
+    // Combined with Ash Wed's "Feria privilegiata no-1V" rule
+    // (horascommon.pl:950-951 Feria-no-1V gate), Tue 02-23 Vespera
+    // under T1570 keeps today's Tempora 2V (Quadp3-2 inheriting
+    // Quinquagesima Sun's Oratio Dominica). Closes 02-23-1982
+    // T1570 Vespera.
+    let derived_key = if (hour == "Vespera" || hour == "Completorium")
+        && derived_key.starts_with("Sancti/")
+        && !matches!(rubric, officium_rs::core::Rubric::Reduced1955)
+        // Perl's `$sname !~ /08-09/` matches any string CONTAINING
+        // "08-09" — so the R60 St-Lawrence-Vigil exception covers
+        // Sancti/08-09, Sancti/08-09t (= Vigilia S. Laurentii Mart
+        // rank 3 under R60), and any other 08-09 variant.
+        && !(matches!(rubric, officium_rs::core::Rubric::Rubrics1960)
+            && derived_key.contains("08-09"))
+    {
+        let is_vigil = horas::active_rank_line_with_annotations(&derived_key, rubric, hour)
+            .map(|(_, cls, _)| cls.to_lowercase().contains("vigilia"))
+            .unwrap_or(false);
+        if is_vigil {
+            let weekname = officium_rs::date::getweek(dd, mm, yyyy, false, true);
+            let bare_stem = format!("{weekname}-{today_dow_pre}");
+            let resolved_stem = officium_rs::tempora_table::redirect(&bare_stem, rubric)
+                .map(String::from)
+                .unwrap_or(bare_stem);
+            let tempora_key = format!("Tempora/{resolved_stem}");
+            if horas::lookup(&tempora_key).is_some() {
+                tempora_key
+            } else {
+                derived_key
+            }
+        } else {
+            derived_key
+        }
+    } else {
+        derived_key
+    };
     // All Souls' "Office ends after None" wipe at non-Sat Vespera /
     // Compline under DA/R55. Mirror of `horascommon.pl:324-331` —
     // when today=Sancti/11-02 (All Souls) AND

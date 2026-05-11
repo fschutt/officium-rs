@@ -733,3 +733,30 @@ mod jan_13_probes {
         eprintln!("Sancti/01-13 T1910 rank = {:?}", r);
     }
 }
+
+#[cfg(test)]
+mod matthias_vigil_probes {
+    use crate::corpus::BundledCorpus;
+    use crate::core::{Date, Locale, OfficeInput, Rubric};
+    use crate::precedence::compute_office;
+    #[test]
+    fn probe_02_24_1982_t1570() {
+        let input = OfficeInput {
+            date: Date::new(1982, 2, 24),
+            rubric: Rubric::Tridentine1570,
+            locale: Locale::Latin,
+            is_mass_context: false,
+        };
+        eprintln!("Wed 02-24-1982 T1570 = {:?}", compute_office(&input, &BundledCorpus).winner.render());
+    }
+    #[test]
+    fn probe_02_23_1982_t1570() {
+        let input = OfficeInput {
+            date: Date::new(1982, 2, 23),
+            rubric: Rubric::Tridentine1570,
+            locale: Locale::Latin,
+            is_mass_context: false,
+        };
+        eprintln!("Tue 02-23-1982 T1570 = {:?}", compute_office(&input, &BundledCorpus).winner.render());
+    }
+}

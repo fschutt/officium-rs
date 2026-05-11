@@ -1,20 +1,26 @@
 #!/usr/bin/env bash
-# 100-year × 5-rubric office sweep. Writes CSV to /tmp/breviary_100y.csv.
-# Clears target/regression/<rubric>-<year>/ output dirs after each year
-# (the office_sweep binary doesn't produce them, but year-sweep cache
-# from earlier runs sits there — keep target dirs slim).
+# 100-year × 5-rubric office sweep. Appends to docs/sweep-data CSV.
+# Clears target/regression/<rubric>-<year>/ output dirs after each year.
+#
+# Resumable: edit START_YEAR / END_YEAR to slice the range. Appends to the
+# CSV/log, never overwrites — header is only written if the CSV does not
+# already exist.
 set -uo pipefail
 
 REPO=/Users/fschutt/Development/officium-rs
-OUT=/tmp/breviary_100y.csv
-LOG=/tmp/breviary_100y.log
+OUT="$REPO/docs/sweep-data/breviary_100y_partial.csv"
+LOG="$REPO/docs/sweep-data/breviary_100y_partial.log"
+START_YEAR=${START_YEAR:-1988}
+END_YEAR=${END_YEAR:-2076}
 START=$(date +%s)
 
 cd "$REPO" || exit 1
 
-# CSV header
-echo "year,rubric,cells,matched,differ,rust_blank,perl_blank,empty,pass_rate" > "$OUT"
-> "$LOG"
+# Only write header if CSV is missing.
+if [[ ! -f "$OUT" ]]; then
+  echo "year,rubric,cells,matched,differ,rust_blank,perl_blank,empty,pass_rate" > "$OUT"
+fi
+touch "$LOG"
 
 run_one() {
   local year="$1" rubric="$2"
@@ -41,13 +47,12 @@ declare -a RUBRICS=(
   "Rubrics 1960 - 1960"
 )
 
-for year in $(seq 1976 2076); do
+for year in $(seq "$START_YEAR" "$END_YEAR"); do
   year_start=$(date +%s)
   for r in "${RUBRICS[@]}"; do
     run_one "$year" "$r"
   done
-  # Clear per-year regression output dirs for any rubric (kills accumulated
-  # board.html / manifest.json from earlier year-sweep runs).
+  # Strip per-year regression output dirs.
   rm -rf "$REPO"/target/regression/*-"${year}"/ 2>/dev/null || true
   year_end=$(date +%s)
   elapsed=$((year_end - START))
@@ -58,4 +63,5 @@ done
 
 end=$(date +%s)
 total=$((end - START))
-printf '\nTotal: %dm%ds\n' $((total / 60)) $((total % 60)) >> "$LOG"
+printf '\nRange %d-%d total: %dm%ds\n' \
+  "$START_YEAR" "$END_YEAR" $((total / 60)) $((total % 60)) >> "$LOG"

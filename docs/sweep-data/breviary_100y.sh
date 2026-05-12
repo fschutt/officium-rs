@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # 100-year × 5-rubric office sweep. Appends to docs/sweep-data CSV.
-# Clears target/regression/<rubric>-<year>/ output dirs after each year.
+# Runs cargo clean after each year so target/ doesn't grow unbounded
+# (perl HTML cache + regression scratch can hit GB scale otherwise,
+# and a full disk silently breaks cargo's next build). The cost is
+# a ~60s rebuild at the top of each year's first cargo run.
+#
+# Always uses --release; no debug/dev profile artifacts are written.
 #
 # Resumable: edit START_YEAR / END_YEAR to slice the range. Appends to the
 # CSV/log, never overwrites — header is only written if the CSV does not
@@ -52,8 +57,11 @@ for year in $(seq "$START_YEAR" "$END_YEAR"); do
   for r in "${RUBRICS[@]}"; do
     run_one "$year" "$r"
   done
-  # Strip per-year regression output dirs.
+  # Strip per-year regression output dirs first (cheap), then full
+  # cargo clean to drop the unbounded perl HTML cache + release
+  # artifacts. Next year's first run rebuilds the binary in ~60s.
   rm -rf "$REPO"/target/regression/*-"${year}"/ 2>/dev/null || true
+  cargo clean -q 2>>"$LOG" || true
   year_end=$(date +%s)
   elapsed=$((year_end - START))
   yelapsed=$((year_end - year_start))
